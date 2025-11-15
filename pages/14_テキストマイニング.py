@@ -363,10 +363,18 @@ if df is not None and not df.empty:
 
         try:
             npt.build_graph(stopwords=stopwords_list, min_edge_frequency=1)
+            
+            # nlplotのグラフオブジェクトを取得（バージョンによって属性名が異なる）
+            # nlplotのグラフオブジェクトを取得（バージョンや実装によって属性名が異なる）
+            graph_obj = getattr(npt, 'nwx', None) or getattr(npt, 'G', None) or getattr(npt, 'graph', None)
+            
+            if graph_obj is None:
+                st.error("共起ネットワークのグラフオブジェクトを取得できませんでした。")
+                raise AttributeError("NLPlot object has no valid graph attribute (tried: nwx, G, graph)")
 
             # Plotlyバージョンを試行
             fig_net = create_cooccurrence_network_with_communities(
-                npt.graph,
+                graph_obj,
                 title='全体の共起ネットワーク（グループ化）',
                 top_n_edges=60,
                 use_plotly=True
@@ -377,7 +385,7 @@ if df is not None and not df.empty:
             else:
                 # matplotlibバージョンにフォールバック
                 fig_net_mpl = create_cooccurrence_network_with_communities(
-                    npt.graph,
+                    graph_obj,
                     title='全体の共起ネットワーク（グループ化）',
                     top_n_edges=60,
                     use_plotly=False
@@ -458,9 +466,17 @@ if df is not None and not df.empty:
             try:
                 npt_cat = nlplot.NLPlot(grp, target_col='tokenized_text')
                 npt_cat.build_graph(stopwords=stopwords_list, min_edge_frequency=1)
+                
+                # nlplotのグラフオブジェクトを取得（バージョンによって属性名が異なる）
+                # nlplotのグラフオブジェクトを取得（バージョンや実装によって属性名が異なる）
+                graph_obj_cat = getattr(npt_cat, 'nwx', None) or getattr(npt_cat, 'G', None) or getattr(npt_cat, 'graph', None)
+                
+                if graph_obj_cat is None:
+                    st.warning(f"カテゴリ「{cat}」の共起ネットワークのグラフオブジェクトを取得できませんでした。")
+                    continue
 
                 fig_cat = create_cooccurrence_network_with_communities(
-                    npt_cat.graph,
+                    graph_obj_cat,
                     title=f'{cat}の共起ネットワーク（グループ化）',
                     top_n_edges=60,
                     use_plotly=True
@@ -471,7 +487,7 @@ if df is not None and not df.empty:
                 else:
                     # matplotlibにフォールバック
                     fig_cat_mpl = create_cooccurrence_network_with_communities(
-                        npt_cat.graph,
+                        graph_obj_cat,
                         title=f'{cat}の共起ネットワーク（グループ化）',
                         top_n_edges=60,
                         use_plotly=False
