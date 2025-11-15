@@ -1025,6 +1025,18 @@ class AIStatisticalInterpreter:
 
         interpretation_key = f"{key_prefix}_interpretation"
 
+        # 解釈結果がある場合は常に表示
+        if interpretation_key in st.session_state:
+            st.markdown("### 📊 統計解釈結果")
+            st.write(st.session_state[interpretation_key])
+
+            # 解釈をクリアするボタン
+            col1, col2 = st.columns([1, 1])
+            with col2:
+                if st.button(f"解釈をクリア", key=f"{key_prefix}_clear"):
+                    del st.session_state[interpretation_key]
+                    st.rerun()
+
         # 解釈ボタン
         if st.button(f"統計結果を解釈する", key=f"{key_prefix}_button"):
             with st.spinner("AIが統計結果を分析中..."):
@@ -1057,17 +1069,8 @@ class AIStatisticalInterpreter:
                 # 結果をセッション状態に保存
                 st.session_state[interpretation_key] = interpretation
 
-        # 解釈結果がある場合は常に表示
-        if interpretation_key in st.session_state:
-            st.markdown("### 📊 統計解釈結果")
-            st.write(st.session_state[interpretation_key])
-
-            # 解釈をクリアするボタン
-            col1, col2 = st.columns([1, 1])
-            with col2:
-                if st.button(f"解釈をクリア", key=f"{key_prefix}_clear"):
-                    del st.session_state[interpretation_key]
-                    st.rerun()
+                # 明示的に再レンダリング
+                st.rerun()
 
 # ==========================================
 # グラフExport機能
