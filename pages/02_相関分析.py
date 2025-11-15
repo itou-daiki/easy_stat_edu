@@ -48,6 +48,13 @@ else:
             st.write(df.head())
 
 if df is not None:
+    # 欠損値削除のチェックボックス
+    remove_missing = st.checkbox('欠損値を削除する', value=True)
+    if remove_missing:
+        df = df.dropna()
+        st.write('欠損値を削除しました。')
+        st.write(df.head())
+
     # 数値変数の抽出
     numerical_cols = df.select_dtypes(exclude=['object', 'category']).columns.tolist()
     

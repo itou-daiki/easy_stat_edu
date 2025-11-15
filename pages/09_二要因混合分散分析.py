@@ -140,6 +140,13 @@ def assign_levels(comparisons, category_positions):
     return result_levels, len(levels)
 
 if df is not None:
+    # 欠損値削除のチェックボックス
+    remove_missing = st.checkbox('欠損値を削除する', value=True)
+    if remove_missing:
+        df = df.dropna()
+        st.write('欠損値を削除しました。')
+        st.write(df.head())
+
     st.subheader("【変数の選択】")
     all_cols = df.columns.tolist()
     

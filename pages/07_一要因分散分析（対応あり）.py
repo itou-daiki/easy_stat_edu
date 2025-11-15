@@ -62,6 +62,13 @@ else:
             st.error(f"ファイル読み込み中にエラーが発生しました: {e}")
 
 if df is not None:
+    # 欠損値削除のチェックボックス
+    remove_missing = st.checkbox('欠損値を削除する', value=True)
+    if remove_missing:
+        df = df.dropna()
+        st.write('欠損値を削除しました。')
+        st.write(df.head())
+
     st.subheader("検定対象の変数の選択")
     st.write("※各列は１被験者の各時点の測定値とみなします。")
     # 数値型の列一覧から、検定対象の変数をマルチセレクト（最低３項目以上）

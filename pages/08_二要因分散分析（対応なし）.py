@@ -63,6 +63,13 @@ def mark_significance(p):
 
 # 二要因分散分析の設定
 if df is not None:
+    # 欠損値削除のチェックボックス
+    remove_missing = st.checkbox('欠損値を削除する', value=True)
+    if remove_missing:
+        df = df.dropna()
+        st.write('欠損値を削除しました。')
+        st.write(df.head())
+
     st.subheader("【変数の選択】")
     # 独立変数（因子）は文字列型・カテゴリ型から選択
     categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
@@ -218,6 +225,87 @@ if df is not None:
                 
                 # ⑤ 可視化：Interactionごとの棒グラフの作成
                 st.subheader("【可視化】")
+
+                # ブラケット付きの棒グラフを描画する関数
+                def create_bracket_annotation(x0, x1, y, text):
+                    return dict(
+                        xref='x',
+                        yref='y',
+                        x=(x0 + x1) / 2,
+                        y=y,
+                        text=text,
+                        showarrow=False,
+                        font=dict(color='black'),
+                        xanchor='center',
+                        yanchor='bottom'
+                    )
+
+                def create_bracket_shape(x0, x1, y_vline_bottom, bracket_y):
+                    return dict(
+                        type='path',
+                        path=f'M {x0},{y_vline_bottom} L{x0},{bracket_y} L{x1},{bracket_y} L{x1},{y_vline_bottom}',
+                        line=dict(color='black'),
+                        xref='x',
+                        yref='y'
+                    )
+
+                # レベル割り当て関数（比較が重ならないようレベルを決定）
+                def assign_levels(comparisons, category_positions):
+                    # カテゴリの位置を取得
+                    cat_positions = category_positions
+
+                    # 各比較を位置でソート（左端の位置、次に幅）
+                    sorted_comparisons = []
+                    for comp in comparisons:
+                        pos1 = cat_positions[comp[0]]
+                        pos2 = cat_positions[comp[1]]
+                        left = min(pos1, pos2)
+                        right = max(pos1, pos2)
+                        sorted_comparisons.append((left, right, comp))
+
+                    # 幅の狭い順にソート（狭いものを下のレベルに配置）
+                    sorted_comparisons.sort(key=lambda x: x[1] - x[0], reverse=False)
+
+                    # レベルを割り当て
+                    levels = []
+                    comparison_levels = []
+
+                    for left, right, comp in sorted_comparisons:
+                        # 利用可能な最も低いレベルを見つける
+                        assigned_level = None
+                        for level_idx, level_ranges in enumerate(levels):
+                            # このレベルで重なりがないかチェック
+                            can_place = True
+                            margin = 0.5  # ブラケット間のマージン（視覚的な分離を確保）
+                            for existing_left, existing_right in level_ranges:
+                                # ブラケットが重なるかチェック（マージンを考慮）
+                                # 完全に分離されている場合のみ配置可能
+                                if not (right + margin <= existing_left or left - margin >= existing_right):
+                                    can_place = False
+                                    break
+
+                            if can_place:
+                                level_ranges.append((left, right))
+                                assigned_level = level_idx
+                                break
+
+                        # 新しいレベルが必要な場合
+                        if assigned_level is None:
+                            levels.append([(left, right)])
+                            assigned_level = len(levels) - 1
+
+                        comparison_levels.append((comp, assigned_level))
+
+                    # 元の順序に戻す
+                    result_levels = []
+                    for comp in comparisons:
+                        for c, level in comparison_levels:
+                            if c == comp:
+                                result_levels.append(level)
+                                break
+
+                    return result_levels, len(levels)
+
                 # ※ここでは、単純に元のdfのコピーを用いてグループごとの平均・標準誤差を計算
                 df_long = df.copy()
                 group_means = df_long.groupby('Interaction')[dv].mean()
@@ -225,7 +313,26 @@ if df is not None:
                 sorted_groups = sorted(group_means.index)
                 category_positions = {grp: i for i, grp in enumerate(sorted_groups)}
                 x_values = [category_positions[grp] for grp in sorted_groups]
-                
+
+                # 有意な比較を抽出
+                significant_comparisons = []
+                for _, row in tukey_df.iterrows():
+                    group1 = row['group1']
+                    group2 = row['group2']
+                    p_value = row['p-adj']
+                    if p_value < 0.1:
+                        if p_value < 0.01:
+                            significance = '**'
+                        elif p_value < 0.05:
+                            significance = '*'
+                        else:
+                            significance = '†'
+                        significant_comparisons.append((group1, group2, p_value, significance))
+
+                # レベルを割り当て
+                comparisons = [(comp[0], comp[1]) for comp in significant_comparisons]
+                comparison_levels, num_levels = assign_levels(comparisons, category_positions) if comparisons else ([], 0)
+
                 fig = go.Figure()
                 fig.add_trace(go.Bar(
                     x=x_values,
@@ -240,6 +347,54 @@ if df is not None:
                 fig.update_layout(title_text=f"{dv} by Interaction ( {factor1} x {factor2} )",
                                   xaxis_title="Interaction",
                                   yaxis_title=dv)
+
+                # y軸の最大値を計算（群の数とレベル数に応じて動的に調整）
+                base_y_max = max([group_means[grp] + group_errors[grp] for grp in sorted_groups]) * 1.1 if sorted_groups else 1
+                num_groups = len(sorted_groups)
+
+                # オフセットとステップサイズを群数とレベル数に応じて調整
+                y_offset = base_y_max * max(0.06, 0.15 / num_groups)  # 群が多いほど相対的に小さく
+                step_size = base_y_max * max(0.10, 0.25 / num_groups)  # 群が多いほど相対的に小さく
+
+                # レベル数が多い場合はさらに調整
+                if num_levels > 3:
+                    step_size = step_size * (1 + (num_levels - 3) * 0.1)
+
+                # レベルごとに必要な余白を計算
+                additional_height = num_levels * step_size + y_offset * 2.5
+                y_max = base_y_max + additional_height
+
+                # アノテーション配置の調整係数（群数に応じて動的に調整）
+                vline_bottom_factor = max(0.3, 0.8 / num_groups)  # ブラケット下端の余白
+                bracket_offset_factor = max(0.2, 0.5 / num_groups)  # ブラケット上端の追加余白
+                annotation_offset_factor = max(0.3, 0.8 / num_groups)  # アノテーションの余白
+
+                # ブラケットとアノテーションを追加
+                for idx, (comp, level) in enumerate(zip(significant_comparisons, comparison_levels)):
+                    group1, group2, p_value, significance = comp
+                    x0 = category_positions[group1]
+                    x1 = category_positions[group2]
+
+                    # ブラケットの下端はエラーバーの上端 + 余白
+                    y_vline_bottom = max(group_means[group1] + group_errors[group1],
+                                         group_means[group2] + group_errors[group2]) + y_offset * vline_bottom_factor
+
+                    # ブラケットの上端はレベルに応じて設定
+                    bracket_y = y_vline_bottom + (level * step_size) + y_offset * bracket_offset_factor
+
+                    # ブラケットを追加
+                    fig.add_shape(create_bracket_shape(x0, x1, y_vline_bottom, bracket_y))
+
+                    # アノテーションを追加（ブラケットの上に十分な余白を確保）
+                    annotation_y = bracket_y + y_offset * annotation_offset_factor
+                    fig.add_annotation(create_bracket_annotation(x0, x1, annotation_y, f'p < {p_value:.2f} {significance}'))
+
+                # y軸の範囲を設定（上部に余裕を持たせる）
+                fig.update_yaxes(range=[0, y_max * 1.05])
+
+                # 日本語フォントの設定
+                fig.update_layout(font=dict(family="IPAexGothic"))
+
                 st.plotly_chart(fig, use_container_width=True)
 
                 # Excelダウンロードリンク
