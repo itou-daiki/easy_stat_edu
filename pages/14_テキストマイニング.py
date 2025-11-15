@@ -215,8 +215,12 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
                 y=node_y,
                 mode='markers+text',
                 text=[node for node in nodes_in_comm],
-                textposition='top center',
-                textfont=dict(size=10, family='IPAexGothic, Arial, sans-serif'),
+                textposition='middle center',
+                textfont=dict(
+                    size=12,
+                    family='IPAexGothic, "Hiragino Sans", "Noto Sans CJK JP", "Yu Gothic", Meiryo, Arial, sans-serif',
+                    color='black'
+                ),
                 hovertext=node_text,
                 hoverinfo='text',
                 marker=dict(
@@ -241,7 +245,12 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             plot_bgcolor='white',
             width=1000,
-            height=600
+            height=600,
+            font=dict(
+                family='IPAexGothic, "Hiragino Sans", "Noto Sans CJK JP", "Yu Gothic", Meiryo, Arial, sans-serif',
+                size=12,
+                color='black'
+            )
         )
 
         return fig
@@ -266,7 +275,7 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
         nx.draw_networkx_nodes(subgraph, pos, node_color=node_colors,
                               node_size=node_sizes, alpha=0.9, ax=ax)
         nx.draw_networkx_labels(subgraph, pos, font_family='IPAexGothic',
-                               font_size=10, ax=ax)
+                               font_size=12, font_weight='bold', ax=ax)
 
         ax.set_title(title, fontsize=14, pad=20)
         ax.axis('off')
