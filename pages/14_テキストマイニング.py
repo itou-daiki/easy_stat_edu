@@ -102,7 +102,8 @@ else:
 
 
 def create_cooccurrence_network_with_communities(graph, title='共起ネットワーク',
-                                                  top_n_edges=60, use_plotly=True):
+                                                  top_n_edges=60, use_plotly=True,
+                                                  node_to_word=None):
     """
     KH Coderのアルゴリズムに基づいた共起ネットワーク描画
     コミュニティ検出でグループ化し、グループごとに色分け
@@ -110,14 +111,22 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
     Parameters:
     -----------
     graph : networkx.Graph
-        共起ネットワークグラフ
+        共起ネットワークグラフ（ノードは数値インデックス）
     title : str
         グラフのタイトル
     top_n_edges : int
         表示する上位エッジ数（KH Coderのデフォルトは60）
     use_plotly : bool
         Plotlyを使用するかどうか（Falseの場合はmatplotlib）
+    node_to_word : dict or None
+        ノード番号から単語へのマッピング辞書
+        Noneの場合はノード番号をそのまま使用
     """
+
+    # ノード番号から単語へのマッピングを作成（ない場合はノード番号を使用）
+    if node_to_word is None:
+        node_to_word = {node: str(node) for node in graph.nodes()}
+
     if graph is None or len(graph.edges()) == 0:
         st.warning("共起ネットワークを作成するための十分なデータがありません。")
         return None
@@ -207,16 +216,20 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
                 x, y = pos[node]
                 node_x.append(x)
                 node_y.append(y)
-                node_text.append(f"{node}<br>グループ: {comm_id + 1}<br>中心性: {degree_centrality[node]:.3f}")
+                node_text.append(f"{node_to_word.get(node, str(node))}<br>グループ: {comm_id + 1}<br>中心性: {degree_centrality[node]:.3f}")
                 node_size.append(20 + degree_centrality[node] * 100)
 
             node_trace = go.Scatter(
                 x=node_x,
                 y=node_y,
                 mode='markers+text',
-                text=[node for node in nodes_in_comm],
-                textposition='top center',
-                textfont=dict(size=10, family='IPAexGothic, Arial, sans-serif'),
+                text=[node_to_word.get(node, str(node)) for node in nodes_in_comm],
+                textposition='middle center',
+                textfont=dict(
+                    size=12,
+                    family='IPAexGothic, "Hiragino Sans", "Noto Sans CJK JP", "Yu Gothic", Meiryo, Arial, sans-serif',
+                    color='black'
+                ),
                 hovertext=node_text,
                 hoverinfo='text',
                 marker=dict(
@@ -241,7 +254,12 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             plot_bgcolor='white',
             width=1000,
-            height=600
+            height=600,
+            font=dict(
+                family='IPAexGothic, "Hiragino Sans", "Noto Sans CJK JP", "Yu Gothic", Meiryo, Arial, sans-serif',
+                size=12,
+                color='black'
+            )
         )
 
         return fig
@@ -265,8 +283,10 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
         nx.draw_networkx_edges(subgraph, pos, width=edge_widths, alpha=0.5, ax=ax)
         nx.draw_networkx_nodes(subgraph, pos, node_color=node_colors,
                               node_size=node_sizes, alpha=0.9, ax=ax)
-        nx.draw_networkx_labels(subgraph, pos, font_family='IPAexGothic',
-                               font_size=10, ax=ax)
+        # ノード番号を単語に変換したラベルを作成
+        labels = {node: node_to_word.get(node, str(node)) for node in subgraph.nodes()}
+        nx.draw_networkx_labels(subgraph, pos, labels=labels, font_family='IPAexGothic',
+                               font_size=12, font_weight='bold', ax=ax)
 
         ax.set_title(title, fontsize=14, pad=20)
         ax.axis('off')
@@ -372,12 +392,25 @@ if df is not None and not df.empty:
                 st.error("共起ネットワークのグラフオブジェクトを取得できませんでした。")
                 raise AttributeError("NLPlot object has no valid graph attribute (tried: nwx, G, graph)")
 
+            # nlplotのnode_dfからノード番号と単語のマッピングを作成
+            node_to_word_mapping = None
+            if hasattr(npt, "node_df"):
+                try:
+                    node_df = npt.node_df
+                    if node_df is not None and "word" in node_df.columns:
+                        node_to_word_mapping = node_df["word"].to_dict()
+                    elif node_df is not None and "words" in node_df.columns:
+                        node_to_word_mapping = node_df["words"].to_dict()
+                except Exception as e:
+                    st.warning(f"ノードと単語のマッピング作成でエラー: {e}")
+
             # Plotlyバージョンを試行
             fig_net = create_cooccurrence_network_with_communities(
                 graph_obj,
                 title='全体の共起ネットワーク（グループ化）',
                 top_n_edges=60,
-                use_plotly=True
+                use_plotly=True,
+                node_to_word=node_to_word_mapping
             )
 
             if fig_net is not None:
@@ -388,7 +421,8 @@ if df is not None and not df.empty:
                     graph_obj,
                     title='全体の共起ネットワーク（グループ化）',
                     top_n_edges=60,
-                    use_plotly=False
+                    use_plotly=False,
+                    node_to_word=node_to_word_mapping
                 )
                 if fig_net_mpl is not None:
                     st.pyplot(fig_net_mpl)
@@ -475,11 +509,24 @@ if df is not None and not df.empty:
                     st.warning(f"カテゴリ「{cat}」の共起ネットワークのグラフオブジェクトを取得できませんでした。")
                     continue
 
+                # nlplotのnode_dfからノード番号と単語のマッピングを作成
+                node_to_word_mapping_cat = None
+                if hasattr(npt_cat, "node_df"):
+                    try:
+                        node_df_cat = npt_cat.node_df
+                        if node_df_cat is not None and "word" in node_df_cat.columns:
+                            node_to_word_mapping_cat = node_df_cat["word"].to_dict()
+                        elif node_df_cat is not None and "words" in node_df_cat.columns:
+                            node_to_word_mapping_cat = node_df_cat["words"].to_dict()
+                    except Exception as e:
+                        st.warning(f"カテゴリ「{cat}」のノード-単語マッピング作成でエラー: {e}")
+
                 fig_cat = create_cooccurrence_network_with_communities(
                     graph_obj_cat,
                     title=f'{cat}の共起ネットワーク（グループ化）',
                     top_n_edges=60,
-                    use_plotly=True
+                    use_plotly=True,
+                    node_to_word=node_to_word_mapping_cat
                 )
 
                 if fig_cat is not None:
@@ -490,7 +537,8 @@ if df is not None and not df.empty:
                         graph_obj_cat,
                         title=f'{cat}の共起ネットワーク（グループ化）',
                         top_n_edges=60,
-                        use_plotly=False
+                        use_plotly=False,
+                        node_to_word=node_to_word_mapping_cat
                     )
                     if fig_cat_mpl is not None:
                         st.pyplot(fig_cat_mpl)
