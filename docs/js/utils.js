@@ -82,17 +82,26 @@ function backToHome() {
 function loadAnalysisContent(analysisType) {
     const contentArea = document.getElementById('analysis-content');
 
+    // PyScript初期化状態に応じたメッセージ
+    const initMessage = !pyScriptReady ? `
+        <div style="background: #fef3c7; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; text-align: center;">
+            <i class="fas fa-hourglass-half" style="color: #f59e0b; margin-right: 0.5rem;"></i>
+            <strong>PyScriptを初期化中...</strong> しばらくお待ちください
+        </div>
+    ` : '';
+
     // モダンなファイルアップロードUIを表示
     const uploadHTML = `
         <div class="upload-section">
-            <div class="upload-area" id="upload-area">
+            ${initMessage}
+            <div class="upload-area" id="upload-area" ${!pyScriptReady ? 'style="opacity: 0.5; pointer-events: none;"' : ''}>
                 <div class="upload-icon">
                     <i class="fas fa-cloud-upload-alt"></i>
                 </div>
                 <h3>データファイルをアップロード</h3>
                 <p class="upload-text">ファイルをドラッグ&ドロップ または クリックして選択</p>
-                <input type="file" id="data-file" accept=".xlsx,.xls,.csv" style="display: none;">
-                <button onclick="document.getElementById('data-file').click()" class="btn-upload">
+                <input type="file" id="data-file" accept=".xlsx,.xls,.csv" style="display: none;" ${!pyScriptReady ? 'disabled' : ''}>
+                <button onclick="document.getElementById('data-file').click()" class="btn-upload" id="upload-btn" ${!pyScriptReady ? 'disabled' : ''}>
                     <i class="fas fa-file-upload"></i> ファイルを選択
                 </button>
                 <p class="upload-hint">対応形式: Excel (.xlsx, .xls), CSV</p>
@@ -104,6 +113,40 @@ function loadAnalysisContent(analysisType) {
     `;
 
     contentArea.innerHTML = uploadHTML;
+
+    // PyScript初期化完了を待つ
+    if (!pyScriptReady) {
+        const checkReady = setInterval(() => {
+            if (pyScriptReady) {
+                clearInterval(checkReady);
+                // アップロードエリアを有効化
+                const uploadArea = document.getElementById('upload-area');
+                const fileInput = document.getElementById('data-file');
+                const uploadBtn = document.getElementById('upload-btn');
+
+                if (uploadArea) {
+                    uploadArea.style.opacity = '1';
+                    uploadArea.style.pointerEvents = 'auto';
+                }
+                if (fileInput) fileInput.disabled = false;
+                if (uploadBtn) uploadBtn.disabled = false;
+
+                // 初期化メッセージを削除
+                const initMsg = contentArea.querySelector('[style*="background: #fef3c7"]');
+                if (initMsg) initMsg.remove();
+
+                // イベントリスナーを再設定
+                setupUploadListeners();
+            }
+        }, 100);
+    } else {
+        // すでに初期化済みの場合はすぐにイベントリスナーを設定
+        setupUploadListeners();
+    }
+}
+
+// アップロードイベントリスナーを設定
+function setupUploadListeners() {
 
     // ファイルアップロードイベントを設定
     const fileInput = document.getElementById('data-file');
@@ -144,6 +187,20 @@ function loadAnalysisContent(analysisType) {
 async function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
+
+    // PyScript初期化チェック
+    if (!pyScriptReady) {
+        const fileInfo = document.getElementById('file-info');
+        fileInfo.innerHTML = `
+            <div class="error-message">
+                <i class="fas fa-hourglass-half"></i>
+                <p><strong>PyScriptがまだ初期化されていません</strong></p>
+                <p>数秒お待ちいただき、「PyScriptを初期化中...」のメッセージが消えてから再度お試しください。</p>
+            </div>
+        `;
+        fileInfo.style.display = 'block';
+        return;
+    }
 
     // ファイル情報を表示
     const fileInfo = document.getElementById('file-info');
