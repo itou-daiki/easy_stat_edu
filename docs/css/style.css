@@ -117,10 +117,20 @@ body {
 .hero-title {
     font-size: 3.5rem;
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     position: relative;
     z-index: 1;
     text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.hero-caption {
+    font-size: 0.95rem;
+    font-weight: 400;
+    opacity: 0.85;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.5px;
 }
 
 .hero-subtitle {
