@@ -574,3 +574,95 @@ table th {
 table tr:hover {
     background: var(--background);
 }
+
+/* 折りたたみ可能なセクション */
+.collapsible-section {
+    background: var(--surface);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.collapsible-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--background);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s ease;
+}
+
+.collapsible-header:hover {
+    background: #e8f2ff;
+}
+
+.collapsible-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.collapsible-header i.toggle-icon {
+    font-size: 1.25rem;
+    color: var(--primary-color);
+    transition: transform 0.3s ease;
+}
+
+.collapsible-header.collapsed i.toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.collapsible-content {
+    padding: 1.5rem;
+    max-height: 2000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.collapsible-content.collapsed {
+    max-height: 0;
+    padding: 0 1.5rem;
+}
+
+/* データ概要表示 */
+.data-overview {
+    margin-top: 1.5rem;
+}
+
+.data-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.data-stat-card {
+    background: var(--background);
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.data-stat-card .stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.data-stat-card .stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* テーブルのスクロール */
+.table-container {
+    overflow-x: auto;
+    margin: 1rem 0;
+}
