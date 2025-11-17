@@ -8,8 +8,6 @@ import networkx as nx
 import nlplot
 import numpy as np
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 from PIL import Image
 from janome.tokenizer import Tokenizer
@@ -102,10 +100,9 @@ else:
 
 
 def create_cooccurrence_network_with_communities(graph, title='共起ネットワーク',
-                                                  top_n_edges=60, use_plotly=True,
-                                                  node_to_word=None):
+                                                  top_n_edges=60, node_to_word=None):
     """
-    KH Coderのアルゴリズムに基づいた共起ネットワーク描画
+    KH Coderのアルゴリズムに基づいた共起ネットワーク描画（Matplotlib使用）
     コミュニティ検出でグループ化し、グループごとに色分け
 
     Parameters:
@@ -116,8 +113,6 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
         グラフのタイトル
     top_n_edges : int
         表示する上位エッジ数（KH Coderのデフォルトは60）
-    use_plotly : bool
-        Plotlyを使用するかどうか（Falseの場合はmatplotlib）
     node_to_word : dict or None
         ノード番号から単語へのマッピング辞書
         Noneの場合はノード番号をそのまま使用
@@ -183,122 +178,38 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
     except:
         degree_normalized = {node: 0.5 for node in subgraph.nodes()}
 
-    if use_plotly:
-        # Plotlyで描画
-        edge_trace = []
+    # matplotlibで描画
+    fig_net, ax = plt.subplots(figsize=(16, 12))
 
-        # エッジを描画
-        for edge in subgraph.edges(data=True):
-            x0, y0 = pos[edge[0]]
-            x1, y1 = pos[edge[1]]
-            weight = edge[2].get('weight', 1)
+    # コミュニティごとに色を設定
+    num_communities = len(set(node_to_community.values()))
+    cmap = plt.cm.get_cmap('Set3', num_communities)
+    node_colors = [cmap(node_to_community[node]) for node in subgraph.nodes()]
 
-            edge_trace.append(
-                go.Scatter(
-                    x=[x0, x1, None],
-                    y=[y0, y1, None],
-                    mode='lines',
-                    line=dict(width=1.0 + weight * 1.5, color='#888'),
-                    hoverinfo='none',
-                    showlegend=False
-                )
-            )
+    # ノードサイズを次数に基づいて設定（KH Coder準拠）
+    node_sizes = [400 + degree_normalized[node] * 2500 for node in subgraph.nodes()]
 
-        # コミュニティごとに色を設定
-        num_communities = len(set(node_to_community.values()))
-        colors = px.colors.qualitative.Set3[:num_communities] if num_communities <= len(px.colors.qualitative.Set3) else px.colors.sample_colorscale("turbo", [n/(num_communities-1) for n in range(num_communities)])
+    # エッジの太さを重みに基づいて設定
+    edge_weights = [subgraph[u][v].get('weight', 1) for u, v in subgraph.edges()]
+    max_weight = max(edge_weights) if edge_weights else 1
+    edge_widths = [1.0 + (w / max_weight) * 4.0 for w in edge_weights]
 
-        # ノードをコミュニティごとに描画
-        node_traces = []
-        for comm_id in set(node_to_community.values()):
-            nodes_in_comm = [node for node, c in node_to_community.items() if c == comm_id]
+    # 描画
+    nx.draw_networkx_edges(subgraph, pos, width=edge_widths, alpha=0.5, ax=ax, edge_color='#888888')
+    nx.draw_networkx_nodes(subgraph, pos, node_color=node_colors,
+                          node_size=node_sizes, alpha=0.9, ax=ax, linewidths=2, edgecolors='white')
+    
+    # ノード番号を単語に変換したラベルを作成
+    labels = {node: node_to_word.get(node, str(node)) for node in subgraph.nodes()}
+    nx.draw_networkx_labels(subgraph, pos, labels=labels, 
+                           font_size=10, font_weight='bold', ax=ax)
 
-            node_x = []
-            node_y = []
-            node_text = []
-            node_size = []
+    ax.set_title(title, fontsize=16, pad=20, fontweight='bold')
+    ax.axis('off')
+    plt.tight_layout()
 
-            for node in nodes_in_comm:
-                x, y = pos[node]
-                node_x.append(x)
-                node_y.append(y)
-                node_text.append(f"{node_to_word.get(node, str(node))}<br>グループ: {comm_id + 1}<br>中心性: {degree_normalized[node]:.3f}")
-                node_size.append(20 + degree_normalized[node] * 120)
+    return fig_net
 
-            node_trace = go.Scatter(
-                x=node_x,
-                y=node_y,
-                mode='markers+text',
-                text=[node_to_word.get(node, str(node)) for node in nodes_in_comm],
-                textposition='top center',
-                textfont=dict(
-                    size=12,
-                    family='IPAexGothic, "Hiragino Sans", "Noto Sans CJK JP", "Yu Gothic", Meiryo, Arial, sans-serif',
-                    color='black'
-                ),
-                hovertext=node_text,
-                hoverinfo='text',
-                marker=dict(
-                    size=node_size,
-                    color=colors[comm_id % len(colors)],
-                    line=dict(width=2, color='white')
-                ),
-                name=f'グループ {comm_id + 1}',
-                showlegend=True
-            )
-            node_traces.append(node_trace)
-
-        # 図を作成
-        fig = go.Figure(data=edge_trace + node_traces)
-
-        fig.update_layout(
-            title=dict(text=title, x=0.5, xanchor='center'),
-            showlegend=True,
-            hovermode='closest',
-            margin=dict(b=0, l=0, r=0, t=40),
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            plot_bgcolor='white',
-            width=1200,
-            height=800,
-            font=dict(
-                family='IPAexGothic, "Hiragino Sans", "Noto Sans CJK JP", "Yu Gothic", Meiryo, Arial, sans-serif',
-                size=12,
-                color='black'
-            )
-        )
-
-        return fig
-    else:
-        # matplotlibで描画
-        fig_net, ax = plt.subplots(figsize=(16, 12))
-
-        # コミュニティごとに色を設定
-        num_communities = len(set(node_to_community.values()))
-        cmap = plt.cm.get_cmap('Set3', num_communities)
-        node_colors = [cmap(node_to_community[node]) for node in subgraph.nodes()]
-
-        # ノードサイズを中心性に基づいて設定
-        node_sizes = [400 + degree_normalized[node] * 2500 for node in subgraph.nodes()]
-
-        # エッジの太さを重みに基づいて設定
-        edge_weights = [subgraph[u][v].get('weight', 1) for u, v in subgraph.edges()]
-        edge_widths = [1.0 + w * 2.0 for w in edge_weights]
-
-        # 描画
-        nx.draw_networkx_edges(subgraph, pos, width=edge_widths, alpha=0.5, ax=ax)
-        nx.draw_networkx_nodes(subgraph, pos, node_color=node_colors,
-                              node_size=node_sizes, alpha=0.9, ax=ax)
-        # ノード番号を単語に変換したラベルを作成
-        labels = {node: node_to_word.get(node, str(node)) for node in subgraph.nodes()}
-        nx.draw_networkx_labels(subgraph, pos, labels=labels, font_family='IPAexGothic',
-                               font_size=12, font_weight='bold', ax=ax)
-
-        ax.set_title(title, fontsize=14, pad=20)
-        ax.axis('off')
-        plt.tight_layout()
-
-        return fig_net
 
 
 # データフレームが有効な場合のみ解析開始
@@ -390,31 +301,17 @@ if df is not None and not df.empty:
         try:
             npt.build_graph(stopwords=stopwords_list, min_edge_frequency=1)
             
-            # ===== デバッグ開始 =====
-            st.write("=" * 50)
-            st.write("🔍 **全体の共起ネットワーク - デバッグ情報**")
-            st.write("=" * 50)
             
             # nlplotオブジェクトの属性を確認
-            st.write("### 1. nlplotオブジェクトの属性")
             npt_attrs = [attr for attr in dir(npt) if not attr.startswith("_")]
-            st.write(f"利用可能な属性数: {len(npt_attrs)}")
             graph_related = [a for a in npt_attrs if "graph" in a.lower() or a in ["G", "nwx", "node_df", "node_edge_df"]]
-            st.write(f"グラフ関連属性: {graph_related}")
             
             # node_dfの有無を確認
-            st.write("### 2. node_dfの確認")
-            st.write(f"hasattr(npt, \"node_df\"): {hasattr(npt, 'node_df')}")
             if hasattr(npt, "node_df"):
                 st.write(f"npt.node_df is None: {npt.node_df is None}")
                 if npt.node_df is not None:
-                    st.write(f"npt.node_df型: {type(npt.node_df)}")
-                    st.write(f"npt.node_df.shape: {npt.node_df.shape}")
-                    st.write(f"npt.node_df.columns: {list(npt.node_df.columns)}")
                     st.write("node_dfの最初の5行:")
-                    st.dataframe(npt.node_df.head(5))
 
-            st.write("### 3. マッピング作成")
             
             # nlplotのグラフオブジェクトを取得（バージョンによって属性名が異なる）
             # nlplotのグラフオブジェクトを取得（バージョンや実装によって属性名が異なる）
@@ -456,33 +353,20 @@ if df is not None and not df.empty:
                     import traceback
                     st.code(traceback.format_exc())
 
-            # Plotlyバージョンを試行
             fig_net = create_cooccurrence_network_with_communities(
                 graph_obj,
                 title='全体の共起ネットワーク（グループ化）',
                 top_n_edges=60,
-                use_plotly=True,
                 node_to_word=node_to_word_mapping
             )
 
             if fig_net is not None:
                 st.plotly_chart(fig_net, use_container_width=True)
-            else:
-                # matplotlibバージョンにフォールバック
-                fig_net_mpl = create_cooccurrence_network_with_communities(
-                    graph_obj,
-                    title='全体の共起ネットワーク（グループ化）',
-                    top_n_edges=60,
-                    use_plotly=False,
-                    node_to_word=node_to_word_mapping
-                )
-                if fig_net_mpl is not None:
-                    st.pyplot(fig_net_mpl)
-                    plt.close(fig_net_mpl)
         except Exception as e:
             st.error(f"共起ネットワークの生成中にエラーが発生しました: {e}")
 
         # 単語度数バー
+        from plotly import express as px
         freq = Counter(words.split())
         df_freq = pd.DataFrame(
             freq.items(), columns=['単語','度数']
@@ -588,24 +472,11 @@ if df is not None and not df.empty:
                     graph_obj_cat,
                     title=f'{cat}の共起ネットワーク（グループ化）',
                     top_n_edges=60,
-                    use_plotly=True,
                     node_to_word=node_to_word_mapping_cat
                 )
 
                 if fig_cat is not None:
                     st.plotly_chart(fig_cat, use_container_width=True)
-                else:
-                    # matplotlibにフォールバック
-                    fig_cat_mpl = create_cooccurrence_network_with_communities(
-                        graph_obj_cat,
-                        title=f'{cat}の共起ネットワーク（グループ化）',
-                        top_n_edges=60,
-                        use_plotly=False,
-                        node_to_word=node_to_word_mapping_cat
-                    )
-                    if fig_cat_mpl is not None:
-                        st.pyplot(fig_cat_mpl)
-                        plt.close(fig_cat_mpl)
             except Exception as e:
                 st.warning(f"カテゴリ別共起ネットワークの生成中にエラー: {e}")
 
