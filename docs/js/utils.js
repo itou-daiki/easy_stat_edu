@@ -35,9 +35,178 @@ window.addEventListener('load', function() {
             if (!pyScriptReady) {
                 console.warn('PyScript initialization timeout, but proceeding anyway');
             }
+            // メインアップロードの初期化
+            setupMainUpload();
         }
     }, 100);
 });
+
+// メインアップロード機能の初期化
+function setupMainUpload() {
+    const fileInput = document.getElementById('main-data-file');
+    const uploadArea = document.getElementById('main-upload-area');
+    const uploadBtn = document.getElementById('main-upload-btn');
+
+    // PyScript未初期化の場合は無効化
+    if (!pyScriptReady) {
+        uploadBtn.disabled = true;
+        uploadArea.style.opacity = '0.5';
+        uploadArea.style.pointerEvents = 'none';
+        return;
+    }
+
+    // ファイル選択イベント
+    fileInput.addEventListener('change', handleMainFileUpload);
+
+    // ドラッグ&ドロップ
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('drag-over');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('drag-over');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleMainFileUpload({ target: fileInput });
+        }
+    });
+
+    uploadArea.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') {
+            fileInput.click();
+        }
+    });
+}
+
+// メインファイルアップロード処理
+async function handleMainFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const fileInfo = document.getElementById('main-file-info');
+    fileInfo.innerHTML = `
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>ファイルを読み込んでいます...</p>
+            <p class="file-name">${file.name} (${(file.size / 1024).toFixed(2)} KB)</p>
+        </div>
+    `;
+    fileInfo.style.display = 'block';
+
+    try {
+        const fileContent = await readFileContent(file);
+        const loadFileData = getPyScriptFunction('load_file_data');
+        const success = await loadFileData(fileContent, file.name);
+
+        if (success) {
+            currentData = true;
+            fileInfo.innerHTML = `
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i>
+                    <p><strong>読み込み成功！</strong></p>
+                    <p class="file-name">${file.name}</p>
+                </div>
+            `;
+
+            // データ特性を取得して分析機能を有効化
+            await updateAnalysisAvailability();
+        } else {
+            throw new Error('データの読み込みに失敗しました');
+        }
+    } catch (error) {
+        console.error('File upload error:', error);
+        fileInfo.innerHTML = `
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <p><strong>エラーが発生しました</strong></p>
+                <p>${error.message}</p>
+                <button onclick="location.reload()" class="btn-retry">
+                    <i class="fas fa-redo"></i> 再試行
+                </button>
+            </div>
+        `;
+    }
+}
+
+// データ特性に基づいて利用可能な分析機能を更新
+async function updateAnalysisAvailability() {
+    try {
+        const getDataCharacteristics = getPyScriptFunction('get_data_characteristics');
+        const characteristics = await getDataCharacteristics();
+
+        console.log('Data characteristics:', characteristics);
+
+        // ナビゲーションセクションを表示
+        document.getElementById('navigation-section').style.display = 'block';
+
+        // 各機能カードの有効/無効を設定
+        const featureCards = document.querySelectorAll('.feature-card');
+        featureCards.forEach(card => {
+            const requires = card.getAttribute('data-requires');
+            const analysisType = card.getAttribute('data-analysis');
+
+            if (requires === 'none') {
+                // 常に利用可能
+                enableFeatureCard(card, analysisType);
+            } else if (requires) {
+                // 要件をチェック
+                const isAvailable = checkRequirements(requires, characteristics);
+                if (isAvailable) {
+                    enableFeatureCard(card, analysisType);
+                } else {
+                    disableFeatureCard(card);
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Failed to update analysis availability:', error);
+    }
+}
+
+// 要件をチェック
+function checkRequirements(requiresStr, characteristics) {
+    const requirements = requiresStr.split(',');
+
+    for (const req of requirements) {
+        const [type, countStr] = req.trim().split(':');
+        const requiredCount = parseInt(countStr);
+
+        if (type === 'numeric' && characteristics.numeric_columns < requiredCount) {
+            return false;
+        }
+        if (type === 'categorical' && characteristics.categorical_columns < requiredCount) {
+            return false;
+        }
+        if (type === 'text' && characteristics.text_columns < requiredCount) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// 機能カードを有効化
+function enableFeatureCard(card, analysisType) {
+    card.classList.remove('disabled');
+    card.onclick = () => loadAnalysis(analysisType);
+    const requirement = card.querySelector('.feature-card-requirement');
+    if (requirement) requirement.style.display = 'none';
+}
+
+// 機能カードを無効化
+function disableFeatureCard(card) {
+    card.classList.add('disabled');
+    card.onclick = null;
+    const requirement = card.querySelector('.feature-card-requirement');
+    if (requirement) requirement.style.display = 'block';
+}
 
 // 分析機能を読み込む
 function loadAnalysis(analysisType) {
@@ -82,15 +251,25 @@ function backToHome() {
 function loadAnalysisContent(analysisType) {
     const contentArea = document.getElementById('analysis-content');
 
-    // PyScript初期化状態に応じたメッセージ
-    const initMessage = !pyScriptReady ? `
-        <div style="background: #fef3c7; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; text-align: center;">
-            <i class="fas fa-hourglass-half" style="color: #f59e0b; margin-right: 0.5rem;"></i>
-            <strong>PyScriptを初期化中...</strong> しばらくお待ちください
-        </div>
-    ` : '';
+    // データが既にロードされている場合は直接分析コントロールを表示
+    if (currentData) {
+        contentArea.innerHTML = `
+            <div id="analysis-controls"></div>
+            <div id="analysis-results"></div>
+        `;
+        showAnalysisControls();
+        return;
+    }
 
-    // モダンなファイルアップロードUIを表示
+    // データ未ロード時のメッセージ
+    const initMessage = `
+        <div style="background: #fef3c7; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; text-align: center;">
+            <i class="fas fa-info-circle" style="color: #f59e0b; margin-right: 0.5rem;"></i>
+            <strong>トップページからデータをアップロードしてください</strong>
+        </div>
+    `;
+
+    // モダンなファイルアップロードUIを表示（非推奨）
     const uploadHTML = `
         <div class="upload-section">
             ${initMessage}

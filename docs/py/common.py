@@ -115,6 +115,56 @@ def get_column_names():
     return current_df.columns.tolist()
 
 
+def get_data_characteristics():
+    """
+    データの特性を分析して利用可能な分析手法を判定
+
+    Returns:
+    --------
+    dict
+        データ特性の辞書（数値変数数、カテゴリカル変数数、テキスト変数数など）
+    """
+    global current_df
+
+    if current_df is None:
+        return {
+            'numeric_columns': 0,
+            'categorical_columns': 0,
+            'text_columns': 0,
+            'total_columns': 0,
+            'row_count': 0
+        }
+
+    # 数値型の列を特定
+    numeric_cols = current_df.select_dtypes(include=[np.number]).columns.tolist()
+
+    # カテゴリカル型の列を特定（オブジェクト型でユニーク値が少ない列）
+    categorical_cols = []
+    text_cols = []
+
+    for col in current_df.select_dtypes(include=['object']).columns:
+        unique_ratio = current_df[col].nunique() / len(current_df)
+        # ユニーク値の比率が30%未満ならカテゴリカル、それ以外はテキスト
+        if unique_ratio < 0.3:
+            categorical_cols.append(col)
+        else:
+            text_cols.append(col)
+
+    characteristics = {
+        'numeric_columns': len(numeric_cols),
+        'categorical_columns': len(categorical_cols),
+        'text_columns': len(text_cols),
+        'total_columns': len(current_df.columns),
+        'row_count': len(current_df),
+        'numeric_column_names': numeric_cols,
+        'categorical_column_names': categorical_cols,
+        'text_column_names': text_cols
+    }
+
+    console.log(f"データ特性: {json.dumps(characteristics)}")
+    return characteristics
+
+
 def get_numeric_columns():
     """
     数値型の列名リストを取得
