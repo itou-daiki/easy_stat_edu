@@ -383,7 +383,7 @@ button:disabled {
 .upload-section-main {
     background: var(--surface);
     border-radius: 16px;
-    padding: 2rem;
+    padding: 1.5rem;
     margin-bottom: 2rem;
     box-shadow: var(--shadow-md);
 }
@@ -396,7 +396,7 @@ button:disabled {
 .upload-area {
     border: 3px dashed var(--border-color);
     border-radius: 16px;
-    padding: 3rem 2rem;
+    padding: 1.5rem 2rem;
     text-align: center;
     background: var(--background);
     transition: all 0.3s ease;
@@ -416,10 +416,16 @@ button:disabled {
 }
 
 .upload-icon {
-    font-size: 4rem;
+    font-size: 2.5rem;
     color: var(--primary-color);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     animation: float 3s ease-in-out infinite;
+}
+
+.upload-area h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
 }
 
 @keyframes float {
@@ -428,9 +434,9 @@ button:disabled {
 }
 
 .upload-text {
-    font-size: 1.125rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .btn-upload {
@@ -456,8 +462,8 @@ button:disabled {
 }
 
 .upload-hint {
-    margin-top: 1rem;
-    font-size: 0.875rem;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
 }
 

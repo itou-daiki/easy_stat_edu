@@ -47,6 +47,9 @@ function setupMainUpload() {
     const uploadArea = document.getElementById('main-upload-area');
     const uploadBtn = document.getElementById('main-upload-btn');
 
+    // 初期状態ですべての分析カードを無効化
+    disableAllFeatureCards();
+
     // PyScript未初期化の場合は無効化
     if (!pyScriptReady) {
         uploadBtn.disabled = true;
@@ -150,9 +153,6 @@ async function updateAnalysisAvailability() {
 
         console.log('Data characteristics:', characteristics);
 
-        // ナビゲーションセクションを表示
-        document.getElementById('navigation-section').style.display = 'block';
-
         // 各機能カードの有効/無効を設定
         const featureCards = document.querySelectorAll('.feature-card');
         featureCards.forEach(card => {
@@ -215,11 +215,20 @@ function disableFeatureCard(card) {
     if (requirement) requirement.style.display = 'block';
 }
 
+// すべての機能カードを無効化
+function disableAllFeatureCards() {
+    const featureCards = document.querySelectorAll('.feature-card');
+    featureCards.forEach(card => {
+        disableFeatureCard(card);
+    });
+}
+
 // 分析機能を読み込む
 function loadAnalysis(analysisType) {
     currentAnalysis = analysisType;
 
-    // ナビゲーションを非表示、分析エリアを表示
+    // アップロードセクションとナビゲーションを非表示、分析エリアを表示
+    document.getElementById('upload-section-main').style.display = 'none';
     document.querySelector('.navigation-section').style.display = 'none';
     document.getElementById('analysis-area').style.display = 'block';
 
@@ -247,11 +256,11 @@ function loadAnalysis(analysisType) {
 
 // ホームに戻る
 function backToHome() {
+    document.getElementById('upload-section-main').style.display = 'block';
     document.querySelector('.navigation-section').style.display = 'block';
     document.getElementById('analysis-area').style.display = 'none';
     document.getElementById('analysis-content').innerHTML = '';
     currentAnalysis = null;
-    currentData = null;
 }
 
 // 分析コンテンツを読み込む
