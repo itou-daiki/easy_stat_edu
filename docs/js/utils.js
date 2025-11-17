@@ -17,6 +17,9 @@ document.addEventListener('py-ready', function() {
         uploadArea.style.pointerEvents = 'auto';
         console.log('Upload area enabled');
     }
+
+    // PyScript初期化後にイベントリスナーを再設定
+    setupMainUploadListeners();
 });
 
 // PyScript関数を安全に取得するヘルパー関数
@@ -53,56 +56,77 @@ window.addEventListener('load', function() {
 
 // メインアップロード機能の初期化
 function setupMainUpload() {
-    const fileInput = document.getElementById('main-data-file');
-    const uploadArea = document.getElementById('main-upload-area');
-    const uploadBtn = document.getElementById('main-upload-btn');
-
     // 初期状態ですべての分析カードを無効化
     disableAllFeatureCards();
 
-    // PyScript未初期化の場合は無効化
+    // PyScript未初期化の場合は無効化状態にする
+    const uploadArea = document.getElementById('main-upload-area');
+    const uploadBtn = document.getElementById('main-upload-btn');
+
     if (!pyScriptReady) {
         uploadBtn.disabled = true;
         uploadArea.style.opacity = '0.5';
         uploadArea.style.pointerEvents = 'none';
+        console.log('Upload area disabled - waiting for PyScript');
+    } else {
+        // PyScript初期化済みの場合、すぐにリスナーを設定
+        setupMainUploadListeners();
+    }
+}
+
+// アップロードのイベントリスナーを設定
+function setupMainUploadListeners() {
+    const fileInput = document.getElementById('main-data-file');
+    const uploadArea = document.getElementById('main-upload-area');
+    const uploadBtn = document.getElementById('main-upload-btn');
+
+    if (!fileInput || !uploadArea || !uploadBtn) {
+        console.error('Upload elements not found');
         return;
     }
 
+    // 既存のリスナーを削除するため、一度クローンして置き換え
+    const newFileInput = fileInput.cloneNode(true);
+    fileInput.parentNode.replaceChild(newFileInput, fileInput);
+
     // ファイル選択イベント
-    fileInput.addEventListener('change', handleMainFileUpload);
+    newFileInput.addEventListener('change', handleMainFileUpload);
 
     // ボタンクリックイベント
-    uploadBtn.addEventListener('click', () => {
-        fileInput.click();
-    });
+    uploadBtn.onclick = () => {
+        newFileInput.click();
+    };
 
     // ドラッグ&ドロップ
-    uploadArea.addEventListener('dragover', (e) => {
+    uploadArea.ondragover = (e) => {
         e.preventDefault();
         uploadArea.classList.add('drag-over');
-    });
+    };
 
-    uploadArea.addEventListener('dragleave', () => {
+    uploadArea.ondragleave = () => {
         uploadArea.classList.remove('drag-over');
-    });
+    };
 
-    uploadArea.addEventListener('drop', (e) => {
+    uploadArea.ondrop = (e) => {
         e.preventDefault();
         uploadArea.classList.remove('drag-over');
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            fileInput.files = files;
-            handleMainFileUpload({ target: fileInput });
+            newFileInput.files = files;
+            handleMainFileUpload({ target: newFileInput });
         }
-    });
+    };
 
     // アップロードエリアクリックでファイル選択
-    uploadArea.addEventListener('click', (e) => {
-        // ボタンや子要素をクリックした場合は無視
-        if (e.target === uploadArea) {
-            fileInput.click();
+    uploadArea.onclick = (e) => {
+        // ボタンをクリックした場合は無視（ボタンが処理する）
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+            return;
         }
-    });
+        newFileInput.click();
+    };
+
+    console.log('Upload listeners set up successfully');
 }
 
 // メインファイルアップロード処理
