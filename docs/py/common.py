@@ -899,5 +899,655 @@ def run_pca_analysis(n_components=2):
         return f"<p>エラーが発生しました: {str(e)}</p>"
 
 
+# ==========================================
+# データクレンジング
+# ==========================================
+
+def run_data_cleansing():
+    """
+    データクレンジング機能のUI生成と処理
+
+    Returns:
+    --------
+    str
+        HTML形式のクレンジング結果
+    """
+    global current_df
+
+    if current_df is None:
+        return "<p>データが読み込まれていません</p>"
+
+    try:
+        # 欠損値情報
+        missing_info = current_df.isnull().sum()
+        missing_df = pd.DataFrame({
+            '変数名': missing_info.index,
+            '欠損値数': missing_info.values,
+            '欠損率 (%)': (missing_info.values / len(current_df) * 100).round(2)
+        })
+
+        # 重複行情報
+        n_duplicates = current_df.duplicated().sum()
+
+        # データ型情報
+        dtypes_df = pd.DataFrame({
+            '変数名': current_df.columns,
+            'データ型': [str(dtype) for dtype in current_df.dtypes]
+        })
+
+        # 基本統計量
+        numeric_cols = get_numeric_columns()
+        if len(numeric_cols) > 0:
+            stats_html = current_df[numeric_cols].describe().to_html(classes='table')
+        else:
+            stats_html = "<p>数値型の変数がありません</p>"
+
+        # 結果をHTML形式で返す
+        result_html = f"""
+        <div class="analysis-results">
+            <h3>データクレンジング情報</h3>
+
+            <div class="results-summary">
+                <h4>データ概要</h4>
+                <table class="table">
+                    <tr><th>項目</th><th>値</th></tr>
+                    <tr><td>総行数</td><td>{len(current_df)}</td></tr>
+                    <tr><td>総列数</td><td>{len(current_df.columns)}</td></tr>
+                    <tr><td>重複行数</td><td>{n_duplicates}</td></tr>
+                </table>
+
+                <h4>欠損値情報</h4>
+                {missing_df.to_html(classes='table', index=False)}
+
+                <h4>データ型</h4>
+                {dtypes_df.to_html(classes='table', index=False)}
+
+                <h4>基本統計量（数値変数）</h4>
+                {stats_html}
+            </div>
+
+            <div class="cleansing-actions">
+                <h4>クレンジング操作</h4>
+                <p>以下の操作をJavaScript側で実装してください:</p>
+                <ul>
+                    <li>欠損値の除去（行単位または列単位）</li>
+                    <li>欠損値の補完（平均値、中央値、最頻値）</li>
+                    <li>重複行の除去</li>
+                    <li>外れ値の検出と除去</li>
+                </ul>
+            </div>
+        </div>
+        """
+
+        return result_html
+
+    except Exception as e:
+        return f"<p>エラーが発生しました: {str(e)}</p>"
+
+
+def remove_missing_rows():
+    """欠損値を含む行を削除"""
+    global current_df
+    if current_df is not None:
+        original_len = len(current_df)
+        current_df = current_df.dropna()
+        removed = original_len - len(current_df)
+        return f"✅ {removed}行を削除しました（残り: {len(current_df)}行）"
+    return "❌ データが読み込まれていません"
+
+
+def remove_duplicates():
+    """重複行を削除"""
+    global current_df
+    if current_df is not None:
+        original_len = len(current_df)
+        current_df = current_df.drop_duplicates()
+        removed = original_len - len(current_df)
+        return f"✅ {removed}行の重複を削除しました（残り: {len(current_df)}行）"
+    return "❌ データが読み込まれていません"
+
+
+def fill_missing_mean():
+    """欠損値を平均値で補完（数値列のみ）"""
+    global current_df
+    if current_df is not None:
+        numeric_cols = get_numeric_columns()
+        for col in numeric_cols:
+            current_df[col].fillna(current_df[col].mean(), inplace=True)
+        return f"✅ 数値列の欠損値を平均値で補完しました"
+    return "❌ データが読み込まれていません"
+
+
+# ==========================================
+# 二要因分散分析
+# ==========================================
+
+def run_two_way_anova(factor1, factor2, dependent_var):
+    """
+    二要因分散分析を実行
+
+    Parameters:
+    -----------
+    factor1 : str
+        第1要因の列名
+    factor2 : str
+        第2要因の列名
+    dependent_var : str
+        従属変数の列名
+
+    Returns:
+    --------
+    str
+        HTML形式の分析結果
+    """
+    global current_df
+
+    if current_df is None:
+        return "<p>データが読み込まれていません</p>"
+
+    try:
+        # データ抽出
+        data = current_df[[factor1, factor2, dependent_var]].dropna()
+
+        if len(data) < 3:
+            return "<p>データが不足しています（最低3件必要）</p>"
+
+        # グループごとの記述統計量
+        grouped = data.groupby([factor1, factor2])[dependent_var].agg(['mean', 'std', 'count'])
+
+        # 簡易的な二要因分散分析（statsmodelsがない場合の代替）
+        # 主効果と交互作用を個別に検定
+
+        # 第1要因の主効果
+        groups_f1 = [group[dependent_var].values for name, group in data.groupby(factor1)]
+        f1_stat, f1_pvalue = stats.f_oneway(*groups_f1)
+
+        # 第2要因の主効果
+        groups_f2 = [group[dependent_var].values for name, group in data.groupby(factor2)]
+        f2_stat, f2_pvalue = stats.f_oneway(*groups_f2)
+
+        # 箱ひげ図を作成
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+        # 第1要因の箱ひげ図
+        data.boxplot(column=dependent_var, by=factor1, ax=axes[0])
+        axes[0].set_title(f'{factor1}の主効果')
+        axes[0].set_xlabel(factor1)
+        axes[0].set_ylabel(dependent_var)
+
+        # 第2要因の箱ひげ図
+        data.boxplot(column=dependent_var, by=factor2, ax=axes[1])
+        axes[1].set_title(f'{factor2}の主効果')
+        axes[1].set_xlabel(factor2)
+        axes[1].set_ylabel(dependent_var)
+
+        plt.tight_layout()
+
+        # グラフをbase64エンコード
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+        buf.seek(0)
+        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+        plt.close()
+
+        # 結果をHTML形式で返す
+        result_html = f"""
+        <div class="analysis-results">
+            <h3>二要因分散分析結果</h3>
+
+            <div class="results-summary">
+                <h4>記述統計量</h4>
+                {grouped.to_html(classes='table')}
+
+                <h4>主効果の検定</h4>
+                <table class="table">
+                    <tr><th>要因</th><th>F統計量</th><th>p値</th><th>統計的有意性</th></tr>
+                    <tr>
+                        <td>{factor1}</td>
+                        <td>{f1_stat:.4f}</td>
+                        <td>{f1_pvalue:.4f}</td>
+                        <td>{'有意 (p < 0.05)' if f1_pvalue < 0.05 else '有意ではない'}</td>
+                    </tr>
+                    <tr>
+                        <td>{factor2}</td>
+                        <td>{f2_stat:.4f}</td>
+                        <td>{f2_pvalue:.4f}</td>
+                        <td>{'有意 (p < 0.05)' if f2_pvalue < 0.05 else '有意ではない'}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="results-interpretation">
+                <h4>結果の解釈</h4>
+                <p><strong>{factor1}の主効果:</strong>
+                    {'統計的に有意な効果があります' if f1_pvalue < 0.05 else '統計的に有意な効果は認められませんでした'}
+                </p>
+                <p><strong>{factor2}の主効果:</strong>
+                    {'統計的に有意な効果があります' if f2_pvalue < 0.05 else '統計的に有意な効果は認められませんでした'}
+                </p>
+                <p class="text-muted">注: この実装では交互作用の検定は含まれていません</p>
+            </div>
+
+            <div class="results-plot">
+                <h4>箱ひげ図</h4>
+                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+            </div>
+        </div>
+        """
+
+        return result_html
+
+    except Exception as e:
+        return f"<p>エラーが発生しました: {str(e)}</p>"
+
+
+# ==========================================
+# 重回帰分析
+# ==========================================
+
+def run_multiple_regression(x_vars, y_var):
+    """
+    重回帰分析を実行
+
+    Parameters:
+    -----------
+    x_vars : list
+        説明変数の列名リスト
+    y_var : str
+        目的変数の列名
+
+    Returns:
+    --------
+    str
+        HTML形式の分析結果
+    """
+    global current_df
+
+    if current_df is None:
+        return "<p>データが読み込まれていません</p>"
+
+    try:
+        from sklearn.linear_model import LinearRegression
+        from sklearn.metrics import r2_score, mean_squared_error
+
+        # データ抽出
+        all_vars = x_vars + [y_var]
+        data = current_df[all_vars].dropna()
+
+        if len(data) < len(x_vars) + 2:
+            return f"<p>データが不足しています（最低{len(x_vars) + 2}件必要）</p>"
+
+        X = data[x_vars].values
+        y = data[y_var].values
+
+        # 重回帰分析を実行
+        model = LinearRegression()
+        model.fit(X, y)
+
+        # 予測値
+        y_pred = model.predict(X)
+
+        # 決定係数
+        r_squared = r2_score(y, y_pred)
+
+        # 調整済み決定係数
+        n = len(data)
+        p = len(x_vars)
+        adj_r_squared = 1 - (1 - r_squared) * (n - 1) / (n - p - 1)
+
+        # RMSE
+        rmse = np.sqrt(mean_squared_error(y, y_pred))
+
+        # 回帰係数のDataFrame
+        coef_df = pd.DataFrame({
+            '変数': ['切片'] + x_vars,
+            '係数': [model.intercept_] + list(model.coef_)
+        })
+
+        # グラフを作成
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+        # 予測値vs実測値
+        ax1.scatter(y, y_pred, alpha=0.6)
+        ax1.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', lw=2)
+        ax1.set_xlabel('実測値')
+        ax1.set_ylabel('予測値')
+        ax1.set_title('予測値 vs 実測値')
+        ax1.grid(True, alpha=0.3)
+
+        # 残差プロット
+        residuals = y - y_pred
+        ax2.scatter(y_pred, residuals, alpha=0.6)
+        ax2.axhline(y=0, color='r', linestyle='--')
+        ax2.set_xlabel('予測値')
+        ax2.set_ylabel('残差')
+        ax2.set_title('残差プロット')
+        ax2.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+
+        # グラフをbase64エンコード
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+        buf.seek(0)
+        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+        plt.close()
+
+        # 回帰式を作成
+        equation_parts = [f"{model.intercept_:.4f}"]
+        for var, coef in zip(x_vars, model.coef_):
+            sign = '+' if coef >= 0 else ''
+            equation_parts.append(f"{sign}{coef:.4f}×{var}")
+        equation = f"{y_var} = " + " ".join(equation_parts)
+
+        # 結果をHTML形式で返す
+        result_html = f"""
+        <div class="analysis-results">
+            <h3>重回帰分析結果</h3>
+
+            <div class="results-summary">
+                <h4>モデルの適合度</h4>
+                <table class="table">
+                    <tr><th>項目</th><th>値</th></tr>
+                    <tr><td>決定係数 (R²)</td><td>{r_squared:.4f}</td></tr>
+                    <tr><td>調整済みR²</td><td>{adj_r_squared:.4f}</td></tr>
+                    <tr><td>RMSE</td><td>{rmse:.4f}</td></tr>
+                    <tr><td>サンプルサイズ</td><td>{n}</td></tr>
+                    <tr><td>説明変数数</td><td>{p}</td></tr>
+                </table>
+
+                <h4>回帰係数</h4>
+                {coef_df.to_html(classes='table', index=False)}
+
+                <h4>回帰式</h4>
+                <p><strong>{equation}</strong></p>
+            </div>
+
+            <div class="results-interpretation">
+                <h4>結果の解釈</h4>
+                <p><strong>モデルの説明力:</strong>
+                    このモデルは{y_var}の変動の{r_squared*100:.1f}%を説明しています
+                </p>
+                <p><strong>調整済みR²:</strong>
+                    変数の数を考慮した説明力は{adj_r_squared*100:.1f}%です
+                </p>
+            </div>
+
+            <div class="results-plot">
+                <h4>グラフ</h4>
+                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+            </div>
+        </div>
+        """
+
+        return result_html
+
+    except Exception as e:
+        return f"<p>エラーが発生しました: {str(e)}</p>"
+
+
+# ==========================================
+# 因子分析
+# ==========================================
+
+def run_factor_analysis(n_factors=2):
+    """
+    因子分析を実行
+
+    Parameters:
+    -----------
+    n_factors : int
+        抽出する因子数
+
+    Returns:
+    --------
+    str
+        HTML形式の分析結果
+    """
+    global current_df
+
+    if current_df is None:
+        return "<p>データが読み込まれていません</p>"
+
+    try:
+        # 数値列のみを抽出
+        numeric_cols = get_numeric_columns()
+
+        if len(numeric_cols) < 3:
+            return "<p>因子分析には最低3つの数値変数が必要です</p>"
+
+        # データ抽出と欠損値除去
+        data = current_df[numeric_cols].dropna()
+
+        if len(data) < n_factors * 3:
+            return f"<p>データが不足しています（最低{n_factors * 3}件推奨）</p>"
+
+        # PCAで代替（本格的な因子分析はfactor_analyzerが必要）
+        from sklearn.decomposition import PCA
+        from sklearn.preprocessing import StandardScaler
+
+        # データを標準化
+        scaler = StandardScaler()
+        data_scaled = scaler.fit_transform(data)
+
+        # PCA実行
+        pca = PCA(n_components=min(n_factors, len(numeric_cols)))
+        pca_result = pca.fit_transform(data_scaled)
+
+        # 因子負荷量（主成分負荷量）
+        loadings = pca.components_.T * np.sqrt(pca.explained_variance_)
+        loadings_df = pd.DataFrame(
+            loadings,
+            columns=[f'因子{i+1}' for i in range(loadings.shape[1])],
+            index=numeric_cols
+        )
+
+        # 寄与率
+        explained_variance = pca.explained_variance_ratio_ * 100
+        cumulative_variance = np.cumsum(explained_variance)
+
+        # グラフを作成
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+        # スクリープロット
+        ax1.bar(range(1, len(explained_variance) + 1), explained_variance)
+        ax1.set_xlabel('因子')
+        ax1.set_ylabel('寄与率 (%)')
+        ax1.set_title('スクリープロット')
+        ax1.grid(True, alpha=0.3)
+
+        # 因子負荷量のヒートマップ
+        im = ax2.imshow(loadings, cmap='RdBu_r', aspect='auto', vmin=-1, vmax=1)
+        ax2.set_xticks(range(loadings.shape[1]))
+        ax2.set_xticklabels([f'因子{i+1}' for i in range(loadings.shape[1])])
+        ax2.set_yticks(range(len(numeric_cols)))
+        ax2.set_yticklabels(numeric_cols)
+        ax2.set_title('因子負荷量')
+        plt.colorbar(im, ax=ax2)
+
+        plt.tight_layout()
+
+        # グラフをbase64エンコード
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+        buf.seek(0)
+        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+        plt.close()
+
+        # 寄与率テーブル
+        variance_df = pd.DataFrame({
+            '因子': [f'因子{i+1}' for i in range(len(explained_variance))],
+            '寄与率 (%)': explained_variance,
+            '累積寄与率 (%)': cumulative_variance
+        })
+
+        # 結果をHTML形式で返す
+        result_html = f"""
+        <div class="analysis-results">
+            <h3>因子分析結果</h3>
+            <p class="text-muted">注: この実装はPCAベースの簡易版です</p>
+
+            <div class="results-summary">
+                <h4>寄与率</h4>
+                {variance_df.to_html(classes='table', index=False)}
+
+                <h4>因子負荷量</h4>
+                {loadings_df.to_html(classes='table')}
+
+                <h4>分析情報</h4>
+                <table class="table">
+                    <tr><th>項目</th><th>値</th></tr>
+                    <tr><td>使用変数数</td><td>{len(numeric_cols)}</td></tr>
+                    <tr><td>サンプルサイズ</td><td>{len(data)}</td></tr>
+                    <tr><td>抽出因子数</td><td>{pca_result.shape[1]}</td></tr>
+                    <tr><td>累積寄与率</td><td>{cumulative_variance[-1]:.2f}%</td></tr>
+                </table>
+            </div>
+
+            <div class="results-interpretation">
+                <h4>結果の解釈</h4>
+                <p><strong>因子数:</strong> {pca_result.shape[1]}個の因子を抽出しました</p>
+                <p><strong>累積寄与率:</strong> {cumulative_variance[-1]:.1f}%の情報を保持しています</p>
+                <p><strong>因子負荷量:</strong> 絶対値が大きいほど、その因子との関連が強いことを示します</p>
+            </div>
+
+            <div class="results-plot">
+                <h4>グラフ</h4>
+                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+            </div>
+        </div>
+        """
+
+        return result_html
+
+    except Exception as e:
+        return f"<p>エラーが発生しました: {str(e)}</p>"
+
+
+# ==========================================
+# テキストマイニング（簡易版）
+# ==========================================
+
+def run_text_mining(text_column):
+    """
+    テキストマイニングを実行（簡易版）
+
+    Parameters:
+    -----------
+    text_column : str
+        テキストデータの列名
+
+    Returns:
+    --------
+    str
+        HTML形式の分析結果
+    """
+    global current_df
+
+    if current_df is None:
+        return "<p>データが読み込まれていません</p>"
+
+    try:
+        import re
+        from collections import Counter
+
+        # テキストデータを抽出
+        texts = current_df[text_column].dropna()
+
+        if len(texts) == 0:
+            return "<p>テキストデータがありません</p>"
+
+        # 全テキストを結合
+        all_text = ' '.join(texts.astype(str))
+
+        # 簡易的な単語分割（日本語と英語の両方に対応）
+        # 日本語: 1-3文字の連続
+        # 英語: アルファベットの連続
+        japanese_words = re.findall(r'[ぁ-んァ-ヶー一-龯]{1,3}', all_text)
+        english_words = re.findall(r'[a-zA-Z]{2,}', all_text.lower())
+
+        # 数字を除外
+        words = [w for w in japanese_words + english_words if not w.isdigit()]
+
+        # ストップワード（除外する一般的な単語）
+        stopwords = set(['の', 'に', 'は', 'を', 'た', 'が', 'で', 'て', 'と', 'し', 'れ', 'さ',
+                         'ある', 'いる', 'も', 'する', 'から', 'な', 'こ', 'として', 'い', 'や',
+                         'れる', 'など', 'なっ', 'ない', 'この', 'ため', 'その', 'あっ', 'よう',
+                         'また', 'もの', 'という', 'あり', 'まで', 'られ', 'なる', 'へ', 'か',
+                         'だ', 'これ', 'によって', 'により', 'おり', 'より', 'による', 'ず',
+                         'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+                         'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during'])
+
+        # ストップワードを除外
+        filtered_words = [w for w in words if w not in stopwords and len(w) > 1]
+
+        # 単語の頻度をカウント
+        word_counts = Counter(filtered_words)
+        top_words = word_counts.most_common(30)
+
+        # 頻出単語のDataFrame
+        word_df = pd.DataFrame(top_words, columns=['単語', '出現回数'])
+
+        # 棒グラフを作成
+        fig, ax = plt.subplots(figsize=(12, 8))
+        words_list = [w[0] for w in top_words[:20]]
+        counts_list = [w[1] for w in top_words[:20]]
+
+        ax.barh(range(len(words_list)), counts_list)
+        ax.set_yticks(range(len(words_list)))
+        ax.set_yticklabels(words_list)
+        ax.invert_yaxis()
+        ax.set_xlabel('出現回数')
+        ax.set_title('頻出単語 TOP 20')
+        ax.grid(True, alpha=0.3, axis='x')
+
+        plt.tight_layout()
+
+        # グラフをbase64エンコード
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+        buf.seek(0)
+        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+        plt.close()
+
+        # 結果をHTML形式で返す
+        result_html = f"""
+        <div class="analysis-results">
+            <h3>テキストマイニング結果（簡易版）</h3>
+            <p class="text-muted">注: この実装は簡易的な単語分割を使用しています</p>
+
+            <div class="results-summary">
+                <h4>分析情報</h4>
+                <table class="table">
+                    <tr><th>項目</th><th>値</th></tr>
+                    <tr><td>文書数</td><td>{len(texts)}</td></tr>
+                    <tr><td>総単語数</td><td>{len(words)}</td></tr>
+                    <tr><td>ユニーク単語数</td><td>{len(set(words))}</td></tr>
+                    <tr><td>フィルタ後単語数</td><td>{len(filtered_words)}</td></tr>
+                </table>
+
+                <h4>頻出単語 TOP 30</h4>
+                {word_df.to_html(classes='table', index=False)}
+            </div>
+
+            <div class="results-interpretation">
+                <h4>結果の解釈</h4>
+                <p>最も頻出する単語: <strong>{top_words[0][0]}</strong> ({top_words[0][1]}回)</p>
+                <p>上位の単語から、テキスト全体のテーマや傾向を読み取ることができます</p>
+            </div>
+
+            <div class="results-plot">
+                <h4>頻出単語グラフ</h4>
+                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+            </div>
+        </div>
+        """
+
+        return result_html
+
+    except Exception as e:
+        return f"<p>エラーが発生しました: {str(e)}</p>"
+
+
 # 初期化メッセージ
 console.log("easyStat PyScript共通関数が読み込まれました")
