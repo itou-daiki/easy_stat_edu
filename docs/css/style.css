@@ -344,6 +344,143 @@ button:disabled {
     transform: none;
 }
 
+/* アップロードエリア */
+.upload-section {
+    margin-bottom: 2rem;
+}
+
+.upload-area {
+    border: 3px dashed var(--border-color);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: var(--background);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.upload-area:hover {
+    border-color: var(--primary-color);
+    background: rgba(30, 144, 255, 0.05);
+}
+
+.upload-area.drag-over {
+    border-color: var(--primary-color);
+    background: rgba(30, 144, 255, 0.1);
+    transform: scale(1.02);
+}
+
+.upload-icon {
+    font-size: 4rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.upload-text {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.btn-upload {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.875rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-upload:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.upload-hint {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* ファイル情報 */
+.file-info {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+}
+
+.loading {
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.loading i {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.success-message {
+    text-align: center;
+    color: #10b981;
+}
+
+.success-message i {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.error-message {
+    text-align: center;
+    color: #ef4444;
+}
+
+.error-message i {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.file-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-top: 0.5rem;
+}
+
+.btn-retry {
+    margin-top: 1rem;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-retry:hover {
+    background: var(--primary-dark);
+}
+
 /* ユーティリティクラス */
 .mb-1 { margin-bottom: 0.5rem; }
 .mb-2 { margin-bottom: 1rem; }

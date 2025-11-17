@@ -36,27 +36,65 @@ def load_file_data(file_content, filename):
     global current_df
 
     try:
+        console.log(f"ファイル読み込み開始: {filename}")
+
         if filename.endswith('.csv'):
             # CSVファイルの場合
+            console.log("CSV形式として読み込み中...")
             try:
+                # UTF-8で試行
                 current_df = pd.read_csv(io.StringIO(file_content))
-            except UnicodeDecodeError:
-                current_df = pd.read_csv(io.StringIO(file_content), encoding='shift_jis')
+                console.log("UTF-8で読み込み成功")
+            except (UnicodeDecodeError, Exception) as e:
+                console.log(f"UTF-8失敗、Shift-JISで試行: {str(e)}")
+                try:
+                    # Shift-JISで試行
+                    current_df = pd.read_csv(io.StringIO(file_content), encoding='shift_jis')
+                    console.log("Shift-JISで読み込み成功")
+                except Exception as e2:
+                    console.log(f"Shift-JISも失敗: {str(e2)}")
+                    # ISO-8859-1で最終試行
+                    current_df = pd.read_csv(io.StringIO(file_content), encoding='latin1')
+                    console.log("Latin1で読み込み成功")
 
         elif filename.endswith(('.xlsx', '.xls')):
             # Excelファイルの場合
-            bytes_data = bytes(file_content)
+            console.log("Excel形式として読み込み中...")
+
+            # ArrayBufferをbytesに変換
+            if isinstance(file_content, str):
+                # 文字列の場合はエンコード
+                bytes_data = file_content.encode('latin1')
+            else:
+                # ArrayBufferの場合
+                try:
+                    # PyodideのArrayBufferをbytesに変換
+                    bytes_data = file_content.to_bytes()
+                except:
+                    # 別の方法で変換
+                    bytes_data = bytes(file_content)
+
             current_df = pd.read_excel(io.BytesIO(bytes_data))
+            console.log("Excel読み込み成功")
 
         else:
-            raise ValueError("対応していないファイル形式です")
+            raise ValueError(f"対応していないファイル形式です: {filename}")
+
+        # データの検証
+        if current_df is None or current_df.empty:
+            raise ValueError("データが空です")
 
         # 基本情報をコンソールに出力
-        console.log(f"データ読み込み成功: {len(current_df)}行, {len(current_df.columns)}列")
+        n_rows, n_cols = current_df.shape
+        console.log(f"✅ データ読み込み成功: {n_rows}行, {n_cols}列")
+        console.log(f"列名: {list(current_df.columns)}")
+
         return True
 
     except Exception as e:
-        console.error(f"ファイル読み込みエラー: {str(e)}")
+        console.error(f"❌ ファイル読み込みエラー: {str(e)}")
+        import traceback
+        console.error(traceback.format_exc())
         return False
 
 

@@ -54,12 +54,22 @@ function backToHome() {
 function loadAnalysisContent(analysisType) {
     const contentArea = document.getElementById('analysis-content');
 
-    // 基本的なファイルアップロードUIを表示
+    // モダンなファイルアップロードUIを表示
     const uploadHTML = `
-        <div class="upload-section mb-3">
-            <h3>データファイルをアップロード</h3>
-            <input type="file" id="data-file" accept=".xlsx,.xls,.csv" class="mb-2">
-            <p class="text-muted">Excel (.xlsx, .xls) または CSV ファイルをアップロードしてください</p>
+        <div class="upload-section">
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h3>データファイルをアップロード</h3>
+                <p class="upload-text">ファイルをドラッグ&ドロップ または クリックして選択</p>
+                <input type="file" id="data-file" accept=".xlsx,.xls,.csv" style="display: none;">
+                <button onclick="document.getElementById('data-file').click()" class="btn-upload">
+                    <i class="fas fa-file-upload"></i> ファイルを選択
+                </button>
+                <p class="upload-hint">対応形式: Excel (.xlsx, .xls), CSV</p>
+            </div>
+            <div id="file-info" class="file-info" style="display: none;"></div>
         </div>
         <div id="analysis-controls" style="display: none;"></div>
         <div id="analysis-results"></div>
@@ -68,7 +78,38 @@ function loadAnalysisContent(analysisType) {
     contentArea.innerHTML = uploadHTML;
 
     // ファイルアップロードイベントを設定
-    document.getElementById('data-file').addEventListener('change', handleFileUpload);
+    const fileInput = document.getElementById('data-file');
+    const uploadArea = document.getElementById('upload-area');
+
+    fileInput.addEventListener('change', handleFileUpload);
+
+    // ドラッグ&ドロップイベント
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('drag-over');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('drag-over');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFileUpload({ target: fileInput });
+        }
+    });
+
+    // クリックでファイル選択
+    uploadArea.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') {
+            fileInput.click();
+        }
+    });
 }
 
 // ファイルアップロード処理
@@ -76,30 +117,78 @@ async function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // ファイル読み込み
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        try {
-            // PyScriptのload_data関数を呼び出す
-            const data = await pyscript.interpreter.globals.get('load_file_data')(
-                e.target.result,
-                file.name
-            );
+    // ファイル情報を表示
+    const fileInfo = document.getElementById('file-info');
+    fileInfo.innerHTML = `
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>ファイルを読み込んでいます...</p>
+            <p class="file-name">${file.name} (${(file.size / 1024).toFixed(2)} KB)</p>
+        </div>
+    `;
+    fileInfo.style.display = 'block';
 
-            currentData = data;
+    try {
+        // ファイルを読み込み
+        const fileContent = await readFileContent(file);
+
+        // PyScriptのload_file_data関数を呼び出す
+        const loadFileData = pyscript.interpreter.globals.get('load_file_data');
+        const success = await loadFileData(fileContent, file.name);
+
+        if (success) {
+            currentData = true;
+
+            // 成功メッセージ
+            fileInfo.innerHTML = `
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i>
+                    <p><strong>読み込み成功！</strong></p>
+                    <p class="file-name">${file.name}</p>
+                </div>
+            `;
 
             // 分析コントロールを表示
-            showAnalysisControls();
-        } catch (error) {
-            alert('ファイルの読み込みに失敗しました: ' + error.message);
+            setTimeout(() => {
+                showAnalysisControls();
+            }, 500);
+        } else {
+            throw new Error('データの読み込みに失敗しました');
         }
-    };
-
-    if (file.name.endsWith('.csv')) {
-        reader.readAsText(file);
-    } else {
-        reader.readAsArrayBuffer(file);
+    } catch (error) {
+        console.error('File upload error:', error);
+        fileInfo.innerHTML = `
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <p><strong>エラーが発生しました</strong></p>
+                <p>${error.message}</p>
+                <button onclick="location.reload()" class="btn-retry">
+                    <i class="fas fa-redo"></i> 再試行
+                </button>
+            </div>
+        `;
     }
+}
+
+// ファイル内容を読み込む補助関数
+function readFileContent(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            resolve(e.target.result);
+        };
+
+        reader.onerror = function(e) {
+            reject(new Error('ファイルの読み込みに失敗しました'));
+        };
+
+        if (file.name.endsWith('.csv')) {
+            reader.readAsText(file);
+        } else {
+            reader.readAsArrayBuffer(file);
+        }
+    });
 }
 
 // 分析コントロールを表示
