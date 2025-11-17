@@ -164,19 +164,24 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
         # networkx.communityが利用できない場合
         node_to_community = {node: 0 for node in subgraph.nodes()}
 
-    # レイアウト計算（KH CoderはKamada-Kawaiを使用）
+    # レイアウト計算（KH CoderはFruchterman-Reingoldを使用）
     try:
-        # scaleパラメータでノード間の距離を調整（大きいほど広がる）
+        # Fruchterman-Reingoldアルゴリズム（KH Coderの標準）
+        # k値でノード間の理想的な距離を調整
+        pos = nx.spring_layout(subgraph, k=2.0, iterations=100, seed=42)
+    except:
+        # フォールバック: Kamada-Kawai layout
         pos = nx.kamada_kawai_layout(subgraph, scale=2.0)
-    except:
-        # フォールバック: spring layout（k値を大きくしてノード間の距離を広げる）
-        pos = nx.spring_layout(subgraph, k=2.0, iterations=100)
 
-    # ノードの中心性を計算（ノードサイズ用）
+    # ノードの次数を計算（ノードサイズ用、KH Coder準拠）
+    # KH Coderでは共起ネットワーク内での接続数（次数）に基づいてサイズを決定
     try:
-        degree_centrality = nx.degree_centrality(subgraph)
+        node_degrees = dict(subgraph.degree())
+        # 正規化（0-1の範囲に）
+        max_degree = max(node_degrees.values()) if node_degrees else 1
+        degree_normalized = {node: deg / max_degree for node, deg in node_degrees.items()}
     except:
-        degree_centrality = {node: 1 for node in subgraph.nodes()}
+        degree_normalized = {node: 0.5 for node in subgraph.nodes()}
 
     if use_plotly:
         # Plotlyで描画
@@ -193,7 +198,7 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
                     x=[x0, x1, None],
                     y=[y0, y1, None],
                     mode='lines',
-                    line=dict(width=0.5 + weight * 0.5, color='#888'),
+                    line=dict(width=1.0 + weight * 1.5, color='#888'),
                     hoverinfo='none',
                     showlegend=False
                 )
@@ -217,8 +222,8 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
                 x, y = pos[node]
                 node_x.append(x)
                 node_y.append(y)
-                node_text.append(f"{node_to_word.get(node, str(node))}<br>グループ: {comm_id + 1}<br>中心性: {degree_centrality[node]:.3f}")
-                node_size.append(15 + degree_centrality[node] * 80)
+                node_text.append(f"{node_to_word.get(node, str(node))}<br>グループ: {comm_id + 1}<br>中心性: {degree_normalized[node]:.3f}")
+                node_size.append(20 + degree_normalized[node] * 120)
 
             node_trace = go.Scatter(
                 x=node_x,
@@ -274,11 +279,11 @@ def create_cooccurrence_network_with_communities(graph, title='共起ネット�
         node_colors = [cmap(node_to_community[node]) for node in subgraph.nodes()]
 
         # ノードサイズを中心性に基づいて設定
-        node_sizes = [300 + degree_centrality[node] * 2000 for node in subgraph.nodes()]
+        node_sizes = [400 + degree_normalized[node] * 2500 for node in subgraph.nodes()]
 
         # エッジの太さを重みに基づいて設定
         edge_weights = [subgraph[u][v].get('weight', 1) for u, v in subgraph.edges()]
-        edge_widths = [0.5 + w * 0.5 for w in edge_weights]
+        edge_widths = [1.0 + w * 2.0 for w in edge_weights]
 
         # 描画
         nx.draw_networkx_edges(subgraph, pos, width=edge_widths, alpha=0.5, ax=ax)
