@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>easyStat - ブラウザ統計分析アプリ</title>
+
+    <!-- PyScript -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- PyScript Config -->
+    <script type="py" config="pyscript.json"></script>
+</head>
+<body>
+    <!-- ローディング画面 -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <i class="fas fa-chart-line fa-3x"></i>
+            <h2>easyStat を読み込み中...</h2>
+            <p>初回起動時は数分かかる場合があります</p>
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+
+    <!-- メインコンテナ -->
+    <div id="main-app" style="display: none;">
+        <!-- ヒーローセクション -->
+        <div class="hero-section">
+            <h1 class="hero-title">easyStat</h1>
+            <p class="hero-caption">Created by Dit-Lab.（Daiki ITO）</p>
+            <p class="hero-subtitle">ブラウザ上で簡単かつ高速に統計分析　-データ駆動型探究を促進-</p>
+        </div>
+
+        <!-- データアップロードセクション -->
+        <div class="upload-section-main" id="upload-section-main">
+            <div class="upload-area" id="main-upload-area">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h3>データファイルをアップロード</h3>
+                <p class="upload-text">ファイルをドラッグ&ドロップ または クリックして選択</p>
+                <input type="file" id="main-data-file" accept=".xlsx,.xls,.csv" style="display: none;">
+                <button class="btn-upload" id="main-upload-btn">
+                    <i class="fas fa-file-upload"></i> ファイルを選択
+                </button>
+                <p class="upload-hint">対応形式: Excel (.xlsx, .xls), CSV</p>
+            </div>
+            <div id="main-file-info" class="file-info" style="display: none;"></div>
+        </div>
+
+        <!-- ナビゲーション -->
+        <div class="navigation-section" id="navigation-section" style="display: none;">
+            <h2>分析機能を選択</h2>
+            <div class="feature-grid">
+                <div class="feature-card" data-analysis="cleansing" data-requires="none">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-broom feature-card-icon"></i>
+                        データクレンジング
+                    </h3>
+                    <p class="feature-card-description">データの前処理と品質向上</p>
+                </div>
+
+                <div class="feature-card" data-analysis="eda" data-requires="numeric:1">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-search feature-card-icon"></i>
+                        探索的データ分析（EDA）
+                    </h3>
+                    <p class="feature-card-description">データの特徴と傾向を視覚的に把握</p>
+                    <p class="feature-card-requirement" style="display: none;">数値変数が1つ以上必要です</p>
+                </div>
+
+                <div class="feature-card" data-analysis="correlation" data-requires="numeric:2">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-project-diagram feature-card-icon"></i>
+                        相関分析
+                    </h3>
+                    <p class="feature-card-description">変数間の関係性を分析</p>
+                    <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
+                </div>
+
+                <div class="feature-card" data-analysis="chi_square" data-requires="categorical:2">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-table feature-card-icon"></i>
+                        カイ２乗検定
+                    </h3>
+                    <p class="feature-card-description">カテゴリカルデータの独立性検定</p>
+                    <p class="feature-card-requirement" style="display: none;">カテゴリカル変数が2つ以上必要です</p>
+                </div>
+
+                <div class="feature-card" data-analysis="ttest" data-requires="numeric:2">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-vial feature-card-icon"></i>
+                        t検定
+                    </h3>
+                    <p class="feature-card-description">2群の平均値の差を検定</p>
+                    <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
+                </div>
+
+                <div class="feature-card" data-analysis="anova_one_way" data-requires="numeric:2">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-chart-bar feature-card-icon"></i>
+                        一要因分散分析
+                    </h3>
+                    <p class="feature-card-description">3群以上の平均値の差を検定</p>
+                    <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
+                </div>
+
+                <div class="feature-card" data-analysis="anova_two_way" data-requires="numeric:1,categorical:2">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-chart-area feature-card-icon"></i>
+                        二要因分散分析
+                    </h3>
+                    <p class="feature-card-description">2つの要因の効果を同時に分析</p>
+                    <p class="feature-card-requirement" style="display: none;">数値変数1つ以上、カテゴリカル変数2つ以上必要です</p>
+                </div>
+
+                <div class="feature-card" data-analysis="regression_simple" data-requires="numeric:2">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-chart-line feature-card-icon"></i>
+                        単回帰分析
+                    </h3>
+                    <p class="feature-card-description">1つの説明変数で予測モデルを構築</p>
+                    <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
+                </div>
+
+                <div class="feature-card" data-analysis="regression_multiple" data-requires="numeric:3">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-layer-group feature-card-icon"></i>
+                        重回帰分析
+                    </h3>
+                    <p class="feature-card-description">複数の説明変数で予測モデルを構築</p>
+                    <p class="feature-card-requirement" style="display: none;">数値変数が3つ以上必要です</p>
+                </div>
+
+                <div class="feature-card" data-analysis="factor_analysis" data-requires="numeric:3">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-sitemap feature-card-icon"></i>
+                        因子分析
+                    </h3>
+                    <p class="feature-card-description">潜在的な因子構造を探索</p>
+                    <p class="feature-card-requirement" style="display: none;">数値変数が3つ以上必要です</p>
+                </div>
+
+                <div class="feature-card" data-analysis="pca" data-requires="numeric:2">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-compress-arrows-alt feature-card-icon"></i>
+                        主成分分析
+                    </h3>
+                    <p class="feature-card-description">データの次元削減と可視化</p>
+                    <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
+                </div>
+
+                <div class="feature-card" data-analysis="text_mining" data-requires="text:1">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-file-alt feature-card-icon"></i>
+                        テキストマイニング
+                    </h3>
+                    <p class="feature-card-description">テキストデータの分析と可視化</p>
+                    <p class="feature-card-requirement" style="display: none;">テキスト列が1つ以上必要です</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分析エリア -->
+        <div id="analysis-area" class="analysis-area" style="display: none;">
+            <div class="analysis-header">
+                <button onclick="backToHome()" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> 機能選択に戻る
+                </button>
+                <h2 id="analysis-title"></h2>
+            </div>
+            <div id="analysis-content"></div>
+        </div>
+
+        <!-- フッター -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>© 2022-2025 Dit-Lab.(Daiki Ito). All Rights Reserved.</p>
+                <p>easyStat: Open Source for Ubiquitous Statistics</p>
+                <p>Democratizing data, everywhere.</p>
+                <div class="footer-links">
+                    <a href="https://github.com/itou-daiki/easy_stat" target="_blank">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                    <a href="https://forms.gle/G5sMYm7dNpz2FQtU9" target="_blank">
+                        <i class="fas fa-comment"></i> フィードバック
+                    </a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/utils.js"></script>
+
+    <!-- PyScript Main -->
+    <script type="py" src="py/common.py"></script>
+</body>
+</html>

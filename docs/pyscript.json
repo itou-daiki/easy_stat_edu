@@ -1,0 +1,11 @@
+{
+  "packages": [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "scipy",
+    "scikit-learn",
+    "openpyxl"
+  ],
+  "terminal": false
+}
