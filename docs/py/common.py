@@ -651,7 +651,7 @@ def run_chi_square_analysis(var1, var2):
 
 def run_anova_analysis(groups):
     """
-    一要因分散分析を実行
+    一要因分散分析を実行（効果量を含む）
 
     Parameters:
     -----------
@@ -678,6 +678,33 @@ def run_anova_analysis(groups):
         # 一要因分散分析を実行
         f_stat, p_value = stats.f_oneway(*group_data)
 
+        # 効果量（η²）の計算
+        # すべてのデータを結合
+        all_data = np.concatenate(group_data)
+        overall_mean = all_data.mean()
+
+        # 群間平方和（SS_between）
+        ss_between = sum([len(group) * (group.mean() - overall_mean)**2 for group in group_data])
+
+        # 全体平方和（SS_total）
+        ss_total = sum((all_data - overall_mean)**2)
+
+        # 群内平方和（SS_within）
+        ss_within = ss_total - ss_between
+
+        # η²（イータ二乗）
+        eta_squared = ss_between / ss_total if ss_total > 0 else 0
+
+        # ω²（オメガ二乗）- 不偏推定量
+        k = len(groups)  # グループ数
+        n = len(all_data)  # 総サンプルサイズ
+        df_between = k - 1
+        df_within = n - k
+        ms_within = ss_within / df_within if df_within > 0 else 0
+
+        omega_squared = (ss_between - df_between * ms_within) / (ss_total + ms_within) if (ss_total + ms_within) > 0 else 0
+        omega_squared = max(0, omega_squared)  # 負の値にならないように
+
         # 記述統計量を計算
         stats_data = []
         for i, col in enumerate(groups):
@@ -686,17 +713,27 @@ def run_anova_analysis(groups):
                 'グループ': col,
                 'サンプルサイズ': len(data),
                 '平均値': data.mean(),
-                '標準偏差': data.std()
+                '標準偏差': data.std(),
+                '最小値': data.min(),
+                '最大値': data.max()
             })
 
         stats_df = pd.DataFrame(stats_data)
 
         # 箱ひげ図を作成
         fig, ax = plt.subplots(figsize=(10, 6))
-        ax.boxplot(group_data, labels=groups)
+        bp = ax.boxplot(group_data, labels=groups, patch_artist=True)
+
+        # 箱の色を設定
+        for patch in bp['boxes']:
+            patch.set_facecolor('lightblue')
+            patch.set_alpha(0.6)
+
         ax.set_ylabel('値')
+        ax.set_xlabel('グループ')
         ax.set_title('一要因分散分析')
-        ax.grid(True, alpha=0.3)
+        ax.grid(True, alpha=0.3, axis='y')
+        plt.xticks(rotation=45, ha='right')
 
         # グラフをbase64エンコード
         buf = io.BytesIO()
@@ -704,6 +741,17 @@ def run_anova_analysis(groups):
         buf.seek(0)
         img_base64 = base64.b64encode(buf.read()).decode('utf-8')
         plt.close()
+
+        # 効果量の解釈
+        def interpret_effect_size(eta_sq):
+            if eta_sq >= 0.14:
+                return "大きい"
+            elif eta_sq >= 0.06:
+                return "中程度"
+            elif eta_sq >= 0.01:
+                return "小さい"
+            else:
+                return "ほとんどない"
 
         # 結果をHTML形式で返す
         result_html = f"""
@@ -714,19 +762,34 @@ def run_anova_analysis(groups):
                 <h4>記述統計量</h4>
                 {stats_df.to_html(classes='table', index=False)}
 
-                <h4>検定結果</h4>
+                <h4>分散分析表</h4>
                 <table class="table">
                     <tr><th>項目</th><th>値</th></tr>
                     <tr><td>F統計量</td><td>{f_stat:.4f}</td></tr>
+                    <tr><td>群間自由度</td><td>{df_between}</td></tr>
+                    <tr><td>群内自由度</td><td>{df_within}</td></tr>
                     <tr><td>p値</td><td>{p_value:.4f}</td></tr>
                     <tr><td>統計的有意性</td><td>{'有意 (p < 0.05)' if p_value < 0.05 else '有意ではない (p ≥ 0.05)'}</td></tr>
+                    <tr><td>η² (イータ二乗)</td><td>{eta_squared:.4f}</td></tr>
+                    <tr><td>ω² (オメガ二乗)</td><td>{omega_squared:.4f}</td></tr>
+                    <tr><td>効果量の大きさ</td><td>{interpret_effect_size(eta_squared)}</td></tr>
                 </table>
             </div>
 
             <div class="results-interpretation">
                 <h4>結果の解釈</h4>
                 <p><strong>統計的有意性:</strong>
-                    {'グループ間に統計的に有意な差があります' if p_value < 0.05 else 'グループ間に統計的に有意な差は認められませんでした'}
+                    {'グループ間に統計的に有意な差があります (p < 0.05)。' if p_value < 0.05 else 'グループ間に統計的に有意な差は認められませんでした (p ≥ 0.05)。'}
+                </p>
+                <p><strong>効果量:</strong>
+                    η² = {eta_squared:.4f}で、効果量は{interpret_effect_size(eta_squared)}です。
+                    {'この結果は実質的に意味のある差があることを示しています。' if eta_squared >= 0.06 else 'この結果の実質的な意味は限定的かもしれません。'}
+                </p>
+                <p class="text-muted">
+                    <small>
+                    効果量の目安: η² &lt; 0.01 (ほとんどない), 0.01 ≤ η² &lt; 0.06 (小), 0.06 ≤ η² &lt; 0.14 (中), η² ≥ 0.14 (大)<br>
+                    ω²は不偏推定量で、母集団の効果量をより正確に推定します。
+                    </small>
                 </p>
             </div>
 
@@ -740,6 +803,9 @@ def run_anova_analysis(groups):
         return result_html
 
     except Exception as e:
+        console.error(f"一要因分散分析エラー: {str(e)}")
+        import traceback
+        console.error(traceback.format_exc())
         return f"<p>エラーが発生しました: {str(e)}</p>"
 
 
@@ -1112,7 +1178,7 @@ def fill_missing_mean():
 
 def run_two_way_anova(factor1, factor2, dependent_var):
     """
-    二要因分散分析を実行
+    二要因分散分析を実行（交互作用を含む）
 
     Parameters:
     -----------
@@ -1143,31 +1209,77 @@ def run_two_way_anova(factor1, factor2, dependent_var):
         # グループごとの記述統計量
         grouped = data.groupby([factor1, factor2])[dependent_var].agg(['mean', 'std', 'count'])
 
-        # 簡易的な二要因分散分析（statsmodelsがない場合の代替）
-        # 主効果と交互作用を個別に検定
+        # statsmodelsを使用した二要因分散分析（交互作用を含む）
+        try:
+            import statsmodels.api as sm
+            import statsmodels.formula.api as smf
 
-        # 第1要因の主効果
-        groups_f1 = [group[dependent_var].values for name, group in data.groupby(factor1)]
-        f1_stat, f1_pvalue = stats.f_oneway(*groups_f1)
+            # カテゴリ変数を文字列型に変換
+            data[factor1] = data[factor1].astype(str)
+            data[factor2] = data[factor2].astype(str)
 
-        # 第2要因の主効果
-        groups_f2 = [group[dependent_var].values for name, group in data.groupby(factor2)]
-        f2_stat, f2_pvalue = stats.f_oneway(*groups_f2)
+            # 交互作用を含むモデルを構築
+            formula = f'Q("{dependent_var}") ~ C(Q("{factor1}")) + C(Q("{factor2}")) + C(Q("{factor1}")):C(Q("{factor2}"))'
+            model = smf.ols(formula, data=data).fit()
+            anova_table = sm.stats.anova_lm(model, typ=2)
 
-        # 箱ひげ図を作成
-        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+            # ANOVA結果から各効果のp値を取得
+            effect_names = {
+                'factor1': f'C(Q("{factor1}"))',
+                'factor2': f'C(Q("{factor2}"))',
+                'interaction': f'C(Q("{factor1}")):C(Q("{factor2}"))'
+            }
+
+            f1_stat = anova_table.loc[effect_names['factor1'], 'F'] if effect_names['factor1'] in anova_table.index else 0
+            f1_pvalue = anova_table.loc[effect_names['factor1'], 'PR(>F)'] if effect_names['factor1'] in anova_table.index else 1
+
+            f2_stat = anova_table.loc[effect_names['factor2'], 'F'] if effect_names['factor2'] in anova_table.index else 0
+            f2_pvalue = anova_table.loc[effect_names['factor2'], 'PR(>F)'] if effect_names['factor2'] in anova_table.index else 1
+
+            int_stat = anova_table.loc[effect_names['interaction'], 'F'] if effect_names['interaction'] in anova_table.index else 0
+            int_pvalue = anova_table.loc[effect_names['interaction'], 'PR(>F)'] if effect_names['interaction'] in anova_table.index else 1
+
+            has_interaction = True
+
+        except Exception as e:
+            console.log(f"statsmodelsでのANOVA実行エラー: {str(e)}")
+            # フォールバック: 簡易的な主効果のみの検定
+            groups_f1 = [group[dependent_var].values for name, group in data.groupby(factor1)]
+            f1_stat, f1_pvalue = stats.f_oneway(*groups_f1)
+
+            groups_f2 = [group[dependent_var].values for name, group in data.groupby(factor2)]
+            f2_stat, f2_pvalue = stats.f_oneway(*groups_f2)
+
+            int_stat, int_pvalue = 0, 1
+            has_interaction = False
+
+        # 交互作用プロットを作成
+        fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
         # 第1要因の箱ひげ図
         data.boxplot(column=dependent_var, by=factor1, ax=axes[0])
         axes[0].set_title(f'{factor1}の主効果')
         axes[0].set_xlabel(factor1)
         axes[0].set_ylabel(dependent_var)
+        plt.sca(axes[0])
+        plt.xticks(rotation=45, ha='right')
 
         # 第2要因の箱ひげ図
         data.boxplot(column=dependent_var, by=factor2, ax=axes[1])
         axes[1].set_title(f'{factor2}の主効果')
         axes[1].set_xlabel(factor2)
         axes[1].set_ylabel(dependent_var)
+        plt.sca(axes[1])
+        plt.xticks(rotation=45, ha='right')
+
+        # 交互作用プロット
+        interaction_means = data.groupby([factor1, factor2])[dependent_var].mean().unstack()
+        interaction_means.T.plot(ax=axes[2], marker='o')
+        axes[2].set_title('交互作用プロット')
+        axes[2].set_xlabel(factor2)
+        axes[2].set_ylabel(f'{dependent_var}の平均値')
+        axes[2].legend(title=factor1)
+        axes[2].grid(True, alpha=0.3)
 
         plt.tight_layout()
 
@@ -1178,47 +1290,87 @@ def run_two_way_anova(factor1, factor2, dependent_var):
         img_base64 = base64.b64encode(buf.read()).decode('utf-8')
         plt.close()
 
+        # 有意性判定の補助関数
+        def significance_mark(p):
+            if p < 0.01:
+                return '**'
+            elif p < 0.05:
+                return '*'
+            elif p < 0.1:
+                return '†'
+            else:
+                return 'n.s.'
+
+        def significance_text(p):
+            if p < 0.01:
+                return '有意 (p < 0.01)'
+            elif p < 0.05:
+                return '有意 (p < 0.05)'
+            elif p < 0.1:
+                return '有意傾向 (p < 0.1)'
+            else:
+                return '有意ではない'
+
         # 結果をHTML形式で返す
+        interaction_row = f"""
+                    <tr>
+                        <td>{factor1} × {factor2} (交互作用)</td>
+                        <td>{int_stat:.4f}</td>
+                        <td>{int_pvalue:.4f}</td>
+                        <td>{significance_text(int_pvalue)}</td>
+                    </tr>
+        """ if has_interaction else ""
+
         result_html = f"""
         <div class="analysis-results">
             <h3>二要因分散分析結果</h3>
 
             <div class="results-summary">
-                <h4>記述統計量</h4>
+                <h4>セルごとの記述統計量</h4>
                 {grouped.to_html(classes='table')}
 
-                <h4>主効果の検定</h4>
+                <h4>分散分析表</h4>
                 <table class="table">
-                    <tr><th>要因</th><th>F統計量</th><th>p値</th><th>統計的有意性</th></tr>
+                    <tr><th>効果</th><th>F統計量</th><th>p値</th><th>統計的有意性</th></tr>
                     <tr>
-                        <td>{factor1}</td>
+                        <td>{factor1}の主効果</td>
                         <td>{f1_stat:.4f}</td>
                         <td>{f1_pvalue:.4f}</td>
-                        <td>{'有意 (p < 0.05)' if f1_pvalue < 0.05 else '有意ではない'}</td>
+                        <td>{significance_text(f1_pvalue)}</td>
                     </tr>
                     <tr>
-                        <td>{factor2}</td>
+                        <td>{factor2}の主効果</td>
                         <td>{f2_stat:.4f}</td>
                         <td>{f2_pvalue:.4f}</td>
-                        <td>{'有意 (p < 0.05)' if f2_pvalue < 0.05 else '有意ではない'}</td>
+                        <td>{significance_text(f2_pvalue)}</td>
                     </tr>
+                    {interaction_row}
                 </table>
             </div>
 
             <div class="results-interpretation">
                 <h4>結果の解釈</h4>
                 <p><strong>{factor1}の主効果:</strong>
-                    {'統計的に有意な効果があります' if f1_pvalue < 0.05 else '統計的に有意な効果は認められませんでした'}
+                    {significance_text(f1_pvalue)}。
+                    {'この要因は従属変数に統計的に有意な影響を与えています。' if f1_pvalue < 0.05 else 'この要因の影響は認められませんでした。'}
                 </p>
                 <p><strong>{factor2}の主効果:</strong>
-                    {'統計的に有意な効果があります' if f2_pvalue < 0.05 else '統計的に有意な効果は認められませんでした'}
+                    {significance_text(f2_pvalue)}。
+                    {'この要因は従属変数に統計的に有意な影響を与えています。' if f2_pvalue < 0.05 else 'この要因の影響は認められませんでした。'}
                 </p>
-                <p class="text-muted">注: この実装では交互作用の検定は含まれていません</p>
+                {f'<p><strong>交互作用効果:</strong> {significance_text(int_pvalue)}。' +
+                 ('2つの要因の組み合わせによる効果が認められます。交互作用プロットで線が交差または非平行の場合、交互作用があることを示します。' if int_pvalue < 0.05 else
+                  '2つの要因間の交互作用は認められませんでした。') + '</p>' if has_interaction else
+                 '<p class="text-muted">注: 交互作用の検定は実行されませんでした</p>'}
             </div>
 
             <div class="results-plot">
-                <h4>箱ひげ図</h4>
+                <h4>視覚化</h4>
                 <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                <p class="text-muted">
+                    左: {factor1}の主効果、中央: {factor2}の主効果、右: 交互作用プロット<br>
+                    交互作用プロットで線が平行に近い場合は交互作用が小さく、交差または大きく非平行の場合は交互作用が大きいことを示します。
+                </p>
             </div>
         </div>
         """
@@ -1226,6 +1378,9 @@ def run_two_way_anova(factor1, factor2, dependent_var):
         return result_html
 
     except Exception as e:
+        console.error(f"二要因分散分析エラー: {str(e)}")
+        import traceback
+        console.error(traceback.format_exc())
         return f"<p>エラーが発生しました: {str(e)}</p>"
 
 
