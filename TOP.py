@@ -13,10 +13,10 @@ st.html("""
     <style>
     /* CSS変数でテーマカラーを定義 */
     :root {
-        --primary-color: #6366f1;
-        --primary-dark: #4f46e5;
-        --secondary-color: #8b5cf6;
-        --accent-color: #ec4899;
+        --primary-color: #1e90ff;
+        --primary-dark: #1873cc;
+        --primary-light: #4da6ff;
+        --accent-color: #00bfff;
         --background: #f8fafc;
         --surface: #ffffff;
         --text-primary: #1e293b;
@@ -43,7 +43,7 @@ st.html("""
     
     /* ヒーローセクション */
     .hero-section {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        background: var(--primary-color);
         border-radius: 24px;
         padding: 4rem 2rem;
         text-align: center;
@@ -116,7 +116,7 @@ st.html("""
     .section-icon {
         width: 32px;
         height: 32px;
-        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        background: var(--primary-color);
         border-radius: 8px;
         display: flex;
         align-items: center;
@@ -151,7 +151,7 @@ st.html("""
         left: 0;
         width: 100%;
         height: 4px;
-        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        background: var(--primary-color);
         transform: translateX(-100%);
         transition: transform 0.3s ease;
     }
@@ -266,7 +266,7 @@ st.html("""
         align-items: center;
         gap: 0.5rem;
         padding: 0.75rem 1.5rem;
-        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        background: var(--primary-color);
         color: white;
         text-decoration: none;
         border-radius: 8px;
@@ -278,6 +278,7 @@ st.html("""
     .link-button:hover {
         transform: translateY(-2px);
         box-shadow: var(--shadow-lg);
+        background: var(--primary-dark);
         color: white;
         text-decoration: none;
     }
@@ -287,16 +288,16 @@ st.html("""
         display: inline-flex;
         align-items: center;
         padding: 0.25rem 0.75rem;
-        background: rgba(99, 102, 241, 0.1);
+        background: rgba(30, 144, 255, 0.1);
         color: var(--primary-color);
         border-radius: 9999px;
         font-size: 0.75rem;
         font-weight: 600;
         margin-left: 0.5rem;
     }
-    
+
     .badge-new {
-        background: rgba(236, 72, 153, 0.1);
+        background: rgba(0, 191, 255, 0.1);
         color: var(--accent-color);
     }
     
@@ -476,6 +477,31 @@ st.html("""
         更新履歴
     </h2>
     <div class="update-timeline">
+        <div class="update-item">
+            <div class="update-date">2025/11/15</div>
+            <div class="update-content">
+                <ul>
+                    <li>すべての検定手法に検証機能を追加しました。</li>
+                </ul>
+            </div>
+        </div>
+        <div class="update-item">
+            <div class="update-date">2025/10/24</div>
+            <div class="update-content">
+                <ul>
+                    <li>生成AI機能を実装しました。</li>
+                    <li>Excelダウンロード・エクスポート機能を実装しました。</li>
+                </ul>
+            </div>
+        </div>
+        <div class="update-item">
+            <div class="update-date">2025/6/12</div>
+            <div class="update-content">
+                <ul>
+                    <li>統計初学者向け学習支援機能を大幅実装しました。</li>
+                </ul>
+            </div>
+        </div>
         <div class="update-item">
             <div class="update-date">2025/6/4</div>
             <div class="update-content">
