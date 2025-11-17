@@ -301,67 +301,46 @@ if df is not None and not df.empty:
         try:
             npt.build_graph(stopwords=stopwords_list, min_edge_frequency=1)
             
-            
-            # nlplotオブジェクトの属性を確認
-            npt_attrs = [attr for attr in dir(npt) if not attr.startswith("_")]
-            graph_related = [a for a in npt_attrs if "graph" in a.lower() or a in ["G", "nwx", "node_df", "node_edge_df"]]
-            
-            # node_dfの有無を確認
-            if hasattr(npt, "node_df"):
-                st.write(f"npt.node_df is None: {npt.node_df is None}")
-                if npt.node_df is not None:
-                    st.write("node_dfの最初の5行:")
-
-            
-            # nlplotのグラフオブジェクトを取得（バージョンによって属性名が異なる）
-            # nlplotのグラフオブジェクトを取得（バージョンや実装によって属性名が異なる）
+            # nlplotのグラフオブジェクトを取得
             graph_obj = getattr(npt, 'nwx', None) or getattr(npt, 'G', None) or getattr(npt, 'graph', None)
             
             if graph_obj is None:
                 st.error("共起ネットワークのグラフオブジェクトを取得できませんでした。")
-                raise AttributeError("NLPlot object has no valid graph attribute (tried: nwx, G, graph)")
-
-            # nlplotのnode_dfからノード番号と単語のマッピングを作成
-            node_to_word_mapping = None
-            if hasattr(npt, "node_df"):
-                try:
-                    node_df = npt.node_df
-                    if node_df is not None:
-
+            else:
+                # nlplotのnode_dfからノード番号と単語のマッピングを作成
+                node_to_word_mapping = None
+                if hasattr(npt, "node_df") and npt.node_df is not None:
+                    try:
+                        node_df = npt.node_df
                         # マッピングを作成（nlplotではid_code -> idのマッピング）
                         if "id_code" in node_df.columns and "id" in node_df.columns:
                             # id_code（ノード番号）をキー、id（単語）を値とする
                             node_to_word_mapping = dict(zip(node_df["id_code"], node_df["id"]))
-                            st.write(f"  - ✅ マッピング作成成功！")
-                            st.write(f"  - マッピング例: {dict(list(node_to_word_mapping.items())[:5])}")
                         elif "word" in node_df.columns:
                             # 古いバージョン対応
                             if "node" in node_df.columns:
                                 node_to_word_mapping = dict(zip(node_df["node"], node_df["word"]))
                             else:
                                 node_to_word_mapping = node_df["word"].to_dict()
-                            st.write(f"  - マッピング例: {dict(list(node_to_word_mapping.items())[:5])}")
                         elif "words" in node_df.columns:
                             if "node" in node_df.columns:
                                 node_to_word_mapping = dict(zip(node_df["node"], node_df["words"]))
                             else:
                                 node_to_word_mapping = node_df["words"].to_dict()
-                        else:
-                            st.warning("⚠️ node_dfに単語情報の列が見つかりません")
-                except Exception as e:
-                    st.error(f"ノードと単語のマッピング作成でエラー: {e}")
-                    import traceback
-                    st.code(traceback.format_exc())
-
-            fig_net = create_cooccurrence_network_with_communities(
-                graph_obj,
-                title='全体の共起ネットワーク（グループ化）',
-                top_n_edges=60,
-                node_to_word=node_to_word_mapping
-            )
-
-            if fig_net is not None:
-                st.plotly_chart(fig_net, use_container_width=True)
+                    except Exception as e:
+                        st.warning(f"ノードと単語のマッピング作成でエラー: {e}")
+        
+                # Matplotlibで共起ネットワークを描画
+                fig_net = create_cooccurrence_network_with_communities(
+                    graph_obj,
+                    title='全体の共起ネットワーク（グループ化）',
+                    top_n_edges=60,
+                    node_to_word=node_to_word_mapping
+                )
+        
+                if fig_net is not None:
+                    st.pyplot(fig_net)
+                    plt.close(fig_net)
         except Exception as e:
             st.error(f"共起ネットワークの生成中にエラーが発生しました: {e}")
 
@@ -447,26 +426,26 @@ if df is not None and not df.empty:
 
                 # nlplotのnode_dfからノード番号と単語のマッピングを作成
                 node_to_word_mapping_cat = None
-                if hasattr(npt_cat, "node_df"):
+                if hasattr(npt_cat, "node_df") and npt_cat.node_df is not None:
                     try:
                         node_df_cat = npt_cat.node_df
-                        if node_df_cat is not None:
-                            # マッピングを作成
-                            if "word" in node_df_cat.columns:
-                                # node列がある場合はそれを使用、なければindexを使用
-                                if "node" in node_df_cat.columns:
-                                    node_to_word_mapping_cat = dict(zip(node_df_cat["node"], node_df_cat["word"]))
-                                else:
-                                    node_to_word_mapping_cat = node_df_cat["word"].to_dict()
-                            elif "words" in node_df_cat.columns:
-                                if "node" in node_df_cat.columns:
-                                    node_to_word_mapping_cat = dict(zip(node_df_cat["node"], node_df_cat["words"]))
-                                else:
-                                    node_to_word_mapping_cat = node_df_cat["words"].to_dict()
+                        # マッピングを作成（nlplotではid_code -> idのマッピング）
+                        if "id_code" in node_df_cat.columns and "id" in node_df_cat.columns:
+                            # id_code（ノード番号）をキー、id（単語）を値とする
+                            node_to_word_mapping_cat = dict(zip(node_df_cat["id_code"], node_df_cat["id"]))
+                        elif "word" in node_df_cat.columns:
+                            # 古いバージョン対応
+                            if "node" in node_df_cat.columns:
+                                node_to_word_mapping_cat = dict(zip(node_df_cat["node"], node_df_cat["word"]))
+                            else:
+                                node_to_word_mapping_cat = node_df_cat["word"].to_dict()
+                        elif "words" in node_df_cat.columns:
+                            if "node" in node_df_cat.columns:
+                                node_to_word_mapping_cat = dict(zip(node_df_cat["node"], node_df_cat["words"]))
+                            else:
+                                node_to_word_mapping_cat = node_df_cat["words"].to_dict()
                     except Exception as e:
-                        st.error(f"カテゴリ「{cat}」のノード-単語マッピング作成でエラー: {e}")
-                        import traceback
-                        st.code(traceback.format_exc())
+                        st.warning(f"カテゴリ「{cat}」のノード-単語マッピング作成でエラー: {e}")
 
                 fig_cat = create_cooccurrence_network_with_communities(
                     graph_obj_cat,
@@ -476,7 +455,8 @@ if df is not None and not df.empty:
                 )
 
                 if fig_cat is not None:
-                    st.plotly_chart(fig_cat, use_container_width=True)
+                    st.pyplot(fig_cat)
+                    plt.close(fig_cat)
             except Exception as e:
                 st.warning(f"カテゴリ別共起ネットワークの生成中にエラー: {e}")
 
