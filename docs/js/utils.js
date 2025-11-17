@@ -7,6 +7,16 @@ let pyScriptReady = false;
 document.addEventListener('py-ready', function() {
     console.log('PyScript initialized successfully');
     pyScriptReady = true;
+
+    // アップロードエリアを有効化
+    const uploadArea = document.getElementById('main-upload-area');
+    const uploadBtn = document.getElementById('main-upload-btn');
+    if (uploadArea && uploadBtn) {
+        uploadBtn.disabled = false;
+        uploadArea.style.opacity = '1';
+        uploadArea.style.pointerEvents = 'auto';
+        console.log('Upload area enabled');
+    }
 });
 
 // PyScript関数を安全に取得するヘルパー関数
@@ -127,6 +137,9 @@ async function handleMainFileUpload(event) {
 
             // データ特性を取得して分析機能を有効化
             await updateAnalysisAvailability();
+
+            // データ概要を表示
+            await displayDataOverview();
         } else {
             throw new Error('データの読み込みに失敗しました');
         }
@@ -450,6 +463,94 @@ async function handleFileUpload(event) {
     }
 }
 
+// データ概要を表示
+async function displayDataOverview() {
+    try {
+        const getDataSummary = getPyScriptFunction('get_data_summary');
+        const summaryHtml = await getDataSummary();
+
+        // データ概要セクションを作成または更新
+        let overviewSection = document.getElementById('data-overview-section');
+        if (!overviewSection) {
+            overviewSection = document.createElement('div');
+            overviewSection.id = 'data-overview-section';
+            overviewSection.className = 'data-overview';
+
+            // navigationセクションの前に挿入
+            const navSection = document.getElementById('navigation-section');
+            navSection.parentNode.insertBefore(overviewSection, navSection);
+        }
+
+        // 折りたたみ可能なセクションとして表示
+        overviewSection.innerHTML = `
+            <div class="collapsible-section">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <h3>
+                        <i class="fas fa-table"></i>
+                        データ概要
+                    </h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content">
+                    ${summaryHtml}
+                </div>
+            </div>
+        `;
+
+        console.log('Data overview displayed');
+    } catch (error) {
+        console.error('Failed to display data overview:', error);
+    }
+}
+
+// 分析エリアにデータ概要を表示
+async function displayDataOverviewInAnalysis() {
+    try {
+        const getDataSummary = getPyScriptFunction('get_data_summary');
+        const summaryHtml = await getDataSummary();
+
+        const controlsArea = document.getElementById('analysis-controls');
+
+        // 既存のデータ概要セクションを削除
+        const existingOverview = controlsArea.querySelector('.data-overview-in-analysis');
+        if (existingOverview) {
+            existingOverview.remove();
+        }
+
+        // 新しいデータ概要セクションを作成
+        const overviewDiv = document.createElement('div');
+        overviewDiv.className = 'data-overview-in-analysis';
+        overviewDiv.innerHTML = `
+            <div class="collapsible-section">
+                <div class="collapsible-header collapsed" onclick="toggleCollapsible(this)">
+                    <h3>
+                        <i class="fas fa-table"></i>
+                        データ概要
+                    </h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    ${summaryHtml}
+                </div>
+            </div>
+        `;
+
+        // コントロールエリアの最初に挿入
+        controlsArea.insertBefore(overviewDiv, controlsArea.firstChild);
+
+        console.log('Data overview displayed in analysis area');
+    } catch (error) {
+        console.error('Failed to display data overview in analysis:', error);
+    }
+}
+
+// 折りたたみセクションのトグル
+function toggleCollapsible(header) {
+    header.classList.toggle('collapsed');
+    const content = header.nextElementSibling;
+    content.classList.toggle('collapsed');
+}
+
 // ファイル内容を読み込む補助関数
 function readFileContent(file) {
     return new Promise((resolve, reject) => {
@@ -472,9 +573,12 @@ function readFileContent(file) {
 }
 
 // 分析コントロールを表示
-function showAnalysisControls() {
+async function showAnalysisControls() {
     const controlsArea = document.getElementById('analysis-controls');
     controlsArea.style.display = 'block';
+
+    // データ概要を分析エリアに表示
+    await displayDataOverviewInAnalysis();
 
     // 各分析タイプに応じたコントロールを表示
     switch(currentAnalysis) {
