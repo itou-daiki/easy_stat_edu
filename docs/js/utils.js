@@ -58,6 +58,11 @@ function setupMainUpload() {
     // ファイル選択イベント
     fileInput.addEventListener('change', handleMainFileUpload);
 
+    // ボタンクリックイベント
+    uploadBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+
     // ドラッグ&ドロップ
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -78,8 +83,10 @@ function setupMainUpload() {
         }
     });
 
+    // アップロードエリアクリックでファイル選択
     uploadArea.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'BUTTON') {
+        // ボタンや子要素をクリックした場合は無視
+        if (e.target === uploadArea) {
             fileInput.click();
         }
     });
