@@ -7,19 +7,6 @@ let pyScriptReady = false;
 document.addEventListener('py-ready', function() {
     console.log('PyScript initialized successfully');
     pyScriptReady = true;
-
-    // アップロードエリアを有効化
-    const uploadArea = document.getElementById('main-upload-area');
-    const uploadBtn = document.getElementById('main-upload-btn');
-    if (uploadArea && uploadBtn) {
-        uploadBtn.disabled = false;
-        uploadArea.style.opacity = '1';
-        uploadArea.style.pointerEvents = 'auto';
-        console.log('Upload area enabled');
-    }
-
-    // PyScript初期化後にイベントリスナーを再設定
-    setupMainUploadListeners();
 });
 
 // PyScript関数を安全に取得するヘルパー関数
@@ -59,19 +46,10 @@ function setupMainUpload() {
     // 初期状態ですべての分析カードを無効化
     disableAllFeatureCards();
 
-    // PyScript未初期化の場合は無効化状態にする
-    const uploadArea = document.getElementById('main-upload-area');
-    const uploadBtn = document.getElementById('main-upload-btn');
+    // アップロードのイベントリスナーを設定
+    setupMainUploadListeners();
 
-    if (!pyScriptReady) {
-        uploadBtn.disabled = true;
-        uploadArea.style.opacity = '0.5';
-        uploadArea.style.pointerEvents = 'none';
-        console.log('Upload area disabled - waiting for PyScript');
-    } else {
-        // PyScript初期化済みの場合、すぐにリスナーを設定
-        setupMainUploadListeners();
-    }
+    console.log('Main upload setup completed');
 }
 
 // アップロードのイベントリスナーを設定
@@ -85,46 +63,42 @@ function setupMainUploadListeners() {
         return;
     }
 
-    // 既存のリスナーを削除するため、一度クローンして置き換え
-    const newFileInput = fileInput.cloneNode(true);
-    fileInput.parentNode.replaceChild(newFileInput, fileInput);
-
     // ファイル選択イベント
-    newFileInput.addEventListener('change', handleMainFileUpload);
+    fileInput.addEventListener('change', handleMainFileUpload);
 
     // ボタンクリックイベント
-    uploadBtn.onclick = () => {
-        newFileInput.click();
-    };
+    uploadBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
 
     // ドラッグ&ドロップ
-    uploadArea.ondragover = (e) => {
+    uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadArea.classList.add('drag-over');
-    };
+    });
 
-    uploadArea.ondragleave = () => {
+    uploadArea.addEventListener('dragleave', () => {
         uploadArea.classList.remove('drag-over');
-    };
+    });
 
-    uploadArea.ondrop = (e) => {
+    uploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
         uploadArea.classList.remove('drag-over');
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            newFileInput.files = files;
-            handleMainFileUpload({ target: newFileInput });
+            fileInput.files = files;
+            handleMainFileUpload({ target: fileInput });
         }
-    };
+    });
 
     // アップロードエリアクリックでファイル選択
-    uploadArea.onclick = (e) => {
+    uploadArea.addEventListener('click', (e) => {
         // ボタンをクリックした場合は無視（ボタンが処理する）
         if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
             return;
         }
-        newFileInput.click();
-    };
+        fileInput.click();
+    });
 
     console.log('Upload listeners set up successfully');
 }
@@ -145,6 +119,38 @@ async function handleMainFileUpload(event) {
     fileInfo.style.display = 'block';
 
     try {
+        // PyScriptが初期化されるまで待機（最大30秒）
+        if (!pyScriptReady) {
+            fileInfo.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>統計エンジンを初期化しています...</p>
+                    <p class="file-name">${file.name}</p>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                        初回読み込みには時間がかかる場合があります
+                    </p>
+                </div>
+            `;
+
+            let waited = 0;
+            while (!pyScriptReady && waited < 30000) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                waited += 500;
+            }
+
+            if (!pyScriptReady) {
+                throw new Error('統計エンジンの初期化がタイムアウトしました。ページを再読み込みしてください。');
+            }
+
+            fileInfo.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>ファイルを読み込んでいます...</p>
+                    <p class="file-name">${file.name} (${(file.size / 1024).toFixed(2)} KB)</p>
+                </div>
+            `;
+        }
+
         const fileContent = await readFileContent(file);
         const loadFileData = getPyScriptFunction('load_file_data');
         const success = await loadFileData(fileContent, file.name);
