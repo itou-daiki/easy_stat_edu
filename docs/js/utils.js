@@ -43,18 +43,23 @@ window.addEventListener('load', function() {
 
 // メインアップロード機能の初期化
 function setupMainUpload() {
+    // 初期状態ですべての分析カードを無効化
+    disableAllFeatureCards();
+
+    // アップロードのイベントリスナーを設定
+    setupMainUploadListeners();
+
+    console.log('Main upload setup completed');
+}
+
+// アップロードのイベントリスナーを設定
+function setupMainUploadListeners() {
     const fileInput = document.getElementById('main-data-file');
     const uploadArea = document.getElementById('main-upload-area');
     const uploadBtn = document.getElementById('main-upload-btn');
 
-    // 初期状態ですべての分析カードを無効化
-    disableAllFeatureCards();
-
-    // PyScript未初期化の場合は無効化
-    if (!pyScriptReady) {
-        uploadBtn.disabled = true;
-        uploadArea.style.opacity = '0.5';
-        uploadArea.style.pointerEvents = 'none';
+    if (!fileInput || !uploadArea || !uploadBtn) {
+        console.error('Upload elements not found');
         return;
     }
 
@@ -88,11 +93,14 @@ function setupMainUpload() {
 
     // アップロードエリアクリックでファイル選択
     uploadArea.addEventListener('click', (e) => {
-        // ボタンや子要素をクリックした場合は無視
-        if (e.target === uploadArea) {
-            fileInput.click();
+        // ボタンをクリックした場合は無視（ボタンが処理する）
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+            return;
         }
+        fileInput.click();
     });
+
+    console.log('Upload listeners set up successfully');
 }
 
 // メインファイルアップロード処理
@@ -111,6 +119,38 @@ async function handleMainFileUpload(event) {
     fileInfo.style.display = 'block';
 
     try {
+        // PyScriptが初期化されるまで待機（最大30秒）
+        if (!pyScriptReady) {
+            fileInfo.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>統計エンジンを初期化しています...</p>
+                    <p class="file-name">${file.name}</p>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                        初回読み込みには時間がかかる場合があります
+                    </p>
+                </div>
+            `;
+
+            let waited = 0;
+            while (!pyScriptReady && waited < 30000) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                waited += 500;
+            }
+
+            if (!pyScriptReady) {
+                throw new Error('統計エンジンの初期化がタイムアウトしました。ページを再読み込みしてください。');
+            }
+
+            fileInfo.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>ファイルを読み込んでいます...</p>
+                    <p class="file-name">${file.name} (${(file.size / 1024).toFixed(2)} KB)</p>
+                </div>
+            `;
+        }
+
         const fileContent = await readFileContent(file);
         const loadFileData = getPyScriptFunction('load_file_data');
         const success = await loadFileData(fileContent, file.name);
@@ -127,6 +167,9 @@ async function handleMainFileUpload(event) {
 
             // データ特性を取得して分析機能を有効化
             await updateAnalysisAvailability();
+
+            // データ概要を表示
+            await displayDataOverview();
         } else {
             throw new Error('データの読み込みに失敗しました');
         }
@@ -450,6 +493,94 @@ async function handleFileUpload(event) {
     }
 }
 
+// データ概要を表示
+async function displayDataOverview() {
+    try {
+        const getDataSummary = getPyScriptFunction('get_data_summary');
+        const summaryHtml = await getDataSummary();
+
+        // データ概要セクションを作成または更新
+        let overviewSection = document.getElementById('data-overview-section');
+        if (!overviewSection) {
+            overviewSection = document.createElement('div');
+            overviewSection.id = 'data-overview-section';
+            overviewSection.className = 'data-overview';
+
+            // navigationセクションの前に挿入
+            const navSection = document.getElementById('navigation-section');
+            navSection.parentNode.insertBefore(overviewSection, navSection);
+        }
+
+        // 折りたたみ可能なセクションとして表示
+        overviewSection.innerHTML = `
+            <div class="collapsible-section">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <h3>
+                        <i class="fas fa-table"></i>
+                        データ概要
+                    </h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content">
+                    ${summaryHtml}
+                </div>
+            </div>
+        `;
+
+        console.log('Data overview displayed');
+    } catch (error) {
+        console.error('Failed to display data overview:', error);
+    }
+}
+
+// 分析エリアにデータ概要を表示
+async function displayDataOverviewInAnalysis() {
+    try {
+        const getDataSummary = getPyScriptFunction('get_data_summary');
+        const summaryHtml = await getDataSummary();
+
+        const controlsArea = document.getElementById('analysis-controls');
+
+        // 既存のデータ概要セクションを削除
+        const existingOverview = controlsArea.querySelector('.data-overview-in-analysis');
+        if (existingOverview) {
+            existingOverview.remove();
+        }
+
+        // 新しいデータ概要セクションを作成
+        const overviewDiv = document.createElement('div');
+        overviewDiv.className = 'data-overview-in-analysis';
+        overviewDiv.innerHTML = `
+            <div class="collapsible-section">
+                <div class="collapsible-header collapsed" onclick="toggleCollapsible(this)">
+                    <h3>
+                        <i class="fas fa-table"></i>
+                        データ概要
+                    </h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    ${summaryHtml}
+                </div>
+            </div>
+        `;
+
+        // コントロールエリアの最初に挿入
+        controlsArea.insertBefore(overviewDiv, controlsArea.firstChild);
+
+        console.log('Data overview displayed in analysis area');
+    } catch (error) {
+        console.error('Failed to display data overview in analysis:', error);
+    }
+}
+
+// 折りたたみセクションのトグル
+function toggleCollapsible(header) {
+    header.classList.toggle('collapsed');
+    const content = header.nextElementSibling;
+    content.classList.toggle('collapsed');
+}
+
 // ファイル内容を読み込む補助関数
 function readFileContent(file) {
     return new Promise((resolve, reject) => {
@@ -472,9 +603,12 @@ function readFileContent(file) {
 }
 
 // 分析コントロールを表示
-function showAnalysisControls() {
+async function showAnalysisControls() {
     const controlsArea = document.getElementById('analysis-controls');
     controlsArea.style.display = 'block';
+
+    // データ概要を分析エリアに表示
+    await displayDataOverviewInAnalysis();
 
     // 各分析タイプに応じたコントロールを表示
     switch(currentAnalysis) {
