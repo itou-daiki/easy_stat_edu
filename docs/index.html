@@ -171,6 +171,251 @@
             </div>
         </div>
 
+        <!-- 説明・操作方法・更新履歴 -->
+        <div class="info-sections">
+            <!-- アプリケーション説明 -->
+            <div class="collapsible-section">
+                <div class="collapsible-header collapsed" onclick="toggleCollapsible(this)">
+                    <h3>
+                        <i class="fas fa-info-circle"></i>
+                        このアプリケーションについて
+                    </h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <h4>easyStat - ブラウザ統計分析アプリ</h4>
+                    <p>
+                        <strong>easyStat</strong>は、ブラウザ上で動作する無料の統計分析Webアプリケーションです。
+                        PyScriptを活用し、データのアップロードから高度な統計分析まで、すべてブラウザ内で完結します。
+                    </p>
+
+                    <h4>主な特徴</h4>
+                    <ul>
+                        <li><strong>完全ブラウザベース:</strong> インストール不要、Webブラウザだけで利用可能</li>
+                        <li><strong>データプライバシー:</strong> データはブラウザ内で処理され、外部サーバーに送信されません</li>
+                        <li><strong>豊富な分析機能:</strong> 基本統計から高度な多変量解析まで12種類の分析手法</li>
+                        <li><strong>日本語対応:</strong> UIと分析結果の解釈がすべて日本語</li>
+                        <li><strong>教育的:</strong> 統計手法の説明と結果の解釈を提供</li>
+                    </ul>
+
+                    <h4>対応ファイル形式</h4>
+                    <ul>
+                        <li>Excel形式（.xlsx, .xls）</li>
+                        <li>CSV形式（.csv）</li>
+                    </ul>
+
+                    <h4>利用可能な分析手法</h4>
+                    <div class="analysis-methods-grid">
+                        <div class="method-item">
+                            <i class="fas fa-broom"></i>
+                            <span>データクレンジング</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-search"></i>
+                            <span>探索的データ分析（EDA）</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-project-diagram"></i>
+                            <span>相関分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-table"></i>
+                            <span>カイ二乗検定</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-vial"></i>
+                            <span>t検定</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>一要因分散分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-chart-area"></i>
+                            <span>二要因分散分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span>単回帰分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-layer-group"></i>
+                            <span>重回帰分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-sitemap"></i>
+                            <span>因子分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-compress-arrows-alt"></i>
+                            <span>主成分分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-file-alt"></i>
+                            <span>テキストマイニング</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作方法 -->
+            <div class="collapsible-section">
+                <div class="collapsible-header collapsed" onclick="toggleCollapsible(this)">
+                    <h3>
+                        <i class="fas fa-question-circle"></i>
+                        使い方・操作方法
+                    </h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <h4>基本的な使い方</h4>
+
+                    <div class="usage-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h5>データをアップロード</h5>
+                            <p>
+                                「データファイルをアップロード」エリアで、Excel（.xlsx, .xls）またはCSVファイルを選択してください。
+                                ドラッグ&ドロップにも対応しています。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="usage-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h5>データ概要を確認</h5>
+                            <p>
+                                アップロード後、データの概要（行数・列数・統計量）が表示されます。
+                                折りたたみ可能なセクションで、必要に応じて確認できます。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="usage-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h5>分析手法を選択</h5>
+                            <p>
+                                データの特性に応じて利用可能な分析手法が有効化されます。
+                                希望する分析カードをクリックしてください。
+                            </p>
+                            <ul>
+                                <li>数値変数が必要な分析は、数値列が存在する場合のみ有効</li>
+                                <li>カテゴリカル変数が必要な分析は、カテゴリカル列が存在する場合のみ有効</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="usage-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h5>変数を選択して分析実行</h5>
+                            <p>
+                                分析画面で使用する変数を選択し、「分析を実行」ボタンをクリックします。
+                                結果は表とグラフで表示され、統計的解釈も提供されます。
+                            </p>
+                        </div>
+                    </div>
+
+                    <h4>Tips</h4>
+                    <ul>
+                        <li><i class="fas fa-lightbulb"></i> データは完全にブラウザ内で処理されるため、機密データも安全に分析できます</li>
+                        <li><i class="fas fa-lightbulb"></i> 初回起動時はPythonライブラリの読み込みに数分かかる場合があります</li>
+                        <li><i class="fas fa-lightbulb"></i> データ概要セクションは折りたたんでスペースを節約できます</li>
+                        <li><i class="fas fa-lightbulb"></i> 各分析には説明が表示され、統計手法を学びながら分析できます</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 更新履歴 -->
+            <div class="collapsible-section">
+                <div class="collapsible-header collapsed" onclick="toggleCollapsible(this)">
+                    <h3>
+                        <i class="fas fa-history"></i>
+                        更新履歴
+                    </h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="changelog">
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.4.0</span>
+                                <span class="changelog-date">2025年1月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>新機能・改善</h5>
+                                <ul>
+                                    <li>ファイルアップローダーの動作を修正・安定化</li>
+                                    <li>データ概要の折りたたみ表示機能を追加</li>
+                                    <li>分析画面にもデータ概要を表示</li>
+                                    <li>UIのコンパクト化とレスポンシブ対応</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.3.0</span>
+                                <span class="changelog-date">2025年1月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>統計分析機能の強化</h5>
+                                <ul>
+                                    <li>二要因分散分析に<strong>交互作用効果の検定</strong>を実装</li>
+                                    <li>一要因分散分析に<strong>効果量（η², ω²）</strong>を追加</li>
+                                    <li>statsmodelsライブラリを追加し、より正確なANOVA分析が可能に</li>
+                                    <li>交互作用プロットの追加で視覚的理解を向上</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.2.0</span>
+                                <span class="changelog-date">2024年12月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>UI/UX改善</h5>
+                                <ul>
+                                    <li>アップロードエリアを50%コンパクト化</li>
+                                    <li>分析機能選択カードをデフォルト表示</li>
+                                    <li>データ特性に応じた自動的な機能有効化</li>
+                                    <li>アイコンとレイアウトの改善</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.1.0</span>
+                                <span class="changelog-date">2024年11月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>初期リリース</h5>
+                                <ul>
+                                    <li>PyScriptベースのブラウザ統計分析アプリを公開</li>
+                                    <li>12種類の統計分析手法を実装</li>
+                                    <li>Excel/CSV形式のデータ読み込み</li>
+                                    <li>日本語UIと分析結果の解釈</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="github-info">
+                        <p>
+                            <i class="fab fa-github"></i>
+                            このプロジェクトはオープンソースです。
+                            <a href="https://github.com/itou-daiki/easy_stat" target="_blank">GitHubリポジトリ</a>で
+                            ソースコードを確認したり、issueを報告できます。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 分析エリア -->
         <div id="analysis-area" class="analysis-area" style="display: none;">
             <div class="analysis-header">
