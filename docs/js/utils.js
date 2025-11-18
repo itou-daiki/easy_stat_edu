@@ -119,27 +119,43 @@ async function handleMainFileUpload(event) {
     fileInfo.style.display = 'block';
 
     try {
-        // PyScriptが初期化されるまで待機（最大30秒）
+        // PyScriptが初期化されるまで待機（最大2分）
         if (!pyScriptReady) {
             fileInfo.innerHTML = `
                 <div class="loading">
                     <i class="fas fa-spinner fa-spin"></i>
-                    <p>統計エンジンを初期化しています...</p>
+                    <p style="font-size: 1.1rem; font-weight: 500;">統計エンジンを初期化しています...</p>
                     <p class="file-name">${file.name}</p>
-                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                        初回読み込みには時間がかかる場合があります
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem; line-height: 1.6;">
+                        初回起動時は必要なライブラリ（NumPy, Pandas, Matplotlib等）を<br>
+                        ダウンロードするため1〜2分程度お待ちください。<br>
+                        <strong>2回目以降は高速に起動します。</strong>
                     </p>
+                    <div class="loading-spinner" style="margin-top: 1rem;"></div>
                 </div>
             `;
 
             let waited = 0;
-            while (!pyScriptReady && waited < 30000) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                waited += 500;
+            const maxWait = 120000; // 2分
+            while (!pyScriptReady && waited < maxWait) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                waited += 1000;
+
+                // 進捗を表示
+                const seconds = Math.floor(waited / 1000);
+                const progress = Math.min(Math.floor((waited / maxWait) * 100), 99);
+                fileInfo.querySelector('p[style*="font-size: 0.875rem"]').innerHTML = `
+                    初回起動時は必要なライブラリ（NumPy, Pandas, Matplotlib等）を<br>
+                    ダウンロードするため1〜2分程度お待ちください。<br>
+                    <strong>2回目以降は高速に起動します。</strong><br>
+                    <span style="color: var(--primary-color); font-weight: 600; margin-top: 0.5rem; display: inline-block;">
+                        経過時間: ${seconds}秒 (推定進捗: ${progress}%)
+                    </span>
+                `;
             }
 
             if (!pyScriptReady) {
-                throw new Error('統計エンジンの初期化がタイムアウトしました。ページを再読み込みしてください。');
+                throw new Error('統計エンジンの初期化に時間がかかりすぎています。ネットワーク接続を確認し、ページを再読み込みしてください。');
             }
 
             fileInfo.innerHTML = `

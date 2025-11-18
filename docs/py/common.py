@@ -1242,8 +1242,8 @@ def run_two_way_anova(factor1, factor2, dependent_var):
             has_interaction = True
 
         except Exception as e:
-            console.log(f"statsmodelsでのANOVA実行エラー: {str(e)}")
-            # フォールバック: 簡易的な主効果のみの検定
+            console.log(f"statsmodelsでのANOVA実行エラー（軽量版で実行）: {str(e)}")
+            # フォールバック: 基本的な主効果のみの検定（交互作用の統計的検定は行わない）
             groups_f1 = [group[dependent_var].values for name, group in data.groupby(factor1)]
             f1_stat, f1_pvalue = stats.f_oneway(*groups_f1)
 
@@ -1252,6 +1252,7 @@ def run_two_way_anova(factor1, factor2, dependent_var):
 
             int_stat, int_pvalue = 0, 1
             has_interaction = False
+            console.log("注意: 軽量版モードでは交互作用の統計的検定は省略されますが、視覚的な交互作用プロットは表示されます。")
 
         # 交互作用プロットを作成
         fig, axes = plt.subplots(1, 3, figsize=(18, 6))
@@ -1319,11 +1320,29 @@ def run_two_way_anova(factor1, factor2, dependent_var):
                         <td>{int_pvalue:.4f}</td>
                         <td>{significance_text(int_pvalue)}</td>
                     </tr>
-        """ if has_interaction else ""
+        """ if has_interaction else """
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-secondary); font-style: italic;">
+                            交互作用の統計的検定は軽量版モードでは省略されています（視覚的な交互作用プロットは下部に表示されます）
+                        </td>
+                    </tr>
+        """
+
+        lightweight_note = "" if has_interaction else """
+            <div class="info-sections note" style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 1rem; margin: 1rem 0; border-radius: 4px;">
+                <p style="margin: 0; color: #1565c0;">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>軽量版モードで実行中:</strong> 初期読み込みを高速化するため、基本パッケージのみで分析を実行しています。
+                    主効果の検定は正確に実行されますが、交互作用の統計的検定は省略されています。
+                    交互作用の視覚的パターンは下部のグラフで確認できます。
+                </p>
+            </div>
+        """
 
         result_html = f"""
         <div class="analysis-results">
             <h3>二要因分散分析結果</h3>
+            {lightweight_note}
 
             <div class="results-summary">
                 <h4>セルごとの記述統計量</h4>

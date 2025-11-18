@@ -4,8 +4,6 @@
     "pandas",
     "matplotlib",
     "scipy",
-    "scikit-learn",
-    "statsmodels",
     "openpyxl"
   ],
   "terminal": false
