@@ -1812,4 +1812,11 @@ def run_text_mining(text_column):
 
 
 # 初期化メッセージ
-console.log("easyStat PyScript共通関数が読み込まれました")
+console.log("=" * 50)
+console.log("✓ easyStat PyScript modules loaded successfully")
+console.log(f"  - pandas: {pd.__version__}")
+console.log(f"  - numpy: {np.__version__}")
+console.log("  - scipy: loaded")
+console.log("  - matplotlib: loaded")
+console.log("✓ All statistical functions are ready")
+console.log("=" * 50)
