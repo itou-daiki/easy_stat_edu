@@ -3,11 +3,37 @@ let currentData = null;
 let currentAnalysis = null;
 let pyScriptReady = false;
 
-// PyScriptの初期化完了を検知
-document.addEventListener('py-ready', function() {
-    console.log('PyScript initialized successfully');
-    pyScriptReady = true;
-});
+// PyScriptの初期化完了を検知（複数のイベントをリッスン）
+function markPyScriptReady() {
+    if (!pyScriptReady) {
+        console.log('✓ PyScript initialized successfully');
+        pyScriptReady = true;
+
+        // グローバル関数の存在を確認
+        try {
+            if (typeof pyscript !== 'undefined' && pyscript.interpreter) {
+                const testFunc = pyscript.interpreter.globals.get('load_file_data');
+                if (testFunc) {
+                    console.log('✓ Python functions are available');
+                } else {
+                    console.warn('⚠ PyScript ready but functions not found yet');
+                }
+            }
+        } catch (e) {
+            console.warn('⚠ PyScript ready but interpreter check failed:', e);
+        }
+    }
+}
+
+// 複数のイベントをリッスン（PyScriptバージョンによって異なる）
+document.addEventListener('py-ready', markPyScriptReady);
+document.addEventListener('py:ready', markPyScriptReady);
+document.addEventListener('pyscript:ready', markPyScriptReady);
+
+// PyScriptのランタイムが利用可能になったことを検知
+if (typeof pyscript !== 'undefined') {
+    console.log('PyScript runtime detected on page load');
+}
 
 // PyScript関数を安全に取得するヘルパー関数
 function getPyScriptFunction(functionName) {
@@ -21,20 +47,59 @@ function getPyScriptFunction(functionName) {
     return func;
 }
 
+// PyScriptの初期化を積極的にチェック（ポーリング）
+function checkPyScriptInitialization() {
+    if (!pyScriptReady) {
+        try {
+            // pyscriptオブジェクトとインタープリタが存在するかチェック
+            if (typeof pyscript !== 'undefined' && pyscript.interpreter) {
+                // load_file_data関数が定義されているかチェック
+                const loadFunc = pyscript.interpreter.globals.get('load_file_data');
+                if (loadFunc) {
+                    console.log('✓ PyScript detected via polling (functions available)');
+                    markPyScriptReady();
+                    return true;
+                }
+            }
+        } catch (e) {
+            // まだ準備できていない
+        }
+    }
+    return pyScriptReady;
+}
+
 // ローディング画面を非表示にしてメインアプリを表示
 window.addEventListener('load', function() {
-    // PyScriptの読み込み完了を待つ（最大10秒）
+    console.log('Page loaded, waiting for PyScript...');
+
+    // PyScriptの読み込み完了を待つ（最大30秒、より頻繁にチェック）
     let checkCount = 0;
+    const maxChecks = 300; // 30秒 (100ms * 300)
+
     const checkInterval = setInterval(function() {
         checkCount++;
-        // PyScriptが初期化されているか、またはタイムアウト（10秒）
-        if (pyScriptReady || checkCount > 100) {
+
+        // アクティブにPyScriptの準備をチェック
+        checkPyScriptInitialization();
+
+        // 進捗をログ出力（5秒ごと）
+        if (checkCount % 50 === 0) {
+            console.log(`Waiting for PyScript... ${checkCount / 10}s elapsed`);
+        }
+
+        // PyScriptが初期化されているか、またはタイムアウト
+        if (pyScriptReady || checkCount > maxChecks) {
             clearInterval(checkInterval);
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
+
             if (!pyScriptReady) {
-                console.warn('PyScript initialization timeout, but proceeding anyway');
+                console.error('❌ PyScript initialization timeout after 30 seconds');
+                console.error('Please check browser console for PyScript errors');
+            } else {
+                console.log(`✓ App ready (initialized in ${checkCount / 10}s)`);
             }
+
             // メインアップロードの初期化
             setupMainUpload();
         }
@@ -119,27 +184,65 @@ async function handleMainFileUpload(event) {
     fileInfo.style.display = 'block';
 
     try {
-        // PyScriptが初期化されるまで待機（最大30秒）
+        // PyScriptが初期化されるまで待機（最大3分）
         if (!pyScriptReady) {
+            console.log('PyScript not ready, waiting for initialization...');
+
             fileInfo.innerHTML = `
                 <div class="loading">
                     <i class="fas fa-spinner fa-spin"></i>
-                    <p>統計エンジンを初期化しています...</p>
+                    <p style="font-size: 1.1rem; font-weight: 500;">統計エンジンを初期化しています...</p>
                     <p class="file-name">${file.name}</p>
-                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                        初回読み込みには時間がかかる場合があります
+                    <p id="init-message" style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem; line-height: 1.6;">
+                        初回起動時は必要なライブラリ（NumPy, Pandas, Matplotlib等）を<br>
+                        ダウンロードするため1〜2分程度お待ちください。<br>
+                        <strong>2回目以降は高速に起動します。</strong>
                     </p>
+                    <div class="loading-spinner" style="margin-top: 1rem;"></div>
                 </div>
             `;
 
             let waited = 0;
-            while (!pyScriptReady && waited < 30000) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                waited += 500;
+            const maxWait = 180000; // 3分
+            const checkInterval = 500; // 500msごとにチェック
+
+            while (waited < maxWait) {
+                // アクティブにPyScriptの準備をチェック
+                checkPyScriptInitialization();
+
+                if (pyScriptReady) {
+                    console.log('✓ PyScript ready, proceeding with file upload');
+                    break;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
+                waited += checkInterval;
+
+                // 進捗を表示（1秒ごと）
+                if (waited % 1000 === 0) {
+                    const seconds = Math.floor(waited / 1000);
+                    const progress = Math.min(Math.floor((waited / maxWait) * 100), 99);
+                    const messageEl = fileInfo.querySelector('#init-message');
+                    if (messageEl) {
+                        messageEl.innerHTML = `
+                            初回起動時は必要なライブラリ（NumPy, Pandas, Matplotlib等）を<br>
+                            ダウンロードするため1〜2分程度お待ちください。<br>
+                            <strong>2回目以降は高速に起動します。</strong><br>
+                            <span style="color: var(--primary-color); font-weight: 600; margin-top: 0.5rem; display: inline-block;">
+                                経過時間: ${seconds}秒 (推定進捗: ${progress}%)
+                            </span>
+                        `;
+                    }
+                }
             }
 
             if (!pyScriptReady) {
-                throw new Error('統計エンジンの初期化がタイムアウトしました。ページを再読み込みしてください。');
+                console.error('❌ PyScript initialization timeout');
+                console.error('Debug info:');
+                console.error('- pyscript object exists:', typeof pyscript !== 'undefined');
+                console.error('- pyscript.interpreter exists:', typeof pyscript !== 'undefined' && pyscript.interpreter);
+
+                throw new Error('統計エンジンの初期化に時間がかかりすぎています。\n\n考えられる原因：\n- ネットワーク接続が不安定\n- ブラウザのキャッシュが破損\n\n対処方法：\n1. ブラウザのキャッシュをクリア（Ctrl+Shift+Del）\n2. ページを再読み込み（Ctrl+F5）\n3. 別のブラウザで試す（Chrome推奨）');
             }
 
             fileInfo.innerHTML = `
