@@ -1116,32 +1116,57 @@ def run_pca_analysis(n_components=2):
         explained_variance = pca.explained_variance_ratio_ * 100
         cumulative_variance = np.cumsum(explained_variance)
 
-        # グラフを作成
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        # Plotlyで2つのグラフを作成
+        fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=('主成分の寄与率', '主成分散布図'),
+            horizontal_spacing=0.12
+        )
 
         # 寄与率の棒グラフ
-        ax1.bar(range(1, len(explained_variance) + 1), explained_variance)
-        ax1.set_xlabel('主成分')
-        ax1.set_ylabel('寄与率 (%)')
-        ax1.set_title('主成分の寄与率')
-        ax1.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Bar(
+                x=[f'PC{i+1}' for i in range(len(explained_variance))],
+                y=explained_variance,
+                marker_color='rgba(30, 144, 255, 0.7)',
+                name='寄与率',
+                showlegend=False,
+                hovertemplate='主成分: %{x}<br>寄与率: %{y:.2f}%<extra></extra>'
+            ),
+            row=1, col=1
+        )
 
         # 散布図（第1・第2主成分）
         if pca_result.shape[1] >= 2:
-            ax2.scatter(pca_result[:, 0], pca_result[:, 1], alpha=0.6)
-            ax2.set_xlabel(f'第1主成分 ({explained_variance[0]:.1f}%)')
-            ax2.set_ylabel(f'第2主成分 ({explained_variance[1]:.1f}%)')
-            ax2.set_title('主成分散布図')
-            ax2.grid(True, alpha=0.3)
+            fig.add_trace(
+                go.Scatter(
+                    x=pca_result[:, 0],
+                    y=pca_result[:, 1],
+                    mode='markers',
+                    marker=dict(size=8, color='rgba(30, 144, 255, 0.6)'),
+                    name='データポイント',
+                    showlegend=False,
+                    hovertemplate='PC1: %{x:.2f}<br>PC2: %{y:.2f}<extra></extra>'
+                ),
+                row=1, col=2
+            )
 
-        plt.tight_layout()
+        # レイアウト設定
+        fig.update_xaxes(title_text='主成分', row=1, col=1)
+        fig.update_yaxes(title_text='寄与率 (%)', row=1, col=1)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        if pca_result.shape[1] >= 2:
+            fig.update_xaxes(title_text=f'第1主成分 ({explained_variance[0]:.1f}%)', row=1, col=2)
+            fig.update_yaxes(title_text=f'第2主成分 ({explained_variance[1]:.1f}%)', row=1, col=2)
+
+        fig.update_layout(
+            height=500,
+            template='plotly_white',
+            showlegend=False
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='pca-plot')
 
         # 寄与率テーブル作成
         variance_df = pd.DataFrame({
@@ -1175,7 +1200,7 @@ def run_pca_analysis(n_components=2):
 
             <div class="results-plot">
                 <h4>グラフ</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -1640,34 +1665,72 @@ def run_multiple_regression(x_vars, y_var):
             '係数': [model.intercept_] + list(model.coef_)
         })
 
-        # グラフを作成
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        # Plotlyで2つのグラフを作成
+        fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=('予測値 vs 実測値', '残差プロット'),
+            horizontal_spacing=0.12
+        )
 
         # 予測値vs実測値
-        ax1.scatter(y, y_pred, alpha=0.6)
-        ax1.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', lw=2)
-        ax1.set_xlabel('実測値')
-        ax1.set_ylabel('予測値')
-        ax1.set_title('予測値 vs 実測値')
-        ax1.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Scatter(
+                x=y,
+                y=y_pred,
+                mode='markers',
+                name='データポイント',
+                marker=dict(size=8, color='rgba(30, 144, 255, 0.6)'),
+                hovertemplate='実測値: %{x:.2f}<br>予測値: %{y:.2f}<extra></extra>'
+            ),
+            row=1, col=1
+        )
+
+        # 理想的な予測線（y=x）
+        fig.add_trace(
+            go.Scatter(
+                x=[y.min(), y.max()],
+                y=[y.min(), y.max()],
+                mode='lines',
+                name='理想的な予測',
+                line=dict(color='red', width=2, dash='dash'),
+                showlegend=True,
+                hovertemplate='%{y:.2f}<extra></extra>'
+            ),
+            row=1, col=1
+        )
 
         # 残差プロット
         residuals = y - y_pred
-        ax2.scatter(y_pred, residuals, alpha=0.6)
-        ax2.axhline(y=0, color='r', linestyle='--')
-        ax2.set_xlabel('予測値')
-        ax2.set_ylabel('残差')
-        ax2.set_title('残差プロット')
-        ax2.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Scatter(
+                x=y_pred,
+                y=residuals,
+                mode='markers',
+                name='残差',
+                marker=dict(size=8, color='rgba(30, 144, 255, 0.6)'),
+                showlegend=False,
+                hovertemplate='予測値: %{x:.2f}<br>残差: %{y:.2f}<extra></extra>'
+            ),
+            row=1, col=2
+        )
 
-        plt.tight_layout()
+        # ゼロ線
+        fig.add_hline(y=0, line_dash="dash", line_color="red", row=1, col=2)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        # レイアウト設定
+        fig.update_xaxes(title_text='実測値', row=1, col=1)
+        fig.update_yaxes(title_text='予測値', row=1, col=1)
+        fig.update_xaxes(title_text='予測値', row=1, col=2)
+        fig.update_yaxes(title_text='残差', row=1, col=2)
+
+        fig.update_layout(
+            height=500,
+            template='plotly_white',
+            showlegend=True
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='multiple-regression-plot')
 
         # 回帰式を作成
         equation_parts = [f"{model.intercept_:.4f}"]
@@ -1711,7 +1774,7 @@ def run_multiple_regression(x_vars, y_var):
 
             <div class="results-plot">
                 <h4>グラフ</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -1924,27 +1987,39 @@ def run_text_mining(text_column):
         # 頻出単語のDataFrame
         word_df = pd.DataFrame(top_words, columns=['単語', '出現回数'])
 
-        # 棒グラフを作成
-        fig, ax = plt.subplots(figsize=(12, 8))
+        # Plotlyで棒グラフを作成
         words_list = [w[0] for w in top_words[:20]]
         counts_list = [w[1] for w in top_words[:20]]
 
-        ax.barh(range(len(words_list)), counts_list)
-        ax.set_yticks(range(len(words_list)))
-        ax.set_yticklabels(words_list)
-        ax.invert_yaxis()
-        ax.set_xlabel('出現回数')
-        ax.set_title('頻出単語 TOP 20')
-        ax.grid(True, alpha=0.3, axis='x')
+        # データを逆順にして、最も頻度の高い単語が上に来るようにする
+        words_list_reversed = words_list[::-1]
+        counts_list_reversed = counts_list[::-1]
 
-        plt.tight_layout()
+        fig = go.Figure()
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        fig.add_trace(go.Bar(
+            x=counts_list_reversed,
+            y=words_list_reversed,
+            orientation='h',
+            marker=dict(
+                color='rgba(30, 144, 255, 0.7)',
+                line=dict(color='rgba(30, 144, 255, 1.0)', width=1)
+            ),
+            hovertemplate='<b>%{y}</b><br>出現回数: %{x}<extra></extra>'
+        ))
+
+        fig.update_layout(
+            title='頻出単語 TOP 20',
+            xaxis_title='出現回数',
+            yaxis_title='',
+            height=600,
+            template='plotly_white',
+            showlegend=False,
+            xaxis=dict(gridcolor='rgba(128, 128, 128, 0.2)')
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='text-mining-plot')
 
         # 結果をHTML形式で返す
         result_html = f"""
@@ -1974,7 +2049,7 @@ def run_text_mining(text_column):
 
             <div class="results-plot">
                 <h4>頻出単語グラフ</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
