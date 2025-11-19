@@ -564,19 +564,38 @@ def run_ttest_analysis(test_type, var1, var2):
         pooled_std = np.sqrt((data1.std()**2 + data2.std()**2) / 2)
         cohens_d = (data1.mean() - data2.mean()) / pooled_std if pooled_std != 0 else 0
 
-        # 箱ひげ図を作成
-        fig, ax = plt.subplots(figsize=(8, 6))
-        ax.boxplot([data1, data2], labels=[var1, var2])
-        ax.set_ylabel('値')
-        ax.set_title(f'{test_name}: {var1} vs {var2}')
-        ax.grid(True, alpha=0.3)
+        # 箱ひげ図をPlotlyで作成
+        fig = go.Figure()
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        fig.add_trace(go.Box(
+            y=data1,
+            name=var1,
+            marker_color='rgba(30, 144, 255, 0.7)',
+            boxmean='sd',
+            hovertemplate='%{y:.2f}<extra></extra>'
+        ))
+
+        fig.add_trace(go.Box(
+            y=data2,
+            name=var2,
+            marker_color='rgba(255, 99, 71, 0.7)',
+            boxmean='sd',
+            hovertemplate='%{y:.2f}<extra></extra>'
+        ))
+
+        fig.update_layout(
+            title=dict(
+                text=f'{test_name}: {var1} vs {var2}',
+                font=dict(size=16)
+            ),
+            yaxis_title='値',
+            template='plotly_white',
+            height=500,
+            showlegend=True
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='ttest-plot')
 
         # 結果をHTML形式で返す
         result_html = f"""
@@ -611,7 +630,7 @@ def run_ttest_analysis(test_type, var1, var2):
 
             <div class="results-plot">
                 <h4>箱ひげ図</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -792,27 +811,33 @@ def run_anova_analysis(groups):
 
         stats_df = pd.DataFrame(stats_data)
 
-        # 箱ひげ図を作成
-        fig, ax = plt.subplots(figsize=(10, 6))
-        bp = ax.boxplot(group_data, labels=groups, patch_artist=True)
+        # 箱ひげ図をPlotlyで作成
+        fig = go.Figure()
 
-        # 箱の色を設定
-        for patch in bp['boxes']:
-            patch.set_facecolor('lightblue')
-            patch.set_alpha(0.6)
+        colors = px.colors.qualitative.Plotly
+        for i, (group_name, data) in enumerate(zip(groups, group_data)):
+            fig.add_trace(go.Box(
+                y=data,
+                name=group_name,
+                marker_color=colors[i % len(colors)],
+                boxmean='sd',
+                hovertemplate='%{y:.2f}<extra></extra>'
+            ))
 
-        ax.set_ylabel('値')
-        ax.set_xlabel('グループ')
-        ax.set_title('一要因分散分析')
-        ax.grid(True, alpha=0.3, axis='y')
-        plt.xticks(rotation=45, ha='right')
+        fig.update_layout(
+            title=dict(
+                text='一要因分散分析',
+                font=dict(size=16)
+            ),
+            yaxis_title='値',
+            xaxis_title='グループ',
+            template='plotly_white',
+            height=500,
+            showlegend=True
+        )
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='anova-plot')
 
         # 効果量の解釈
         def interpret_effect_size(eta_sq):
@@ -867,7 +892,7 @@ def run_anova_analysis(groups):
 
             <div class="results-plot">
                 <h4>箱ひげ図</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -1326,42 +1351,83 @@ def run_two_way_anova(factor1, factor2, dependent_var):
             has_interaction = False
             console.log("注意: 軽量版モードでは交互作用の統計的検定は省略されますが、視覚的な交互作用プロットは表示されます。")
 
-        # 交互作用プロットを作成
-        fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+        # Plotlyで3つのグラフを作成
+        fig = make_subplots(
+            rows=1, cols=3,
+            subplot_titles=(f'{factor1}の主効果', f'{factor2}の主効果', '交互作用プロット'),
+            horizontal_spacing=0.1
+        )
 
         # 第1要因の箱ひげ図
-        data.boxplot(column=dependent_var, by=factor1, ax=axes[0])
-        axes[0].set_title(f'{factor1}の主効果')
-        axes[0].set_xlabel(factor1)
-        axes[0].set_ylabel(dependent_var)
-        plt.sca(axes[0])
-        plt.xticks(rotation=45, ha='right')
+        colors = px.colors.qualitative.Plotly
+        for i, level in enumerate(data[factor1].unique()):
+            level_data = data[data[factor1] == level][dependent_var]
+            fig.add_trace(
+                go.Box(
+                    y=level_data,
+                    name=str(level),
+                    marker_color=colors[i % len(colors)],
+                    boxmean='sd',
+                    showlegend=False,
+                    hovertemplate='%{y:.2f}<extra></extra>'
+                ),
+                row=1, col=1
+            )
 
         # 第2要因の箱ひげ図
-        data.boxplot(column=dependent_var, by=factor2, ax=axes[1])
-        axes[1].set_title(f'{factor2}の主効果')
-        axes[1].set_xlabel(factor2)
-        axes[1].set_ylabel(dependent_var)
-        plt.sca(axes[1])
-        plt.xticks(rotation=45, ha='right')
+        for i, level in enumerate(data[factor2].unique()):
+            level_data = data[data[factor2] == level][dependent_var]
+            fig.add_trace(
+                go.Box(
+                    y=level_data,
+                    name=str(level),
+                    marker_color=colors[i % len(colors)],
+                    boxmean='sd',
+                    showlegend=False,
+                    hovertemplate='%{y:.2f}<extra></extra>'
+                ),
+                row=1, col=2
+            )
 
         # 交互作用プロット
         interaction_means = data.groupby([factor1, factor2])[dependent_var].mean().unstack()
-        interaction_means.T.plot(ax=axes[2], marker='o')
-        axes[2].set_title('交互作用プロット')
-        axes[2].set_xlabel(factor2)
-        axes[2].set_ylabel(f'{dependent_var}の平均値')
-        axes[2].legend(title=factor1)
-        axes[2].grid(True, alpha=0.3)
+        for i, f1_level in enumerate(interaction_means.index):
+            fig.add_trace(
+                go.Scatter(
+                    x=interaction_means.columns,
+                    y=interaction_means.loc[f1_level],
+                    mode='lines+markers',
+                    name=f'{factor1}={f1_level}',
+                    line=dict(color=colors[i % len(colors)], width=2),
+                    marker=dict(size=8),
+                    hovertemplate='%{y:.2f}<extra></extra>'
+                ),
+                row=1, col=3
+            )
 
-        plt.tight_layout()
+        # レイアウト設定
+        fig.update_xaxes(title_text=factor1, row=1, col=1)
+        fig.update_xaxes(title_text=factor2, row=1, col=2)
+        fig.update_xaxes(title_text=factor2, row=1, col=3)
+        fig.update_yaxes(title_text=dependent_var, row=1, col=1)
+        fig.update_yaxes(title_text=dependent_var, row=1, col=2)
+        fig.update_yaxes(title_text=f'{dependent_var}の平均値', row=1, col=3)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        fig.update_layout(
+            height=500,
+            template='plotly_white',
+            showlegend=True,
+            legend=dict(
+                orientation="v",
+                yanchor="top",
+                y=0.99,
+                xanchor="right",
+                x=0.99
+            )
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='two-way-anova-plot')
 
         # 有意性判定の補助関数
         def significance_mark(p):
@@ -1457,7 +1523,7 @@ def run_two_way_anova(factor1, factor2, dependent_var):
 
             <div class="results-plot">
                 <h4>視覚化</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
                 <p class="text-muted">
                     左: {factor1}の主効果、中央: {factor2}の主効果、右: 交互作用プロット<br>
                     交互作用プロットで線が平行に近い場合は交互作用が小さく、交差または大きく非平行の場合は交互作用が大きいことを示します。
