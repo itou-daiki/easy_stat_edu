@@ -952,34 +952,70 @@ def run_simple_regression_analysis(x_var, y_var):
         y_pred = slope * x + intercept
         residuals = y - y_pred
 
-        # グラフを作成
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        # Plotlyで2つのグラフを作成
+        fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=('単回帰分析', '残差プロット'),
+            horizontal_spacing=0.12
+        )
 
-        # 散布図と回帰直線
-        ax1.scatter(x, y, alpha=0.6, label='実測値')
-        ax1.plot(x, y_pred, 'r-', label=f'回帰直線: y = {slope:.3f}x + {intercept:.3f}')
-        ax1.set_xlabel(x_var)
-        ax1.set_ylabel(y_var)
-        ax1.set_title('単回帰分析')
-        ax1.legend()
-        ax1.grid(True, alpha=0.3)
+        # 散布図
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                mode='markers',
+                name='実測値',
+                marker=dict(size=8, color='rgba(30, 144, 255, 0.6)'),
+                hovertemplate=f'<b>{x_var}</b>: %{{x:.2f}}<br><b>{y_var}</b>: %{{y:.2f}}<extra></extra>'
+            ),
+            row=1, col=1
+        )
+
+        # 回帰直線
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y_pred,
+                mode='lines',
+                name=f'回帰直線: y = {slope:.3f}x + {intercept:.3f}',
+                line=dict(color='red', width=2),
+                hovertemplate='%{y:.2f}<extra></extra>'
+            ),
+            row=1, col=1
+        )
 
         # 残差プロット
-        ax2.scatter(y_pred, residuals, alpha=0.6)
-        ax2.axhline(y=0, color='r', linestyle='--')
-        ax2.set_xlabel('予測値')
-        ax2.set_ylabel('残差')
-        ax2.set_title('残差プロット')
-        ax2.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Scatter(
+                x=y_pred,
+                y=residuals,
+                mode='markers',
+                name='残差',
+                marker=dict(size=8, color='rgba(30, 144, 255, 0.6)'),
+                showlegend=False,
+                hovertemplate='予測値: %{x:.2f}<br>残差: %{y:.2f}<extra></extra>'
+            ),
+            row=1, col=2
+        )
 
-        plt.tight_layout()
+        # ゼロ線
+        fig.add_hline(y=0, line_dash="dash", line_color="red", row=1, col=2)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        # レイアウト設定
+        fig.update_xaxes(title_text=x_var, row=1, col=1)
+        fig.update_yaxes(title_text=y_var, row=1, col=1)
+        fig.update_xaxes(title_text='予測値', row=1, col=2)
+        fig.update_yaxes(title_text='残差', row=1, col=2)
+
+        fig.update_layout(
+            height=500,
+            template='plotly_white',
+            showlegend=True
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='simple-regression-plot')
 
         # 結果をHTML形式で返す
         result_html = f"""
@@ -1018,7 +1054,7 @@ def run_simple_regression_analysis(x_var, y_var):
 
             <div class="results-plot">
                 <h4>グラフ</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
