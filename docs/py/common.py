@@ -9,6 +9,9 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
 from js import document, FileReader, Uint8Array, console
 from pyodide.ffi import create_proxy
 import json
@@ -1818,5 +1821,10 @@ console.log(f"  - pandas: {pd.__version__}")
 console.log(f"  - numpy: {np.__version__}")
 console.log("  - scipy: loaded")
 console.log("  - matplotlib: loaded")
+try:
+    import plotly
+    console.log(f"  - plotly: {plotly.__version__}")
+except:
+    console.log("  - plotly: not available")
 console.log("✓ All statistical functions are ready")
 console.log("=" * 50)
