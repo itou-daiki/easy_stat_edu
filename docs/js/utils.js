@@ -2,27 +2,99 @@
 let currentData = null;
 let currentAnalysis = null;
 let pyScriptReady = false;
+let pyScriptCheckInterval = null;
+
+// PyScriptが利用可能かチェックする関数
+function isPyScriptAvailable() {
+    try {
+        // window.pyscriptまたはグローバルpyscriptをチェック
+        const ps = window.pyscript || (typeof pyscript !== 'undefined' ? pyscript : null);
+
+        if (!ps) {
+            return false;
+        }
+
+        // interpreterの存在確認
+        if (!ps.interpreter) {
+            return false;
+        }
+
+        // 重要なPython関数が定義されているか確認
+        try {
+            const loadFunc = ps.interpreter.globals.get('load_file_data');
+            return !!loadFunc;
+        } catch (e) {
+            return false;
+        }
+    } catch (e) {
+        return false;
+    }
+}
 
 // PyScriptの初期化完了を検知（複数のイベントをリッスン）
 function markPyScriptReady() {
-    if (!pyScriptReady) {
-        console.log('✓ PyScript initialized successfully');
+    if (!pyScriptReady && isPyScriptAvailable()) {
+        console.log('✓✓✓ PyScript initialized successfully ✓✓✓');
         pyScriptReady = true;
 
-        // グローバル関数の存在を確認
-        try {
-            const ps = window.pyscript || (typeof pyscript !== 'undefined' ? pyscript : null);
-            if (ps && ps.interpreter) {
-                const testFunc = ps.interpreter.globals.get('load_file_data');
-                if (testFunc) {
-                    console.log('✓ Python functions are available');
-                } else {
-                    console.warn('⚠ PyScript ready but functions not found yet');
-                }
-            }
-        } catch (e) {
-            console.warn('⚠ PyScript ready but interpreter check failed:', e);
+        // 定期チェックを停止
+        if (pyScriptCheckInterval) {
+            clearInterval(pyScriptCheckInterval);
+            pyScriptCheckInterval = null;
         }
+
+        // アップロードボタンを有効化
+        enableUploadArea();
+
+        console.log('✓ Python functions are available and ready to use');
+    }
+}
+
+// アップロードエリアを有効化
+function enableUploadArea() {
+    const uploadArea = document.getElementById('main-upload-area');
+    const uploadBtn = document.getElementById('main-upload-btn');
+    const fileInput = document.getElementById('main-data-file');
+
+    if (uploadArea) {
+        uploadArea.style.opacity = '1';
+        uploadArea.style.pointerEvents = 'auto';
+        uploadArea.classList.remove('disabled');
+    }
+
+    if (uploadBtn) {
+        uploadBtn.disabled = false;
+        uploadBtn.style.opacity = '1';
+        uploadBtn.style.cursor = 'pointer';
+    }
+
+    if (fileInput) {
+        fileInput.disabled = false;
+    }
+
+    console.log('✓ Upload area enabled');
+}
+
+// アップロードエリアを無効化
+function disableUploadArea() {
+    const uploadArea = document.getElementById('main-upload-area');
+    const uploadBtn = document.getElementById('main-upload-btn');
+    const fileInput = document.getElementById('main-data-file');
+
+    if (uploadArea) {
+        uploadArea.style.opacity = '0.5';
+        uploadArea.style.pointerEvents = 'none';
+        uploadArea.classList.add('disabled');
+    }
+
+    if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.style.opacity = '0.5';
+        uploadBtn.style.cursor = 'not-allowed';
+    }
+
+    if (fileInput) {
+        fileInput.disabled = true;
     }
 }
 
@@ -43,70 +115,51 @@ document.addEventListener('pyscript:ready', () => {
 // DOMContentLoadedでもチェック（PyScript 2024.x系の場合）
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOMContentLoaded - checking for PyScript');
-    setTimeout(checkPyScriptInitialization, 100);
-});
 
-// PyScriptのランタイムが利用可能になったことを検知
-if (typeof pyscript !== 'undefined' || window.pyscript) {
-    console.log('PyScript runtime detected on page load');
-}
+    // 初期状態でアップロードエリアを無効化
+    disableUploadArea();
+
+    // 定期的にPyScriptの状態をチェック（100msごと）
+    pyScriptCheckInterval = setInterval(() => {
+        if (isPyScriptAvailable()) {
+            console.log('PyScript detected via polling');
+            markPyScriptReady();
+        }
+    }, 100);
+});
 
 // PyScript関数を安全に取得するヘルパー関数
 function getPyScriptFunction(functionName) {
-    // 実際のPyScriptの状態を確認（pyScriptReadyフラグに依存しない）
-    const ps = window.pyscript || pyscript;
-
-    if (typeof ps === 'undefined') {
-        console.error('❌ pyscript object is undefined');
+    // PyScriptが利用可能か確認
+    if (!isPyScriptAvailable()) {
+        console.error('❌ PyScript is not available');
+        console.error('Debug: pyScriptReady =', pyScriptReady);
         console.error('Debug: window.pyscript =', window.pyscript);
         console.error('Debug: typeof pyscript =', typeof pyscript);
-        throw new Error('PyScriptがまだ初期化されていません。ページを再読み込みしてください。');
+        throw new Error('PyScriptがまだ初期化されていません。\n\nページを再読み込み（Ctrl+F5）してください。\n\n問題が続く場合は、ブラウザのキャッシュをクリアしてください。');
     }
 
-    if (!ps.interpreter) {
-        console.error('❌ pyscript.interpreter is not available');
-        console.error('Debug: pyscript object =', ps);
-        throw new Error('PyScriptインタープリタが利用できません。ページを再読み込みしてください。');
-    }
+    const ps = window.pyscript || pyscript;
 
-    const func = ps.interpreter.globals.get(functionName);
-    if (!func) {
-        console.error(`❌ Function '${functionName}' not found in Python globals`);
-        try {
-            const globalsObj = ps.interpreter.globals.toJs();
-            console.error('Available Python globals:', Object.keys(globalsObj));
-        } catch (e) {
-            console.error('Could not enumerate Python globals');
-        }
-        throw new Error(`関数 ${functionName} が見つかりません。PyScriptの初期化を確認してください。`);
-    }
-
-    console.log(`✓ Retrieved function: ${functionName}`);
-    return func;
-}
-
-// PyScriptの初期化を積極的にチェック（ポーリング）
-function checkPyScriptInitialization() {
-    if (!pyScriptReady) {
-        try {
-            // pyscriptオブジェクトとインタープリタが存在するかチェック（window.pyscriptも確認）
-            const ps = window.pyscript || (typeof pyscript !== 'undefined' ? pyscript : null);
-
-            if (ps && ps.interpreter) {
-                // load_file_data関数が定義されているかチェック
-                const loadFunc = ps.interpreter.globals.get('load_file_data');
-                if (loadFunc) {
-                    console.log('✓ PyScript detected via polling (functions available)');
-                    markPyScriptReady();
-                    return true;
-                }
+    try {
+        const func = ps.interpreter.globals.get(functionName);
+        if (!func) {
+            console.error(`❌ Function '${functionName}' not found in Python globals`);
+            try {
+                const globalsObj = ps.interpreter.globals.toJs();
+                console.error('Available Python globals:', Object.keys(globalsObj));
+            } catch (e) {
+                console.error('Could not enumerate Python globals');
             }
-        } catch (e) {
-            // まだ準備できていない
-            console.debug('PyScript not ready yet:', e.message);
+            throw new Error(`関数 ${functionName} が見つかりません。PyScriptの初期化を確認してください。`);
         }
+
+        console.log(`✓ Retrieved function: ${functionName}`);
+        return func;
+    } catch (e) {
+        console.error(`❌ Error getting function '${functionName}':`, e);
+        throw e;
     }
-    return pyScriptReady;
 }
 
 // ローディング画面を非表示にしてメインアプリを表示
@@ -121,7 +174,9 @@ window.addEventListener('load', function() {
         checkCount++;
 
         // アクティブにPyScriptの準備をチェック
-        checkPyScriptInitialization();
+        if (isPyScriptAvailable()) {
+            markPyScriptReady();
+        }
 
         // 進捗をログ出力（5秒ごと）
         if (checkCount % 50 === 0) {
@@ -137,13 +192,14 @@ window.addEventListener('load', function() {
             if (!pyScriptReady) {
                 console.error('❌ PyScript initialization timeout after 60 seconds');
                 console.error('Please check browser console for PyScript errors');
+                console.error('Debug: isPyScriptAvailable() =', isPyScriptAvailable());
                 console.error('Debug: window.pyscript =', window.pyscript);
                 console.error('Debug: typeof pyscript =', typeof pyscript);
 
                 // アップロードエリアにエラーメッセージを表示
                 showInitializationError();
             } else {
-                console.log(`✓ App ready (initialized in ${checkCount / 10}s)`);
+                console.log(`✓✓✓ App ready (initialized in ${checkCount / 10}s) ✓✓✓`);
 
                 // メインアップロードの初期化（PyScript準備完了時のみ）
                 setupMainUpload();
@@ -289,7 +345,9 @@ async function handleMainFileUpload(event) {
 
             while (waited < maxWait) {
                 // アクティブにPyScriptの準備をチェック
-                checkPyScriptInitialization();
+                if (isPyScriptAvailable()) {
+                    markPyScriptReady();
+                }
 
                 if (pyScriptReady) {
                     console.log('✓ PyScript ready, proceeding with file upload');
@@ -340,12 +398,7 @@ async function handleMainFileUpload(event) {
         const fileContent = await readFileContent(file);
         console.log('✓ File content read, loading into Python...');
 
-        // 最終確認: PyScriptが本当に利用可能か再チェック
-        const ps = window.pyscript || (typeof pyscript !== 'undefined' ? pyscript : null);
-        if (!ps || !ps.interpreter) {
-            throw new Error('統計エンジンが正しく初期化されていません。\n\nページを再読み込み（Ctrl+F5）してください。');
-        }
-
+        // Python関数を取得（getPyScriptFunction内でPyScript状態を確認）
         const loadFileData = getPyScriptFunction('load_file_data');
         const success = await loadFileData(fileContent, file.name);
 

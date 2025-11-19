@@ -415,6 +415,20 @@ button:disabled {
     transform: scale(1.02);
 }
 
+/* アップロードエリアの無効化状態 */
+.upload-area.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    background: #f1f5f9;
+}
+
+.upload-area.disabled:hover {
+    border-color: var(--border-color);
+    background: #f1f5f9;
+    transform: none;
+}
+
 .upload-icon {
     font-size: 2.5rem;
     color: var(--primary-color);
@@ -459,6 +473,20 @@ button:disabled {
     background: var(--primary-dark);
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
+}
+
+.btn-upload:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.5;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-upload:disabled:hover {
+    background: #94a3b8;
+    transform: none;
+    box-shadow: none;
 }
 
 .upload-hint {
