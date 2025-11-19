@@ -37,13 +37,30 @@ if (typeof pyscript !== 'undefined') {
 
 // PyScript関数を安全に取得するヘルパー関数
 function getPyScriptFunction(functionName) {
-    if (!pyScriptReady || typeof pyscript === 'undefined') {
+    // 実際のPyScriptの状態を確認（pyScriptReadyフラグに依存しない）
+    if (typeof pyscript === 'undefined') {
+        console.error('❌ pyscript object is undefined');
         throw new Error('PyScriptがまだ初期化されていません。ページを再読み込みしてください。');
     }
+
+    if (!pyscript.interpreter) {
+        console.error('❌ pyscript.interpreter is not available');
+        throw new Error('PyScriptインタープリタが利用できません。ページを再読み込みしてください。');
+    }
+
     const func = pyscript.interpreter.globals.get(functionName);
     if (!func) {
-        throw new Error(`関数 ${functionName} が見つかりません`);
+        console.error(`❌ Function '${functionName}' not found in Python globals`);
+        try {
+            const globalsObj = pyscript.interpreter.globals.toJs();
+            console.error('Available Python globals:', Object.keys(globalsObj));
+        } catch (e) {
+            console.error('Could not enumerate Python globals');
+        }
+        throw new Error(`関数 ${functionName} が見つかりません。PyScriptの初期化を確認してください。`);
     }
+
+    console.log(`✓ Retrieved function: ${functionName}`);
     return func;
 }
 
@@ -245,6 +262,8 @@ async function handleMainFileUpload(event) {
                 throw new Error('統計エンジンの初期化に時間がかかりすぎています。\n\n考えられる原因：\n- ネットワーク接続が不安定\n- ブラウザのキャッシュが破損\n\n対処方法：\n1. ブラウザのキャッシュをクリア（Ctrl+Shift+Del）\n2. ページを再読み込み（Ctrl+F5）\n3. 別のブラウザで試す（Chrome推奨）');
             }
 
+            console.log('✓ PyScript ready after waiting, proceeding with file processing');
+
             fileInfo.innerHTML = `
                 <div class="loading">
                     <i class="fas fa-spinner fa-spin"></i>
@@ -255,6 +274,8 @@ async function handleMainFileUpload(event) {
         }
 
         const fileContent = await readFileContent(file);
+        console.log('✓ File content read, loading into Python...');
+
         const loadFileData = getPyScriptFunction('load_file_data');
         const success = await loadFileData(fileContent, file.name);
 
