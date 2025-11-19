@@ -258,26 +258,59 @@ def run_correlation_analysis(var1, var2):
         # 相関係数を計算
         r, p_value = stats.pearsonr(x, y)
 
-        # 散布図を作成（matplotlib使用）
-        fig, ax = plt.subplots(figsize=(8, 6))
-        ax.scatter(x, y, alpha=0.6)
-        ax.set_xlabel(var1)
-        ax.set_ylabel(var2)
-        ax.set_title(f'{var1} vs {var2} の散布図')
-        ax.grid(True, alpha=0.3)
+        # 散布図をPlotlyで作成
+        fig = go.Figure()
+
+        # 散布図
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=y,
+            mode='markers',
+            name='データポイント',
+            marker=dict(
+                size=8,
+                color='rgba(30, 144, 255, 0.6)',
+                line=dict(width=0.5, color='white')
+            ),
+            hovertemplate=f'<b>{var1}</b>: %{{x:.2f}}<br><b>{var2}</b>: %{{y:.2f}}<extra></extra>'
+        ))
 
         # 回帰直線を追加
         z = np.polyfit(x, y, 1)
         p = np.poly1d(z)
-        ax.plot(x, p(x), "r--", alpha=0.8, label=f'y = {z[0]:.3f}x + {z[1]:.3f}')
-        ax.legend()
+        x_line = np.linspace(x.min(), x.max(), 100)
+        y_line = p(x_line)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        fig.add_trace(go.Scatter(
+            x=x_line,
+            y=y_line,
+            mode='lines',
+            name=f'回帰直線: y = {z[0]:.3f}x + {z[1]:.3f}',
+            line=dict(color='red', width=2, dash='dash')
+        ))
+
+        # レイアウト設定
+        fig.update_layout(
+            title=dict(
+                text=f'{var1} vs {var2} の散布図',
+                font=dict(size=16)
+            ),
+            xaxis_title=var1,
+            yaxis_title=var2,
+            hovermode='closest',
+            template='plotly_white',
+            height=500,
+            showlegend=True,
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01
+            )
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='correlation-plot')
 
         # 結果をHTML形式で返す
         result_html = f"""
@@ -305,7 +338,7 @@ def run_correlation_analysis(var1, var2):
 
             <div class="results-plot">
                 <h4>散布図</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -378,33 +411,69 @@ def run_eda_analysis(variable):
         q1 = data.quantile(0.25)
         q3 = data.quantile(0.75)
 
-        # ヒストグラムを作成
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+        # Plotlyで2つのグラフを作成
+        fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=('ヒストグラム', '箱ひげ図'),
+            horizontal_spacing=0.12
+        )
 
         # ヒストグラム
-        ax1.hist(data, bins=30, edgecolor='black', alpha=0.7)
-        ax1.axvline(mean_val, color='red', linestyle='--', label=f'平均: {mean_val:.2f}')
-        ax1.axvline(median_val, color='green', linestyle='--', label=f'中央値: {median_val:.2f}')
-        ax1.set_xlabel(variable)
-        ax1.set_ylabel('度数')
-        ax1.set_title('ヒストグラム')
-        ax1.legend()
-        ax1.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Histogram(
+                x=data,
+                nbinsx=30,
+                marker=dict(
+                    color='rgba(30, 144, 255, 0.7)',
+                    line=dict(color='black', width=1)
+                ),
+                name=variable,
+                showlegend=False,
+                hovertemplate='%{x:.2f}<br>度数: %{y}<extra></extra>'
+            ),
+            row=1, col=1
+        )
+
+        # 平均値と中央値の線を追加
+        fig.add_vline(
+            x=mean_val, line_dash="dash", line_color="red",
+            annotation_text=f'平均: {mean_val:.2f}',
+            annotation_position="top right",
+            row=1, col=1
+        )
+        fig.add_vline(
+            x=median_val, line_dash="dash", line_color="green",
+            annotation_text=f'中央値: {median_val:.2f}',
+            annotation_position="bottom right",
+            row=1, col=1
+        )
 
         # 箱ひげ図
-        ax2.boxplot(data, vert=True)
-        ax2.set_ylabel(variable)
-        ax2.set_title('箱ひげ図')
-        ax2.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Box(
+                y=data,
+                name=variable,
+                marker_color='rgba(30, 144, 255, 0.7)',
+                boxmean='sd',
+                showlegend=False,
+                hovertemplate='%{y:.2f}<extra></extra>'
+            ),
+            row=1, col=2
+        )
 
-        plt.tight_layout()
+        # レイアウト設定
+        fig.update_xaxes(title_text=variable, row=1, col=1)
+        fig.update_yaxes(title_text="度数", row=1, col=1)
+        fig.update_yaxes(title_text=variable, row=1, col=2)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        fig.update_layout(
+            height=500,
+            template='plotly_white',
+            showlegend=False
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='eda-plot')
 
         # 結果をHTML形式で返す
         result_html = f"""
@@ -428,7 +497,7 @@ def run_eda_analysis(variable):
 
             <div class="results-plot">
                 <h4>グラフ</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
