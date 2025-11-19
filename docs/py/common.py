@@ -258,26 +258,59 @@ def run_correlation_analysis(var1, var2):
         # 相関係数を計算
         r, p_value = stats.pearsonr(x, y)
 
-        # 散布図を作成（matplotlib使用）
-        fig, ax = plt.subplots(figsize=(8, 6))
-        ax.scatter(x, y, alpha=0.6)
-        ax.set_xlabel(var1)
-        ax.set_ylabel(var2)
-        ax.set_title(f'{var1} vs {var2} の散布図')
-        ax.grid(True, alpha=0.3)
+        # 散布図をPlotlyで作成
+        fig = go.Figure()
+
+        # 散布図
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=y,
+            mode='markers',
+            name='データポイント',
+            marker=dict(
+                size=8,
+                color='rgba(30, 144, 255, 0.6)',
+                line=dict(width=0.5, color='white')
+            ),
+            hovertemplate=f'<b>{var1}</b>: %{{x:.2f}}<br><b>{var2}</b>: %{{y:.2f}}<extra></extra>'
+        ))
 
         # 回帰直線を追加
         z = np.polyfit(x, y, 1)
         p = np.poly1d(z)
-        ax.plot(x, p(x), "r--", alpha=0.8, label=f'y = {z[0]:.3f}x + {z[1]:.3f}')
-        ax.legend()
+        x_line = np.linspace(x.min(), x.max(), 100)
+        y_line = p(x_line)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        fig.add_trace(go.Scatter(
+            x=x_line,
+            y=y_line,
+            mode='lines',
+            name=f'回帰直線: y = {z[0]:.3f}x + {z[1]:.3f}',
+            line=dict(color='red', width=2, dash='dash')
+        ))
+
+        # レイアウト設定
+        fig.update_layout(
+            title=dict(
+                text=f'{var1} vs {var2} の散布図',
+                font=dict(size=16)
+            ),
+            xaxis_title=var1,
+            yaxis_title=var2,
+            hovermode='closest',
+            template='plotly_white',
+            height=500,
+            showlegend=True,
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01
+            )
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='correlation-plot')
 
         # 結果をHTML形式で返す
         result_html = f"""
@@ -305,7 +338,7 @@ def run_correlation_analysis(var1, var2):
 
             <div class="results-plot">
                 <h4>散布図</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -378,33 +411,69 @@ def run_eda_analysis(variable):
         q1 = data.quantile(0.25)
         q3 = data.quantile(0.75)
 
-        # ヒストグラムを作成
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+        # Plotlyで2つのグラフを作成
+        fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=('ヒストグラム', '箱ひげ図'),
+            horizontal_spacing=0.12
+        )
 
         # ヒストグラム
-        ax1.hist(data, bins=30, edgecolor='black', alpha=0.7)
-        ax1.axvline(mean_val, color='red', linestyle='--', label=f'平均: {mean_val:.2f}')
-        ax1.axvline(median_val, color='green', linestyle='--', label=f'中央値: {median_val:.2f}')
-        ax1.set_xlabel(variable)
-        ax1.set_ylabel('度数')
-        ax1.set_title('ヒストグラム')
-        ax1.legend()
-        ax1.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Histogram(
+                x=data,
+                nbinsx=30,
+                marker=dict(
+                    color='rgba(30, 144, 255, 0.7)',
+                    line=dict(color='black', width=1)
+                ),
+                name=variable,
+                showlegend=False,
+                hovertemplate='%{x:.2f}<br>度数: %{y}<extra></extra>'
+            ),
+            row=1, col=1
+        )
+
+        # 平均値と中央値の線を追加
+        fig.add_vline(
+            x=mean_val, line_dash="dash", line_color="red",
+            annotation_text=f'平均: {mean_val:.2f}',
+            annotation_position="top right",
+            row=1, col=1
+        )
+        fig.add_vline(
+            x=median_val, line_dash="dash", line_color="green",
+            annotation_text=f'中央値: {median_val:.2f}',
+            annotation_position="bottom right",
+            row=1, col=1
+        )
 
         # 箱ひげ図
-        ax2.boxplot(data, vert=True)
-        ax2.set_ylabel(variable)
-        ax2.set_title('箱ひげ図')
-        ax2.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Box(
+                y=data,
+                name=variable,
+                marker_color='rgba(30, 144, 255, 0.7)',
+                boxmean='sd',
+                showlegend=False,
+                hovertemplate='%{y:.2f}<extra></extra>'
+            ),
+            row=1, col=2
+        )
 
-        plt.tight_layout()
+        # レイアウト設定
+        fig.update_xaxes(title_text=variable, row=1, col=1)
+        fig.update_yaxes(title_text="度数", row=1, col=1)
+        fig.update_yaxes(title_text=variable, row=1, col=2)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        fig.update_layout(
+            height=500,
+            template='plotly_white',
+            showlegend=False
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='eda-plot')
 
         # 結果をHTML形式で返す
         result_html = f"""
@@ -428,7 +497,7 @@ def run_eda_analysis(variable):
 
             <div class="results-plot">
                 <h4>グラフ</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -495,19 +564,38 @@ def run_ttest_analysis(test_type, var1, var2):
         pooled_std = np.sqrt((data1.std()**2 + data2.std()**2) / 2)
         cohens_d = (data1.mean() - data2.mean()) / pooled_std if pooled_std != 0 else 0
 
-        # 箱ひげ図を作成
-        fig, ax = plt.subplots(figsize=(8, 6))
-        ax.boxplot([data1, data2], labels=[var1, var2])
-        ax.set_ylabel('値')
-        ax.set_title(f'{test_name}: {var1} vs {var2}')
-        ax.grid(True, alpha=0.3)
+        # 箱ひげ図をPlotlyで作成
+        fig = go.Figure()
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        fig.add_trace(go.Box(
+            y=data1,
+            name=var1,
+            marker_color='rgba(30, 144, 255, 0.7)',
+            boxmean='sd',
+            hovertemplate='%{y:.2f}<extra></extra>'
+        ))
+
+        fig.add_trace(go.Box(
+            y=data2,
+            name=var2,
+            marker_color='rgba(255, 99, 71, 0.7)',
+            boxmean='sd',
+            hovertemplate='%{y:.2f}<extra></extra>'
+        ))
+
+        fig.update_layout(
+            title=dict(
+                text=f'{test_name}: {var1} vs {var2}',
+                font=dict(size=16)
+            ),
+            yaxis_title='値',
+            template='plotly_white',
+            height=500,
+            showlegend=True
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='ttest-plot')
 
         # 結果をHTML形式で返す
         result_html = f"""
@@ -542,7 +630,7 @@ def run_ttest_analysis(test_type, var1, var2):
 
             <div class="results-plot">
                 <h4>箱ひげ図</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -723,27 +811,33 @@ def run_anova_analysis(groups):
 
         stats_df = pd.DataFrame(stats_data)
 
-        # 箱ひげ図を作成
-        fig, ax = plt.subplots(figsize=(10, 6))
-        bp = ax.boxplot(group_data, labels=groups, patch_artist=True)
+        # 箱ひげ図をPlotlyで作成
+        fig = go.Figure()
 
-        # 箱の色を設定
-        for patch in bp['boxes']:
-            patch.set_facecolor('lightblue')
-            patch.set_alpha(0.6)
+        colors = px.colors.qualitative.Plotly
+        for i, (group_name, data) in enumerate(zip(groups, group_data)):
+            fig.add_trace(go.Box(
+                y=data,
+                name=group_name,
+                marker_color=colors[i % len(colors)],
+                boxmean='sd',
+                hovertemplate='%{y:.2f}<extra></extra>'
+            ))
 
-        ax.set_ylabel('値')
-        ax.set_xlabel('グループ')
-        ax.set_title('一要因分散分析')
-        ax.grid(True, alpha=0.3, axis='y')
-        plt.xticks(rotation=45, ha='right')
+        fig.update_layout(
+            title=dict(
+                text='一要因分散分析',
+                font=dict(size=16)
+            ),
+            yaxis_title='値',
+            xaxis_title='グループ',
+            template='plotly_white',
+            height=500,
+            showlegend=True
+        )
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='anova-plot')
 
         # 効果量の解釈
         def interpret_effect_size(eta_sq):
@@ -798,7 +892,7 @@ def run_anova_analysis(groups):
 
             <div class="results-plot">
                 <h4>箱ひげ図</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -858,34 +952,70 @@ def run_simple_regression_analysis(x_var, y_var):
         y_pred = slope * x + intercept
         residuals = y - y_pred
 
-        # グラフを作成
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        # Plotlyで2つのグラフを作成
+        fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=('単回帰分析', '残差プロット'),
+            horizontal_spacing=0.12
+        )
 
-        # 散布図と回帰直線
-        ax1.scatter(x, y, alpha=0.6, label='実測値')
-        ax1.plot(x, y_pred, 'r-', label=f'回帰直線: y = {slope:.3f}x + {intercept:.3f}')
-        ax1.set_xlabel(x_var)
-        ax1.set_ylabel(y_var)
-        ax1.set_title('単回帰分析')
-        ax1.legend()
-        ax1.grid(True, alpha=0.3)
+        # 散布図
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                mode='markers',
+                name='実測値',
+                marker=dict(size=8, color='rgba(30, 144, 255, 0.6)'),
+                hovertemplate=f'<b>{x_var}</b>: %{{x:.2f}}<br><b>{y_var}</b>: %{{y:.2f}}<extra></extra>'
+            ),
+            row=1, col=1
+        )
+
+        # 回帰直線
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y_pred,
+                mode='lines',
+                name=f'回帰直線: y = {slope:.3f}x + {intercept:.3f}',
+                line=dict(color='red', width=2),
+                hovertemplate='%{y:.2f}<extra></extra>'
+            ),
+            row=1, col=1
+        )
 
         # 残差プロット
-        ax2.scatter(y_pred, residuals, alpha=0.6)
-        ax2.axhline(y=0, color='r', linestyle='--')
-        ax2.set_xlabel('予測値')
-        ax2.set_ylabel('残差')
-        ax2.set_title('残差プロット')
-        ax2.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Scatter(
+                x=y_pred,
+                y=residuals,
+                mode='markers',
+                name='残差',
+                marker=dict(size=8, color='rgba(30, 144, 255, 0.6)'),
+                showlegend=False,
+                hovertemplate='予測値: %{x:.2f}<br>残差: %{y:.2f}<extra></extra>'
+            ),
+            row=1, col=2
+        )
 
-        plt.tight_layout()
+        # ゼロ線
+        fig.add_hline(y=0, line_dash="dash", line_color="red", row=1, col=2)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        # レイアウト設定
+        fig.update_xaxes(title_text=x_var, row=1, col=1)
+        fig.update_yaxes(title_text=y_var, row=1, col=1)
+        fig.update_xaxes(title_text='予測値', row=1, col=2)
+        fig.update_yaxes(title_text='残差', row=1, col=2)
+
+        fig.update_layout(
+            height=500,
+            template='plotly_white',
+            showlegend=True
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='simple-regression-plot')
 
         # 結果をHTML形式で返す
         result_html = f"""
@@ -924,7 +1054,7 @@ def run_simple_regression_analysis(x_var, y_var):
 
             <div class="results-plot">
                 <h4>グラフ</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -986,32 +1116,57 @@ def run_pca_analysis(n_components=2):
         explained_variance = pca.explained_variance_ratio_ * 100
         cumulative_variance = np.cumsum(explained_variance)
 
-        # グラフを作成
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        # Plotlyで2つのグラフを作成
+        fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=('主成分の寄与率', '主成分散布図'),
+            horizontal_spacing=0.12
+        )
 
         # 寄与率の棒グラフ
-        ax1.bar(range(1, len(explained_variance) + 1), explained_variance)
-        ax1.set_xlabel('主成分')
-        ax1.set_ylabel('寄与率 (%)')
-        ax1.set_title('主成分の寄与率')
-        ax1.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Bar(
+                x=[f'PC{i+1}' for i in range(len(explained_variance))],
+                y=explained_variance,
+                marker_color='rgba(30, 144, 255, 0.7)',
+                name='寄与率',
+                showlegend=False,
+                hovertemplate='主成分: %{x}<br>寄与率: %{y:.2f}%<extra></extra>'
+            ),
+            row=1, col=1
+        )
 
         # 散布図（第1・第2主成分）
         if pca_result.shape[1] >= 2:
-            ax2.scatter(pca_result[:, 0], pca_result[:, 1], alpha=0.6)
-            ax2.set_xlabel(f'第1主成分 ({explained_variance[0]:.1f}%)')
-            ax2.set_ylabel(f'第2主成分 ({explained_variance[1]:.1f}%)')
-            ax2.set_title('主成分散布図')
-            ax2.grid(True, alpha=0.3)
+            fig.add_trace(
+                go.Scatter(
+                    x=pca_result[:, 0],
+                    y=pca_result[:, 1],
+                    mode='markers',
+                    marker=dict(size=8, color='rgba(30, 144, 255, 0.6)'),
+                    name='データポイント',
+                    showlegend=False,
+                    hovertemplate='PC1: %{x:.2f}<br>PC2: %{y:.2f}<extra></extra>'
+                ),
+                row=1, col=2
+            )
 
-        plt.tight_layout()
+        # レイアウト設定
+        fig.update_xaxes(title_text='主成分', row=1, col=1)
+        fig.update_yaxes(title_text='寄与率 (%)', row=1, col=1)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        if pca_result.shape[1] >= 2:
+            fig.update_xaxes(title_text=f'第1主成分 ({explained_variance[0]:.1f}%)', row=1, col=2)
+            fig.update_yaxes(title_text=f'第2主成分 ({explained_variance[1]:.1f}%)', row=1, col=2)
+
+        fig.update_layout(
+            height=500,
+            template='plotly_white',
+            showlegend=False
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='pca-plot')
 
         # 寄与率テーブル作成
         variance_df = pd.DataFrame({
@@ -1045,7 +1200,7 @@ def run_pca_analysis(n_components=2):
 
             <div class="results-plot">
                 <h4>グラフ</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -1257,42 +1412,83 @@ def run_two_way_anova(factor1, factor2, dependent_var):
             has_interaction = False
             console.log("注意: 軽量版モードでは交互作用の統計的検定は省略されますが、視覚的な交互作用プロットは表示されます。")
 
-        # 交互作用プロットを作成
-        fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+        # Plotlyで3つのグラフを作成
+        fig = make_subplots(
+            rows=1, cols=3,
+            subplot_titles=(f'{factor1}の主効果', f'{factor2}の主効果', '交互作用プロット'),
+            horizontal_spacing=0.1
+        )
 
         # 第1要因の箱ひげ図
-        data.boxplot(column=dependent_var, by=factor1, ax=axes[0])
-        axes[0].set_title(f'{factor1}の主効果')
-        axes[0].set_xlabel(factor1)
-        axes[0].set_ylabel(dependent_var)
-        plt.sca(axes[0])
-        plt.xticks(rotation=45, ha='right')
+        colors = px.colors.qualitative.Plotly
+        for i, level in enumerate(data[factor1].unique()):
+            level_data = data[data[factor1] == level][dependent_var]
+            fig.add_trace(
+                go.Box(
+                    y=level_data,
+                    name=str(level),
+                    marker_color=colors[i % len(colors)],
+                    boxmean='sd',
+                    showlegend=False,
+                    hovertemplate='%{y:.2f}<extra></extra>'
+                ),
+                row=1, col=1
+            )
 
         # 第2要因の箱ひげ図
-        data.boxplot(column=dependent_var, by=factor2, ax=axes[1])
-        axes[1].set_title(f'{factor2}の主効果')
-        axes[1].set_xlabel(factor2)
-        axes[1].set_ylabel(dependent_var)
-        plt.sca(axes[1])
-        plt.xticks(rotation=45, ha='right')
+        for i, level in enumerate(data[factor2].unique()):
+            level_data = data[data[factor2] == level][dependent_var]
+            fig.add_trace(
+                go.Box(
+                    y=level_data,
+                    name=str(level),
+                    marker_color=colors[i % len(colors)],
+                    boxmean='sd',
+                    showlegend=False,
+                    hovertemplate='%{y:.2f}<extra></extra>'
+                ),
+                row=1, col=2
+            )
 
         # 交互作用プロット
         interaction_means = data.groupby([factor1, factor2])[dependent_var].mean().unstack()
-        interaction_means.T.plot(ax=axes[2], marker='o')
-        axes[2].set_title('交互作用プロット')
-        axes[2].set_xlabel(factor2)
-        axes[2].set_ylabel(f'{dependent_var}の平均値')
-        axes[2].legend(title=factor1)
-        axes[2].grid(True, alpha=0.3)
+        for i, f1_level in enumerate(interaction_means.index):
+            fig.add_trace(
+                go.Scatter(
+                    x=interaction_means.columns,
+                    y=interaction_means.loc[f1_level],
+                    mode='lines+markers',
+                    name=f'{factor1}={f1_level}',
+                    line=dict(color=colors[i % len(colors)], width=2),
+                    marker=dict(size=8),
+                    hovertemplate='%{y:.2f}<extra></extra>'
+                ),
+                row=1, col=3
+            )
 
-        plt.tight_layout()
+        # レイアウト設定
+        fig.update_xaxes(title_text=factor1, row=1, col=1)
+        fig.update_xaxes(title_text=factor2, row=1, col=2)
+        fig.update_xaxes(title_text=factor2, row=1, col=3)
+        fig.update_yaxes(title_text=dependent_var, row=1, col=1)
+        fig.update_yaxes(title_text=dependent_var, row=1, col=2)
+        fig.update_yaxes(title_text=f'{dependent_var}の平均値', row=1, col=3)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        fig.update_layout(
+            height=500,
+            template='plotly_white',
+            showlegend=True,
+            legend=dict(
+                orientation="v",
+                yanchor="top",
+                y=0.99,
+                xanchor="right",
+                x=0.99
+            )
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='two-way-anova-plot')
 
         # 有意性判定の補助関数
         def significance_mark(p):
@@ -1388,7 +1584,7 @@ def run_two_way_anova(factor1, factor2, dependent_var):
 
             <div class="results-plot">
                 <h4>視覚化</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
                 <p class="text-muted">
                     左: {factor1}の主効果、中央: {factor2}の主効果、右: 交互作用プロット<br>
                     交互作用プロットで線が平行に近い場合は交互作用が小さく、交差または大きく非平行の場合は交互作用が大きいことを示します。
@@ -1469,34 +1665,72 @@ def run_multiple_regression(x_vars, y_var):
             '係数': [model.intercept_] + list(model.coef_)
         })
 
-        # グラフを作成
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        # Plotlyで2つのグラフを作成
+        fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=('予測値 vs 実測値', '残差プロット'),
+            horizontal_spacing=0.12
+        )
 
         # 予測値vs実測値
-        ax1.scatter(y, y_pred, alpha=0.6)
-        ax1.plot([y.min(), y.max()], [y.min(), y.max()], 'r--', lw=2)
-        ax1.set_xlabel('実測値')
-        ax1.set_ylabel('予測値')
-        ax1.set_title('予測値 vs 実測値')
-        ax1.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Scatter(
+                x=y,
+                y=y_pred,
+                mode='markers',
+                name='データポイント',
+                marker=dict(size=8, color='rgba(30, 144, 255, 0.6)'),
+                hovertemplate='実測値: %{x:.2f}<br>予測値: %{y:.2f}<extra></extra>'
+            ),
+            row=1, col=1
+        )
+
+        # 理想的な予測線（y=x）
+        fig.add_trace(
+            go.Scatter(
+                x=[y.min(), y.max()],
+                y=[y.min(), y.max()],
+                mode='lines',
+                name='理想的な予測',
+                line=dict(color='red', width=2, dash='dash'),
+                showlegend=True,
+                hovertemplate='%{y:.2f}<extra></extra>'
+            ),
+            row=1, col=1
+        )
 
         # 残差プロット
         residuals = y - y_pred
-        ax2.scatter(y_pred, residuals, alpha=0.6)
-        ax2.axhline(y=0, color='r', linestyle='--')
-        ax2.set_xlabel('予測値')
-        ax2.set_ylabel('残差')
-        ax2.set_title('残差プロット')
-        ax2.grid(True, alpha=0.3)
+        fig.add_trace(
+            go.Scatter(
+                x=y_pred,
+                y=residuals,
+                mode='markers',
+                name='残差',
+                marker=dict(size=8, color='rgba(30, 144, 255, 0.6)'),
+                showlegend=False,
+                hovertemplate='予測値: %{x:.2f}<br>残差: %{y:.2f}<extra></extra>'
+            ),
+            row=1, col=2
+        )
 
-        plt.tight_layout()
+        # ゼロ線
+        fig.add_hline(y=0, line_dash="dash", line_color="red", row=1, col=2)
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        # レイアウト設定
+        fig.update_xaxes(title_text='実測値', row=1, col=1)
+        fig.update_yaxes(title_text='予測値', row=1, col=1)
+        fig.update_xaxes(title_text='予測値', row=1, col=2)
+        fig.update_yaxes(title_text='残差', row=1, col=2)
+
+        fig.update_layout(
+            height=500,
+            template='plotly_white',
+            showlegend=True
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='multiple-regression-plot')
 
         # 回帰式を作成
         equation_parts = [f"{model.intercept_:.4f}"]
@@ -1540,7 +1774,7 @@ def run_multiple_regression(x_vars, y_var):
 
             <div class="results-plot">
                 <h4>グラフ</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
@@ -1753,27 +1987,39 @@ def run_text_mining(text_column):
         # 頻出単語のDataFrame
         word_df = pd.DataFrame(top_words, columns=['単語', '出現回数'])
 
-        # 棒グラフを作成
-        fig, ax = plt.subplots(figsize=(12, 8))
+        # Plotlyで棒グラフを作成
         words_list = [w[0] for w in top_words[:20]]
         counts_list = [w[1] for w in top_words[:20]]
 
-        ax.barh(range(len(words_list)), counts_list)
-        ax.set_yticks(range(len(words_list)))
-        ax.set_yticklabels(words_list)
-        ax.invert_yaxis()
-        ax.set_xlabel('出現回数')
-        ax.set_title('頻出単語 TOP 20')
-        ax.grid(True, alpha=0.3, axis='x')
+        # データを逆順にして、最も頻度の高い単語が上に来るようにする
+        words_list_reversed = words_list[::-1]
+        counts_list_reversed = counts_list[::-1]
 
-        plt.tight_layout()
+        fig = go.Figure()
 
-        # グラフをbase64エンコード
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-        plt.close()
+        fig.add_trace(go.Bar(
+            x=counts_list_reversed,
+            y=words_list_reversed,
+            orientation='h',
+            marker=dict(
+                color='rgba(30, 144, 255, 0.7)',
+                line=dict(color='rgba(30, 144, 255, 1.0)', width=1)
+            ),
+            hovertemplate='<b>%{y}</b><br>出現回数: %{x}<extra></extra>'
+        ))
+
+        fig.update_layout(
+            title='頻出単語 TOP 20',
+            xaxis_title='出現回数',
+            yaxis_title='',
+            height=600,
+            template='plotly_white',
+            showlegend=False,
+            xaxis=dict(gridcolor='rgba(128, 128, 128, 0.2)')
+        )
+
+        # HTMLに変換
+        plot_html = fig.to_html(include_plotlyjs='cdn', div_id='text-mining-plot')
 
         # 結果をHTML形式で返す
         result_html = f"""
@@ -1803,7 +2049,7 @@ def run_text_mining(text_column):
 
             <div class="results-plot">
                 <h4>頻出単語グラフ</h4>
-                <img src="data:image/png;base64,{img_base64}" style="max-width: 100%; height: auto;">
+                {plot_html}
             </div>
         </div>
         """
