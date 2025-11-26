@@ -33,7 +33,7 @@ use_demo_data = st.checkbox('デモデータを使用')
 # データフレームの作成
 df = None
 if use_demo_data:
-    df = pd.read_excel('datasets/ttest_demo.xlsx', sheet_name=0)
+    df = pd.read_excel('datasets/ttest_demo.xlsx', sheet_name=0, engine='openpyxl')
     st.write(df.head())
 else:
     if uploaded_file is not None:
@@ -41,7 +41,7 @@ else:
             df = pd.read_csv(uploaded_file)
             st.write(df.head())
         else:
-            df = pd.read_excel(uploaded_file)
+            df = pd.read_excel(uploaded_file, engine='openpyxl')
             st.write(df.head())
 
 if df is not None:

@@ -23,13 +23,13 @@ use_demo_data = st.checkbox('デモデータを使用')
 
 input_df = None
 if use_demo_data:
-    input_df = pd.read_excel('datasets/correlation_demo.xlsx', sheet_name=0)
+    input_df = pd.read_excel('datasets/correlation_demo.xlsx', sheet_name=0, engine='openpyxl')
 else:
     if uploaded_file is not None:
         if uploaded_file.type == 'text/csv':
             input_df = pd.read_csv(uploaded_file)
         else:
-            input_df = pd.read_excel(uploaded_file)
+            input_df = pd.read_excel(uploaded_file, engine='openpyxl')
 
 feature_col = None
 target_col = None

@@ -194,7 +194,7 @@ class StatisticalValidator:
                     uploaded_file.seek(0)  # ファイルポインタをリセット
                     df = pd.read_csv(uploaded_file, encoding='shift_jis')
             elif file_extension in ['xlsx', 'xls']:
-                df = pd.read_excel(uploaded_file)
+                df = pd.read_excel(uploaded_file, engine='openpyxl')
             else:
                 st.error("⚠️ 対応していないファイル形式です。CSV、Excel(.xlsx/.xls)ファイルをアップロードしてください。")
                 return None
