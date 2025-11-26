@@ -5,7 +5,8 @@
     "matplotlib",
     "plotly",
     "scipy",
-    "openpyxl"
+    "openpyxl",
+    "xlrd"
   ],
   "terminal": false
 }

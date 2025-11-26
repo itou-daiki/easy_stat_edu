@@ -77,7 +77,15 @@ def load_file_data(file_content, filename):
                     # 別の方法で変換
                     bytes_data = bytes(file_content)
 
-            current_df = pd.read_excel(io.BytesIO(bytes_data))
+            # .xlsxと.xlsで異なるエンジンを使用
+            if filename.endswith('.xlsx'):
+                current_df = pd.read_excel(io.BytesIO(bytes_data), engine='openpyxl')
+            else:  # .xls
+                try:
+                    current_df = pd.read_excel(io.BytesIO(bytes_data), engine='xlrd')
+                except ImportError:
+                    console.error("⚠️ .xlsファイルの読み込みにはxlrdライブラリが必要です")
+                    raise ValueError(".xlsファイルの読み込みにはxlrdが必要です。.xlsxファイルに変換してアップロードしてください。")
             console.log("Excel読み込み成功")
 
         else:
