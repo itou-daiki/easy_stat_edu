@@ -22,7 +22,7 @@ if uploaded_file is not None:
     if uploaded_file.type == 'text/csv':
         data = pd.read_csv(uploaded_file)
     else:
-        data = pd.read_excel(uploaded_file)
+        data = pd.read_excel(uploaded_file, engine='openpyxl')
     
     st.subheader('元のデータ')
     st.write(data)
