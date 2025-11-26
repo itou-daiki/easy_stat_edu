@@ -81,7 +81,7 @@ use_demo_data = st.checkbox('デモデータを使用')
 df = None
 if use_demo_data:
     try:
-        df = pd.read_excel('datasets/textmining_demo.xlsx', sheet_name=0)
+        df = pd.read_excel('datasets/textmining_demo.xlsx', sheet_name=0, engine='openpyxl')
         st.write("デモデータ:")
         st.write(df.head())
     except FileNotFoundError:
@@ -92,7 +92,7 @@ else:
             if uploaded_file.type == 'text/csv':
                 df = pd.read_csv(uploaded_file)
             else:
-                df = pd.read_excel(uploaded_file)
+                df = pd.read_excel(uploaded_file, engine='openpyxl')
             st.write("アップロードデータ:")
             st.write(df.head())
         except Exception as e:

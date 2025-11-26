@@ -33,7 +33,7 @@ def load_data(file):
         if file.type == 'text/csv':
             return pd.read_csv(file)
         elif file.type in ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']:
-            return pd.read_excel(file)
+            return pd.read_excel(file, engine='openpyxl')
         else:
             st.error("対応していないファイル形式です。")
             return None
@@ -48,7 +48,7 @@ use_demo_data = st.checkbox('デモデータを使用')
 df = None
 if use_demo_data:
     try:
-        df = pd.read_excel('datasets/factor_analysis_demo.xlsx', sheet_name=0)
+        df = pd.read_excel('datasets/factor_analysis_demo.xlsx', sheet_name=0, engine='openpyxl')
     except Exception as e:
         st.error(f"デモデータの読み込みに失敗しました: {str(e)}")
 else:

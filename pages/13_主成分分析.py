@@ -40,7 +40,7 @@ def load_data(file):
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/vnd.ms-excel",
         ]:
-            return pd.read_excel(file)
+            return pd.read_excel(file, engine='openpyxl')
         else:
             st.error("対応していないファイル形式です。")
             return None
@@ -52,7 +52,7 @@ df = None
 if use_demo_data:
     try:
         # ※ デモデータのファイルパスは適宜変更してください
-        df = pd.read_excel("datasets/factor_analysis_demo.xlsx", sheet_name=0)
+        df = pd.read_excel("datasets/factor_analysis_demo.xlsx", sheet_name=0, engine='openpyxl')
     except Exception as e:
         st.error(f"デモデータの読み込みに失敗しました: {e}")
 elif uploaded_file is not None:
