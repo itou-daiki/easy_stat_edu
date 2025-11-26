@@ -4,6 +4,7 @@ pandas
 scipy
 Pillow
 openpyxl
+xlrd
 xlsxwriter
 matplotlib
 japanize-matplotlib
