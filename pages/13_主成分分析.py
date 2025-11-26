@@ -1,6 +1,7 @@
 import io
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 from PIL import Image
 from sklearn.decomposition import PCA
@@ -122,24 +123,85 @@ if df is not None:
             # === 追加機能：バイプロットの表示（主成分が2つ以上の場合） ===
             if n_components >= 2:
                 st.subheader("バイプロット (PC1 vs PC2)")
-                import matplotlib.pyplot as plt
-                fig, ax = plt.subplots(figsize=(8,6))
+
                 # 主成分得点の散布図
-                ax.scatter(components[:,0], components[:,1], alpha=0.5)
-                # 各変数のベクトル（ロードings）を表示
+                scatter = go.Scatter(
+                    x=components[:, 0],
+                    y=components[:, 1],
+                    mode='markers',
+                    marker=dict(size=8, opacity=0.5, color='blue'),
+                    name='サンプル',
+                    hovertemplate='PC1: %{x:.2f}<br>PC2: %{y:.2f}<extra></extra>'
+                )
+
+                # スケール調整のため、主成分得点の最大値を取得
+                scale_x = max(abs(components[:, 0]))
+                scale_y = max(abs(components[:, 1]))
+
+                # 各変数のベクトル（矢印とラベル）を作成
+                annotations = []
+                arrow_traces = []
+
                 for var in selected_vars:
                     x = loading_df.loc[var, "PC1"]
                     y = loading_df.loc[var, "PC2"]
-                    # スケール調整のため、主成分得点の最大値を取得
-                    scale_x = max(abs(components[:,0]))
-                    scale_y = max(abs(components[:,1]))
-                    # 矢印でベクトルを描画
-                    ax.arrow(0, 0, x*scale_x, y*scale_y, color='red', head_width=0.05, head_length=0.05)
-                    ax.text(x*scale_x*1.1, y*scale_y*1.1, var, color='red')
-                ax.set_xlabel("PC1")
-                ax.set_ylabel("PC2")
-                ax.set_title("バイプロット")
-                st.pyplot(fig)
+
+                    # ベクトルの矢印（線）
+                    arrow_trace = go.Scatter(
+                        x=[0, x * scale_x],
+                        y=[0, y * scale_y],
+                        mode='lines',
+                        line=dict(color='red', width=2),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    )
+                    arrow_traces.append(arrow_trace)
+
+                    # 矢印の先端（アノテーション）
+                    annotations.append(
+                        dict(
+                            x=x * scale_x,
+                            y=y * scale_y,
+                            ax=0,
+                            ay=0,
+                            xref='x',
+                            yref='y',
+                            axref='x',
+                            ayref='y',
+                            showarrow=True,
+                            arrowhead=2,
+                            arrowsize=1.5,
+                            arrowwidth=2,
+                            arrowcolor='red'
+                        )
+                    )
+
+                    # 変数名のラベル
+                    annotations.append(
+                        dict(
+                            x=x * scale_x * 1.1,
+                            y=y * scale_y * 1.1,
+                            text=var,
+                            showarrow=False,
+                            font=dict(color='red', size=12)
+                        )
+                    )
+
+                # 図の作成
+                fig = go.Figure(data=[scatter] + arrow_traces)
+
+                fig.update_layout(
+                    title="バイプロット (PC1 vs PC2)",
+                    xaxis_title="PC1",
+                    yaxis_title="PC2",
+                    annotations=annotations,
+                    hovermode='closest',
+                    showlegend=True,
+                    height=600,
+                    width=800
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
             
             # --- AI解釈機能 ---
             if enable_ai_interpretation and gemini_api_key:
