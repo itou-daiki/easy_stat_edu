@@ -11,9 +11,9 @@ function markPyScriptReady() {
 
         // グローバル関数の存在を確認
         try {
-            const ps = window.pyscript || (typeof pyscript !== 'undefined' ? pyscript : null);
-            if (ps && ps.interpreter) {
-                const testFunc = ps.interpreter.globals.get('load_file_data');
+            const pyodide = window.pyodide;
+            if (pyodide && pyodide.globals) {
+                const testFunc = pyodide.globals.get('load_file_data');
                 if (testFunc) {
                     console.log('✓ Python functions are available');
                 } else {
@@ -21,7 +21,7 @@ function markPyScriptReady() {
                 }
             }
         } catch (e) {
-            console.warn('⚠ PyScript ready but interpreter check failed:', e);
+            console.warn('⚠ PyScript ready but check failed:', e);
         }
     }
 }
@@ -46,34 +46,33 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(checkPyScriptInitialization, 100);
 });
 
-// PyScriptのランタイムが利用可能になったことを検知
-if (typeof pyscript !== 'undefined' || window.pyscript) {
-    console.log('PyScript runtime detected on page load');
+// Pyodideランタイムが利用可能になったことを検知
+if (typeof pyodide !== 'undefined' || window.pyodide) {
+    console.log('Pyodide runtime detected on page load');
 }
 
 // PyScript関数を安全に取得するヘルパー関数
 function getPyScriptFunction(functionName) {
-    // 実際のPyScriptの状態を確認（pyScriptReadyフラグに依存しない）
-    const ps = window.pyscript || pyscript;
+    // PyScript 2024.x では pyodide を直接使用
+    const pyodide = window.pyodide;
 
-    if (typeof ps === 'undefined') {
-        console.error('❌ pyscript object is undefined');
-        console.error('Debug: window.pyscript =', window.pyscript);
-        console.error('Debug: typeof pyscript =', typeof pyscript);
+    if (typeof pyodide === 'undefined') {
+        console.error('❌ pyodide object is undefined');
+        console.error('Debug: window.pyodide =', window.pyodide);
         throw new Error('PyScriptがまだ初期化されていません。ページを再読み込みしてください。');
     }
 
-    if (!ps.interpreter) {
-        console.error('❌ pyscript.interpreter is not available');
-        console.error('Debug: pyscript object =', ps);
-        throw new Error('PyScriptインタープリタが利用できません。ページを再読み込みしてください。');
+    if (!pyodide.globals) {
+        console.error('❌ pyodide.globals is not available');
+        console.error('Debug: pyodide object =', pyodide);
+        throw new Error('Pyodide globalsが利用できません。ページを再読み込みしてください。');
     }
 
-    const func = ps.interpreter.globals.get(functionName);
+    const func = pyodide.globals.get(functionName);
     if (!func) {
         console.error(`❌ Function '${functionName}' not found in Python globals`);
         try {
-            const globalsObj = ps.interpreter.globals.toJs();
+            const globalsObj = pyodide.globals.toJs();
             console.error('Available Python globals:', Object.keys(globalsObj));
         } catch (e) {
             console.error('Could not enumerate Python globals');
@@ -89,12 +88,12 @@ function getPyScriptFunction(functionName) {
 function checkPyScriptInitialization() {
     if (!pyScriptReady) {
         try {
-            // pyscriptオブジェクトとインタープリタが存在するかチェック（window.pyscriptも確認）
-            const ps = window.pyscript || (typeof pyscript !== 'undefined' ? pyscript : null);
+            // pyodideオブジェクトとglobalsが存在するかチェック
+            const pyodide = window.pyodide;
 
-            if (ps && ps.interpreter) {
+            if (pyodide && pyodide.globals) {
                 // load_file_data関数が定義されているかチェック
-                const loadFunc = ps.interpreter.globals.get('load_file_data');
+                const loadFunc = pyodide.globals.get('load_file_data');
                 if (loadFunc) {
                     console.log('✓ PyScript detected via polling (functions available)');
                     markPyScriptReady();
@@ -340,9 +339,9 @@ async function handleMainFileUpload(event) {
         const fileContent = await readFileContent(file);
         console.log('✓ File content read, loading into Python...');
 
-        // 最終確認: PyScriptが本当に利用可能か再チェック
-        const ps = window.pyscript || (typeof pyscript !== 'undefined' ? pyscript : null);
-        if (!ps || !ps.interpreter) {
+        // 最終確認: Pyodideが本当に利用可能か再チェック
+        const pyodide = window.pyodide;
+        if (!pyodide || !pyodide.globals) {
             throw new Error('統計エンジンが正しく初期化されていません。\n\nページを再読み込み（Ctrl+F5）してください。');
         }
 
