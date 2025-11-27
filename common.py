@@ -194,7 +194,15 @@ class StatisticalValidator:
                     uploaded_file.seek(0)  # ファイルポインタをリセット
                     df = pd.read_csv(uploaded_file, encoding='shift_jis')
             elif file_extension in ['xlsx', 'xls']:
-                df = pd.read_excel(uploaded_file, engine='openpyxl')
+                # .xlsxと.xlsで異なるエンジンを使用
+                if file_extension == 'xlsx':
+                    df = pd.read_excel(uploaded_file, engine='openpyxl')
+                else:  # .xls
+                    try:
+                        df = pd.read_excel(uploaded_file, engine='xlrd')
+                    except ImportError:
+                        st.error("⚠️ .xlsファイルの読み込みにはxlrdライブラリが必要です。.xlsxファイルに変換してアップロードしてください。")
+                        return None
             else:
                 st.error("⚠️ 対応していないファイル形式です。CSV、Excel(.xlsx/.xls)ファイルをアップロードしてください。")
                 return None
