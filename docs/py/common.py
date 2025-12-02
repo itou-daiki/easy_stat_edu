@@ -2084,23 +2084,49 @@ console.log("✓ All statistical functions are ready")
 console.log("=" * 50)
 
 # JavaScriptに明示的に準備完了を通知
+# PyScript 2024.1.1では、window.pyodideは公開されないため、
+# すべてのPython関数を直接JavaScriptのグローバルスコープにエクスポートする
 try:
     import js
+    from pyodide.ffi import create_proxy
 
-    # PyScript 2024.1.1では、pyodideをグローバルスコープに明示的に公開する
-    # 方法1: __pyodide__グローバル変数を使用
-    try:
-        pyodide_obj = __pyodide__  # noqa: F821 - グローバル変数として存在
-        js.window.pyodide = pyodide_obj
-        console.log("✓ Exposed pyodide to window via __pyodide__")
-    except NameError:
-        # 方法2: jsモジュールから取得を試みる
-        try:
-            if hasattr(js, 'pyodide'):
-                js.window.pyodide = js.pyodide
-                console.log("✓ Exposed pyodide to window via js.pyodide")
-        except:
-            console.warn("⚠ Could not expose pyodide object")
+    console.log("=" * 50)
+    console.log("Exporting Python functions to JavaScript...")
+
+    # すべての公開関数をJavaScriptにエクスポート
+    exported_functions = {
+        'load_file_data': load_file_data,
+        'get_column_names': get_column_names,
+        'get_data_characteristics': get_data_characteristics,
+        'get_numeric_columns': get_numeric_columns,
+        'get_data_summary': get_data_summary,
+        'run_correlation_analysis': run_correlation_analysis,
+        'run_eda_analysis': run_eda_analysis,
+        'run_ttest_analysis': run_ttest_analysis,
+        'run_chi_square_analysis': run_chi_square_analysis,
+        'run_anova_analysis': run_anova_analysis,
+        'run_simple_regression_analysis': run_simple_regression_analysis,
+        'run_pca_analysis': run_pca_analysis,
+        'run_data_cleansing': run_data_cleansing,
+        'remove_missing_rows': remove_missing_rows,
+        'remove_duplicates': remove_duplicates,
+        'fill_missing_mean': fill_missing_mean,
+        'run_two_way_anova': run_two_way_anova,
+        'run_multiple_regression': run_multiple_regression,
+        'run_factor_analysis': run_factor_analysis,
+        'run_text_mining': run_text_mining
+    }
+
+    for func_name, func in exported_functions.items():
+        # 非同期関数かどうかチェック
+        import inspect
+        if inspect.iscoroutinefunction(func):
+            # 非同期関数の場合はそのまま
+            js.window[func_name] = func
+        else:
+            # 同期関数の場合はproxyでラップ
+            js.window[func_name] = create_proxy(func)
+        console.log(f"  ✓ Exported: {func_name}")
 
     # カスタムイベントをディスパッチ
     event = document.createEvent('Event')
@@ -2112,11 +2138,10 @@ try:
     js.window.pyScriptFullyReady = True
     console.log("✓ Set window.pyScriptFullyReady flag")
 
-    # 診断情報をログ
-    console.log("Debug: Checking pyodide exposure...")
-    console.log(f"  - window.pyodide exists: {bool(js.window.pyodide) if hasattr(js.window, 'pyodide') else False}")
+    console.log("✓ All Python functions exported to JavaScript global scope")
+    console.log("=" * 50)
 
 except Exception as e:
-    console.error(f"Failed to notify JavaScript: {e}")
+    console.error(f"Failed to export functions to JavaScript: {e}")
     import traceback
     console.error(traceback.format_exc())

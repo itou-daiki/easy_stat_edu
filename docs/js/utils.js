@@ -9,16 +9,14 @@ function markPyScriptReady() {
         console.log('✓ PyScript initialized successfully');
         pyScriptReady = true;
 
-        // グローバル関数の存在を確認
+        // Python関数がwindowスコープにエクスポートされているか確認
+        // PyScript 2024.1.1では、関数は直接window.function_nameとして利用可能
         try {
-            const pyodide = window.pyodide;
-            if (pyodide && pyodide.globals) {
-                const testFunc = pyodide.globals.get('load_file_data');
-                if (testFunc) {
-                    console.log('✓ Python functions are available');
-                } else {
-                    console.warn('⚠ PyScript ready but functions not found yet');
-                }
+            if (typeof window.load_file_data === 'function') {
+                console.log('✓ Python functions are available in window scope');
+            } else {
+                console.warn('⚠ PyScript ready but load_file_data function not found yet');
+                console.warn('   window.load_file_data type:', typeof window.load_file_data);
             }
         } catch (e) {
             console.warn('⚠ PyScript ready but check failed:', e);
@@ -58,46 +56,24 @@ if (typeof pyodide !== 'undefined' || window.pyodide) {
 }
 
 // PyScript関数を安全に取得するヘルパー関数
+// PyScript 2024.1.1では、Python関数は直接window.function_nameとしてエクスポートされる
 function getPyScriptFunction(functionName) {
-    // PyScript 2024.x では複数の方法を試す
-    let pyodide = window.pyodide;
+    const func = window[functionName];
 
-    // 代替方法1: pyscript.interpreterを試す
-    if (!pyodide && window.pyscript) {
-        console.log('Trying to access pyodide via pyscript.interpreter...');
-        try {
-            if (window.pyscript.interpreter && window.pyscript.interpreter.globals) {
-                pyodide = window.pyscript.interpreter;
-                console.log('✓ Using pyscript.interpreter as pyodide');
-            }
-        } catch (e) {
-            console.warn('Could not access pyscript.interpreter:', e);
-        }
-    }
-
-    if (typeof pyodide === 'undefined' || !pyodide) {
-        console.error('❌ pyodide object is undefined');
-        console.error('Debug: window.pyodide =', window.pyodide);
-        console.error('Debug: window.pyscript =', window.pyscript);
-        throw new Error('PyScriptがまだ初期化されていません。ページを再読み込みしてください。');
-    }
-
-    if (!pyodide.globals) {
-        console.error('❌ pyodide.globals is not available');
-        console.error('Debug: pyodide object =', pyodide);
-        throw new Error('Pyodide globalsが利用できません。ページを再読み込みしてください。');
-    }
-
-    const func = pyodide.globals.get(functionName);
-    if (!func) {
-        console.error(`❌ Function '${functionName}' not found in Python globals`);
-        try {
-            const globalsObj = pyodide.globals.toJs();
-            console.error('Available Python globals:', Object.keys(globalsObj));
-        } catch (e) {
-            console.error('Could not enumerate Python globals');
-        }
+    if (typeof func === 'undefined') {
+        console.error(`❌ Function '${functionName}' not found in window scope`);
+        console.error('Debug: Available Python functions:',
+            Object.keys(window).filter(key =>
+                typeof window[key] === 'function' &&
+                (key.startsWith('load_') || key.startsWith('run_') || key.startsWith('get_') || key.startsWith('remove_') || key.startsWith('fill_'))
+            )
+        );
         throw new Error(`関数 ${functionName} が見つかりません。PyScriptの初期化を確認してください。`);
+    }
+
+    if (typeof func !== 'function') {
+        console.error(`❌ '${functionName}' is not a function, it is: ${typeof func}`);
+        throw new Error(`${functionName} は関数ではありません。`);
     }
 
     console.log(`✓ Retrieved function: ${functionName}`);
@@ -115,22 +91,12 @@ function checkPyScriptInitialization() {
                 return true;
             }
 
-            // pyodideオブジェクトとglobalsが存在するかチェック
-            let pyodide = window.pyodide;
-
-            // 代替: pyscript.interpreterを試す
-            if (!pyodide && window.pyscript && window.pyscript.interpreter) {
-                pyodide = window.pyscript.interpreter;
-            }
-
-            if (pyodide && pyodide.globals) {
-                // load_file_data関数が定義されているかチェック
-                const loadFunc = pyodide.globals.get('load_file_data');
-                if (loadFunc) {
-                    console.log('✓ PyScript detected via polling (functions available)');
-                    markPyScriptReady();
-                    return true;
-                }
+            // Python関数が直接windowにエクスポートされているかチェック
+            // PyScript 2024.1.1では、Python関数はwindow.function_nameとして利用可能
+            if (typeof window.load_file_data === 'function') {
+                console.log('✓ PyScript detected via exported functions');
+                markPyScriptReady();
+                return true;
             }
         } catch (e) {
             // まだ準備できていない
@@ -175,10 +141,15 @@ window.addEventListener('load', function() {
                 // 診断情報を収集
                 let diagnostics = [];
                 diagnostics.push(`PyScript ready: ${pyScriptReady ? 'Yes' : 'No'}`);
-                diagnostics.push(`window.pyodide: ${window.pyodide ? 'Exists' : 'Undefined'}`);
-                diagnostics.push(`window.pyscript: ${window.pyscript ? 'Exists' : 'Undefined'}`);
-                diagnostics.push(`window.pyscript.interpreter: ${(window.pyscript && window.pyscript.interpreter) ? 'Exists' : 'Undefined'}`);
                 diagnostics.push(`window.pyScriptFullyReady: ${window.pyScriptFullyReady ? 'Yes' : 'No'}`);
+                diagnostics.push(`window.load_file_data: ${typeof window.load_file_data === 'function' ? 'Function' : 'Undefined (type: ' + typeof window.load_file_data + ')'}`);
+
+                // エクスポートされたPython関数をリストアップ
+                const exportedFunctions = Object.keys(window).filter(key =>
+                    typeof window[key] === 'function' &&
+                    (key.startsWith('load_') || key.startsWith('run_') || key.startsWith('get_') || key.startsWith('remove_') || key.startsWith('fill_'))
+                );
+                diagnostics.push(`Exported Python functions: ${exportedFunctions.length > 0 ? exportedFunctions.join(', ') : 'None'}`);
 
                 // アップロードエリアにエラーメッセージを表示
                 showInitializationError(diagnostics);
@@ -423,63 +394,49 @@ async function handleMainFileUpload(event) {
         const fileContent = await readFileContent(file);
         console.log('✓ File content read, loading into Python...');
 
-        // 最終確認: Pyodideが本当に利用可能か再チェック（リトライあり）
-        let pyodide = window.pyodide;
+        // 最終確認: Python関数が利用可能か再チェック（リトライあり）
+        // PyScript 2024.1.1では、Python関数はwindow.function_nameとして直接エクスポートされる
         let retryCount = 0;
-        const maxRetries = 10;  // リトライ回数を増やす
+        const maxRetries = 10;
         const retryDelay = 300; // 300ms
 
         while (retryCount < maxRetries) {
-            // pyodideを取得（代替方法を含む）
-            pyodide = window.pyodide;
-            if (!pyodide && window.pyscript && window.pyscript.interpreter) {
-                pyodide = window.pyscript.interpreter;
-                console.log('Using pyscript.interpreter as fallback');
+            // Python側からのフラグとload_file_data関数の両方をチェック
+            if (window.pyScriptFullyReady === true && typeof window.load_file_data === 'function') {
+                console.log('✓ PyScript fully ready confirmed via flag and function check');
+                break;
             }
 
-            // Python側からのフラグを最優先でチェック
-            if (window.pyScriptFullyReady === true && pyodide && pyodide.globals) {
-                const loadFunc = pyodide.globals.get('load_file_data');
-                if (loadFunc) {
-                    console.log('✓ PyScript fully ready confirmed via flag and function check');
-                    break;
-                }
+            // load_file_data関数が直接利用可能かチェック
+            if (typeof window.load_file_data === 'function') {
+                console.log('✓ Python functions available in window scope');
+                break;
             }
 
-            // pyodideが利用可能かチェック
-            if (pyodide && pyodide.globals) {
-                const loadFunc = pyodide.globals.get('load_file_data');
-                if (loadFunc) {
-                    console.log('✓ Pyodide confirmed available via function check');
-                    break;
-                }
-            }
-
-            console.log(`⚠ Pyodide not ready, retry ${retryCount + 1}/${maxRetries}...`);
+            console.log(`⚠ Python functions not ready, retry ${retryCount + 1}/${maxRetries}...`);
             await new Promise(resolve => setTimeout(resolve, retryDelay));
             retryCount++;
         }
 
         // 最終確認
-        if (!pyodide || !pyodide.globals) {
-            console.error('❌ Pyodide still not available after retries');
-            console.error('Debug: window.pyodide =', window.pyodide);
+        if (typeof window.load_file_data !== 'function') {
+            console.error('❌ Python functions still not available after retries');
             console.error('Debug: window.pyScriptFullyReady =', window.pyScriptFullyReady);
             console.error('Debug: pyScriptReady flag =', pyScriptReady);
+            console.error('Debug: window.load_file_data type =', typeof window.load_file_data);
 
             // より詳細な診断情報
             let diagnostics = [];
             diagnostics.push(`- PyScript ready flag: ${pyScriptReady ? '✓' : '✗'}`);
-            diagnostics.push(`- window.pyodide exists: ${window.pyodide ? '✓' : '✗'}`);
-            diagnostics.push(`- window.pyscript exists: ${window.pyscript ? '✓' : '✗'}`);
-            diagnostics.push(`- window.pyscript.interpreter exists: ${(window.pyscript && window.pyscript.interpreter) ? '✓' : '✗'}`);
             diagnostics.push(`- window.pyScriptFullyReady: ${window.pyScriptFullyReady ? '✓' : '✗'}`);
+            diagnostics.push(`- window.load_file_data: ${typeof window.load_file_data === 'function' ? '✓' : '✗ (type: ' + typeof window.load_file_data + ')'}`);
 
-            if (window.pyodide) {
-                diagnostics.push(`- pyodide.globals exists: ${window.pyodide.globals ? '✓' : '✗'}`);
-            } else if (window.pyscript && window.pyscript.interpreter) {
-                diagnostics.push(`- pyscript.interpreter.globals exists: ${window.pyscript.interpreter.globals ? '✓' : '✗'}`);
-            }
+            // エクスポートされたPython関数をリストアップ
+            const exportedFunctions = Object.keys(window).filter(key =>
+                typeof window[key] === 'function' &&
+                (key.startsWith('load_') || key.startsWith('run_') || key.startsWith('get_') || key.startsWith('remove_') || key.startsWith('fill_'))
+            );
+            diagnostics.push(`- Exported Python functions: ${exportedFunctions.length > 0 ? exportedFunctions.join(', ') : 'None'}`);
 
             console.error('Diagnostics:\n' + diagnostics.join('\n'));
 
@@ -489,7 +446,7 @@ async function handleMainFileUpload(event) {
                 'それでも解決しない場合は、ブラウザのコンソール（F12）でエラー詳細を確認してください。');
         }
 
-        console.log('✓ Pyodide confirmed available, proceeding with file load');
+        console.log('✓ Python functions confirmed available, proceeding with file load');
         const loadFileData = getPyScriptFunction('load_file_data');
         const success = await loadFileData(fileContent, file.name);
 
