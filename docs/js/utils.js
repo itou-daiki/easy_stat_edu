@@ -40,6 +40,12 @@ document.addEventListener('pyscript:ready', () => {
     markPyScriptReady();
 });
 
+// Python側からの明示的な準備完了通知を待機（最も確実）
+document.addEventListener('pyscript-ready', () => {
+    console.log('Event: pyscript-ready fired (from Python)');
+    markPyScriptReady();
+});
+
 // DOMContentLoadedでもチェック（PyScript 2024.x系の場合）
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOMContentLoaded - checking for PyScript');
@@ -88,6 +94,13 @@ function getPyScriptFunction(functionName) {
 function checkPyScriptInitialization() {
     if (!pyScriptReady) {
         try {
+            // まず、Python側からのフラグをチェック（最も確実）
+            if (window.pyScriptFullyReady === true) {
+                console.log('✓ PyScript detected via window.pyScriptFullyReady flag');
+                markPyScriptReady();
+                return true;
+            }
+
             // pyodideオブジェクトとglobalsが存在するかチェック
             const pyodide = window.pyodide;
 
@@ -342,19 +355,39 @@ async function handleMainFileUpload(event) {
         // 最終確認: Pyodideが本当に利用可能か再チェック（リトライあり）
         let pyodide = window.pyodide;
         let retryCount = 0;
-        const maxRetries = 5;
-        const retryDelay = 500; // 500ms
+        const maxRetries = 10;  // リトライ回数を増やす
+        const retryDelay = 300; // 300ms
 
-        while ((!pyodide || !pyodide.globals) && retryCount < maxRetries) {
+        while (retryCount < maxRetries) {
+            // Python側からのフラグを最優先でチェック
+            if (window.pyScriptFullyReady === true && pyodide && pyodide.globals) {
+                const loadFunc = pyodide.globals.get('load_file_data');
+                if (loadFunc) {
+                    console.log('✓ PyScript fully ready confirmed via flag and function check');
+                    break;
+                }
+            }
+
+            // pyodideが利用可能かチェック
+            if (pyodide && pyodide.globals) {
+                const loadFunc = pyodide.globals.get('load_file_data');
+                if (loadFunc) {
+                    console.log('✓ Pyodide confirmed available via function check');
+                    break;
+                }
+            }
+
             console.log(`⚠ Pyodide not ready, retry ${retryCount + 1}/${maxRetries}...`);
             await new Promise(resolve => setTimeout(resolve, retryDelay));
             pyodide = window.pyodide;
             retryCount++;
         }
 
+        // 最終確認
         if (!pyodide || !pyodide.globals) {
             console.error('❌ Pyodide still not available after retries');
             console.error('Debug: window.pyodide =', window.pyodide);
+            console.error('Debug: window.pyScriptFullyReady =', window.pyScriptFullyReady);
             throw new Error('統計エンジンが正しく初期化されていません。\n\nページを再読み込み（Ctrl+F5）してください。');
         }
 
