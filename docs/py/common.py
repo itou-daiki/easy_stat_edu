@@ -2085,6 +2085,23 @@ console.log("=" * 50)
 
 # JavaScriptに明示的に準備完了を通知
 try:
+    import js
+
+    # PyScript 2024.1.1では、pyodideをグローバルスコープに明示的に公開する
+    # 方法1: __pyodide__グローバル変数を使用
+    try:
+        pyodide_obj = __pyodide__  # noqa: F821 - グローバル変数として存在
+        js.window.pyodide = pyodide_obj
+        console.log("✓ Exposed pyodide to window via __pyodide__")
+    except NameError:
+        # 方法2: jsモジュールから取得を試みる
+        try:
+            if hasattr(js, 'pyodide'):
+                js.window.pyodide = js.pyodide
+                console.log("✓ Exposed pyodide to window via js.pyodide")
+        except:
+            console.warn("⚠ Could not expose pyodide object")
+
     # カスタムイベントをディスパッチ
     event = document.createEvent('Event')
     event.initEvent('pyscript-ready', True, True)
@@ -2092,8 +2109,14 @@ try:
     console.log("✓ Dispatched pyscript-ready event to JavaScript")
 
     # グローバルフラグも設定
-    import js
     js.window.pyScriptFullyReady = True
     console.log("✓ Set window.pyScriptFullyReady flag")
+
+    # 診断情報をログ
+    console.log("Debug: Checking pyodide exposure...")
+    console.log(f"  - window.pyodide exists: {bool(js.window.pyodide) if hasattr(js.window, 'pyodide') else False}")
+
 except Exception as e:
     console.error(f"Failed to notify JavaScript: {e}")
+    import traceback
+    console.error(traceback.format_exc())
