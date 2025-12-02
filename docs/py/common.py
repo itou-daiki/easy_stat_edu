@@ -2122,10 +2122,10 @@ try:
         import inspect
         if inspect.iscoroutinefunction(func):
             # 非同期関数の場合はそのまま
-            js.window[func_name] = func
+            setattr(js.window, func_name, func)
         else:
             # 同期関数の場合はproxyでラップ
-            js.window[func_name] = create_proxy(func)
+            setattr(js.window, func_name, create_proxy(func))
         console.log(f"  ✓ Exported: {func_name}")
 
     # カスタムイベントをディスパッチ
