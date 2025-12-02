@@ -149,11 +149,18 @@ window.addEventListener('load', function() {
             if (!pyScriptReady) {
                 console.error('❌ PyScript initialization timeout after 60 seconds');
                 console.error('Please check browser console for PyScript errors');
-                console.error('Debug: window.pyscript =', window.pyscript);
-                console.error('Debug: typeof pyscript =', typeof pyscript);
+                console.error('Debug: window.pyodide =', window.pyodide);
+                console.error('Debug: window.pyScriptFullyReady =', window.pyScriptFullyReady);
+                console.error('Debug: pyScriptReady flag =', pyScriptReady);
+
+                // 診断情報を収集
+                let diagnostics = [];
+                diagnostics.push(`PyScript ready: ${pyScriptReady ? 'Yes' : 'No'}`);
+                diagnostics.push(`window.pyodide: ${window.pyodide ? 'Exists' : 'Undefined'}`);
+                diagnostics.push(`window.pyScriptFullyReady: ${window.pyScriptFullyReady ? 'Yes' : 'No'}`);
 
                 // アップロードエリアにエラーメッセージを表示
-                showInitializationError();
+                showInitializationError(diagnostics);
             } else {
                 console.log(`✓ App ready (initialized in ${checkCount / 10}s)`);
 
@@ -165,9 +172,18 @@ window.addEventListener('load', function() {
 });
 
 // 初期化エラーを表示
-function showInitializationError() {
+function showInitializationError(diagnostics = []) {
     const uploadArea = document.getElementById('main-upload-area');
     const uploadSection = document.getElementById('upload-section-main');
+
+    const diagnosticsHtml = diagnostics.length > 0 ? `
+        <details style="text-align: left; max-width: 500px; margin: 1rem auto; background: #f8f9fa; padding: 1rem; border-radius: 4px;">
+            <summary style="cursor: pointer; font-weight: 600; margin-bottom: 0.5rem;">診断情報（クリックで表示）</summary>
+            <ul style="margin: 0.5rem 0 0 1.5rem; font-family: monospace; font-size: 0.875rem;">
+                ${diagnostics.map(d => `<li>${d}</li>`).join('')}
+            </ul>
+        </details>
+    ` : '';
 
     if (uploadArea && uploadSection) {
         uploadArea.innerHTML = `
@@ -178,6 +194,7 @@ function showInitializationError() {
                     PyScriptライブラリの読み込みに問題が発生しました。<br>
                     以下の対処方法をお試しください：
                 </p>
+                ${diagnosticsHtml}
                 <ol style="text-align: left; max-width: 500px; margin: 0 auto 1.5rem; line-height: 1.8;">
                     <li>ブラウザのキャッシュをクリア（Ctrl+Shift+Del）</li>
                     <li>ページを完全に再読み込み（Ctrl+F5 または Cmd+Shift+R）</li>
@@ -207,7 +224,40 @@ function setupMainUpload() {
     // アップロードのイベントリスナーを設定
     setupMainUploadListeners();
 
+    // アップロードエリアを有効化
+    enableUploadArea();
+
     console.log('Main upload setup completed');
+}
+
+// アップロードエリアを有効化
+function enableUploadArea() {
+    const uploadArea = document.getElementById('main-upload-area');
+    const uploadBtn = document.getElementById('main-upload-btn');
+    const fileInput = document.getElementById('main-data-file');
+    const uploadText = uploadArea?.querySelector('.upload-text');
+    const uploadHint = uploadArea?.querySelector('.upload-hint');
+
+    if (uploadArea) {
+        uploadArea.style.opacity = '1';
+        uploadArea.style.pointerEvents = 'auto';
+        uploadArea.style.cursor = 'pointer';
+    }
+    if (uploadBtn) {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-file-upload"></i> ファイルを選択';
+    }
+    if (fileInput) {
+        fileInput.disabled = false;
+    }
+    if (uploadText) {
+        uploadText.textContent = 'ファイルをドラッグ&ドロップ または クリックして選択';
+    }
+    if (uploadHint) {
+        uploadHint.textContent = '対応形式: Excel (.xlsx, .xls), CSV';
+    }
+
+    console.log('✓ Upload area enabled');
 }
 
 // アップロードのイベントリスナーを設定
@@ -388,7 +438,24 @@ async function handleMainFileUpload(event) {
             console.error('❌ Pyodide still not available after retries');
             console.error('Debug: window.pyodide =', window.pyodide);
             console.error('Debug: window.pyScriptFullyReady =', window.pyScriptFullyReady);
-            throw new Error('統計エンジンが正しく初期化されていません。\n\nページを再読み込み（Ctrl+F5）してください。');
+            console.error('Debug: pyScriptReady flag =', pyScriptReady);
+
+            // より詳細な診断情報
+            let diagnostics = [];
+            diagnostics.push(`- PyScript ready flag: ${pyScriptReady ? '✓' : '✗'}`);
+            diagnostics.push(`- window.pyodide exists: ${window.pyodide ? '✓' : '✗'}`);
+            diagnostics.push(`- window.pyScriptFullyReady: ${window.pyScriptFullyReady ? '✓' : '✗'}`);
+
+            if (window.pyodide) {
+                diagnostics.push(`- pyodide.globals exists: ${window.pyodide.globals ? '✓' : '✗'}`);
+            }
+
+            console.error('Diagnostics:\n' + diagnostics.join('\n'));
+
+            throw new Error('統計エンジンが正しく初期化されていません。\n\n' +
+                '診断情報:\n' + diagnostics.join('\n') + '\n\n' +
+                'ページを完全に再読み込み（Ctrl+F5）してください。\n' +
+                'それでも解決しない場合は、ブラウザのコンソール（F12）でエラー詳細を確認してください。');
         }
 
         console.log('✓ Pyodide confirmed available, proceeding with file load');

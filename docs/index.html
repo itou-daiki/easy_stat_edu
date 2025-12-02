@@ -49,17 +49,17 @@
 
         <!-- データアップロードセクション -->
         <div class="upload-section-main" id="upload-section-main">
-            <div class="upload-area" id="main-upload-area">
+            <div class="upload-area" id="main-upload-area" style="opacity: 0.5; pointer-events: none; position: relative;">
                 <div class="upload-icon">
                     <i class="fas fa-cloud-upload-alt"></i>
                 </div>
                 <h3>データファイルをアップロード</h3>
-                <p class="upload-text">ファイルをドラッグ&ドロップ または クリックして選択</p>
-                <input type="file" id="main-data-file" accept=".xlsx,.xls,.csv" style="display: none;">
-                <button class="btn-upload" id="main-upload-btn">
-                    <i class="fas fa-file-upload"></i> ファイルを選択
+                <p class="upload-text">統計エンジンを初期化しています...</p>
+                <input type="file" id="main-data-file" accept=".xlsx,.xls,.csv" style="display: none;" disabled>
+                <button class="btn-upload" id="main-upload-btn" disabled>
+                    <i class="fas fa-spinner fa-spin"></i> 初期化中...
                 </button>
-                <p class="upload-hint">対応形式: Excel (.xlsx, .xls), CSV</p>
+                <p class="upload-hint">初回起動時は1〜2分程度かかります</p>
             </div>
             <div id="main-file-info" class="file-info" style="display: none;"></div>
         </div>
