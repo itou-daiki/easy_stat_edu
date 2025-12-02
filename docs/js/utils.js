@@ -59,12 +59,26 @@ if (typeof pyodide !== 'undefined' || window.pyodide) {
 
 // PyScript関数を安全に取得するヘルパー関数
 function getPyScriptFunction(functionName) {
-    // PyScript 2024.x では pyodide を直接使用
-    const pyodide = window.pyodide;
+    // PyScript 2024.x では複数の方法を試す
+    let pyodide = window.pyodide;
 
-    if (typeof pyodide === 'undefined') {
+    // 代替方法1: pyscript.interpreterを試す
+    if (!pyodide && window.pyscript) {
+        console.log('Trying to access pyodide via pyscript.interpreter...');
+        try {
+            if (window.pyscript.interpreter && window.pyscript.interpreter.globals) {
+                pyodide = window.pyscript.interpreter;
+                console.log('✓ Using pyscript.interpreter as pyodide');
+            }
+        } catch (e) {
+            console.warn('Could not access pyscript.interpreter:', e);
+        }
+    }
+
+    if (typeof pyodide === 'undefined' || !pyodide) {
         console.error('❌ pyodide object is undefined');
         console.error('Debug: window.pyodide =', window.pyodide);
+        console.error('Debug: window.pyscript =', window.pyscript);
         throw new Error('PyScriptがまだ初期化されていません。ページを再読み込みしてください。');
     }
 
@@ -102,7 +116,12 @@ function checkPyScriptInitialization() {
             }
 
             // pyodideオブジェクトとglobalsが存在するかチェック
-            const pyodide = window.pyodide;
+            let pyodide = window.pyodide;
+
+            // 代替: pyscript.interpreterを試す
+            if (!pyodide && window.pyscript && window.pyscript.interpreter) {
+                pyodide = window.pyscript.interpreter;
+            }
 
             if (pyodide && pyodide.globals) {
                 // load_file_data関数が定義されているかチェック
@@ -157,6 +176,8 @@ window.addEventListener('load', function() {
                 let diagnostics = [];
                 diagnostics.push(`PyScript ready: ${pyScriptReady ? 'Yes' : 'No'}`);
                 diagnostics.push(`window.pyodide: ${window.pyodide ? 'Exists' : 'Undefined'}`);
+                diagnostics.push(`window.pyscript: ${window.pyscript ? 'Exists' : 'Undefined'}`);
+                diagnostics.push(`window.pyscript.interpreter: ${(window.pyscript && window.pyscript.interpreter) ? 'Exists' : 'Undefined'}`);
                 diagnostics.push(`window.pyScriptFullyReady: ${window.pyScriptFullyReady ? 'Yes' : 'No'}`);
 
                 // アップロードエリアにエラーメッセージを表示
@@ -409,6 +430,13 @@ async function handleMainFileUpload(event) {
         const retryDelay = 300; // 300ms
 
         while (retryCount < maxRetries) {
+            // pyodideを取得（代替方法を含む）
+            pyodide = window.pyodide;
+            if (!pyodide && window.pyscript && window.pyscript.interpreter) {
+                pyodide = window.pyscript.interpreter;
+                console.log('Using pyscript.interpreter as fallback');
+            }
+
             // Python側からのフラグを最優先でチェック
             if (window.pyScriptFullyReady === true && pyodide && pyodide.globals) {
                 const loadFunc = pyodide.globals.get('load_file_data');
@@ -429,7 +457,6 @@ async function handleMainFileUpload(event) {
 
             console.log(`⚠ Pyodide not ready, retry ${retryCount + 1}/${maxRetries}...`);
             await new Promise(resolve => setTimeout(resolve, retryDelay));
-            pyodide = window.pyodide;
             retryCount++;
         }
 
@@ -444,10 +471,14 @@ async function handleMainFileUpload(event) {
             let diagnostics = [];
             diagnostics.push(`- PyScript ready flag: ${pyScriptReady ? '✓' : '✗'}`);
             diagnostics.push(`- window.pyodide exists: ${window.pyodide ? '✓' : '✗'}`);
+            diagnostics.push(`- window.pyscript exists: ${window.pyscript ? '✓' : '✗'}`);
+            diagnostics.push(`- window.pyscript.interpreter exists: ${(window.pyscript && window.pyscript.interpreter) ? '✓' : '✗'}`);
             diagnostics.push(`- window.pyScriptFullyReady: ${window.pyScriptFullyReady ? '✓' : '✗'}`);
 
             if (window.pyodide) {
                 diagnostics.push(`- pyodide.globals exists: ${window.pyodide.globals ? '✓' : '✗'}`);
+            } else if (window.pyscript && window.pyscript.interpreter) {
+                diagnostics.push(`- pyscript.interpreter.globals exists: ${window.pyscript.interpreter.globals ? '✓' : '✗'}`);
             }
 
             console.error('Diagnostics:\n' + diagnostics.join('\n'));
