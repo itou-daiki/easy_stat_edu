@@ -339,12 +339,26 @@ async function handleMainFileUpload(event) {
         const fileContent = await readFileContent(file);
         console.log('✓ File content read, loading into Python...');
 
-        // 最終確認: Pyodideが本当に利用可能か再チェック
-        const pyodide = window.pyodide;
+        // 最終確認: Pyodideが本当に利用可能か再チェック（リトライあり）
+        let pyodide = window.pyodide;
+        let retryCount = 0;
+        const maxRetries = 5;
+        const retryDelay = 500; // 500ms
+
+        while ((!pyodide || !pyodide.globals) && retryCount < maxRetries) {
+            console.log(`⚠ Pyodide not ready, retry ${retryCount + 1}/${maxRetries}...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            pyodide = window.pyodide;
+            retryCount++;
+        }
+
         if (!pyodide || !pyodide.globals) {
+            console.error('❌ Pyodide still not available after retries');
+            console.error('Debug: window.pyodide =', window.pyodide);
             throw new Error('統計エンジンが正しく初期化されていません。\n\nページを再読み込み（Ctrl+F5）してください。');
         }
 
+        console.log('✓ Pyodide confirmed available, proceeding with file load');
         const loadFileData = getPyScriptFunction('load_file_data');
         const success = await loadFileData(fileContent, file.name);
 
