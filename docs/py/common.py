@@ -2082,3 +2082,18 @@ except:
     console.log("  - plotly: not available")
 console.log("✓ All statistical functions are ready")
 console.log("=" * 50)
+
+# JavaScriptに明示的に準備完了を通知
+try:
+    # カスタムイベントをディスパッチ
+    event = document.createEvent('Event')
+    event.initEvent('pyscript-ready', True, True)
+    document.dispatchEvent(event)
+    console.log("✓ Dispatched pyscript-ready event to JavaScript")
+
+    # グローバルフラグも設定
+    import js
+    js.window.pyScriptFullyReady = True
+    console.log("✓ Set window.pyScriptFullyReady flag")
+except Exception as e:
+    console.error(f"Failed to notify JavaScript: {e}")
