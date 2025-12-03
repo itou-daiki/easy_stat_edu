@@ -242,7 +242,7 @@ async def load_demo_data(filename):
     """
     from pyodide.http import pyfetch
     try:
-        response = await pyfetch(url=f"../datasets/{filename}", method="GET")
+        response = await pyfetch(url=f"datasets/{filename}", method="GET")
         if response.status == 200:
             file_content = await response.array_buffer()
             return load_file_data(file_content, filename)
