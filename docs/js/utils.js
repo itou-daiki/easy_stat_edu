@@ -257,8 +257,9 @@ function setupMainUploadListeners() {
     const fileInput = document.getElementById('main-data-file');
     const uploadArea = document.getElementById('main-upload-area');
     const uploadBtn = document.getElementById('main-upload-btn');
+    const loadDemoBtn = document.getElementById('load-demo-btn');
 
-    if (!fileInput || !uploadArea || !uploadBtn) {
+    if (!fileInput || !uploadArea || !uploadBtn || !loadDemoBtn) {
         console.error('Upload elements not found');
         return;
     }
@@ -270,6 +271,9 @@ function setupMainUploadListeners() {
     uploadBtn.addEventListener('click', () => {
         fileInput.click();
     });
+
+    // デモデータ読み込みボタンクリックイベント
+    loadDemoBtn.addEventListener('click', useDemoData);
 
     // ドラッグ&ドロップ
     uploadArea.addEventListener('dragover', (e) => {
@@ -302,6 +306,62 @@ function setupMainUploadListeners() {
 
     console.log('Upload listeners set up successfully');
 }
+
+// デモデータを使用
+async function useDemoData() {
+    const useDemoCheckbox = document.getElementById('use-demo-data');
+    if (!useDemoCheckbox.checked) {
+        alert('「デモデータを使用」にチェックを入れてください。');
+        return;
+    }
+
+    const fileInfo = document.getElementById('main-file-info');
+    fileInfo.innerHTML = `
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>デモデータを読み込んでいます...</p>
+            <p class="file-name">eda_demo.xlsx</p>
+        </div>
+    `;
+    fileInfo.style.display = 'block';
+
+    try {
+        const loadDemoDataFunc = getPyScriptFunction('load_demo_data');
+        const success = await loadDemoDataFunc('eda_demo.xlsx');
+
+        if (success) {
+            currentData = true;
+            fileInfo.innerHTML = `
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i>
+                    <p><strong>デモデータの読み込み成功！</strong></p>
+                    <p class="file-name">eda_demo.xlsx</p>
+                </div>
+            `;
+
+            // データ特性を取得して分析機能を有効化
+            await updateAnalysisAvailability();
+
+            // データ概要を表示
+            await displayDataOverview();
+        } else {
+            throw new Error('デモデータの読み込みに失敗しました');
+        }
+    } catch (error) {
+        console.error('Demo data loading error:', error);
+        fileInfo.innerHTML = `
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <p><strong>エラーが発生しました</strong></p>
+                <p>${error.message}</p>
+                <button onclick="location.reload()" class="btn-retry">
+                    <i class="fas fa-redo"></i> 再試行
+                </button>
+            </div>
+        `;
+    }
+}
+
 
 // メインファイルアップロード処理
 async function handleMainFileUpload(event) {
@@ -993,15 +1053,106 @@ function showEDAControls() {
                     データ分析の最初のステップとして重要です。
                 </p>
             </div>
-            <h3>分析する変数を選択</h3>
-            <select id="eda-var" class="mb-2"></select>
-            <button onclick="runEDAAnalysis()">分析を実行</button>
+
+            <!-- サマリー -->
+            <div class="mb-3">
+                <button onclick="runEDASummary()">要約統計量を表示</button>
+            </div>
+
+            <!-- 単一変数プロット -->
+            <div class="mb-3">
+                <button onclick="runVariablePlots()">各変数のプロットを表示</button>
+            </div>
+
+            <!-- 2変数プロット -->
+            <div class="mb-3">
+                <h3>2変数プロット</h3>
+                <div class="mb-2">
+                    <label>変数1:</label>
+                    <select id="eda-var1" class="mb-1"></select>
+                </div>
+                <div class="mb-2">
+                    <label>変数2:</label>
+                    <select id="eda-var2" class="mb-1"></select>
+                </div>
+                <button onclick="runTwoVariablePlot()">2変数プロットを表示</button>
+            </div>
+
+            <!-- 3変数プロット -->
+            <div class="mb-3">
+                <h3>3変数プロット</h3>
+                <div class="mb-2">
+                    <label>カテゴリカル変数1:</label>
+                    <select id="eda-cat-var1" class="mb-1"></select>
+                </div>
+                <div class="mb-2">
+                    <label>カテゴリカル変数2:</label>
+                    <select id="eda-cat-var2" class="mb-1"></select>
+                </div>
+                <div class="mb-2">
+                    <label>数値変数:</label>
+                    <select id="eda-num-var" class="mb-1"></select>
+                </div>
+                <button onclick="runThreeVariablePlot()">3変数プロットを表示</button>
+            </div>
         </div>
     `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['eda-var']);
+    populateVariableSelects(['eda-var1', 'eda-var2', 'eda-cat-var1', 'eda-cat-var2', 'eda-num-var']);
 }
+
+// EDA サマリーを実行
+async function runEDASummary() {
+    try {
+        const get_eda_summaryFunc = getPyScriptFunction('get_eda_summary');
+        const result = await get_eda_summaryFunc();
+        displayResults(result);
+    } catch (error) {
+        alert('分析の実行に失敗しました: ' + error.message);
+    }
+}
+
+// EDA 変数プロットを実行
+async function runVariablePlots() {
+    try {
+        const get_variable_plotsFunc = getPyScriptFunction('get_variable_plots');
+        const result = await get_variable_plotsFunc();
+        displayResults(result);
+    } catch (error) {
+        alert('分析の実行に失敗しました: ' + error.message);
+    }
+}
+
+// EDA 2変数プロットを実行
+async function runTwoVariablePlot() {
+    const var1 = document.getElementById('eda-var1').value;
+    const var2 = document.getElementById('eda-var2').value;
+
+    try {
+        const get_two_variable_plotFunc = getPyScriptFunction('get_two_variable_plot');
+        const result = await get_two_variable_plotFunc(var1, var2);
+        displayResults(result);
+    } catch (error) {
+        alert('分析の実行に失敗しました: ' + error.message);
+    }
+}
+
+// EDA 3変数プロットを実行
+async function runThreeVariablePlot() {
+    const catVar1 = document.getElementById('eda-cat-var1').value;
+    const catVar2 = document.getElementById('eda-cat-var2').value;
+    const numVar = document.getElementById('eda-num-var').value;
+
+    try {
+        const get_three_variable_plotFunc = getPyScriptFunction('get_three_variable_plot');
+        const result = await get_three_variable_plotFunc(catVar1, catVar2, numVar);
+        displayResults(result);
+    } catch (error) {
+        alert('分析の実行に失敗しました: ' + error.message);
+    }
+}
+
 
 // t検定のコントロール
 function showTTestControls() {
@@ -1069,19 +1220,9 @@ async function runCorrelationAnalysis() {
     }
 }
 
-// EDA分析を実行
-async function runEDAAnalysis() {
-    const variable = document.getElementById('eda-var').value;
 
-    try {
-        const run_eda_analysisFunc = getPyScriptFunction('run_eda_analysis');
-        const result = await run_eda_analysisFunc(variable);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
+// 相関分析を実行
+async function runCorrelationAnalysis() {
 // t検定を実行
 async function runTTestAnalysis() {
     const testType = document.getElementById('ttest-type').value;

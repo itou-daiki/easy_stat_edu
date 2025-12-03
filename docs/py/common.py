@@ -193,6 +193,45 @@ def get_numeric_columns():
     return current_df.select_dtypes(include=[np.number]).columns.tolist()
 
 
+def get_categorical_columns():
+    """
+    カテゴリカル型の列名リストを取得
+
+    Returns:
+    --------
+    list
+        カテゴリカル型の列名リスト
+    """
+    global current_df
+
+    if current_df is None:
+        return []
+
+    categorical_cols = []
+    for col in current_df.select_dtypes(include=['object', 'category']).columns:
+        unique_ratio = current_df[col].nunique() / len(current_df)
+        if unique_ratio < 0.3:
+            categorical_cols.append(col)
+    return categorical_cols
+
+async def load_demo_data(filename):
+    """
+    デモデータを読み込む
+    """
+    from pyodide.http import pyfetch
+    try:
+        response = await pyfetch(url=f"../datasets/{filename}", method="GET")
+        if response.status == 200:
+            file_content = await response.array_buffer()
+            return load_file_data(file_content, filename)
+        else:
+            console.error(f"デモデータの読み込みに失敗しました: {response.status}")
+            return False
+    except Exception as e:
+        console.error(f"デモデータの読み込み中にエラーが発生しました: {str(e)}")
+        return False
+
+
 def get_data_summary():
     """
     データの基本統計量を取得
