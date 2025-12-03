@@ -3,7 +3,7 @@ Exploratory Data Analysis (EDA) functions for PyScript.
 """
 import pandas as pd
 import plotly.express as px
-from py.common import current_df, get_numeric_columns, get_categorical_columns
+from common import current_df, get_numeric_columns, get_categorical_columns
 
 def get_eda_summary():
     """

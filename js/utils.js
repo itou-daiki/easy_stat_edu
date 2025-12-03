@@ -1220,9 +1220,6 @@ async function runCorrelationAnalysis() {
     }
 }
 
-
-// 相関分析を実行
-async function runCorrelationAnalysis() {
 // t検定を実行
 async function runTTestAnalysis() {
     const testType = document.getElementById('ttest-type').value;
@@ -1237,6 +1234,7 @@ async function runTTestAnalysis() {
         alert('分析の実行に失敗しました: ' + error.message);
     }
 }
+
 
 // カイ二乗検定のコントロール
 function showChiSquareControls() {
