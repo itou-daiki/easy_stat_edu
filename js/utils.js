@@ -4,44 +4,37 @@ let currentAnalysis = null;
 let pyScriptReady = false;
 
 // PyScriptの初期化完了を検知（複数のイベントをリッスン）
-function markPyScriptReady() {
-    if (!pyScriptReady) {
+function markPyScriptReady(checkFunctions = false) {
+    if (!pyScriptReady && checkFunctions && typeof window.load_file_data === 'function') {
+        // Python関数が利用可能になったときのみフラグを立てる
         console.log('✓ PyScript initialized successfully');
+        console.log('✓ Python functions are available in window scope');
         pyScriptReady = true;
-
-        // Python関数がwindowスコープにエクスポートされているか確認
-        // PyScript 2024.1.1では、関数は直接window.function_nameとして利用可能
-        try {
-            if (typeof window.load_file_data === 'function') {
-                console.log('✓ Python functions are available in window scope');
-            } else {
-                console.warn('⚠ PyScript ready but load_file_data function not found yet');
-                console.warn('   window.load_file_data type:', typeof window.load_file_data);
-            }
-        } catch (e) {
-            console.warn('⚠ PyScript ready but check failed:', e);
-        }
+    } else if (!pyScriptReady && !checkFunctions) {
+        // PyScriptがロードされただけ（関数チェックなし）
+        console.log('✓ PyScript runtime loaded');
     }
 }
 
 // 複数のイベントをリッスン（PyScriptバージョンによって異なる）
 document.addEventListener('py-ready', () => {
     console.log('Event: py-ready fired');
-    markPyScriptReady();
+    markPyScriptReady(false); // ランタイムのロードのみ確認
 });
 document.addEventListener('py:ready', () => {
     console.log('Event: py:ready fired');
-    markPyScriptReady();
+    markPyScriptReady(false); // ランタイムのロードのみ確認
 });
 document.addEventListener('pyscript:ready', () => {
     console.log('Event: pyscript:ready fired');
-    markPyScriptReady();
+    markPyScriptReady(false); // ランタイムのロードのみ確認
 });
 
 // Python側からの明示的な準備完了通知を待機（最も確実）
+// このイベントは common.py の最後で dispatch される
 document.addEventListener('pyscript-ready', () => {
     console.log('Event: pyscript-ready fired (from Python)');
-    markPyScriptReady();
+    markPyScriptReady(true); // Python関数の利用可能性をチェック
 });
 
 // DOMContentLoadedでもチェック（PyScript 2024.x系の場合）
