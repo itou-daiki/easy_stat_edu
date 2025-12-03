@@ -9,5 +9,9 @@
     "xlrd",
     "statsmodels"
   ],
-  "terminal": false
+  "terminal": false,
+  "paths": [
+    "./app/common.py",
+    "./app/eda.py"
+  ]
 }
