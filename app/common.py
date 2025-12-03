@@ -2138,21 +2138,75 @@ def run_text_mining(text_column):
         return f"<p>エラーが発生しました: {str(e)}</p>"
 
 
-# 初期化メッセージ
-console.log("=" * 50)
-console.log("✓ easyStat PyScript modules loaded successfully")
-console.log(f"  - pandas: {pd.__version__}")
-console.log(f"  - numpy: {np.__version__}")
-console.log("  - scipy: loaded")
-console.log("  - matplotlib: loaded")
+# ==========================================
+# PyScript Function Exporter
+# ==========================================
 try:
-    import plotly
-    console.log(f"  - plotly: {plotly.__version__}")
-except:
-    console.log("  - plotly: not available")
-console.log("✓ All statistical functions are ready")
-console.log("=" * 50)
+    import js
+    from js import console, document
+    import traceback
 
-# JavaScriptに明示的に準備完了を通知
-# PyScript 2024.1.1では、window.pyodideは公開されないため、
-# すべてのPython関数を直接JavaScriptのグローバルスコープにエクスポートする
+    # This might fail if eda.py is not yet processed by PyScript.
+    # We will wrap it in a try-except to be safe.
+    try:
+        from eda import get_eda_summary, get_variable_plots, get_two_variable_plot, get_three_variable_plot
+        eda_functions = {
+            'get_eda_summary': get_eda_summary,
+            'get_variable_plots': get_variable_plots,
+            'get_two_variable_plot': get_two_variable_plot,
+            'get_three_variable_plot': get_three_variable_plot,
+        }
+        console.log("✓ Successfully imported functions from eda.py")
+    except ImportError:
+        console.error("Could not import from eda.py. It might not be loaded yet.")
+        eda_functions = {}
+
+    # Define all functions from this file (common.py)
+    common_functions = {
+        'load_file_data': load_file_data,
+        'load_demo_data': load_demo_data,
+        'get_column_names': get_column_names,
+        'get_data_characteristics': get_data_characteristics,
+        'get_numeric_columns': get_numeric_columns,
+        'get_categorical_columns': get_categorical_columns,
+        'get_text_columns': get_text_columns,
+        'get_data_summary': get_data_summary,
+        'run_correlation_analysis': run_correlation_analysis,
+        'run_ttest_analysis': run_ttest_analysis,
+        'run_chi_square_analysis': run_chi_square_analysis,
+        'run_anova_analysis': run_anova_analysis,
+        'run_simple_regression_analysis': run_simple_regression_analysis,
+        'run_pca_analysis': run_pca_analysis,
+        'run_data_cleansing': run_data_cleansing,
+        'remove_missing_rows': remove_missing_rows,
+        'remove_duplicates': remove_duplicates,
+        'fill_missing_mean': fill_missing_mean,
+        'run_two_way_anova': run_two_way_anova,
+        'run_multiple_regression': run_multiple_regression,
+        'run_factor_analysis': run_factor_analysis,
+        'run_text_mining': run_text_mining,
+    }
+
+    # Combine dictionaries
+    exported_functions = {**common_functions, **eda_functions}
+    
+    console.log(f"✓ Assembled {len(exported_functions)} functions for export.")
+    console.log("=" * 50)
+    console.log("Exporting Python functions to JavaScript...")
+
+    for func_name, func in exported_functions.items():
+        setattr(js.window, func_name, func)
+
+    console.log("✓ All Python functions exported.")
+    js.window.pyScriptFullyReady = True
+    console.log("✓ Set window.pyScriptFullyReady flag")
+    
+    event = document.createEvent('Event')
+    event.initEvent('pyscript-ready', True, True)
+    document.dispatchEvent(event)
+    console.log("✓ Dispatched 'pyscript-ready' event.")
+    console.log("=" * 50)
+
+except Exception as e:
+    console.error("❌ Failed during function export.")
+    console.error(traceback.format_exc())

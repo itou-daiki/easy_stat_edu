@@ -10,13 +10,9 @@
     "statsmodels"
   ],
   "terminal": false,
-  "fetch": [
-    {
-      "files": [
-        "./app/common.py",
-        "./app/eda.py",
-        "./app/main.py"
-      ]
-    }
+  "paths": [
+    "./app/common.py",
+    "./app/eda.py",
+    "./app/__init__.py"
   ]
 }
