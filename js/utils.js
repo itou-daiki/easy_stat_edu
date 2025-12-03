@@ -309,12 +309,6 @@ function setupMainUploadListeners() {
 
 // デモデータを使用
 async function useDemoData() {
-    const useDemoCheckbox = document.getElementById('use-demo-data');
-    if (!useDemoCheckbox.checked) {
-        alert('「デモデータを使用」にチェックを入れてください。');
-        return;
-    }
-
     const fileInfo = document.getElementById('main-file-info');
     fileInfo.innerHTML = `
         <div class="loading">

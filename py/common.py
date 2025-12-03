@@ -214,28 +214,6 @@ def get_categorical_columns():
             categorical_cols.append(col)
     return categorical_cols
 
-
-def get_categorical_columns():
-    """
-    カテゴリカル型の列名リストを取得
-
-    Returns:
-    --------
-    list
-        カテゴリカル型の列名リスト
-    """
-    global current_df
-
-    if current_df is None:
-        return []
-
-    categorical_cols = []
-    for col in current_df.select_dtypes(include=['object', 'category']).columns:
-        unique_ratio = current_df[col].nunique() / len(current_df)
-        if unique_ratio < 0.3:
-            categorical_cols.append(col)
-    return categorical_cols
-
 async def load_demo_data(filename):
     """
     デモデータを読み込む
@@ -271,15 +249,24 @@ def get_data_summary():
     # 基本情報
     n_rows, n_cols = current_df.shape
 
+    # データプレビュー用のHTMLを生成
+    preview_html = current_df.to_html(classes='table table-striped table-hover', max_rows=None)
+
+    # 基本統計量用のHTMLを生成
+    summary_html = current_df.describe().to_html(classes='table table-striped table-hover', float_format='{:.2f}'.format)
+
+
     html = f"""
     <div class="data-summary">
         <h3>データ概要</h3>
         <p>行数: {n_rows}</p>
         <p>列数: {n_cols}</p>
-        <h4>データプレビュー</h4>
-        {current_df.head(10).to_html(classes='table')}
+        <h4>データプレビュー (スクロール可能)</h4>
+        <div style="max-height: 400px; overflow: auto;">
+            {preview_html}
+        </div>
         <h4>基本統計量</h4>
-        {current_df.describe().to_html(classes='table')}
+        {summary_html}
     </div>
     """
 
