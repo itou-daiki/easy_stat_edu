@@ -431,7 +431,7 @@ async function handleMainFileUpload(event) {
                 console.error('- pyscript object exists:', typeof pyscript !== 'undefined');
                 console.error('- pyscript.interpreter exists:', typeof pyscript !== 'undefined' && pyscript.interpreter);
 
-                throw new Error('統計エンジンの初期化に時間がかかりすぎています。
+                throw new Error(`統計エンジンの初期化に時間がかかりすぎています。
 
 考えられる原因：
 - ネットワーク接続が不安定
@@ -440,7 +440,7 @@ async function handleMainFileUpload(event) {
 対処方法：
 1. ブラウザのキャッシュをクリア（Ctrl+Shift+Del）
 2. ページを再読み込み（Ctrl+F5）
-3. 別のブラウザで試す（Chrome推奨）');
+3. 別のブラウザで試す（Chrome推奨）`);
             }
 
             console.log('✓ PyScript ready after waiting, proceeding with file processing');
@@ -503,14 +503,13 @@ async function handleMainFileUpload(event) {
 
             console.error('Diagnostics:\n' + diagnostics.join('\n'));
 
-            throw new Error('統計エンジンが正しく初期化されていません。
+            throw new Error(`統計エンジンが正しく初期化されていません。
 
-' +
-                '診断情報:
-' + diagnostics.join('\n') + '\n\n' +
-                'ページを完全に再読み込み（Ctrl+F5）してください。
-' +
-                'それでも解決しない場合は、ブラウザのコンソール（F12）でエラー詳細を確認してください。');
+診断情報:
+${diagnostics.join('\n')}
+
+ページを完全に再読み込み（Ctrl+F5）してください。
+それでも解決しない場合は、ブラウザのコンソール（F12）でエラー詳細を確認してください。`);
         }
 
         console.log('✓ Python functions confirmed available, proceeding with file load');
@@ -962,6 +961,58 @@ function readFileContent(file) {
             reader.readAsArrayBuffer(file);
         }
     });
+}
+
+// 変数セレクトボックスに変数リストを設定
+async function populateVariableSelects(selectConfigs) { // Expects an array of objects: [{id: 'varId', type: 'numeric'}]
+    try {
+        // Get all column types in one go to be efficient
+        const get_numeric_columns = getPyScriptFunction('get_numeric_columns');
+        const get_categorical_columns = getPyScriptFunction('get_categorical_columns');
+        const get_text_columns = getPyScriptFunction('get_text_columns');
+        const get_column_names = getPyScriptFunction('get_column_names');
+
+        const [numeric_cols, categorical_cols, text_cols, all_cols] = await Promise.all([
+            get_numeric_columns(),
+            get_categorical_columns(),
+            get_text_columns(),
+            get_column_names()
+        ]);
+
+        const columnMap = {
+            numeric: numeric_cols,
+            categorical: categorical_cols,
+            text: text_cols,
+            all: all_cols
+        };
+
+        for (const config of selectConfigs) {
+            const select = document.getElementById(config.id);
+            if (!select) {
+                console.error(`Select element not found: ${config.id}`);
+                continue; // Skip to the next config if element not found
+            }
+
+            const columns = columnMap[config.type] || all_cols; // Fallback to all_cols if type is unknown
+
+            // Clear existing options
+            select.innerHTML = '';
+            // Add a default empty option for better UX
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "選択してください";
+            select.appendChild(defaultOption);
+
+            columns.forEach(col => {
+                const option = document.createElement('option');
+                option.value = col;
+                option.textContent = col;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('変数リストの取得に失敗:', error);
+    }
 }
 
 // 分析コントロールを表示
