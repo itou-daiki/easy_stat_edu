@@ -6,7 +6,8 @@
     "plotly",
     "scipy",
     "openpyxl",
-    "xlrd"
+    "xlrd",
+    "statsmodels"
   ],
   "terminal": false,
   "paths": [

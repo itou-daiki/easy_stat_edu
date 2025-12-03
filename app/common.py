@@ -2156,22 +2156,30 @@ console.log("=" * 50)
 # JavaScriptに明示的に準備完了を通知
 # PyScript 2024.1.1では、window.pyodideは公開されないため、
 # すべてのPython関数を直接JavaScriptのグローバルスコープにエクスポートする
+# ==========================================
+# PyScript Function Exporter
+# ==========================================
 try:
     import js
     from pyodide.ffi import create_proxy
+    # EDA関数のインポート
+    from app.eda import get_eda_summary, get_variable_plots, get_two_variable_plot, get_three_variable_plot
 
     console.log("=" * 50)
     console.log("Exporting Python functions to JavaScript...")
 
-    # すべての公開関数をJavaScriptにエクスポート
+    # すべての公開関数を辞書にまとめる
     exported_functions = {
+        # common.py functions
         'load_file_data': load_file_data,
+        'load_demo_data': load_demo_data,
         'get_column_names': get_column_names,
         'get_data_characteristics': get_data_characteristics,
         'get_numeric_columns': get_numeric_columns,
+        'get_categorical_columns': get_categorical_columns,
+        'get_text_columns': get_text_columns,
         'get_data_summary': get_data_summary,
         'run_correlation_analysis': run_correlation_analysis,
-        'run_eda_analysis': run_eda_analysis,
         'run_ttest_analysis': run_ttest_analysis,
         'run_chi_square_analysis': run_chi_square_analysis,
         'run_anova_analysis': run_anova_analysis,
@@ -2184,27 +2192,26 @@ try:
         'run_two_way_anova': run_two_way_anova,
         'run_multiple_regression': run_multiple_regression,
         'run_factor_analysis': run_factor_analysis,
-        'run_text_mining': run_text_mining
+        'run_text_mining': run_text_mining,
+        # eda.py functions
+        'get_eda_summary': get_eda_summary,
+        'get_variable_plots': get_variable_plots,
+        'get_two_variable_plot': get_two_variable_plot,
+        'get_three_variable_plot': get_three_variable_plot,
     }
 
+    # 各関数をJavaScriptのグローバルスコープにエクスポート
     for func_name, func in exported_functions.items():
-        # 非同期関数かどうかチェック
-        import inspect
-        if inspect.iscoroutinefunction(func):
-            # 非同期関数の場合はそのまま
-            setattr(js.window, func_name, func)
-        else:
-            # 同期関数の場合はproxyでラップ
-            setattr(js.window, func_name, create_proxy(func))
+        setattr(js.window, func_name, func)
         console.log(f"  ✓ Exported: {func_name}")
 
-    # カスタムイベントをディスパッチ
+    # カスタムイベントをディスパッチして、JSに準備完了を通知
     event = document.createEvent('Event')
     event.initEvent('pyscript-ready', True, True)
     document.dispatchEvent(event)
     console.log("✓ Dispatched pyscript-ready event to JavaScript")
 
-    # グローバルフラグも設定
+    # グローバルフラグも設定して、確実性を高める
     js.window.pyScriptFullyReady = True
     console.log("✓ Set window.pyScriptFullyReady flag")
 
@@ -2212,6 +2219,6 @@ try:
     console.log("=" * 50)
 
 except Exception as e:
-    console.error(f"Failed to export functions to JavaScript: {e}")
+    console.error(f"❌ Failed to export functions to JavaScript: {e}")
     import traceback
     console.error(traceback.format_exc())

@@ -418,7 +418,7 @@ async function handleMainFileUpload(event) {
                             ダウンロードするため1〜2分程度お待ちください。<br>
                             <strong>2回目以降は高速に起動します。</strong><br>
                             <span style="color: var(--primary-color); font-weight: 600; margin-top: 0.5rem; display: inline-block;">
-                                経過時間: ${seconds}秒 (推定進捗: ${progress}%)
+                                経過時間: ${seconds}秒 (推定進捗: ${progress}%) 
                             </span>
                         `;
                     }
@@ -431,7 +431,16 @@ async function handleMainFileUpload(event) {
                 console.error('- pyscript object exists:', typeof pyscript !== 'undefined');
                 console.error('- pyscript.interpreter exists:', typeof pyscript !== 'undefined' && pyscript.interpreter);
 
-                throw new Error('統計エンジンの初期化に時間がかかりすぎています。\n\n考えられる原因：\n- ネットワーク接続が不安定\n- ブラウザのキャッシュが破損\n\n対処方法：\n1. ブラウザのキャッシュをクリア（Ctrl+Shift+Del）\n2. ページを再読み込み（Ctrl+F5）\n3. 別のブラウザで試す（Chrome推奨）');
+                throw new Error('統計エンジンの初期化に時間がかかりすぎています。
+
+考えられる原因：
+- ネットワーク接続が不安定
+- ブラウザのキャッシュが破損
+
+対処方法：
+1. ブラウザのキャッシュをクリア（Ctrl+Shift+Del）
+2. ページを再読み込み（Ctrl+F5）
+3. 別のブラウザで試す（Chrome推奨）');
             }
 
             console.log('✓ PyScript ready after waiting, proceeding with file processing');
@@ -494,9 +503,13 @@ async function handleMainFileUpload(event) {
 
             console.error('Diagnostics:\n' + diagnostics.join('\n'));
 
-            throw new Error('統計エンジンが正しく初期化されていません。\n\n' +
-                '診断情報:\n' + diagnostics.join('\n') + '\n\n' +
-                'ページを完全に再読み込み（Ctrl+F5）してください。\n' +
+            throw new Error('統計エンジンが正しく初期化されていません。
+
+' +
+                '診断情報:
+' + diagnostics.join('\n') + '\n\n' +
+                'ページを完全に再読み込み（Ctrl+F5）してください。
+' +
                 'それでも解決しない場合は、ブラウザのコンソール（F12）でエラー詳細を確認してください。');
         }
 
@@ -1030,8 +1043,7 @@ function showCorrelationControls() {
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
 
-    // 変数リストを取得してセレクトボックスに設定
-    populateVariableSelects(['var1', 'var2'], 'numeric');
+    populateVariableSelects([{id: 'var1', type: 'numeric'}, {id: 'var2', type: 'numeric'}]);
 }
 
 // EDAのコントロール
@@ -1093,9 +1105,9 @@ function showEDAControls() {
     `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['eda-var1', 'eda-var2']); // Default to all
-    populateVariableSelects(['eda-cat-var1', 'eda-cat-var2'], 'categorical');
-    populateVariableSelects(['eda-num-var'], 'numeric');
+    populateVariableSelects([{id: 'eda-var1', type: 'all'}, {id: 'eda-var2', type: 'all'}]);
+    populateVariableSelects([{id: 'eda-cat-var1', type: 'categorical'}, {id: 'eda-cat-var2', type: 'categorical'}]);
+    populateVariableSelects([{id: 'eda-num-var', type: 'numeric'}]);
 }
 
 // EDA サマリーを実行
@@ -1124,6 +1136,10 @@ async function runVariablePlots() {
 async function runTwoVariablePlot() {
     const var1 = document.getElementById('eda-var1').value;
     const var2 = document.getElementById('eda-var2').value;
+    if (!var1 || !var2) {
+        alert('変数を2つ選択してください。');
+        return;
+    }
 
     try {
         const get_two_variable_plotFunc = getPyScriptFunction('get_two_variable_plot');
@@ -1139,6 +1155,10 @@ async function runThreeVariablePlot() {
     const catVar1 = document.getElementById('eda-cat-var1').value;
     const catVar2 = document.getElementById('eda-cat-var2').value;
     const numVar = document.getElementById('eda-num-var').value;
+    if (!catVar1 || !catVar2 || !numVar) {
+        alert('すべての変数を選択してください。');
+        return;
+    }
 
     try {
         const get_three_variable_plotFunc = getPyScriptFunction('get_three_variable_plot');
@@ -1178,480 +1198,5 @@ function showTTestControls() {
         `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['ttest-var1', 'ttest-var2'], 'numeric');
-}
-
-// 変数セレクトボックスに変数リストを設定
-async function populateVariableSelects(selectIds, requiredType = 'all') {
-    try {
-        let columns = [];
-        if (requiredType === 'numeric') {
-            const get_numeric_columnsFunc = getPyScriptFunction('get_numeric_columns');
-            columns = await get_numeric_columnsFunc();
-        } else if (requiredType === 'categorical') {
-            const get_categorical_columnsFunc = getPyScriptFunction('get_categorical_columns');
-            columns = await get_categorical_columnsFunc();
-        } else if (requiredType === 'text') {
-            const get_text_columnsFunc = getPyScriptFunction('get_text_columns');
-            columns = await get_text_columnsFunc();
-        } else { // 'all' or undefined
-            const get_column_namesFunc = getPyScriptFunction('get_column_names');
-            columns = await get_column_namesFunc();
-        }
-
-        selectIds.forEach(selectId => {
-            const select = document.getElementById(selectId);
-            // Clear existing options
-            select.innerHTML = '';
-            // Add a default empty option for better UX
-            const defaultOption = document.createElement('option');
-            defaultOption.value = "";
-            defaultOption.textContent = "選択してください";
-            select.appendChild(defaultOption);
-
-            columns.forEach(col => {
-                const option = document.createElement('option');
-                option.value = col;
-                option.textContent = col;
-                select.appendChild(option);
-            });
-        });
-    } catch (error) {
-        console.error('変数リストの取得に失敗:', error);
-    }
-}
-
-// 相関分析を実行
-async function runCorrelationAnalysis() {
-    const var1 = document.getElementById('var1').value;
-    const var2 = document.getElementById('var2').value;
-
-    try {
-        const run_correlation_analysisFunc = getPyScriptFunction('run_correlation_analysis');
-        const result = await run_correlation_analysisFunc(var1, var2);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// t検定を実行
-async function runTTestAnalysis() {
-    const testType = document.getElementById('ttest-type').value;
-    const var1 = document.getElementById('ttest-var1').value;
-    const var2 = document.getElementById('ttest-var2').value;
-
-    try {
-        const run_ttest_analysisFunc = getPyScriptFunction('run_ttest_analysis');
-        const result = await run_ttest_analysisFunc(testType, var1, var2);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-
-// カイ二乗検定のコントロール
-function showChiSquareControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📋 カイ二乗検定とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    カテゴリカルデータ（質的変数）の独立性を検定します。2つのカテゴリ変数に関連性があるかを、クロス集計表を用いて分析します。<strong>p値 &lt; 0.05</strong>で2変数間に有意な関連性があると判断できます。
-                </p>
-            </div>
-            <h3>変数を選択</h3>
-            <div class="mb-2">
-                <label>変数1:</label>
-                <select id="chi-var1" class="mb-1"></select>
-            </div>
-            <div class="mb-2">
-                <label>変数2:</label>
-                <select id="chi-var2" class="mb-1"></select>
-            </div>
-            <button onclick="runChiSquareAnalysis()">カイ二乗検定を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['chi-var1', 'chi-var2'], 'categorical');
-}
-
-// 分散分析のコントロール
-function showAnovaControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📊 一要因分散分析（ANOVA）とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    3つ以上のグループの平均値に差があるかを検定します。t検定の拡張版で、複数グループを同時に比較できます。<strong>p値 &lt; 0.05</strong>で「少なくとも1つのグループに差がある」と判断します。
-                </p>
-            </div>
-            <h3>分析する変数を選択（2つ以上）</h3>
-            <p class="text-muted">Ctrlキーを押しながら複数選択してください</p>
-            <select id="anova-vars" multiple size="6" class="mb-2"></select>
-            <button onclick="runAnovaAnalysis()">分散分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['anova-vars'], 'numeric');
-}
-
-// 単回帰分析のコントロール
-function showSimpleRegressionControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📉 単回帰分析とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    1つの説明変数（X）から目的変数（Y）を予測する関係式を導きます。決定係数（R²）は予測の精度を示し、1に近いほど高精度です。散布図に回帰直線を引いて関係性を視覚化します。
-                </p>
-            </div>
-            <h3>変数を選択</h3>
-            <div class="mb-2">
-                <label>説明変数 (X):</label>
-                <select id="reg-x" class="mb-1"></select>
-            </div>
-            <div class="mb-2">
-                <label>目的変数 (Y):</label>
-                <select id="reg-y" class="mb-1"></select>
-            </div>
-            <button onclick="runSimpleRegressionAnalysis()">単回帰分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['reg-x', 'reg-y'], 'numeric');
-}
-
-// 主成分分析のコントロール
-function showPCAControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">🎯 主成分分析（PCA）とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    多数の変数を少数の合成変数（主成分）に集約する次元削減手法です。データの特徴を保持しながら可視化や解釈を容易にします。寄与率で各主成分がデータの何%を説明しているかがわかります。
-                </p>
-            </div>
-            <h3>主成分数を指定</h3>
-            <div class="mb-2">
-                <label>主成分数:</label>
-                <input type="number" id="pca-components" value="2" min="1" max="10" class="mb-1">
-            </div>
-            <p class="text-muted">全ての数値型変数を使用して主成分分析を行います</p>
-            <button onclick="runPCAAnalysis()">主成分分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-}
-
-// カイ二乗検定を実行
-async function runChiSquareAnalysis() {
-    const var1 = document.getElementById('chi-var1').value;
-    const var2 = document.getElementById('chi-var2').value;
-
-    try {
-        const run_chi_square_analysisFunc = getPyScriptFunction('run_chi_square_analysis');
-        const result = await run_chi_square_analysisFunc(var1, var2);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 分散分析を実行
-async function runAnovaAnalysis() {
-    const select = document.getElementById('anova-vars');
-    const selectedVars = Array.from(select.selectedOptions).map(option => option.value);
-
-    if (selectedVars.length < 2) {
-        alert('2つ以上の変数を選択してください');
-        return;
-    }
-
-    try {
-        const run_anova_analysisFunc = getPyScriptFunction('run_anova_analysis');
-        const result = await run_anova_analysisFunc(selectedVars);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 単回帰分析を実行
-async function runSimpleRegressionAnalysis() {
-    const xVar = document.getElementById('reg-x').value;
-    const yVar = document.getElementById('reg-y').value;
-
-    try {
-        const run_simple_regression_analysisFunc = getPyScriptFunction('run_simple_regression_analysis');
-        const result = await run_simple_regression_analysisFunc(xVar, yVar);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 主成分分析を実行
-async function runPCAAnalysis() {
-    const nComponents = parseInt(document.getElementById('pca-components').value);
-
-    try {
-        const run_pca_analysisFunc = getPyScriptFunction('run_pca_analysis');
-        const result = await run_pca_analysisFunc(nComponents);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// データクレンジングのコントロール
-function showCleansingControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">🧹 データクレンジングとは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    データ分析の前準備として、欠損値、重複行、異常値などを検出・処理します。データの品質を高めることで、分析結果の信頼性が向上します。データ分析の成否を左右する重要なプロセスです。
-                </p>
-            </div>
-            <h3>データクレンジング</h3>
-            <button onclick="runDataCleansing()" class="mb-2">データの状態を確認</button>
-            <div id="cleansing-results" class="mt-2"></div>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-}
-
-// 二要因分散分析のコントロール
-function showTwoWayAnovaControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📊 二要因分散分析とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    2つの要因（独立変数）が従属変数に与える影響を同時に分析します。各要因の主効果を検定し、複数の要因が結果に与える影響を理解できます。
-                </p>
-            </div>
-            <h3>変数を選択</h3>
-            <div class="mb-2">
-                <label>第1要因:</label>
-                <select id="anova2-factor1" class="mb-1"></select>
-            </div>
-            <div class="mb-2">
-                <label>第2要因:</label>
-                <select id="anova2-factor2" class="mb-1"></select>
-            </div>
-            <div class="mb-2">
-                <label>従属変数:</label>
-                <select id="anova2-dependent" class="mb-1"></select>
-            </div>
-            <button onclick="runTwoWayAnova()">二要因分散分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['anova2-factor1', 'anova2-factor2'], 'categorical');
-    populateVariableSelects(['anova2-dependent'], 'numeric');
-}
-
-// 重回帰分析のコントロール
-function showMultipleRegressionControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📈 重回帰分析とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    複数の説明変数（X1, X2, ...）から目的変数（Y）を予測します。各説明変数の影響力を定量化でき、調整済みR²で予測精度を評価します。ビジネスや研究で最も使われる手法の1つです。
-                </p>
-            </div>
-            <h3>変数を選択</h3>
-            <div class="mb-2">
-                <label>説明変数（複数選択可）:</label>
-                <p class="text-muted">Ctrlキーを押しながら複数選択してください</p>
-                <select id="mreg-x-vars" multiple size="6" class="mb-1"></select>
-            </div>
-            <div class="mb-2">
-                <label>目的変数:</label>
-                <select id="mreg-y-var" class="mb-1"></select>
-            </div>
-            <button onclick="runMultipleRegression()">重回帰分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['mreg-x-vars', 'mreg-y-var'], 'numeric');
-}
-
-// 因子分析のコントロール
-function showFactorAnalysisControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">🔍 因子分析とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    多数の変数の背後にある潜在的な共通因子を抽出します。変数間の相関パターンから、データを説明する少数の因子を見つけます。因子負荷量で各変数と因子の関係性がわかります。
-                </p>
-            </div>
-            <h3>因子数を指定</h3>
-            <div class="mb-2">
-                <label>因子数:</label>
-                <input type="number" id="factor-n" value="2" min="1" max="10" class="mb-1">
-            </div>
-            <p class="text-muted">全ての数値型変数を使用して因子分析を行います</p>
-            <button onclick="runFactorAnalysis()">因子分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-}
-
-// テキストマイニングのコントロール
-function showTextMiningControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📝 テキストマイニングとは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    テキストデータから頻出単語を抽出し、内容の特徴を定量的に分析します。アンケートの自由記述やレビューデータなどの分析に有効です。単語の出現回数で重要なキーワードを把握できます。
-                </p>
-            </div>
-            <h3>テキスト列を選択</h3>
-            <select id="text-column" class="mb-2"></select>
-            <p class="text-muted">簡易的な単語分割を使用します（MeCabは使用していません）</p>
-            <button onclick="runTextMining()">テキストマイニングを実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['text-column'], 'text');
-}
-
-// データクレンジングを実行
-async function runDataCleansing() {
-    try {
-        const run_data_cleansingFunc = getPyScriptFunction('run_data_cleansing');
-        const result = await run_data_cleansingFunc();
-        displayResults(result);
-
-        // クレンジング操作ボタンを追加
-        const cleansingButtons = `
-            <div class="mt-3">
-                <h4>クレンジング操作</h4>
-                <button onclick="removeMissingRows()" class="mb-1">欠損値を含む行を削除</button>
-                <button onclick="removeDuplicates()" class="mb-1">重複行を削除</button>
-                <button onclick="fillMissingMean()" class="mb-1">欠損値を平均値で補完</button>
-                <div id="cleansing-message" class="mt-2"></div>
-            </div>
-        `;
-        document.getElementById('cleansing-results').innerHTML = cleansingButtons;
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-async function removeMissingRows() {
-    try {
-        const remove_missing_rowsFunc = getPyScriptFunction('remove_missing_rows');
-        const result = await remove_missing_rowsFunc();
-        document.getElementById('cleansing-message').innerHTML = `<p>${result}</p>`;
-        // データを再読み込み
-        runDataCleansing();
-    } catch (error) {
-        alert('エラー: ' + error.message);
-    }
-}
-
-async function removeDuplicates() {
-    try {
-        const remove_duplicatesFunc = getPyScriptFunction('remove_duplicates');
-        const result = await remove_duplicatesFunc();
-        document.getElementById('cleansing-message').innerHTML = `<p>${result}</p>`;
-        runDataCleansing();
-    } catch (error) {
-        alert('エラー: ' + error.message);
-    }
-}
-
-async function fillMissingMean() {
-    try {
-        const fill_missing_meanFunc = getPyScriptFunction('fill_missing_mean');
-        const result = await fill_missing_meanFunc();
-        document.getElementById('cleansing-message').innerHTML = `<p>${result}</p>`;
-        runDataCleansing();
-    } catch (error) {
-        alert('エラー: ' + error.message);
-    }
-}
-
-// 二要因分散分析を実行
-async function runTwoWayAnova() {
-    const factor1 = document.getElementById('anova2-factor1').value;
-    const factor2 = document.getElementById('anova2-factor2').value;
-    const dependent = document.getElementById('anova2-dependent').value;
-
-    try {
-        const run_two_way_anovaFunc = getPyScriptFunction('run_two_way_anova');
-        const result = await run_two_way_anovaFunc(factor1, factor2, dependent);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 重回帰分析を実行
-async function runMultipleRegression() {
-    const select = document.getElementById('mreg-x-vars');
-    const xVars = Array.from(select.selectedOptions).map(option => option.value);
-    const yVar = document.getElementById('mreg-y-var').value;
-
-    if (xVars.length < 1) {
-        alert('最低1つの説明変数を選択してください');
-        return;
-    }
-
-    try {
-        const run_multiple_regressionFunc = getPyScriptFunction('run_multiple_regression');
-        const result = await run_multiple_regressionFunc(xVars, yVar);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 因子分析を実行
-async function runFactorAnalysis() {
-    const nFactors = parseInt(document.getElementById('factor-n').value);
-
-    try {
-        const run_factor_analysisFunc = getPyScriptFunction('run_factor_analysis');
-        const result = await run_factor_analysisFunc(nFactors);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// テキストマイニングを実行
-async function runTextMining() {
-    const textColumn = document.getElementById('text-column').value;
-
-    try {
-        const run_text_miningFunc = getPyScriptFunction('run_text_mining');
-        const result = await run_text_miningFunc(textColumn);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 結果を表示
-function displayResults(result) {
-    const resultsArea = document.getElementById('analysis-results');
-    resultsArea.innerHTML = result;
+    populateVariableSelects([{id: 'ttest-var1', type: 'numeric'}, {id: 'ttest-var2', type: 'numeric'}]);
 }
