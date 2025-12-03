@@ -13,6 +13,7 @@
   "paths": [
     "./app/__init__.py",
     "./app/common.py",
-    "./app/eda.py"
+    "./app/eda.py",
+    "./app/main.py"
   ]
 }
