@@ -16,7 +16,7 @@ console.log("=" * 60)
 # すべての関数が JavaScript の window オブジェクトに公開されます
 try:
     console.log("Importing common module...")
-    from app import common
+    import common
     console.log("✓ common module imported successfully")
     console.log("✓ All statistical functions are now available")
 except Exception as e:
