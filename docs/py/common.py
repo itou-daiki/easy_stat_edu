@@ -214,6 +214,28 @@ def get_categorical_columns():
             categorical_cols.append(col)
     return categorical_cols
 
+
+def get_categorical_columns():
+    """
+    カテゴリカル型の列名リストを取得
+
+    Returns:
+    --------
+    list
+        カテゴリカル型の列名リスト
+    """
+    global current_df
+
+    if current_df is None:
+        return []
+
+    categorical_cols = []
+    for col in current_df.select_dtypes(include=['object', 'category']).columns:
+        unique_ratio = current_df[col].nunique() / len(current_df)
+        if unique_ratio < 0.3:
+            categorical_cols.append(col)
+    return categorical_cols
+
 async def load_demo_data(filename):
     """
     デモデータを読み込む
