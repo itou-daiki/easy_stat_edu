@@ -8,10 +8,5 @@
     "openpyxl",
     "xlrd"
   ],
-  "terminal": false,
-  "paths": [
-    "./py/__init__.py",
-    "./py/common.py",
-    "./py/eda.py"
-  ]
+  "terminal": false
 }
