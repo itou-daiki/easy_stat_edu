@@ -22,7 +22,20 @@
     <link rel="stylesheet" href="css/style.css">
 
     <!-- PyScript Config -->
-    <script type="py" config="pyscript.json"></script>
+    <py-config>
+        packages = [
+            "numpy",
+            "pandas",
+            "matplotlib",
+            "plotly",
+            "scipy",
+            "openpyxl",
+            "xlrd",
+            "statsmodels"
+        ]
+        paths = ["./app"]
+    </py-config>
+    <py-script src="app/main.py"></py-script>
 </head>
 <body>
     <!-- ローディング画面 -->
