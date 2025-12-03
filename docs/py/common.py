@@ -2087,7 +2087,7 @@ console.log("=" * 50)
 # PyScript 2024.1.1では、window.pyodideは公開されないため、
 # すべてのPython関数を直接JavaScriptのグローバルスコープにエクスポートする
 try:
-    import js
+    from pyscript import window, document
     from pyodide.ffi import create_proxy
 
     console.log("=" * 50)
@@ -2117,15 +2117,10 @@ try:
         'run_text_mining': run_text_mining
     }
 
+    # PyScript 2024の公式方法: window.function_name = function
     for func_name, func in exported_functions.items():
-        # 非同期関数かどうかチェック
-        import inspect
-        if inspect.iscoroutinefunction(func):
-            # 非同期関数の場合はそのまま
-            setattr(js.window, func_name, func)
-        else:
-            # 同期関数の場合はproxyでラップ
-            setattr(js.window, func_name, create_proxy(func))
+        # create_proxyでラップして直接代入
+        window[func_name] = create_proxy(func)
         console.log(f"  ✓ Exported: {func_name}")
 
     # カスタムイベントをディスパッチ
@@ -2135,7 +2130,7 @@ try:
     console.log("✓ Dispatched pyscript-ready event to JavaScript")
 
     # グローバルフラグも設定
-    js.window.pyScriptFullyReady = True
+    window.pyScriptFullyReady = True
     console.log("✓ Set window.pyScriptFullyReady flag")
 
     console.log("✓ All Python functions exported to JavaScript global scope")
