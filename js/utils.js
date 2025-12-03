@@ -1031,7 +1031,7 @@ function showCorrelationControls() {
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
 
     // 変数リストを取得してセレクトボックスに設定
-    populateVariableSelects(['var1', 'var2']);
+    populateVariableSelects(['var1', 'var2'], 'numeric');
 }
 
 // EDAのコントロール
@@ -1093,7 +1093,9 @@ function showEDAControls() {
     `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['eda-var1', 'eda-var2', 'eda-cat-var1', 'eda-cat-var2', 'eda-num-var']);
+    populateVariableSelects(['eda-var1', 'eda-var2']); // Default to all
+    populateVariableSelects(['eda-cat-var1', 'eda-cat-var2'], 'categorical');
+    populateVariableSelects(['eda-num-var'], 'numeric');
 }
 
 // EDA サマリーを実行
@@ -1176,18 +1178,37 @@ function showTTestControls() {
         `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['ttest-var1', 'ttest-var2']);
+    populateVariableSelects(['ttest-var1', 'ttest-var2'], 'numeric');
 }
 
 // 変数セレクトボックスに変数リストを設定
-async function populateVariableSelects(selectIds) {
+async function populateVariableSelects(selectIds, requiredType = 'all') {
     try {
-        const get_column_namesFunc = getPyScriptFunction('get_column_names');
-        const columns = await get_column_namesFunc();
+        let columns = [];
+        if (requiredType === 'numeric') {
+            const get_numeric_columnsFunc = getPyScriptFunction('get_numeric_columns');
+            columns = await get_numeric_columnsFunc();
+        } else if (requiredType === 'categorical') {
+            const get_categorical_columnsFunc = getPyScriptFunction('get_categorical_columns');
+            columns = await get_categorical_columnsFunc();
+        } else if (requiredType === 'text') {
+            const get_text_columnsFunc = getPyScriptFunction('get_text_columns');
+            columns = await get_text_columnsFunc();
+        } else { // 'all' or undefined
+            const get_column_namesFunc = getPyScriptFunction('get_column_names');
+            columns = await get_column_namesFunc();
+        }
 
         selectIds.forEach(selectId => {
             const select = document.getElementById(selectId);
+            // Clear existing options
             select.innerHTML = '';
+            // Add a default empty option for better UX
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "選択してください";
+            select.appendChild(defaultOption);
+
             columns.forEach(col => {
                 const option = document.createElement('option');
                 option.value = col;
@@ -1254,7 +1275,7 @@ function showChiSquareControls() {
         `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['chi-var1', 'chi-var2']);
+    populateVariableSelects(['chi-var1', 'chi-var2'], 'categorical');
 }
 
 // 分散分析のコントロール
@@ -1275,7 +1296,7 @@ function showAnovaControls() {
         `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['anova-vars']);
+    populateVariableSelects(['anova-vars'], 'numeric');
 }
 
 // 単回帰分析のコントロール
@@ -1302,7 +1323,7 @@ function showSimpleRegressionControls() {
         `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['reg-x', 'reg-y']);
+    populateVariableSelects(['reg-x', 'reg-y'], 'numeric');
 }
 
 // 主成分分析のコントロール
@@ -1435,7 +1456,8 @@ function showTwoWayAnovaControls() {
         `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['anova2-factor1', 'anova2-factor2', 'anova2-dependent']);
+    populateVariableSelects(['anova2-factor1', 'anova2-factor2'], 'categorical');
+    populateVariableSelects(['anova2-dependent'], 'numeric');
 }
 
 // 重回帰分析のコントロール
@@ -1463,7 +1485,7 @@ function showMultipleRegressionControls() {
         `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['mreg-x-vars', 'mreg-y-var']);
+    populateVariableSelects(['mreg-x-vars', 'mreg-y-var'], 'numeric');
 }
 
 // 因子分析のコントロール
@@ -1507,7 +1529,7 @@ function showTextMiningControls() {
         `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['text-column']);
+    populateVariableSelects(['text-column'], 'text');
 }
 
 // データクレンジングを実行

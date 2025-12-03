@@ -214,6 +214,28 @@ def get_categorical_columns():
             categorical_cols.append(col)
     return categorical_cols
 
+def get_text_columns():
+    """
+    テキスト型の列名リストを取得
+
+    Returns:
+    --------
+    list
+        テキスト型の列名リスト
+    """
+    global current_df
+
+    if current_df is None:
+        return []
+
+    text_cols = []
+    for col in current_df.select_dtypes(include=['object']).columns:
+        unique_ratio = current_df[col].nunique() / len(current_df)
+        # ユニーク値の比率が30%以上ならテキスト
+        if unique_ratio >= 0.3:
+            text_cols.append(col)
+    return text_cols
+
 async def load_demo_data(filename):
     """
     デモデータを読み込む
