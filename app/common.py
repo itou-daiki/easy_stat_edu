@@ -451,6 +451,178 @@ def get_correlation_strength(r):
         return f"弱い相関 (|r| = {abs_r:.3f})"
 
 
+def run_correlation_matrix_analysis(variables):
+    """
+    複数変数の相関行列分析を実行（ヒートマップと散布図マトリックス付き）
+
+    Parameters:
+    -----------
+    variables : list
+        分析する変数の列名リスト
+
+    Returns:
+    --------
+    str
+        HTML形式の分析結果
+    """
+    global current_df
+
+    if current_df is None:
+        return "<p>データが読み込まれていません</p>"
+
+    try:
+        # データ抽出（欠損値を除去）
+        df_selected = current_df[variables].dropna()
+
+        if len(df_selected) < 3:
+            return "<p>データが不足しています（最低3件必要）</p>"
+
+        if len(variables) < 2:
+            return "<p>最低2つの変数が必要です</p>"
+
+        # 相関行列を計算
+        corr_matrix = df_selected.corr()
+
+        # ヒートマップを作成
+        fig_heatmap = px.imshow(
+            corr_matrix,
+            color_continuous_scale='RdBu_r',  # 赤青の発散カラースケール（赤=正、青=負）
+            zmin=-1,
+            zmax=1,
+            labels=dict(color='相関係数'),
+            aspect='auto'
+        )
+
+        # アノテーション（数値）を追加
+        annotations = []
+        for i, row in enumerate(corr_matrix.values):
+            for j, value in enumerate(row):
+                annotations.append({
+                    'x': j,
+                    'y': i,
+                    'xref': 'x',
+                    'yref': 'y',
+                    'text': f'{value:.2f}',
+                    'showarrow': False,
+                    'font': {
+                        'color': 'black' if -0.5 < value < 0.5 else 'white',
+                        'size': 12
+                    }
+                })
+
+        fig_heatmap.update_layout(
+            title='相関係数のヒートマップ',
+            annotations=annotations,
+            width=600,
+            height=500
+        )
+
+        heatmap_html = fig_heatmap.to_html(include_plotlyjs='cdn', div_id='correlation-heatmap')
+
+        # 散布図マトリックスを作成
+        n_vars = len(variables)
+        fig_matrix = make_subplots(
+            rows=n_vars,
+            cols=n_vars,
+            subplot_titles=[f'{variables[j]} vs {variables[i]}' if i != j else variables[i]
+                          for i in range(n_vars) for j in range(n_vars)]
+        )
+
+        for i, var1 in enumerate(variables):
+            for j, var2 in enumerate(variables):
+                row, col = i + 1, j + 1
+
+                if i == j:
+                    # 対角線上はヒストグラム
+                    fig_matrix.add_trace(
+                        go.Histogram(
+                            x=df_selected[var1],
+                            name=var1,
+                            showlegend=False,
+                            marker_color='rgba(30, 144, 255, 0.6)'
+                        ),
+                        row=row, col=col
+                    )
+                else:
+                    # 非対角線は散布図
+                    fig_matrix.add_trace(
+                        go.Scatter(
+                            x=df_selected[var2],
+                            y=df_selected[var1],
+                            mode='markers',
+                            marker=dict(size=4, opacity=0.6),
+                            showlegend=False
+                        ),
+                        row=row, col=col
+                    )
+
+        fig_matrix.update_layout(
+            title='散布図マトリックス',
+            height=200 * n_vars,
+            width=200 * n_vars,
+            showlegend=False
+        )
+
+        # 軸ラベルを設定
+        for i in range(n_vars):
+            fig_matrix.update_xaxes(title_text=variables[i], row=n_vars, col=i+1)
+            fig_matrix.update_yaxes(title_text=variables[i], row=i+1, col=1)
+
+        matrix_html = fig_matrix.to_html(include_plotlyjs='cdn', div_id='correlation-matrix')
+
+        # 相関行列のHTML表を作成
+        corr_table_html = corr_matrix.to_html(classes='table')
+
+        # 結果をHTML形式で返す
+        result_html = f"""
+        <div class="analysis-results">
+            <h3>相関行列分析結果</h3>
+
+            <div class="results-summary">
+                <h4>相関行列</h4>
+                <p>サンプルサイズ: {len(df_selected)}</p>
+                {corr_table_html}
+            </div>
+
+            <div class="results-plot">
+                <h4>相関係数のヒートマップ</h4>
+                <p>色が赤いほど正の相関、青いほど負の相関を示します。</p>
+                {heatmap_html}
+            </div>
+
+            <div class="results-plot">
+                <h4>散布図マトリックス</h4>
+                <p>対角線上はヒストグラム、その他は変数間の散布図を表示しています。</p>
+                {matrix_html}
+            </div>
+
+            <div class="results-interpretation">
+                <h4>結果の解釈</h4>
+                <p><strong>相関の強さの目安:</strong></p>
+                <ul>
+                    <li>|r| ≥ 0.7: 強い相関</li>
+                    <li>0.3 ≤ |r| &lt; 0.7: 中程度の相関</li>
+                    <li>|r| &lt; 0.3: 弱い相関</li>
+                </ul>
+                <p class="text-muted">
+                    <small>
+                    相関係数は-1から1の範囲で、1に近いほど正の相関、-1に近いほど負の相関を示します。<br>
+                    p &lt; 0.05の場合、統計的に有意な相関があると判断できます。
+                    </small>
+                </p>
+            </div>
+        </div>
+        """
+
+        return result_html
+
+    except Exception as e:
+        console.error(f"相関行列分析エラー: {str(e)}")
+        import traceback
+        console.error(traceback.format_exc())
+        return f"<p>エラーが発生しました: {str(e)}</p>"
+
+
 # ==========================================
 # 探索的データ分析（EDA）
 # ==========================================
@@ -874,6 +1046,61 @@ def run_anova_analysis(groups):
         omega_squared = (ss_between - df_between * ms_within) / (ss_total + ms_within) if (ss_total + ms_within) > 0 else 0
         omega_squared = max(0, omega_squared)  # 負の値にならないように
 
+        # Tukey's HSD事後検定（p < 0.05の場合のみ実行）
+        tukey_html = ""
+        if p_value < 0.05:
+            try:
+                from statsmodels.stats.multicomp import pairwise_tukeyhsd
+
+                # データをlong formatに変換
+                long_data = []
+                long_groups = []
+                for col in groups:
+                    data = current_df[col].dropna()
+                    long_data.extend(data.values)
+                    long_groups.extend([col] * len(data))
+
+                # Tukey's HSD検定を実行
+                tukey_result = pairwise_tukeyhsd(long_data, long_groups, alpha=0.05)
+                tukey_df = pd.DataFrame(data=tukey_result._results_table.data[1:],
+                                       columns=tukey_result._results_table.data[0])
+
+                # 有意な比較を抽出
+                significant_comparisons = []
+                for _, row in tukey_df.iterrows():
+                    if row['p-adj'] < 0.1:
+                        if row['p-adj'] < 0.01:
+                            sig_mark = '**'
+                        elif row['p-adj'] < 0.05:
+                            sig_mark = '*'
+                        else:
+                            sig_mark = '†'
+                        significant_comparisons.append({
+                            'グループ1': row['group1'],
+                            'グループ2': row['group2'],
+                            '平均差': row['meandiff'],
+                            '調整済みp値': row['p-adj'],
+                            '有意性': sig_mark
+                        })
+
+                if significant_comparisons:
+                    sig_df = pd.DataFrame(significant_comparisons)
+                    tukey_html = f"""
+                    <div class="results-summary">
+                        <h4>Tukey's HSD事後検定</h4>
+                        <p>グループ間で統計的に有意な差が見られたため、どのグループ間に差があるかを検定しました。</p>
+                        {sig_df.to_html(classes='table', index=False)}
+                        <p class="text-muted">
+                            <small>
+                            有意性の記号: ** p&lt;0.01, * p&lt;0.05, † p&lt;0.1
+                            </small>
+                        </p>
+                    </div>
+                    """
+            except Exception as e:
+                console.error(f"Tukey HSD error: {str(e)}")
+                tukey_html = ""
+
         # 記述統計量を計算
         stats_data = []
         for i, col in enumerate(groups):
@@ -967,6 +1194,8 @@ def run_anova_analysis(groups):
                     </small>
                 </p>
             </div>
+
+            {tukey_html}
 
             <div class="results-plot">
                 <h4>箱ひげ図</h4>
@@ -2172,6 +2401,7 @@ try:
         'get_text_columns': get_text_columns,
         'get_data_summary': get_data_summary,
         'run_correlation_analysis': run_correlation_analysis,
+        'run_correlation_matrix_analysis': run_correlation_matrix_analysis,
         'run_ttest_analysis': run_ttest_analysis,
         'run_chi_square_analysis': run_chi_square_analysis,
         'run_anova_analysis': run_anova_analysis,
