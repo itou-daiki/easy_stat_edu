@@ -2189,13 +2189,22 @@ try:
 
     # Combine dictionaries
     exported_functions = {**common_functions, **eda_functions}
-    
+
     console.log(f"✓ Assembled {len(exported_functions)} functions for export.")
     console.log("=" * 50)
     console.log("Exporting Python functions to JavaScript...")
 
+    # PyScript 2024の公式方法: setattr()を使用してwindowプロパティを設定
+    import inspect
+    from pyodide.ffi import create_proxy
     for func_name, func in exported_functions.items():
-        setattr(js.window, func_name, func)
+        if inspect.iscoroutinefunction(func):
+            # 非同期関数の場合はそのまま
+            setattr(js.window, func_name, func)
+        else:
+            # 同期関数の場合はproxyでラップ
+            setattr(js.window, func_name, create_proxy(func))
+        console.log(f"  ✓ Exported: {func_name}")
 
     console.log("✓ All Python functions exported.")
     js.window.pyScriptFullyReady = True
