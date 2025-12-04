@@ -2142,8 +2142,9 @@ def run_text_mining(text_column):
 # PyScript Function Exporter
 # ==========================================
 try:
-    import js
-    from js import console, document
+    from pyscript import window, document
+    from pyodide.ffi import create_proxy
+    from js import console
     import traceback
 
     # This might fail if eda.py is not yet processed by PyScript.
@@ -2189,22 +2190,28 @@ try:
 
     # Combine dictionaries
     exported_functions = {**common_functions, **eda_functions}
-    
+
     console.log(f"✓ Assembled {len(exported_functions)} functions for export.")
     console.log("=" * 50)
     console.log("Exporting Python functions to JavaScript...")
 
+    # PyScript 2024の公式方法: window.function_name = function
     for func_name, func in exported_functions.items():
-        setattr(js.window, func_name, func)
+        # create_proxyでラップして直接代入
+        window[func_name] = create_proxy(func)
+        console.log(f"  ✓ Exported: {func_name}")
 
-    console.log("✓ All Python functions exported.")
-    js.window.pyScriptFullyReady = True
-    console.log("✓ Set window.pyScriptFullyReady flag")
-    
+    # カスタムイベントをディスパッチ
     event = document.createEvent('Event')
     event.initEvent('pyscript-ready', True, True)
     document.dispatchEvent(event)
-    console.log("✓ Dispatched 'pyscript-ready' event.")
+    console.log("✓ Dispatched 'pyscript-ready' event to JavaScript")
+
+    # グローバルフラグも設定
+    window.pyScriptFullyReady = True
+    console.log("✓ Set window.pyScriptFullyReady flag")
+
+    console.log("✓ All Python functions exported to JavaScript global scope")
     console.log("=" * 50)
 
 except Exception as e:
