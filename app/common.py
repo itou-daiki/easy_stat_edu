@@ -193,6 +193,67 @@ def get_numeric_columns():
     return current_df.select_dtypes(include=[np.number]).columns.tolist()
 
 
+def get_categorical_columns():
+    """
+    カテゴリカル型の列名リストを取得
+
+    Returns:
+    --------
+    list
+        カテゴリカル型の列名リスト
+    """
+    global current_df
+
+    if current_df is None:
+        return []
+
+    categorical_cols = []
+    for col in current_df.select_dtypes(include=['object', 'category']).columns:
+        unique_ratio = current_df[col].nunique() / len(current_df)
+        if unique_ratio < 0.3:
+            categorical_cols.append(col)
+    return categorical_cols
+
+def get_text_columns():
+    """
+    テキスト型の列名リストを取得
+
+    Returns:
+    --------
+    list
+        テキスト型の列名リスト
+    """
+    global current_df
+
+    if current_df is None:
+        return []
+
+    text_cols = []
+    for col in current_df.select_dtypes(include=['object']).columns:
+        unique_ratio = current_df[col].nunique() / len(current_df)
+        # ユニーク値の比率が30%以上ならテキスト
+        if unique_ratio >= 0.3:
+            text_cols.append(col)
+    return text_cols
+
+async def load_demo_data(filename):
+    """
+    デモデータを読み込む
+    """
+    from pyodide.http import pyfetch
+    try:
+        response = await pyfetch(url=f"datasets/{filename}", method="GET")
+        if response.status == 200:
+            file_content = await response.array_buffer()
+            return load_file_data(file_content, filename)
+        else:
+            console.error(f"デモデータの読み込みに失敗しました: {response.status}")
+            return False
+    except Exception as e:
+        console.error(f"デモデータの読み込み中にエラーが発生しました: {str(e)}")
+        return False
+
+
 def get_data_summary():
     """
     データの基本統計量を取得
@@ -210,15 +271,24 @@ def get_data_summary():
     # 基本情報
     n_rows, n_cols = current_df.shape
 
+    # データプレビュー用のHTMLを生成
+    preview_html = current_df.to_html(classes='table table-striped table-hover', max_rows=None)
+
+    # 基本統計量用のHTMLを生成
+    summary_html = current_df.describe().to_html(classes='table table-striped table-hover', float_format='{:.2f}'.format)
+
+
     html = f"""
     <div class="data-summary">
         <h3>データ概要</h3>
         <p>行数: {n_rows}</p>
         <p>列数: {n_cols}</p>
-        <h4>データプレビュー</h4>
-        {current_df.head(10).to_html(classes='table')}
+        <h4>データプレビュー (スクロール可能)</h4>
+        <div style="max-height: 400px; overflow: auto;">
+            {preview_html}
+        </div>
         <h4>基本統計量</h4>
-        {current_df.describe().to_html(classes='table')}
+        {summary_html}
     </div>
     """
 
@@ -2068,40 +2138,41 @@ def run_text_mining(text_column):
         return f"<p>エラーが発生しました: {str(e)}</p>"
 
 
-# 初期化メッセージ
-console.log("=" * 50)
-console.log("✓ easyStat PyScript modules loaded successfully")
-console.log(f"  - pandas: {pd.__version__}")
-console.log(f"  - numpy: {np.__version__}")
-console.log("  - scipy: loaded")
-console.log("  - matplotlib: loaded")
-try:
-    import plotly
-    console.log(f"  - plotly: {plotly.__version__}")
-except:
-    console.log("  - plotly: not available")
-console.log("✓ All statistical functions are ready")
-console.log("=" * 50)
-
-# JavaScriptに明示的に準備完了を通知
-# PyScript 2024.1.1では、window.pyodideは公開されないため、
-# すべてのPython関数を直接JavaScriptのグローバルスコープにエクスポートする
+# ==========================================
+# PyScript Function Exporter
+# ==========================================
 try:
     from pyscript import window, document
     from pyodide.ffi import create_proxy
+    from js import console
+    import traceback
 
-    console.log("=" * 50)
-    console.log("Exporting Python functions to JavaScript...")
+    # This might fail if eda.py is not yet processed by PyScript.
+    # We will wrap it in a try-except to be safe.
+    try:
+        from eda import get_eda_summary, get_variable_plots, get_two_variable_plot, get_three_variable_plot
+        eda_functions = {
+            'get_eda_summary': get_eda_summary,
+            'get_variable_plots': get_variable_plots,
+            'get_two_variable_plot': get_two_variable_plot,
+            'get_three_variable_plot': get_three_variable_plot,
+        }
+        console.log("✓ Successfully imported functions from eda.py")
+    except ImportError:
+        console.error("Could not import from eda.py. It might not be loaded yet.")
+        eda_functions = {}
 
-    # すべての公開関数をJavaScriptにエクスポート
-    exported_functions = {
+    # Define all functions from this file (common.py)
+    common_functions = {
         'load_file_data': load_file_data,
+        'load_demo_data': load_demo_data,
         'get_column_names': get_column_names,
         'get_data_characteristics': get_data_characteristics,
         'get_numeric_columns': get_numeric_columns,
+        'get_categorical_columns': get_categorical_columns,
+        'get_text_columns': get_text_columns,
         'get_data_summary': get_data_summary,
         'run_correlation_analysis': run_correlation_analysis,
-        'run_eda_analysis': run_eda_analysis,
         'run_ttest_analysis': run_ttest_analysis,
         'run_chi_square_analysis': run_chi_square_analysis,
         'run_anova_analysis': run_anova_analysis,
@@ -2114,8 +2185,15 @@ try:
         'run_two_way_anova': run_two_way_anova,
         'run_multiple_regression': run_multiple_regression,
         'run_factor_analysis': run_factor_analysis,
-        'run_text_mining': run_text_mining
+        'run_text_mining': run_text_mining,
     }
+
+    # Combine dictionaries
+    exported_functions = {**common_functions, **eda_functions}
+
+    console.log(f"✓ Assembled {len(exported_functions)} functions for export.")
+    console.log("=" * 50)
+    console.log("Exporting Python functions to JavaScript...")
 
     # PyScript 2024の公式方法: window.function_name = function
     for func_name, func in exported_functions.items():
@@ -2127,7 +2205,7 @@ try:
     event = document.createEvent('Event')
     event.initEvent('pyscript-ready', True, True)
     document.dispatchEvent(event)
-    console.log("✓ Dispatched pyscript-ready event to JavaScript")
+    console.log("✓ Dispatched 'pyscript-ready' event to JavaScript")
 
     # グローバルフラグも設定
     window.pyScriptFullyReady = True
@@ -2137,6 +2215,5 @@ try:
     console.log("=" * 50)
 
 except Exception as e:
-    console.error(f"Failed to export functions to JavaScript: {e}")
-    import traceback
+    console.error("❌ Failed during function export.")
     console.error(traceback.format_exc())

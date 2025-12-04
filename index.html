@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>easyStat - ブラウザ統計分析アプリ</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png">
+
     <!-- PyScript -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
@@ -19,7 +22,19 @@
     <link rel="stylesheet" href="css/style.css">
 
     <!-- PyScript Config -->
-    <script type="py" config="pyscript.json"></script>
+    <py-config>
+        packages = [
+            "numpy",
+            "pandas",
+            "matplotlib",
+            "plotly",
+            "scipy",
+            "openpyxl",
+            "xlrd",
+            "statsmodels"
+        ]
+    </py-config>
+    <script type="py" src="./app/common.py"></script>
 </head>
 <body>
     <!-- ローディング画面 -->
@@ -59,7 +74,10 @@
                 <button class="btn-upload" id="main-upload-btn" disabled>
                     <i class="fas fa-spinner fa-spin"></i> 初期化中...
                 </button>
-                <p class="upload-hint">初回起動時は1〜2分程度かかります</p>
+                <p class="upload-hint">または</p>
+                <div class="demo-data-section">
+                    <button class="btn-demo" id="load-demo-btn">デモデータを試す</button>
+                </div>
             </div>
             <div id="main-file-info" class="file-info" style="display: none;"></div>
         </div>
@@ -469,7 +487,9 @@ async def ensure_package(package_name):
         print(f"パッケージ {package_name} のインストールが完了しました")
     </script>
 
-    <!-- PyScript Main -->
-    <script type="py" src="py/common.py"></script>
-</body>
+        <!-- PyScript Main -->
+
+        
+
+    </body>
 </html>

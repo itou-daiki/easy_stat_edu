@@ -4,44 +4,37 @@ let currentAnalysis = null;
 let pyScriptReady = false;
 
 // PyScriptの初期化完了を検知（複数のイベントをリッスン）
-function markPyScriptReady() {
-    if (!pyScriptReady) {
+function markPyScriptReady(checkFunctions = false) {
+    if (!pyScriptReady && checkFunctions && typeof window.load_file_data === 'function') {
+        // Python関数が利用可能になったときのみフラグを立てる
         console.log('✓ PyScript initialized successfully');
+        console.log('✓ Python functions are available in window scope');
         pyScriptReady = true;
-
-        // Python関数がwindowスコープにエクスポートされているか確認
-        // PyScript 2024.1.1では、関数は直接window.function_nameとして利用可能
-        try {
-            if (typeof window.load_file_data === 'function') {
-                console.log('✓ Python functions are available in window scope');
-            } else {
-                console.warn('⚠ PyScript ready but load_file_data function not found yet');
-                console.warn('   window.load_file_data type:', typeof window.load_file_data);
-            }
-        } catch (e) {
-            console.warn('⚠ PyScript ready but check failed:', e);
-        }
+    } else if (!pyScriptReady && !checkFunctions) {
+        // PyScriptがロードされただけ（関数チェックなし）
+        console.log('✓ PyScript runtime loaded');
     }
 }
 
 // 複数のイベントをリッスン（PyScriptバージョンによって異なる）
 document.addEventListener('py-ready', () => {
     console.log('Event: py-ready fired');
-    markPyScriptReady();
+    markPyScriptReady(false); // ランタイムのロードのみ確認
 });
 document.addEventListener('py:ready', () => {
     console.log('Event: py:ready fired');
-    markPyScriptReady();
+    markPyScriptReady(false); // ランタイムのロードのみ確認
 });
 document.addEventListener('pyscript:ready', () => {
     console.log('Event: pyscript:ready fired');
-    markPyScriptReady();
+    markPyScriptReady(false); // ランタイムのロードのみ確認
 });
 
 // Python側からの明示的な準備完了通知を待機（最も確実）
+// このイベントは common.py の最後で dispatch される
 document.addEventListener('pyscript-ready', () => {
     console.log('Event: pyscript-ready fired (from Python)');
-    markPyScriptReady();
+    markPyScriptReady(true); // Python関数の利用可能性をチェック
 });
 
 // DOMContentLoadedでもチェック（PyScript 2024.x系の場合）
@@ -257,8 +250,9 @@ function setupMainUploadListeners() {
     const fileInput = document.getElementById('main-data-file');
     const uploadArea = document.getElementById('main-upload-area');
     const uploadBtn = document.getElementById('main-upload-btn');
+    const loadDemoBtn = document.getElementById('load-demo-btn');
 
-    if (!fileInput || !uploadArea || !uploadBtn) {
+    if (!fileInput || !uploadArea || !uploadBtn || !loadDemoBtn) {
         console.error('Upload elements not found');
         return;
     }
@@ -270,6 +264,9 @@ function setupMainUploadListeners() {
     uploadBtn.addEventListener('click', () => {
         fileInput.click();
     });
+
+    // デモデータ読み込みボタンクリックイベント
+    loadDemoBtn.addEventListener('click', useDemoData);
 
     // ドラッグ&ドロップ
     uploadArea.addEventListener('dragover', (e) => {
@@ -302,6 +299,56 @@ function setupMainUploadListeners() {
 
     console.log('Upload listeners set up successfully');
 }
+
+// デモデータを使用
+async function useDemoData() {
+    const fileInfo = document.getElementById('main-file-info');
+    fileInfo.innerHTML = `
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>デモデータを読み込んでいます...</p>
+            <p class="file-name">eda_demo.xlsx</p>
+        </div>
+    `;
+    fileInfo.style.display = 'block';
+
+    try {
+        const loadDemoDataFunc = getPyScriptFunction('load_demo_data');
+        const success = await loadDemoDataFunc('eda_demo.xlsx');
+
+        if (success) {
+            currentData = true;
+            fileInfo.innerHTML = `
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i>
+                    <p><strong>デモデータの読み込み成功！</strong></p>
+                    <p class="file-name">eda_demo.xlsx</p>
+                </div>
+            `;
+
+            // データ特性を取得して分析機能を有効化
+            await updateAnalysisAvailability();
+
+            // データ概要を表示
+            await displayDataOverview();
+        } else {
+            throw new Error('デモデータの読み込みに失敗しました');
+        }
+    } catch (error) {
+        console.error('Demo data loading error:', error);
+        fileInfo.innerHTML = `
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <p><strong>エラーが発生しました</strong></p>
+                <p>${error.message}</p>
+                <button onclick="location.reload()" class="btn-retry">
+                    <i class="fas fa-redo"></i> 再試行
+                </button>
+            </div>
+        `;
+    }
+}
+
 
 // メインファイルアップロード処理
 async function handleMainFileUpload(event) {
@@ -364,7 +411,7 @@ async function handleMainFileUpload(event) {
                             ダウンロードするため1〜2分程度お待ちください。<br>
                             <strong>2回目以降は高速に起動します。</strong><br>
                             <span style="color: var(--primary-color); font-weight: 600; margin-top: 0.5rem; display: inline-block;">
-                                経過時間: ${seconds}秒 (推定進捗: ${progress}%)
+                                経過時間: ${seconds}秒 (推定進捗: ${progress}%) 
                             </span>
                         `;
                     }
@@ -377,7 +424,16 @@ async function handleMainFileUpload(event) {
                 console.error('- pyscript object exists:', typeof pyscript !== 'undefined');
                 console.error('- pyscript.interpreter exists:', typeof pyscript !== 'undefined' && pyscript.interpreter);
 
-                throw new Error('統計エンジンの初期化に時間がかかりすぎています。\n\n考えられる原因：\n- ネットワーク接続が不安定\n- ブラウザのキャッシュが破損\n\n対処方法：\n1. ブラウザのキャッシュをクリア（Ctrl+Shift+Del）\n2. ページを再読み込み（Ctrl+F5）\n3. 別のブラウザで試す（Chrome推奨）');
+                throw new Error(`統計エンジンの初期化に時間がかかりすぎています。
+
+考えられる原因：
+- ネットワーク接続が不安定
+- ブラウザのキャッシュが破損
+
+対処方法：
+1. ブラウザのキャッシュをクリア（Ctrl+Shift+Del）
+2. ページを再読み込み（Ctrl+F5）
+3. 別のブラウザで試す（Chrome推奨）`);
             }
 
             console.log('✓ PyScript ready after waiting, proceeding with file processing');
@@ -440,10 +496,13 @@ async function handleMainFileUpload(event) {
 
             console.error('Diagnostics:\n' + diagnostics.join('\n'));
 
-            throw new Error('統計エンジンが正しく初期化されていません。\n\n' +
-                '診断情報:\n' + diagnostics.join('\n') + '\n\n' +
-                'ページを完全に再読み込み（Ctrl+F5）してください。\n' +
-                'それでも解決しない場合は、ブラウザのコンソール（F12）でエラー詳細を確認してください。');
+            throw new Error(`統計エンジンが正しく初期化されていません。
+
+診断情報:
+${diagnostics.join('\n')}
+
+ページを完全に再読み込み（Ctrl+F5）してください。
+それでも解決しない場合は、ブラウザのコンソール（F12）でエラー詳細を確認してください。`);
         }
 
         console.log('✓ Python functions confirmed available, proceeding with file load');
@@ -897,6 +956,58 @@ function readFileContent(file) {
     });
 }
 
+// 変数セレクトボックスに変数リストを設定
+async function populateVariableSelects(selectConfigs) { // Expects an array of objects: [{id: 'varId', type: 'numeric'}]
+    try {
+        // Get all column types in one go to be efficient
+        const get_numeric_columns = getPyScriptFunction('get_numeric_columns');
+        const get_categorical_columns = getPyScriptFunction('get_categorical_columns');
+        const get_text_columns = getPyScriptFunction('get_text_columns');
+        const get_column_names = getPyScriptFunction('get_column_names');
+
+        const [numeric_cols, categorical_cols, text_cols, all_cols] = await Promise.all([
+            get_numeric_columns(),
+            get_categorical_columns(),
+            get_text_columns(),
+            get_column_names()
+        ]);
+
+        const columnMap = {
+            numeric: numeric_cols,
+            categorical: categorical_cols,
+            text: text_cols,
+            all: all_cols
+        };
+
+        for (const config of selectConfigs) {
+            const select = document.getElementById(config.id);
+            if (!select) {
+                console.error(`Select element not found: ${config.id}`);
+                continue; // Skip to the next config if element not found
+            }
+
+            const columns = columnMap[config.type] || all_cols; // Fallback to all_cols if type is unknown
+
+            // Clear existing options
+            select.innerHTML = '';
+            // Add a default empty option for better UX
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "選択してください";
+            select.appendChild(defaultOption);
+
+            columns.forEach(col => {
+                const option = document.createElement('option');
+                option.value = col;
+                option.textContent = col;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('変数リストの取得に失敗:', error);
+    }
+}
+
 // 分析コントロールを表示
 async function showAnalysisControls() {
     const controlsArea = document.getElementById('analysis-controls');
@@ -976,8 +1087,7 @@ function showCorrelationControls() {
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
 
-    // 変数リストを取得してセレクトボックスに設定
-    populateVariableSelects(['var1', 'var2']);
+    populateVariableSelects([{id: 'var1', type: 'numeric'}, {id: 'var2', type: 'numeric'}]);
 }
 
 // EDAのコントロール
@@ -993,14 +1103,378 @@ function showEDAControls() {
                     データ分析の最初のステップとして重要です。
                 </p>
             </div>
-            <h3>分析する変数を選択</h3>
-            <select id="eda-var" class="mb-2"></select>
-            <button onclick="runEDAAnalysis()">分析を実行</button>
+
+            <!-- サマリー -->
+            <div class="mb-3">
+                <button onclick="runEDASummary()">要約統計量を表示</button>
+            </div>
+
+            <!-- 単一変数プロット -->
+            <div class="mb-3">
+                <button onclick="runVariablePlots()">各変数のプロットを表示</button>
+            </div>
+
+            <!-- 2変数プロット -->
+            <div class="mb-3">
+                <h3>2変数プロット</h3>
+                <div class="mb-2">
+                    <label>変数1:</label>
+                    <select id="eda-var1" class="mb-1"></select>
+                </div>
+                <div class="mb-2">
+                    <label>変数2:</label>
+                    <select id="eda-var2" class="mb-1"></select>
+                </div>
+                <button onclick="runTwoVariablePlot()">2変数プロットを表示</button>
+            </div>
+
+            <!-- 3変数プロット -->
+            <div class="mb-3">
+                <h3>3変数プロット</h3>
+                <div class="mb-2">
+                    <label>カテゴリカル変数1:</label>
+                    <select id="eda-cat-var1" class="mb-1"></select>
+                </div>
+                <div class="mb-2">
+                    <label>カテゴリカル変数2:</label>
+                    <select id="eda-cat-var2" class="mb-1"></select>
+                </div>
+                <div class="mb-2">
+                    <label>数値変数:</label>
+                    <select id="eda-num-var" class="mb-1"></select>
+                </div>
+                <button onclick="runThreeVariablePlot()">3変数プロットを表示</button>
+            </div>
         </div>
     `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['eda-var']);
+    populateVariableSelects([{id: 'eda-var1', type: 'all'}, {id: 'eda-var2', type: 'all'}]);
+    populateVariableSelects([{id: 'eda-cat-var1', type: 'categorical'}, {id: 'eda-cat-var2', type: 'categorical'}]);
+    populateVariableSelects([{id: 'eda-num-var', type: 'numeric'}]);
+}
+
+// EDA サマリーを実行
+async function runEDASummary() {
+    try {
+        const get_eda_summaryFunc = getPyScriptFunction('get_eda_summary');
+        const result = await get_eda_summaryFunc();
+        displayResults(result);
+    } catch (error) {
+        alert('分析の実行に失敗しました: ' + error.message);
+    }
+}
+
+// EDA 変数プロットを実行
+async function runVariablePlots() {
+    try {
+        const get_variable_plotsFunc = getPyScriptFunction('get_variable_plots');
+        const result = await get_variable_plotsFunc();
+        displayResults(result);
+    } catch (error) {
+        alert('分析の実行に失敗しました: ' + error.message);
+    }
+}
+
+// EDA 2変数プロットを実行
+async function runTwoVariablePlot() {
+    const var1 = document.getElementById('eda-var1').value;
+    const var2 = document.getElementById('eda-var2').value;
+    if (!var1 || !var2) {
+        alert('変数を2つ選択してください。');
+        return;
+    }
+
+    try {
+        const get_two_variable_plotFunc = getPyScriptFunction('get_two_variable_plot');
+        const result = await get_two_variable_plotFunc(var1, var2);
+        displayResults(result);
+    } catch (error) {
+        alert('分析の実行に失敗しました: ' + error.message);
+    }
+}
+
+// EDA 3変数プロットを実行
+async function runThreeVariablePlot() {
+    const catVar1 = document.getElementById('eda-cat-var1').value;
+    const catVar2 = document.getElementById('eda-cat-var2').value;
+    const numVar = document.getElementById('eda-num-var').value;
+    if (!catVar1 || !catVar2 || !numVar) {
+        alert('すべての変数を選択してください。');
+        return;
+    }
+
+    try {
+        const get_three_variable_plotFunc = getPyScriptFunction('get_three_variable_plot');
+        const result = await get_three_variable_plotFunc(catVar1, catVar2, numVar);
+        displayResults(result);
+    } catch (error) {
+        alert('分析の実行に失敗しました: ' + error.message);
+    }
+}
+
+
+// 結果を表示する関数
+function displayResults(htmlContent) {
+    const resultsArea = document.getElementById('analysis-results');
+
+    // 結果HTMLを表示
+    resultsArea.innerHTML = htmlContent;
+
+    // 情報セクションを追加
+    const infoSectionsHTML = getInfoSectionsHTML();
+    resultsArea.innerHTML += infoSectionsHTML;
+
+    console.log('Analysis results displayed with info sections');
+}
+
+// 情報セクション（About, Usage, Changelog）のHTMLを取得
+function getInfoSectionsHTML() {
+    return `
+        <div class="info-sections" style="margin-top: 3rem;">
+            <!-- アプリケーション説明 -->
+            <div class="collapsible-section">
+                <div class="collapsible-header collapsed" onclick="toggleCollapsible(this)">
+                    <h3>
+                        <i class="fas fa-info-circle"></i>
+                        このアプリケーションについて
+                    </h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <h4>easyStat - ブラウザ統計分析アプリ</h4>
+                    <p>
+                        <strong>easyStat</strong>は、ブラウザ上で動作する無料の統計分析Webアプリケーションです。
+                        PyScriptを活用し、データのアップロードから高度な統計分析まで、すべてブラウザ内で完結します。
+                    </p>
+
+                    <h4>主な特徴</h4>
+                    <ul>
+                        <li><strong>完全ブラウザベース:</strong> インストール不要、Webブラウザだけで利用可能</li>
+                        <li><strong>データプライバシー:</strong> データはブラウザ内で処理され、外部サーバーに送信されません</li>
+                        <li><strong>豊富な分析機能:</strong> 基本統計から高度な多変量解析まで12種類の分析手法</li>
+                        <li><strong>日本語対応:</strong> UIと分析結果の解釈がすべて日本語</li>
+                        <li><strong>教育的:</strong> 統計手法の説明と結果の解釈を提供</li>
+                    </ul>
+
+                    <h4>対応ファイル形式</h4>
+                    <ul>
+                        <li>Excel形式（.xlsx, .xls）</li>
+                        <li>CSV形式（.csv）</li>
+                    </ul>
+
+                    <h4>利用可能な分析手法</h4>
+                    <div class="analysis-methods-grid">
+                        <div class="method-item">
+                            <i class="fas fa-broom"></i>
+                            <span>データクレンジング</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-search"></i>
+                            <span>探索的データ分析（EDA）</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-project-diagram"></i>
+                            <span>相関分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-table"></i>
+                            <span>カイ二乗検定</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-vial"></i>
+                            <span>t検定</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>一要因分散分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-chart-area"></i>
+                            <span>二要因分散分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span>単回帰分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-layer-group"></i>
+                            <span>重回帰分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-sitemap"></i>
+                            <span>因子分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-compress-arrows-alt"></i>
+                            <span>主成分分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-file-alt"></i>
+                            <span>テキストマイニング</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作方法 -->
+            <div class="collapsible-section">
+                <div class="collapsible-header collapsed" onclick="toggleCollapsible(this)">
+                    <h3>
+                        <i class="fas fa-question-circle"></i>
+                        使い方・操作方法
+                    </h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <h4>基本的な使い方</h4>
+
+                    <div class="usage-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h5>データをアップロード</h5>
+                            <p>
+                                「データファイルをアップロード」エリアで、Excel（.xlsx, .xls）またはCSVファイルを選択してください。
+                                ドラッグ&ドロップにも対応しています。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="usage-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h5>データ概要を確認</h5>
+                            <p>
+                                アップロード後、データの概要（行数・列数・統計量）が表示されます。
+                                折りたたみ可能なセクションで、必要に応じて確認できます。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="usage-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h5>分析手法を選択</h5>
+                            <p>
+                                データの特性に応じて利用可能な分析手法が有効化されます。
+                                希望する分析カードをクリックしてください。
+                            </p>
+                            <ul>
+                                <li>数値変数が必要な分析は、数値列が存在する場合のみ有効</li>
+                                <li>カテゴリカル変数が必要な分析は、カテゴリカル列が存在する場合のみ有効</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="usage-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h5>変数を選択して分析実行</h5>
+                            <p>
+                                分析画面で使用する変数を選択し、「分析を実行」ボタンをクリックします。
+                                結果は表とグラフで表示され、統計的解釈も提供されます。
+                            </p>
+                        </div>
+                    </div>
+
+                    <h4>Tips</h4>
+                    <ul>
+                        <li><i class="fas fa-lightbulb"></i> データは完全にブラウザ内で処理されるため、機密データも安全に分析できます</li>
+                        <li><i class="fas fa-lightbulb"></i> 初回起動時はPythonライブラリの読み込みに数分かかる場合があります</li>
+                        <li><i class="fas fa-lightbulb"></i> データ概要セクションは折りたんでスペースを節約できます</li>
+                        <li><i class="fas fa-lightbulb"></i> 各分析には説明が表示され、統計手法を学びながら分析できます</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 更新履歴 -->
+            <div class="collapsible-section">
+                <div class="collapsible-header collapsed" onclick="toggleCollapsible(this)">
+                    <h3>
+                        <i class="fas fa-history"></i>
+                        更新履歴
+                    </h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="changelog">
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.4.0</span>
+                                <span class="changelog-date">2025年1月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>新機能・改善</h5>
+                                <ul>
+                                    <li>ファイルアップローダーの動作を修正・安定化</li>
+                                    <li>データ概要の折りたたみ表示機能を追加</li>
+                                    <li>分析画面にもデータ概要を表示</li>
+                                    <li>UIのコンパクト化とレスポンシブ対応</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.3.0</span>
+                                <span class="changelog-date">2025年1月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>統計分析機能の強化</h5>
+                                <ul>
+                                    <li>二要因分散分析に<strong>交互作用効果の検定</strong>を実装</li>
+                                    <li>一要因分散分析に<strong>効果量（η², ω²）</strong>を追加</li>
+                                    <li>statsmodelsライブラリを追加し、より正確なANOVA分析が可能に</li>
+                                    <li>交互作用プロットの追加で視覚的理解を向上</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.2.0</span>
+                                <span class="changelog-date">2024年12月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>UI/UX改善</h5>
+                                <ul>
+                                    <li>アップロードエリアを50%コンパクト化</li>
+                                    <li>分析機能選択カードをデフォルト表示</li>
+                                    <li>データ特性に応じた自動的な機能有効化</li>
+                                    <li>アイコンとレイアウトの改善</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.1.0</span>
+                                <span class="changelog-date">2024年11月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>初期リリース</h5>
+                                <ul>
+                                    <li>PyScriptベースのブラウザ統計分析アプリを公開</li>
+                                    <li>12種類の統計分析手法を実装</li>
+                                    <li>Excel/CSV形式のデータ読み込み</li>
+                                    <li>日本語UIと分析結果の解釈</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="github-info">
+                        <p>
+                            <i class="fab fa-github"></i>
+                            このプロジェクトはオープンソースです。
+                            <a href="https://github.com/itou-daiki/easy_stat" target="_blank">GitHubリポジトリ</a>で
+                            ソースコードを確認したり、issueを報告できます。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // t検定のコントロール
@@ -1031,472 +1505,5 @@ function showTTestControls() {
         `;
 
     document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['ttest-var1', 'ttest-var2']);
-}
-
-// 変数セレクトボックスに変数リストを設定
-async function populateVariableSelects(selectIds) {
-    try {
-        const get_column_namesFunc = getPyScriptFunction('get_column_names');
-        const columns = await get_column_namesFunc();
-
-        selectIds.forEach(selectId => {
-            const select = document.getElementById(selectId);
-            select.innerHTML = '';
-            columns.forEach(col => {
-                const option = document.createElement('option');
-                option.value = col;
-                option.textContent = col;
-                select.appendChild(option);
-            });
-        });
-    } catch (error) {
-        console.error('変数リストの取得に失敗:', error);
-    }
-}
-
-// 相関分析を実行
-async function runCorrelationAnalysis() {
-    const var1 = document.getElementById('var1').value;
-    const var2 = document.getElementById('var2').value;
-
-    try {
-        const run_correlation_analysisFunc = getPyScriptFunction('run_correlation_analysis');
-        const result = await run_correlation_analysisFunc(var1, var2);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// EDA分析を実行
-async function runEDAAnalysis() {
-    const variable = document.getElementById('eda-var').value;
-
-    try {
-        const run_eda_analysisFunc = getPyScriptFunction('run_eda_analysis');
-        const result = await run_eda_analysisFunc(variable);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// t検定を実行
-async function runTTestAnalysis() {
-    const testType = document.getElementById('ttest-type').value;
-    const var1 = document.getElementById('ttest-var1').value;
-    const var2 = document.getElementById('ttest-var2').value;
-
-    try {
-        const run_ttest_analysisFunc = getPyScriptFunction('run_ttest_analysis');
-        const result = await run_ttest_analysisFunc(testType, var1, var2);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// カイ二乗検定のコントロール
-function showChiSquareControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📋 カイ二乗検定とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    カテゴリカルデータ（質的変数）の独立性を検定します。2つのカテゴリ変数に関連性があるかを、クロス集計表を用いて分析します。<strong>p値 &lt; 0.05</strong>で2変数間に有意な関連性があると判断できます。
-                </p>
-            </div>
-            <h3>変数を選択</h3>
-            <div class="mb-2">
-                <label>変数1:</label>
-                <select id="chi-var1" class="mb-1"></select>
-            </div>
-            <div class="mb-2">
-                <label>変数2:</label>
-                <select id="chi-var2" class="mb-1"></select>
-            </div>
-            <button onclick="runChiSquareAnalysis()">カイ二乗検定を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['chi-var1', 'chi-var2']);
-}
-
-// 分散分析のコントロール
-function showAnovaControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📊 一要因分散分析（ANOVA）とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    3つ以上のグループの平均値に差があるかを検定します。t検定の拡張版で、複数グループを同時に比較できます。<strong>p値 &lt; 0.05</strong>で「少なくとも1つのグループに差がある」と判断します。
-                </p>
-            </div>
-            <h3>分析する変数を選択（2つ以上）</h3>
-            <p class="text-muted">Ctrlキーを押しながら複数選択してください</p>
-            <select id="anova-vars" multiple size="6" class="mb-2"></select>
-            <button onclick="runAnovaAnalysis()">分散分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['anova-vars']);
-}
-
-// 単回帰分析のコントロール
-function showSimpleRegressionControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📉 単回帰分析とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    1つの説明変数（X）から目的変数（Y）を予測する関係式を導きます。決定係数（R²）は予測の精度を示し、1に近いほど高精度です。散布図に回帰直線を引いて関係性を視覚化します。
-                </p>
-            </div>
-            <h3>変数を選択</h3>
-            <div class="mb-2">
-                <label>説明変数 (X):</label>
-                <select id="reg-x" class="mb-1"></select>
-            </div>
-            <div class="mb-2">
-                <label>目的変数 (Y):</label>
-                <select id="reg-y" class="mb-1"></select>
-            </div>
-            <button onclick="runSimpleRegressionAnalysis()">単回帰分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['reg-x', 'reg-y']);
-}
-
-// 主成分分析のコントロール
-function showPCAControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">🎯 主成分分析（PCA）とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    多数の変数を少数の合成変数（主成分）に集約する次元削減手法です。データの特徴を保持しながら可視化や解釈を容易にします。寄与率で各主成分がデータの何%を説明しているかがわかります。
-                </p>
-            </div>
-            <h3>主成分数を指定</h3>
-            <div class="mb-2">
-                <label>主成分数:</label>
-                <input type="number" id="pca-components" value="2" min="1" max="10" class="mb-1">
-            </div>
-            <p class="text-muted">全ての数値型変数を使用して主成分分析を行います</p>
-            <button onclick="runPCAAnalysis()">主成分分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-}
-
-// カイ二乗検定を実行
-async function runChiSquareAnalysis() {
-    const var1 = document.getElementById('chi-var1').value;
-    const var2 = document.getElementById('chi-var2').value;
-
-    try {
-        const run_chi_square_analysisFunc = getPyScriptFunction('run_chi_square_analysis');
-        const result = await run_chi_square_analysisFunc(var1, var2);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 分散分析を実行
-async function runAnovaAnalysis() {
-    const select = document.getElementById('anova-vars');
-    const selectedVars = Array.from(select.selectedOptions).map(option => option.value);
-
-    if (selectedVars.length < 2) {
-        alert('2つ以上の変数を選択してください');
-        return;
-    }
-
-    try {
-        const run_anova_analysisFunc = getPyScriptFunction('run_anova_analysis');
-        const result = await run_anova_analysisFunc(selectedVars);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 単回帰分析を実行
-async function runSimpleRegressionAnalysis() {
-    const xVar = document.getElementById('reg-x').value;
-    const yVar = document.getElementById('reg-y').value;
-
-    try {
-        const run_simple_regression_analysisFunc = getPyScriptFunction('run_simple_regression_analysis');
-        const result = await run_simple_regression_analysisFunc(xVar, yVar);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 主成分分析を実行
-async function runPCAAnalysis() {
-    const nComponents = parseInt(document.getElementById('pca-components').value);
-
-    try {
-        const run_pca_analysisFunc = getPyScriptFunction('run_pca_analysis');
-        const result = await run_pca_analysisFunc(nComponents);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// データクレンジングのコントロール
-function showCleansingControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">🧹 データクレンジングとは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    データ分析の前準備として、欠損値、重複行、異常値などを検出・処理します。データの品質を高めることで、分析結果の信頼性が向上します。データ分析の成否を左右する重要なプロセスです。
-                </p>
-            </div>
-            <h3>データクレンジング</h3>
-            <button onclick="runDataCleansing()" class="mb-2">データの状態を確認</button>
-            <div id="cleansing-results" class="mt-2"></div>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-}
-
-// 二要因分散分析のコントロール
-function showTwoWayAnovaControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📊 二要因分散分析とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    2つの要因（独立変数）が従属変数に与える影響を同時に分析します。各要因の主効果を検定し、複数の要因が結果に与える影響を理解できます。
-                </p>
-            </div>
-            <h3>変数を選択</h3>
-            <div class="mb-2">
-                <label>第1要因:</label>
-                <select id="anova2-factor1" class="mb-1"></select>
-            </div>
-            <div class="mb-2">
-                <label>第2要因:</label>
-                <select id="anova2-factor2" class="mb-1"></select>
-            </div>
-            <div class="mb-2">
-                <label>従属変数:</label>
-                <select id="anova2-dependent" class="mb-1"></select>
-            </div>
-            <button onclick="runTwoWayAnova()">二要因分散分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['anova2-factor1', 'anova2-factor2', 'anova2-dependent']);
-}
-
-// 重回帰分析のコントロール
-function showMultipleRegressionControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📈 重回帰分析とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    複数の説明変数（X1, X2, ...）から目的変数（Y）を予測します。各説明変数の影響力を定量化でき、調整済みR²で予測精度を評価します。ビジネスや研究で最も使われる手法の1つです。
-                </p>
-            </div>
-            <h3>変数を選択</h3>
-            <div class="mb-2">
-                <label>説明変数（複数選択可）:</label>
-                <p class="text-muted">Ctrlキーを押しながら複数選択してください</p>
-                <select id="mreg-x-vars" multiple size="6" class="mb-1"></select>
-            </div>
-            <div class="mb-2">
-                <label>目的変数:</label>
-                <select id="mreg-y-var" class="mb-1"></select>
-            </div>
-            <button onclick="runMultipleRegression()">重回帰分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['mreg-x-vars', 'mreg-y-var']);
-}
-
-// 因子分析のコントロール
-function showFactorAnalysisControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">🔍 因子分析とは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    多数の変数の背後にある潜在的な共通因子を抽出します。変数間の相関パターンから、データを説明する少数の因子を見つけます。因子負荷量で各変数と因子の関係性がわかります。
-                </p>
-            </div>
-            <h3>因子数を指定</h3>
-            <div class="mb-2">
-                <label>因子数:</label>
-                <input type="number" id="factor-n" value="2" min="1" max="10" class="mb-1">
-            </div>
-            <p class="text-muted">全ての数値型変数を使用して因子分析を行います</p>
-            <button onclick="runFactorAnalysis()">因子分析を実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-}
-
-// テキストマイニングのコントロール
-function showTextMiningControls() {
-    const controlsHTML = `
-        <div class="mb-3">
-            <div class="analysis-overview mb-3" style="background: #f0f9ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
-                <h3 style="margin-bottom: 0.5rem;">📝 テキストマイニングとは</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.6;">
-                    テキストデータから頻出単語を抽出し、内容の特徴を定量的に分析します。アンケートの自由記述やレビューデータなどの分析に有効です。単語の出現回数で重要なキーワードを把握できます。
-                </p>
-            </div>
-            <h3>テキスト列を選択</h3>
-            <select id="text-column" class="mb-2"></select>
-            <p class="text-muted">簡易的な単語分割を使用します（MeCabは使用していません）</p>
-            <button onclick="runTextMining()">テキストマイニングを実行</button>
-        </div>
-        `;
-
-    document.getElementById('analysis-controls').innerHTML = controlsHTML;
-    populateVariableSelects(['text-column']);
-}
-
-// データクレンジングを実行
-async function runDataCleansing() {
-    try {
-        const run_data_cleansingFunc = getPyScriptFunction('run_data_cleansing');
-        const result = await run_data_cleansingFunc();
-        displayResults(result);
-
-        // クレンジング操作ボタンを追加
-        const cleansingButtons = `
-            <div class="mt-3">
-                <h4>クレンジング操作</h4>
-                <button onclick="removeMissingRows()" class="mb-1">欠損値を含む行を削除</button>
-                <button onclick="removeDuplicates()" class="mb-1">重複行を削除</button>
-                <button onclick="fillMissingMean()" class="mb-1">欠損値を平均値で補完</button>
-                <div id="cleansing-message" class="mt-2"></div>
-            </div>
-        `;
-        document.getElementById('cleansing-results').innerHTML = cleansingButtons;
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-async function removeMissingRows() {
-    try {
-        const remove_missing_rowsFunc = getPyScriptFunction('remove_missing_rows');
-        const result = await remove_missing_rowsFunc();
-        document.getElementById('cleansing-message').innerHTML = `<p>${result}</p>`;
-        // データを再読み込み
-        runDataCleansing();
-    } catch (error) {
-        alert('エラー: ' + error.message);
-    }
-}
-
-async function removeDuplicates() {
-    try {
-        const remove_duplicatesFunc = getPyScriptFunction('remove_duplicates');
-        const result = await remove_duplicatesFunc();
-        document.getElementById('cleansing-message').innerHTML = `<p>${result}</p>`;
-        runDataCleansing();
-    } catch (error) {
-        alert('エラー: ' + error.message);
-    }
-}
-
-async function fillMissingMean() {
-    try {
-        const fill_missing_meanFunc = getPyScriptFunction('fill_missing_mean');
-        const result = await fill_missing_meanFunc();
-        document.getElementById('cleansing-message').innerHTML = `<p>${result}</p>`;
-        runDataCleansing();
-    } catch (error) {
-        alert('エラー: ' + error.message);
-    }
-}
-
-// 二要因分散分析を実行
-async function runTwoWayAnova() {
-    const factor1 = document.getElementById('anova2-factor1').value;
-    const factor2 = document.getElementById('anova2-factor2').value;
-    const dependent = document.getElementById('anova2-dependent').value;
-
-    try {
-        const run_two_way_anovaFunc = getPyScriptFunction('run_two_way_anova');
-        const result = await run_two_way_anovaFunc(factor1, factor2, dependent);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 重回帰分析を実行
-async function runMultipleRegression() {
-    const select = document.getElementById('mreg-x-vars');
-    const xVars = Array.from(select.selectedOptions).map(option => option.value);
-    const yVar = document.getElementById('mreg-y-var').value;
-
-    if (xVars.length < 1) {
-        alert('最低1つの説明変数を選択してください');
-        return;
-    }
-
-    try {
-        const run_multiple_regressionFunc = getPyScriptFunction('run_multiple_regression');
-        const result = await run_multiple_regressionFunc(xVars, yVar);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 因子分析を実行
-async function runFactorAnalysis() {
-    const nFactors = parseInt(document.getElementById('factor-n').value);
-
-    try {
-        const run_factor_analysisFunc = getPyScriptFunction('run_factor_analysis');
-        const result = await run_factor_analysisFunc(nFactors);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// テキストマイニングを実行
-async function runTextMining() {
-    const textColumn = document.getElementById('text-column').value;
-
-    try {
-        const run_text_miningFunc = getPyScriptFunction('run_text_mining');
-        const result = await run_text_miningFunc(textColumn);
-        displayResults(result);
-    } catch (error) {
-        alert('分析の実行に失敗しました: ' + error.message);
-    }
-}
-
-// 結果を表示
-function displayResults(result) {
-    const resultsArea = document.getElementById('analysis-results');
-    resultsArea.innerHTML = result;
+    populateVariableSelects([{id: 'ttest-var1', type: 'numeric'}, {id: 'ttest-var2', type: 'numeric'}]);
 }
