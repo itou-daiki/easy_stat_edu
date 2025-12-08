@@ -1,29 +1,30 @@
-import { currentData, dataCharacteristics, analyzeDataCharacteristics, updateFeatureCards } from '../main.js';
+import { currentData, dataCharacteristics } from '../main.js';
 
 function runDataCleansing() {
     const resultsContainer = document.getElementById('cleansing-results');
     if (!resultsContainer) return;
     resultsContainer.innerHTML = '<h4>データ品質情報</h4>';
 
-    if (!currentData) {
+    const data = window.currentData; // Use window object to get the latest data
+    if (!data) {
         resultsContainer.innerHTML = '<p>データがありません。</p>';
         return;
     }
 
-    const nRows = currentData.length;
-    const nCols = Object.keys(currentData[0] || {}).length;
+    const nRows = data.length;
+    const nCols = Object.keys(data[0] || {}).length;
 
-    const missingInfo = Object.keys(currentData[0] || {}).map(col => {
-        const missingCount = currentData.filter(row => row[col] == null).length;
+    const missingInfo = Object.keys(data[0] || {}).map(col => {
+        const missingCount = data.filter(row => row[col] == null).length;
         return { col, count: missingCount, rate: ((missingCount / nRows) * 100).toFixed(2) };
     });
 
-    const stringifiedRows = currentData.map(row => JSON.stringify(row));
+    const stringifiedRows = data.map(row => JSON.stringify(row));
     const uniqueRows = new Set(stringifiedRows);
     const nDuplicates = nRows - uniqueRows.size;
 
-    const dtypes = Object.keys(dataCharacteristics).flatMap(key => 
-        dataCharacteristics[key].map(col => ({ col, type: key.replace('Columns', '') }))
+    const dtypes = Object.keys(window.dataCharacteristics).flatMap(key => 
+        window.dataCharacteristics[key].map(col => ({ col, type: key.replace('Columns', '') }))
     );
 
     resultsContainer.innerHTML = `
@@ -46,20 +47,20 @@ function runDataCleansing() {
 }
 
 function removeMissingRows() {
-    const originalCount = currentData.length;
-    window.currentData = currentData.filter(row => Object.values(row).every(val => val != null));
+    const originalCount = window.currentData.length;
+    window.currentData = window.currentData.filter(row => Object.values(row).every(val => val != null));
     const removedCount = originalCount - window.currentData.length;
     alert(`${removedCount}行の欠損値を含む行を削除しました。`);
     
-    window.dataCharacteristics = analyzeDataCharacteristics(window.currentData);
+    window.dataCharacteristics = window.analyzeDataCharacteristics(window.currentData);
     runDataCleansing();
-    updateFeatureCards();
+    window.updateFeatureCards();
 }
 
 function removeDuplicates() {
-    const originalCount = currentData.length;
+    const originalCount = window.currentData.length;
     const stringifiedRows = new Set();
-    window.currentData = currentData.filter(row => {
+    window.currentData = window.currentData.filter(row => {
         const s = JSON.stringify(row);
         if (stringifiedRows.has(s)) return false;
         stringifiedRows.add(s);
@@ -68,24 +69,24 @@ function removeDuplicates() {
     const removedCount = originalCount - window.currentData.length;
     alert(`${removedCount}行の重複行を削除しました。`);
 
-    window.dataCharacteristics = analyzeDataCharacteristics(window.currentData);
+    window.dataCharacteristics = window.analyzeDataCharacteristics(window.currentData);
     runDataCleansing();
-    updateFeatureCards();
+    window.updateFeatureCards();
 }
 
 function fillMissingMean() {
-    const { numericColumns } = dataCharacteristics;
+    const { numericColumns } = window.dataCharacteristics;
     numericColumns.forEach(col => {
-        const mean = jStat.mean(currentData.map(r => r[col]).filter(v => v != null));
-        currentData.forEach(row => {
+        const mean = jStat.mean(window.currentData.map(r => r[col]).filter(v => v != null));
+        window.currentData.forEach(row => {
             if (row[col] == null) row[col] = mean;
         });
     });
     alert('数値列の欠損値を平均値で補完しました。');
 
-    window.dataCharacteristics = analyzeDataCharacteristics(currentData);
+    window.dataCharacteristics = window.analyzeDataCharacteristics(window.currentData);
     runDataCleansing();
-    updateFeatureCards();
+    window.updateFeatureCards();
 }
 
 export function render(container) {

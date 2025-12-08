@@ -4,7 +4,13 @@ function runPcaAnalysis(variables) {
     const resultsContainer = document.getElementById('pca-results');
     resultsContainer.innerHTML = '<h4>主成分分析 結果</h4>';
     
-    const data = currentData.map(row => variables.map(v => row[v]));
+    const data = currentData.map(row => variables.map(v => row[v])).filter(row => row.every(v => v != null));
+    
+    if (data.length < variables.length) {
+        resultsContainer.innerHTML = '<p>データが不足しています。</p>';
+        return;
+    }
+
     const standardizedData = [];
     for (let j = 0; j < variables.length; j++) {
         const col = data.map(row => row[j]);
@@ -14,39 +20,43 @@ function runPcaAnalysis(variables) {
     }
     const standardizedMatrix = jStat.transpose(standardizedData);
     const covMatrix = jStat.covariance(standardizedMatrix);
-    const eig = math.eigs(covMatrix);
     
-    const sortedIndices = eig.values.map((_, i) => i).sort((a, b) => eig.values[b] - eig.values[a]);
-    const sortedEigenvalues = sortedIndices.map(i => eig.values[i]);
-    const sortedEigenvectors = jStat.transpose(sortedIndices.map(i => math.column(eig.vectors, i).flat()));
+    try {
+        const eig = math.eigs(covMatrix);
+        const sortedIndices = eig.values.map((_, i) => i).sort((a, b) => eig.values[b] - eig.values[a]);
+        const sortedEigenvalues = sortedIndices.map(i => eig.values[i]);
+        const sortedEigenvectors = jStat.transpose(sortedIndices.map(i => math.column(eig.vectors, i).flat()));
 
-    const totalVariance = sortedEigenvalues.reduce((a, b) => a + b, 0);
-    const contributionRates = sortedEigenvalues.map(v => (v / totalVariance) * 100);
-    const cumulativeRates = contributionRates.map((_, i) => contributionRates.slice(0, i + 1).reduce((a, b) => a + b));
-    const pcScores = math.multiply(standardizedMatrix, sortedEigenvectors);
+        const totalVariance = sortedEigenvalues.reduce((a, b) => a + b, 0);
+        const contributionRates = sortedEigenvalues.map(v => (v / totalVariance) * 100);
+        const cumulativeRates = contributionRates.map((_, i) => contributionRates.slice(0, i + 1).reduce((a, b) => a + b));
+        const pcScores = math.multiply(standardizedMatrix, sortedEigenvectors);
 
-    let varianceHtml = `
-        <h5>寄与率</h5>
-        <table class="table">
-            <tr><th>主成分</th><th>寄与率 (%)</th><th>累積寄与率 (%)</th></tr>
-            ${contributionRates.map((r, i) => `
-                <tr>
-                    <td>第${i + 1}主成分</td>
-                    <td>${r.toFixed(2)}</td>
-                    <td>${cumulativeRates[i].toFixed(2)}</td>
-                </tr>`).join('')}
-        </table>`;
-    resultsContainer.innerHTML += varianceHtml;
+        let varianceHtml = `
+            <h5>寄与率</h5>
+            <table class="table">
+                <tr><th>主成分</th><th>寄与率 (%)</th><th>累積寄与率 (%)</th></tr>
+                ${contributionRates.map((r, i) => `
+                    <tr>
+                        <td>第${i + 1}主成分</td>
+                        <td>${r.toFixed(2)}</td>
+                        <td>${cumulativeRates[i].toFixed(2)}</td>
+                    </tr>`).join('')}
+            </table>`;
+        resultsContainer.innerHTML += varianceHtml;
 
-    const plotContainer = document.createElement('div');
-    plotContainer.className = 'd-flex';
-    const plot1Id = 'pca-plot1';
-    const plot2Id = 'pca-plot2';
-    plotContainer.innerHTML = `<div id="${plot1Id}" style="width: 50%;"></div><div id="${plot2Id}" style="width: 50%;"></div>`;
-    resultsContainer.appendChild(plotContainer);
+        const plotContainer = document.createElement('div');
+        plotContainer.className = 'd-flex';
+        plotContainer.innerHTML = `<div id="pca-plot1" style="width: 50%;"></div><div id="pca-plot2" style="width: 50%;"></div>`;
+        resultsContainer.appendChild(plotContainer);
 
-    Plotly.newPlot(plot1Id, [{ x: contributionRates.map((_, i) => `PC${i + 1}`), y: contributionRates, type: 'bar' }], { title: 'スクリープロット' });
-    Plotly.newPlot(plot2Id, [{ x: pcScores.map(row => row[0]), y: pcScores.map(row => row[1]), mode: 'markers' }], { title: '主成分スコア (PC1 vs PC2)', xaxis: { title: `PC1 (${contributionRates[0].toFixed(1)}%)` }, yaxis: { title: `PC2 (${contributionRates[1].toFixed(1)}%)` } });
+        Plotly.newPlot('pca-plot1', [{ x: contributionRates.map((_, i) => `PC${i + 1}`), y: contributionRates, type: 'bar' }], { title: 'スクリープロット' });
+        Plotly.newPlot('pca-plot2', [{ x: pcScores.map(row => row[0]), y: pcScores.map(row => row[1]), mode: 'markers' }], { title: '主成分スコア (PC1 vs PC2)', xaxis: { title: `PC1 (${contributionRates[0].toFixed(1)}%)` }, yaxis: { title: `PC2 (${contributionRates[1].toFixed(1)}%)` } });
+
+    } catch (e) {
+        resultsContainer.innerHTML += '<p>計算エラーが発生しました。math.jsが正しく読み込まれているか確認してください。</p>';
+        console.error(e);
+    }
 }
 
 export function render(container, characteristics) {

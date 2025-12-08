@@ -18,7 +18,7 @@ function runAnovaAnalysis(groups) {
         ssBetween += groupData[i].length * (jStat.mean(groupData[i]) - grandMean)**2;
     }
     const dfBetween = k - 1;
-    const msBetween = ssBetween / dfBetween;
+    const msBetween = dfBetween > 0 ? ssBetween / dfBetween : 0;
 
     let ssWithin = 0;
     for(let i=0; i<k; i++) {
@@ -26,13 +26,13 @@ function runAnovaAnalysis(groups) {
         ssWithin += groupData[i].reduce((acc, val) => acc + (val - mean)**2, 0);
     }
     const dfWithin = n - k;
-    const msWithin = ssWithin / dfWithin;
+    const msWithin = dfWithin > 0 ? ssWithin / dfWithin : 0;
 
-    const f_stat = msBetween / msWithin;
-    const p_value = 1 - jStat.centralF.cdf(f_stat, dfBetween, dfWithin);
+    const f_stat = msWithin > 0 ? msBetween / msWithin : 0;
+    const p_value = f_stat > 0 ? 1 - jStat.centralF.cdf(f_stat, dfBetween, dfWithin) : 1;
 
     const ssTotal = ssBetween + ssWithin;
-    const eta_squared = ssBetween / ssTotal;
+    const eta_squared = ssTotal > 0 ? ssBetween / ssTotal : 0;
 
     const interpretEffectSize = (eta_sq) => {
         if (eta_sq >= 0.14) return "大きい";

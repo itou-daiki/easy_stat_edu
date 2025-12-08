@@ -111,7 +111,8 @@ function runEdaAnalysis(variable) {
 }
 
 
-export function render(container, numericColumns, categoricalColumns) {
+export function render(container, characteristics) {
+    const { numericColumns, categoricalColumns } = characteristics;
     const allColumns = [...numericColumns, ...categoricalColumns];
     let edaOptions = allColumns.map(col => `<option value="${col}">${col}</option>`).join('');
 

@@ -103,10 +103,13 @@ async function loadDemoData(fileName) {
 }
 
 function processData(fileName, jsonData) {
+    window.currentData = jsonData;
     currentData = jsonData;
+    
     // Make dataCharacteristics mutable for cleansing operations
-    window.dataCharacteristics = analyzeDataCharacteristics(jsonData);
-    dataCharacteristics = window.dataCharacteristics;
+    const characteristics = analyzeDataCharacteristics(jsonData);
+    window.dataCharacteristics = characteristics;
+    dataCharacteristics = characteristics;
     
     console.log('Data processed:', { fileName, dataCharacteristics });
     
@@ -115,7 +118,7 @@ function processData(fileName, jsonData) {
     hideLoadingMessage();
 }
 
-export function analyzeDataCharacteristics(data) {
+function analyzeDataCharacteristics(data) {
     if (!data || data.length === 0) return null;
     const characteristics = { numericColumns: [], categoricalColumns: [], textColumns: [] };
     const columns = Object.keys(data[0]);
@@ -128,10 +131,14 @@ export function analyzeDataCharacteristics(data) {
         if (isNumeric) {
             characteristics.numericColumns.push(col);
             // Convert string numbers to actual numbers
-            currentData.forEach(row => { row[col] = Number(row[col]); });
+            data.forEach(row => { 
+                if(row[col] !== null && row[col] !== undefined) {
+                    row[col] = Number(row[col]);
+                }
+            });
         } else {
             const uniqueRatio = new Set(values).size / values.length;
-            if (uniqueRatio < 0.5 && values.length > 5) { // Adjusted threshold
+            if (uniqueRatio < 0.5 && values.length > 5) {
                 characteristics.categoricalColumns.push(col);
             } else {
                 characteristics.textColumns.push(col);
@@ -154,12 +161,12 @@ function updateFileInfo(fileName, data) {
     fileInfo.style.display = 'block';
 }
 
-export function updateFeatureCards() {
-    if (!dataCharacteristics) return;
+function updateFeatureCards() {
+    if (!window.dataCharacteristics) return;
     const counts = { 
-        numeric: dataCharacteristics.numericColumns.length, 
-        categorical: dataCharacteristics.categoricalColumns.length, 
-        text: dataCharacteristics.textColumns.length 
+        numeric: window.dataCharacteristics.numericColumns.length, 
+        categorical: window.dataCharacteristics.categoricalColumns.length, 
+        text: window.dataCharacteristics.textColumns.length 
     };
 
     featureGrid.querySelectorAll('.feature-card').forEach(card => {
@@ -221,6 +228,3 @@ window.backToHome = () => {
     document.getElementById('navigation-section').style.display = 'block';
     document.getElementById('upload-section-main').style.display = 'block';
 };
-
-// Also expose currentData for modules
-window.currentData = currentData;

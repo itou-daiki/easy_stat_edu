@@ -7,7 +7,13 @@ function runFactorAnalysis(variables, nFactors) {
         <p class="text-muted"><small>注: この分析は主成分分析(PCA)を因子分析の代替として使用しています。</small></p>
     `;
     
-    const data = currentData.map(row => variables.map(v => row[v]));
+    const data = currentData.map(row => variables.map(v => row[v])).filter(row => row.every(v => v != null));
+
+    if(data.length < variables.length) {
+        resultsContainer.innerHTML += '<p>データが不足しています。</p>';
+        return;
+    }
+
     const standardizedData = [];
     for (let j = 0; j < variables.length; j++) {
         const col = data.map(row => row[j]);
@@ -17,53 +23,60 @@ function runFactorAnalysis(variables, nFactors) {
     }
     const standardizedMatrix = jStat.transpose(standardizedData);
     const covMatrix = jStat.covariance(standardizedMatrix);
-    const eig = math.eigs(covMatrix);
-    
-    const sortedIndices = eig.values.map((_, i) => i).sort((a, b) => eig.values[b] - eig.values[a]);
-    const sortedEigenvalues = sortedIndices.map(i => eig.values[i]);
-    const sortedEigenvectors = jStat.transpose(sortedIndices.map(i => math.column(eig.vectors, i).flat()));
 
-    const loadings = [];
-    for(let i=0; i<variables.length; i++) {
-        const row = [];
-        for (let j=0; j<nFactors; j++) {
-            row.push(sortedEigenvectors[i][j] * Math.sqrt(sortedEigenvalues[j]));
+    try {
+        const eig = math.eigs(covMatrix);
+        
+        const sortedIndices = eig.values.map((_, i) => i).sort((a, b) => eig.values[b] - eig.values[a]);
+        const sortedEigenvalues = sortedIndices.map(i => eig.values[i]);
+        const sortedEigenvectors = jStat.transpose(sortedIndices.map(i => math.column(eig.vectors, i).flat()));
+
+        const loadings = [];
+        for(let i=0; i<variables.length; i++) {
+            const row = [];
+            for (let j=0; j<nFactors; j++) {
+                row.push(sortedEigenvectors[i][j] * Math.sqrt(sortedEigenvalues[j]));
+            }
+            loadings.push(row);
         }
-        loadings.push(row);
-    }
-    
-    const totalVariance = sortedEigenvalues.reduce((a, b) => a + b, 0);
-    const contributionRates = sortedEigenvalues.map(v => (v / totalVariance) * 100);
-    const cumulativeRates = contributionRates.map((_, i) => contributionRates.slice(0, i + 1).reduce((a, b) => a + b));
+        
+        const totalVariance = sortedEigenvalues.reduce((a, b) => a + b, 0);
+        const contributionRates = sortedEigenvalues.map(v => (v / totalVariance) * 100);
+        const cumulativeRates = contributionRates.map((_, i) => contributionRates.slice(0, i + 1).reduce((a, b) => a + b));
 
-    let loadingsHtml = `
-        <h5>因子負荷量</h5>
-        <table class="table">
-            <thead><tr><th>変数</th>${Array.from({length: nFactors}, (_, i) => `<th>因子${i+1}</th>`).join('')}</tr></thead>
-            <tbody>
-                ${variables.map((v, i) => `
-                    <tr><th>${v}</th>${loadings[i].map(l => `<td>${l.toFixed(4)}</td>`).join('')}</tr>
+        let loadingsHtml = `
+            <h5>因子負荷量</h5>
+            <table class="table">
+                <thead><tr><th>変数</th>${Array.from({length: nFactors}, (_, i) => `<th>因子${i+1}</th>`).join('')}</tr></thead>
+                <tbody>
+                    ${variables.map((v, i) => `
+                        <tr><th>${v}</th>${loadings[i].map(l => `<td>${l.toFixed(4)}</td>`).join('')}</tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
+        
+        let varianceHtml = `
+            <h5>寄与率</h5>
+            <table class="table">
+                <tr><th>因子</th><th>寄与率 (%)</th><th>累積寄与率 (%)</th></tr>
+                ${contributionRates.slice(0, nFactors).map((r, i) => `
+                    <tr><td>因子${i + 1}</td><td>${r.toFixed(2)}</td><td>${cumulativeRates[i].toFixed(2)}</td></tr>
                 `).join('')}
-            </tbody>
-        </table>`;
-    
-    let varianceHtml = `
-        <h5>寄与率</h5>
-        <table class="table">
-            <tr><th>因子</th><th>寄与率 (%)</th><th>累積寄与率 (%)</th></tr>
-            ${contributionRates.slice(0, nFactors).map((r, i) => `
-                <tr><td>因子${i + 1}</td><td>${r.toFixed(2)}</td><td>${cumulativeRates[i].toFixed(2)}</td></tr>
-            `).join('')}
-        </table>`;
-    resultsContainer.innerHTML += loadingsHtml + varianceHtml;
+            </table>`;
+        resultsContainer.innerHTML += loadingsHtml + varianceHtml;
 
-    const plotContainer = document.createElement('div');
-    plotContainer.className = 'd-flex';
-    plotContainer.innerHTML = `<div id="fa-plot1" style="width:50%"></div><div id="fa-plot2" style="width:50%"></div>`;
-    resultsContainer.appendChild(plotContainer);
+        const plotContainer = document.createElement('div');
+        plotContainer.className = 'd-flex';
+        plotContainer.innerHTML = `<div id="fa-plot1" style="width:50%"></div><div id="fa-plot2" style="width:50%"></div>`;
+        resultsContainer.appendChild(plotContainer);
 
-    Plotly.newPlot('fa-plot1', [{ x: contributionRates.map((_,i)=>`F${i+1}`), y: contributionRates, type: 'bar' }], { title: 'スクリープロット' });
-    Plotly.newPlot('fa-plot2', [{ z: loadings, x: Array.from({length: nFactors}, (_, i) => `因子${i+1}`), y: variables, type: 'heatmap', colorscale: 'Viridis' }], { title: '因子負荷量のヒートマップ' });
+        Plotly.newPlot('fa-plot1', [{ x: contributionRates.map((_,i)=>`F${i+1}`), y: contributionRates, type: 'bar' }], { title: 'スクリープロット' });
+        Plotly.newPlot('fa-plot2', [{ z: loadings, x: Array.from({length: nFactors}, (_, i) => `因子${i+1}`), y: variables, type: 'heatmap', colorscale: 'Viridis' }], { title: '因子負荷量のヒートマップ' });
+
+    } catch(e) {
+        resultsContainer.innerHTML += '<p>計算エラーが発生しました。math.jsが正しく読み込まれているか確認してください。</p>';
+        console.error(e);
+    }
 }
 
 export function render(container, characteristics) {
