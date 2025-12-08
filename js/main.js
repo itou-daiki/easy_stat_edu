@@ -1,7 +1,7 @@
 // ==========================================
 // Imports
 // ==========================================
-import { getAnalysisTitle, showError, showLoadingMessage, hideLoadingMessage } from './utils.js';
+import { getAnalysisTitle, showError, showLoadingMessage, hideLoadingMessage, toggleCollapsible } from './utils.js';
 
 // ==========================================
 // Global Variables & Exports for Modules
@@ -41,7 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // Event Listeners
 // ==========================================
 function setupEventListeners() {
-    uploadBtn.addEventListener('click', () => fileInput.click());
+    uploadBtn.addEventListener('click', () => {
+        console.log('Upload button clicked, attempting to trigger file input.');
+        fileInput.click();
+    });
     fileInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (file) handleFile(file);
@@ -61,6 +64,13 @@ function setupEventListeners() {
     });
     demoBtn.addEventListener('click', () => {
         loadDemoData('eda_demo.xlsx');
+    });
+
+    // Add event listeners for collapsible sections
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', () => {
+            toggleCollapsible(header);
+        });
     });
 }
 
