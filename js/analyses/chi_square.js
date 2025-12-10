@@ -1,6 +1,6 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
-function runChiSquare() {
+function runChiSquare(currentData) {
     const rowVar = document.getElementById('row-var').value;
     const colVar = document.getElementById('col-var').value;
 
@@ -13,9 +13,10 @@ function runChiSquare() {
         return;
     }
 
-    // クロス集計
+    // クロス集計表の作成
     const rowValues = currentData.map(d => d[rowVar]);
     const colValues = currentData.map(d => d[colVar]);
+    // ユニークな値を取得（ソート）
     const rowKeys = [...new Set(rowValues)].filter(v => v != null).sort();
     const colKeys = [...new Set(colValues)].filter(v => v != null).sort();
 
@@ -252,5 +253,5 @@ export function render(container, currentData, characteristics) {
         multiple: false
     });
 
-    createAnalysisButton('run-chi-btn-container', '検定を実行', runChiSquare, { id: 'run-chi-btn' });
+    createAnalysisButton('run-chi-btn-container', '検定を実行', () => runChiSquare(currentData), { id: 'run-chi-btn' });
 }

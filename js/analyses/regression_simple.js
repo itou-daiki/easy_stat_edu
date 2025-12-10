@@ -1,6 +1,6 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
-function runSimpleRegression() {
+function runSimpleRegression(currentData) {
     const xVar = document.getElementById('independent-var').value;
     const yVar = document.getElementById('dependent-var').value;
 
@@ -215,5 +215,5 @@ export function render(container, currentData, characteristics) {
         multiple: false
     });
 
-    createAnalysisButton('run-regression-btn-container', '単回帰分析を実行', runSimpleRegression, { id: 'run-regression-btn' });
+    createAnalysisButton('run-regression-btn-container', '分析を実行', () => runSimpleRegression(currentData), { id: 'run-regression-btn' });
 }

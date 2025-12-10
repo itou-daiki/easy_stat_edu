@@ -1,7 +1,7 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 // 要約統計量の計算と表示
-function displaySummaryStatistics(variables) {
+function displaySummaryStatistics(variables, currentData) {
     const container = document.getElementById('summary-stats-section');
 
     let tableHtml = `
@@ -231,7 +231,7 @@ function runIndependentTTest() {
     document.getElementById('results-section').style.display = 'block';
 }
 
-function runPairedTTest() {
+function runTTest(currentData) {
     const preVar = document.getElementById('pre-var').value;
     const postVar = document.getElementById('post-var').value;
 
@@ -243,7 +243,7 @@ function runPairedTTest() {
         alert('異なる変数を選択してください');
         return;
     }
-    displaySummaryStatistics([preVar, postVar]);
+    displaySummaryStatistics([preVar, postVar], currentData);
     const pairs = currentData
         .map(row => ({ pre: row[preVar], post: row[postVar] }))
         .filter(p => p.pre != null && !isNaN(p.pre) && p.post != null && !isNaN(p.post));
@@ -313,8 +313,8 @@ function runPairedTTest() {
                 <strong>sign</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†
             </p>
         </div>
-    renderSampleSizeInfo(resultsContainer, n);
     `;
+    renderSampleSizeInfo(resultsContainer, n);
     const testResults = [{
         varName: `${preVar} → ${postVar}`,
         groups: [preVar, postVar],
@@ -553,6 +553,7 @@ export function render(container, currentData, characteristics) {
         });
     });
 
-    createAnalysisButton('independent-btn-container', '対応なしt検定を実行', runIndependentTTest, { id: 'run-independent-btn' });
-    createAnalysisButton('paired-btn-container', '対応ありt検定を実行', runPairedTTest, { id: 'run-paired-btn' });
+    createAnalysisButton('independent-btn-container', '対応なしt検定を実行', () => runIndependentTTest(currentData), { id: 'run-independent-btn' });
+    createAnalysisButton('paired-btn-container', '対応ありt検定を実行', () => runTTest(currentData), { id: 'run-paired-btn' });
 }
+```

@@ -108,7 +108,7 @@ function processData() {
 
     // 外れ値の削除
     if (removeOutliersOption) {
-        const numericCols = dataCharacteristics.numericColumns;
+        const numericCols = originalCharacteristics.numericColumns;
         processedData = removeOutliers(processedData, numericCols);
     }
 

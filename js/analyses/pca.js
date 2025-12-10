@@ -1,6 +1,6 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
-function runPCA() {
+function runPCA(currentData) {
     const varsSelect = document.getElementById('pca-vars');
     const variables = Array.from(varsSelect.selectedOptions).map(o => o.value);
 
@@ -302,5 +302,5 @@ export function render(container, currentData, characteristics) {
         multiple: true
     });
 
-    createAnalysisButton('run-pca-btn-container', '主成分分析を実行', runPCA, { id: 'run-pca-btn' });
+    createAnalysisButton('run-pca-btn-container', '主成分分析を実行', () => runPCA(currentData), { id: 'run-pca-btn' });
 }

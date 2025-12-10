@@ -1,7 +1,7 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 // 相関マトリックスの計算
-function calculateCorrelationMatrix(variables) {
+function calculateCorrelationMatrix(variables, currentData) {
     const matrix = [];
     for (let i = 0; i < variables.length; i++) {
         const row = [];
@@ -31,7 +31,7 @@ function calculateCorrelationMatrix(variables) {
 }
 
 // 相関分析の実行
-function runCorrelationAnalysis() {
+function runCorrelationAnalysis(currentData) {
     const selector = document.getElementById('correlation-vars');
     const selectedVars = Array.from(selector.selectedOptions).map(opt => opt.value);
 
@@ -119,13 +119,13 @@ function plotHeatmap(variables, matrix) {
     Plotly.newPlot('correlation-heatmap', data, layout, createPlotlyConfig('相関ヒートマップ', variables));
 }
 
-function plotScatterMatrix(variables) {
+function plotScatterMatrix(variables, currentData) {
     // データの準備（最大1000件に制限）
     const plotData = currentData.slice(0, 1000);
     const n = variables.length;
 
     // 相関行列の計算（テキスト表示用）
-    const matrix = calculateCorrelationMatrix(variables);
+    const matrix = calculateCorrelationMatrix(variables, currentData);
 
     const traces = [];
     const layout = {
@@ -332,5 +332,5 @@ export function render(container, currentData, characteristics) {
         multiple: true
     });
 
-    createAnalysisButton('run-correlation-btn-container', '相関分析を実行', runCorrelationAnalysis, { id: 'run-correlation-btn' });
+    createAnalysisButton('run-correlation-btn-container', '相関分析を実行', () => runCorrelationAnalysis(currentData), { id: 'run-correlation-btn' });
 }

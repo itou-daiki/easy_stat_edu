@@ -1,6 +1,6 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
-function runTwoWayANOVA() {
+function runTwoWayANOVA(currentData) {
     const factor1 = document.getElementById('factor1-var').value;
     const factor2 = document.getElementById('factor2-var').value;
     const dependentVarSelect = document.getElementById('dependent-var');
@@ -283,5 +283,5 @@ export function render(container, currentData, characteristics) {
         multiple: true
     });
 
-    createAnalysisButton('run-anova-btn-container', '二要因分散分析を実行', runTwoWayANOVA, { id: 'run-anova-btn' });
+    createAnalysisButton('run-twoway-anova-btn-container', '分析を実行', () => runTwoWayANOVA(currentData), { id: 'run-twoway-anova-btn' });
 }

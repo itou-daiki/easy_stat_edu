@@ -1,7 +1,7 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 // 重回帰分析の実行
-function runMultipleRegression() {
+function runMultipleRegression(currentData) {
     const dependentVar = document.getElementById('dependent-var').value;
     const independentVarsSelect = document.getElementById('independent-vars');
     const independentVars = Array.from(independentVarsSelect.selectedOptions).map(option => option.value);
@@ -385,5 +385,6 @@ export function render(container, currentData, characteristics) {
         multiple: true
     });
 
-    createAnalysisButton('run-regression-btn-container', '重回帰分析を実行', runMultipleRegression, { id: 'run-regression-btn' });
+    createAnalysisButton('run-regression-btn-container', '分析を実行', () => runMultipleRegression(currentData), { id: 'run-regression-btn' });
 }
+```

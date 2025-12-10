@@ -53,7 +53,8 @@ function performPostHocTests(groups, groupData) {
     return pairs;
 }
 
-function runOneWayANOVA() {
+// function runOneWayANOVA(currentData) { ... }
+function runOneWayANOVA(currentData) {
     const factorVar = document.getElementById('factor-var').value;
     const dependentVarSelect = document.getElementById('dependent-var');
     const dependentVars = Array.from(dependentVarSelect.selectedOptions).map(o => o.value);
@@ -529,5 +530,5 @@ export function render(container, currentData, characteristics) {
         multiple: true
     });
 
-    createAnalysisButton('run-anova-btn-container', '分散分析を実行', runOneWayANOVA, { id: 'run-anova-btn' });
+    createAnalysisButton('run-anova-btn-container', '分析を実行', () => runOneWayANOVA(currentData), { id: 'run-anova-btn' });
 }

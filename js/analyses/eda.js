@@ -30,8 +30,8 @@ function calculateKurtosis(data) {
     return kurtosis - correction; // excess kurtosis
 }
 
-// 要約統計量の表示
-function displaySummaryStatistics() {
+// 要約統計量の計算と表示
+function displaySummaryStatistics(currentData) {
     const resultsContainer = document.getElementById('eda-summary-stats');
     resultsContainer.innerHTML = `
         <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -171,8 +171,8 @@ function displaySummaryStatistics() {
     }
 }
 
-// カテゴリ変数の可視化
-function visualizeCategoricalVariables() {
+// カテゴリ変数の可視化（円グラフ・棒グラフ）
+function visualizeCategoricalVariables(currentData) {
     const container = document.getElementById('categorical-viz-section');
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -272,8 +272,8 @@ function renderCategoricalPlot(col, valueCounts, plotId, sortOrder) {
     Plotly.newPlot(plotId, [barTrace], barLayout);
 }
 
-// 数値変数の個別可視化（ヒストグラム＋箱ひげ図）
-function visualizeNumericVariables() {
+// 数値変数の可視化（ヒストグラム・箱ひげ図）
+function visualizeNumericVariables(currentData) {
     const container = document.getElementById('numeric-viz-section');
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -358,8 +358,8 @@ function visualizeNumericVariables() {
     });
 }
 
-// 複数の数値変数の一括箱ひげ図（自動表示）
-function visualizeMultipleNumericVariables() {
+// 複数数値変数の比較（箱ひげ図）
+function visualizeMultipleNumericVariables(currentData) {
     const container = document.getElementById('multiple-numeric-viz-section');
     const { numericColumns } = dataCharacteristics;
 
@@ -400,8 +400,8 @@ function visualizeMultipleNumericVariables() {
     Plotly.newPlot('multiple-numeric-plot', traces, layout, createPlotlyConfig('EDA_数値変数一括', numericColumns));
 }
 
-// 2変数の可視化
-function visualizeTwoVariables() {
+// 2変数間の関係（散布図）
+function visualizeTwoVariables(currentData) {
     const container = document.getElementById('two-variables-viz-section');
     const { numericColumns, categoricalColumns } = dataCharacteristics;
     const allColumns = [...numericColumns, ...categoricalColumns];
@@ -870,10 +870,11 @@ export function render(container, currentData, characteristics) {
     // renderDataOverview('#eda-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
     // 各セクションをレンダリング
-    displaySummaryStatistics();
-    visualizeCategoricalVariables();
-    visualizeNumericVariables();
-    visualizeMultipleNumericVariables();
-    visualizeTwoVariables();
-    visualizeGroupedBarChart();
+    // 各セクションをレンダリング
+    displaySummaryStatistics(currentData);
+    visualizeCategoricalVariables(currentData);
+    visualizeNumericVariables(currentData);
+    visualizeMultipleNumericVariables(currentData);
+    visualizeTwoVariables(currentData);
+    visualizeGroupedBarChart(currentData);
 }

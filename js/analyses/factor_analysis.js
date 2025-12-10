@@ -60,7 +60,7 @@ function varimaxRotation(loadings, iter = 20) {
     return { rotatedLoadings, rotationMatrix };
 }
 
-function runFactorAnalysis() {
+function runFactorAnalysis(currentData) {
     const varsSelect = document.getElementById('factor-vars');
     const variables = Array.from(varsSelect.selectedOptions).map(o => o.value);
     const numFactors = parseInt(document.getElementById('num-factors').value, 10);
@@ -75,7 +75,7 @@ function runFactorAnalysis() {
     }
 
     try {
-        const { loadings, eigenvalues } = exactFactors(variables, numFactors);
+        const { loadings, eigenvalues } = exactFactors(variables, numFactors, currentData);
         // 回転（今回はPlaceholder）
         const { rotatedLoadings } = varimaxRotation(loadings);
 
@@ -91,10 +91,10 @@ function runFactorAnalysis() {
             const highLoadings = variables.filter((v, i) => Math.abs(rotatedLoadings[i][f]) > 0.4);
             factorDefinitions.push(highLoadings);
         }
-        displayFactorMeans(factorDefinitions, numFactors);
+        displayFactorMeans(factorDefinitions, numFactors, currentData);
 
         // クロンバックのアルファ（信頼性係数）
-        displayCronbachAlpha(variables);
+        displayCronbachAlpha(variables, currentData);
 
         document.getElementById('analysis-results').style.display = 'block';
 
@@ -173,7 +173,7 @@ function displayLoadings(variables, loadings) {
     container.innerHTML = html;
 }
 
-function displayFactorMeans(factorDefinitions, numFactors) {
+function displayFactorMeans(factorDefinitions, numFactors, currentData) {
     const container = document.getElementById('factor-means-section');
     if (!container) return; // セーフティ
 
@@ -217,7 +217,7 @@ function displayFactorMeans(factorDefinitions, numFactors) {
     }
 }
 
-function displayCronbachAlpha(variables) {
+function displayCronbachAlpha(variables, currentData) {
     // クロンバックのアルファ係数の計算
     // α = (k / (k-1)) * (1 - (Σσ_i^2 / σ_X^2))
     const k = variables.length;
@@ -405,5 +405,5 @@ export function render(container, currentData, characteristics) {
         multiple: true
     });
 
-    createAnalysisButton('run-factor-btn-container', '因子分析を実行', runFactorAnalysis, { id: 'run-factor-btn' });
+    createAnalysisButton('run-factor-btn-container', '因子分析を実行', () => runFactorAnalysis(currentData), { id: 'run-factor-btn' });
 }

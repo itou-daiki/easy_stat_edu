@@ -12,7 +12,7 @@ async function initTokenizer() {
     });
 }
 
-async function runTextMining() {
+async function runTextMining(currentData) {
     const textVar = document.getElementById('text-var').value;
     if (!textVar) {
         alert('テキスト変数を選択してください');
@@ -222,5 +222,6 @@ export function render(container, currentData, characteristics) {
         multiple: false
     });
 
-    createAnalysisButton('run-text-btn-container', '解析を実行', runTextMining, { id: 'run-text-btn' });
+    createAnalysisButton('run-text-btn-container', '分析を実行', () => runTextMining(currentData), { id: 'run-text-btn' });
 }
+```
