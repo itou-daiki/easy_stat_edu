@@ -1,304 +1,209 @@
-import { currentData } from '../main.js';
-import { showError, renderDataPreview, renderSummaryStatistics } from '../utils.js';
+import { currentData, dataCharacteristics } from '../main.js';
+import { renderDataOverview, createVariableSelector } from '../utils.js';
 
-export function render(container, characteristics) {
-    const { textColumns, categoricalColumns } = characteristics;
+let tokenizer = null;
 
-    if (!textColumns || textColumns.length === 0) {
-        container.innerHTML = '<p class="error-message">分析対象となるテキストデータ（文字列型の列）が見つかりません。</p>';
+async function initTokenizer() {
+    return new Promise((resolve, reject) => {
+        kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" }).build((err, _tokenizer) => {
+            if (err) reject(err);
+            tokenizer = _tokenizer;
+            resolve();
+        });
+    });
+}
+
+async function runTextMining() {
+    const textVar = document.getElementById('text-var').value;
+    if (!textVar) {
+        alert('テキスト変数を選択してください');
         return;
     }
 
-    const textOptions = textColumns.map(col => `<option value="${col}">${col}</option>`).join('');
-    const catOptions = ['<option value="">(なし) 全体のみ分析</option>']
-        .concat(categoricalColumns.map(col => `<option value="${col}">${col}</option>`))
-        .join('');
-
-    container.innerHTML = `
-        <div class="analysis-controls">
-            <div class="control-group">
-                <label for="tm-text-col">分析対象のテキスト列:</label>
-                <select id="tm-text-col">${textOptions}</select>
-            </div>
-            <div class="control-group">
-                <label for="tm-cat-col">カテゴリ変数 (任意):</label>
-                <select id="tm-cat-col">${catOptions}</select>
-            </div>
-            <div class="control-group">
-                <label>設定:</label>
-                <label><input type="checkbox" id="tm-use-sample" checked> 名詞・動詞・形容詞のみ抽出</label>
-            </div>
-            <button id="run-tm-btn" class="btn-analysis">分析を実行</button>
-        </div>
-        <div id="tm-results" class="analysis-results"></div>
-    `;
-
-    document.getElementById('run-tm-btn').addEventListener('click', () => {
-        const textCol = document.getElementById('tm-text-col').value;
-        const catCol = document.getElementById('tm-cat-col').value;
-        runTextMining(textCol, catCol);
-    });
-}
-
-// Global Tokenizer Cache
-let tokenizerInstance = null;
-const getTokenizer = () => new Promise((resolve, reject) => {
-    if (tokenizerInstance) return resolve(tokenizerInstance);
-    kuromoji.builder({ dicPath: 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/' }).build((err, tokenizer) => {
-        if (err) return reject(err);
-        tokenizerInstance = tokenizer;
-        resolve(tokenizer);
-    });
-});
-
-async function runTextMining(textColumn, catColumn) {
-    const resultsContainer = document.getElementById('tm-results');
-    const btn = document.getElementById('run-tm-btn');
+    // UI Loading state
+    const btn = document.getElementById('run-text-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 解析中...';
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 分析中...';
-    resultsContainer.innerHTML = '<div class="loading-message"><i class="fas fa-cog fa-spin"></i> 解析エンジンを起動中...</div>';
 
     try {
-        const tokenizer = await getTokenizer();
-        resultsContainer.innerHTML = '<div class="loading-message"><i class="fas fa-tasks"></i> テキスト解析中...</div>';
+        if (!tokenizer) await initTokenizer();
 
-        // Helper: Extract words from text (returns array of words)
-        const processText = (text) => {
-            if (!text || typeof text !== 'string') return [];
+        const texts = currentData.map(d => d[textVar]).filter(v => v != null && v !== '');
+
+        // 形態素解析と単語抽出
+        const allWords = [];
+        const sentences = [];
+
+        texts.forEach(text => {
             const tokens = tokenizer.tokenize(text);
-            return tokens
-                .filter(t => ['名詞', '動詞', '形容詞'].includes(t.pos) && t.pos_detail_1 !== '非自立') // Exclude non-independent
-                .map(t => t.basic_form); // Use basic form
-        };
-
-        // 1. Process All Data
-        const allDocs = []; // Array of word arrays
-        const categories = {}; // Map catValue -> [docIndices]
-
-        currentData.forEach((row, idx) => {
-            const words = processText(row[textColumn]);
-            if (words.length > 0) {
-                allDocs.push({ idx, words, cat: catColumn ? row[catColumn] : 'All' });
-                const catVal = catColumn ? row[catColumn] : 'All';
-                if (!categories[catVal]) categories[catVal] = [];
-                categories[catVal].push(words);
-            }
+            const wordsInSentence = [];
+            tokens.forEach(token => {
+                // 名詞、動詞、形容詞のみ抽出（不要語除去は簡易的）
+                if (['名詞', '動詞', '形容詞'].includes(token.pos) && token.surface_form.length > 1) {
+                    // 基本形を使用
+                    const word = token.basic_form === '*' ? token.surface_form : token.basic_form;
+                    allWords.push(word);
+                    wordsInSentence.push(word);
+                }
+            });
+            if (wordsInSentence.length > 0) sentences.push(wordsInSentence);
         });
 
-        resultsContainer.innerHTML = '<h4>テキストマイニング結果</h4>';
+        // 単語頻度集計
+        const counts = {};
+        allWords.forEach(w => { counts[w] = (counts[w] || 0) + 1; });
+        const sortedWords = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
-        // 2. Overall Analysis
-        resultsContainer.innerHTML += '<h5>全体分析</h5>';
-        const allWordsFlat = allDocs.flatMap(d => d.words);
-        await renderAnalysisSection(resultsContainer, 'tm-overall', allWordsFlat, allDocs.map(d => d.words));
+        displayWordCloud(sortedWords);
+        plotCooccurrenceNetwork(sentences, sortedWords.slice(0, 50).map(x => x[0])); // Top 50 words
+        displayTopWords(sortedWords);
 
-        // 3. Category Analysis
-        if (catColumn) {
-            for (const [catVal, docs] of Object.entries(categories)) {
-                resultsContainer.innerHTML += `<hr><h5>カテゴリ: ${catVal}</h5>`;
-                const catWordsFlat = docs.flat();
-                await renderAnalysisSection(resultsContainer, `tm-cat-${catVal.replace(/\s+/g, '-')}`, catWordsFlat, docs);
-            }
-        }
-
+        document.getElementById('analysis-results').style.display = 'block';
     } catch (e) {
         console.error(e);
-        resultsContainer.innerHTML = `<p class="error-message">エラーが発生しました: ${e.message}</p>`;
+        alert('解析中にエラーが発生しました');
     } finally {
+        btn.innerHTML = originalText;
         btn.disabled = false;
-        btn.innerHTML = '分析を実行';
     }
 }
 
-async function renderAnalysisSection(container, idPrefix, allWords, docs) {
-    // A. Word Frequencies
-    const freqMap = {};
-    allWords.forEach(w => freqMap[w] = (freqMap[w] || 0) + 1);
-    const sortedFreq = Object.entries(freqMap).sort((a, b) => b[1] - a[1]);
-    const topWords = sortedFreq.slice(0, 60).map(e => e[0]); // Top 60 for Network
+function displayWordCloud(wordCounts) {
+    const canvas = document.getElementById('wordcloud-canvas');
+    // リサイズ
+    canvas.width = canvas.parentElement.offsetWidth;
+    canvas.height = 400;
 
-    // UI Structure
-    const sectionDiv = document.createElement('div');
-    sectionDiv.className = 'tm-section row';
-    sectionDiv.innerHTML = `
-        <div class="col-md-6">
-            <h6>ワードクラウド</h6>
-            <div id="${idPrefix}-wc" style="width:100%; height:300px; border:1px solid #ddd;"></div>
-            <h6 class="mt-3">頻度トップ10</h6>
-            <table class="table table-sm text-sm">
-                <thead><tr><th>単語</th><th>頻度</th></tr></thead>
-                <tbody>${sortedFreq.slice(0, 10).map(([w, c]) => `<tr><td>${w}</td><td>${c}</td></tr>`).join('')}</tbody>
-            </table>
-        </div>
-        <div class="col-md-6">
-            <h6>共起ネットワーク (Top 60語)</h6>
-            <div id="${idPrefix}-net" style="width:100%; height:450px; border:1px solid #ddd;"></div>
-        </div>
-    `;
-    container.appendChild(sectionDiv);
+    // WordCloud2.js format: [[word, weight], ...]
+    const list = wordCounts.slice(0, 100).map(([w, c]) => [w, c]); // Top 100
 
-    // B. Render Word Cloud
-    const wcCanvas = document.createElement('canvas');
-    wcCanvas.width = 500;
-    wcCanvas.height = 300;
-    document.getElementById(`${idPrefix}-wc`).appendChild(wcCanvas);
-
-    WordCloud(wcCanvas, {
-        list: sortedFreq.slice(0, 100), // Top 100 for WC
+    WordCloud(canvas, {
+        list: list,
         gridSize: 8,
-        weightFactor: (size) => Math.pow(size, 0.8) * 8,
-        fontFamily: 'Inter, sans-serif',
+        weightFactor: size => Math.pow(size, 0.8) * 10, // Scale adjustment
+        fontFamily: 'sans-serif',
         color: 'random-dark',
-        rotateRatio: 0.5,
-        backgroundColor: '#fff'
+        backgroundColor: '#f0f9ff',
+        rotateRatio: 0
     });
+}
 
-    // C. Co-occurrence Network
-    // Calculate Jaccard or Counts between Top 60 words
-    const nodes = topWords.map(w => ({ id: w, count: freqMap[w] }));
+function plotCooccurrenceNetwork(sentences, topWords) {
+    // 共起行列の作成 (Jaccard係数などでエッジの重みを計算)
+    const nodes = topWords.map(id => ({ id, label: id }));
     const edges = [];
 
-    // Simple co-occurrence count in documents
-    // Jaccard(A,B) = |A n B| / |A u B|
-    // A = set of docs containing word A
-    const docSets = {};
-    topWords.forEach(w => docSets[w] = new Set());
+    for (let i = 0; i < topWords.length; i++) {
+        for (let j = i + 1; j < topWords.length; j++) {
+            const w1 = topWords[i];
+            const w2 = topWords[j];
 
-    docs.forEach((docWords, docId) => {
-        const uniqueWords = new Set(docWords);
-        uniqueWords.forEach(w => {
-            if (docSets[w]) docSets[w].add(docId);
-        });
-    });
-
-    for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-            const w1 = nodes[i].id;
-            const w2 = nodes[j].id;
-            const set1 = docSets[w1];
-            const set2 = docSets[w2];
-
-            // Intersection
+            // 共起数
             let intersection = 0;
-            set1.forEach(id => { if (set2.has(id)) intersection++; });
+            let union = 0; // Jaccard denominator
 
-            // Union
-            const union = set1.size + set2.size - intersection;
-            const jaccard = union === 0 ? 0 : intersection / union;
+            sentences.forEach(s => {
+                const has1 = s.includes(w1);
+                const has2 = s.includes(w2);
+                if (has1 && has2) intersection++;
+                if (has1 || has2) union++;
+            });
 
-            if (jaccard > 0.05) { // Threshold
-                edges.push({ source: i, target: j, weight: jaccard });
+            if (intersection > 0) {
+                const jaccard = intersection / union;
+                if (jaccard > 0.1) { // 閾値
+                    edges.push({
+                        from: w1, to: w2, value: jaccard
+                    });
+                }
             }
         }
     }
 
-    // Force Layout Simulation (Manual)
-    const pos = simulateForceLayout(nodes, edges, 400, 400);
-
-    // Render Plotly
-    const edgeX = [];
-    const edgeY = [];
-    edges.forEach(e => {
-        edgeX.push(pos[e.source].x, pos[e.target].x, null);
-        edgeY.push(pos[e.source].y, pos[e.target].y, null);
-    });
-
-    const nodeX = pos.map(p => p.x);
-    const nodeY = pos.map(p => p.y);
-    const nodeSizes = nodes.map(n => Math.sqrt(n.count) * 3 + 5);
-    const nodeTexts = nodes.map(n => `${n.id} (${n.count})`);
-
-    Plotly.newPlot(`${idPrefix}-net`, [
-        {
-            x: edgeX, y: edgeY,
-            mode: 'lines',
-            line: { color: '#ccc', width: 1 },
-            hoverinfo: 'none',
-            type: 'scatter'
+    // vis.js Network
+    const container = document.getElementById('network-graph');
+    container.innerHTML = '';
+    const data = {
+        nodes: new vis.DataSet(nodes),
+        edges: new vis.DataSet(edges)
+    };
+    const options = {
+        nodes: {
+            shape: 'dot',
+            size: 20,
+            font: { size: 16 }
         },
-        {
-            x: nodeX, y: nodeY,
-            mode: 'markers+text',
-            text: nodes.map(n => n.id),
-            textposition: 'top center',
-            marker: { size: nodeSizes, color: '#1e90ff' },
-            hovertemplate: '%{text}<extra></extra>',
-            texttemplate: '%{text}', // Show labels always
-            customdata: nodeTexts, // passed to hover? no, simple text
-            type: 'scatter'
+        physics: {
+            stabilization: false,
+            barnesHut: { gravitationalConstant: -2000 }
         }
-    ], {
-        margin: { t: 20, l: 20, r: 20, b: 20 },
-        showlegend: false,
-        xaxis: { showgrid: false, zeroline: false, showticklabels: false },
-        yaxis: { showgrid: false, zeroline: false, showticklabels: false }
-    }, { displayModeBar: false });
+    };
+    new vis.Network(container, data, options);
 }
 
-// Simple Force-Directed Layout Implementation
-function simulateForceLayout(nodes, edges, width, height) {
-    // Init positions
-    const k = Math.sqrt((width * height) / nodes.length);
-    const pos = nodes.map(() => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: 0, vy: 0
-    }));
+function displayTopWords(sortedWords) {
+    const list = document.getElementById('top-words-list');
+    list.innerHTML = sortedWords.slice(0, 20).map(([w, c], i) => `
+        <div style="padding: 0.5rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+            <span>${i + 1}. <strong>${w}</strong></span>
+            <span style="color: #1e90ff;">${c}</span>
+        </div>
+    `).join('');
+}
 
-    const iterations = 100;
-    const center = { x: width / 2, y: height / 2 };
+export function render(container, characteristics) {
+    const { textColumns } = characteristics;
 
-    for (let it = 0; it < iterations; it++) {
-        // Repulsion
-        for (let i = 0; i < nodes.length; i++) {
-            for (let j = 0; j < nodes.length; j++) {
-                if (i === j) continue;
-                const dx = pos[i].x - pos[j].x;
-                const dy = pos[i].y - pos[j].y;
-                const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
-                const force = (k * k) / dist;
-                pos[i].vx += (dx / dist) * force;
-                pos[i].vy += (dy / dist) * force;
-            }
-        }
+    container.innerHTML = `
+        <div class="text-mining-container">
+            <!-- データ概要 -->
+            <div id="tm-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
-        // Attraction
-        edges.forEach(e => {
-            const u = e.source;
-            const v = e.target;
-            const dx = pos[v].x - pos[u].x;
-            const dy = pos[v].y - pos[u].y;
-            const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
-            const force = (dist * dist) / k;
+            <!-- 分析設定 -->
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
+                        <i class="fas fa-comment-dots"></i> テキストマイニング
+                    </h3>
+                    <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">テキストデータの構造を可視化します（日本語対応）</p>
+                </div>
 
-            const fx = (dx / dist) * force;
-            const fy = (dy / dist) * force;
+                <div id="text-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
 
-            pos[u].vx += fx;
-            pos[u].vy += fy;
-            pos[v].vx -= fx;
-            pos[v].vy -= fy;
-        });
+                <button id="run-text-btn" class="btn-analysis" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
+                    <i class="fas fa-play"></i> 解析を実行
+                </button>
+            </div>
 
-        // Center Gravity & Update
-        const t = 1 - (it / iterations); // Temperature
-        pos.forEach(p => {
-            // Gravity to center
-            p.vx += (center.x - p.x) * 0.05 * t;
-            p.vy += (center.y - p.y) * 0.05 * t;
+            <!-- 結果エリア -->
+            <div id="analysis-results" style="display: none;">
+                <div class="grid-2-cols" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-cloud"></i> ワードクラウド</h4>
+                        <canvas id="wordcloud-canvas" style="width: 100%;"></canvas>
+                    </div>
+                    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-height: 500px; overflow-y: auto;">
+                        <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-list-ol"></i> 頻出単語ランキング</h4>
+                        <div id="top-words-list"></div>
+                    </div>
+                </div>
 
-            // Limit velocity
-            const vel = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-            if (vel > k * t) {
-                p.vx = (p.vx / vel) * k * t;
-                p.vy = (p.vy / vel) * k * t;
-            }
+                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-project-diagram"></i> 共起ネットワーク</h4>
+                    <div id="network-graph" style="height: 500px;"></div>
+                </div>
+            </div>
+        </div>
+    `;
 
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vx *= 0.5; // Friction
-            p.vy *= 0.5;
-        });
-    }
-    return pos;
+    renderDataOverview('#tm-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+
+    // Single Select
+    createVariableSelector('text-var-container', textColumns, 'text-var', {
+        label: '<i class="fas fa-font"></i> 分析するテキスト文字変数:',
+        multiple: false
+    });
+
+    document.getElementById('run-text-btn').addEventListener('click', runTextMining);
 }

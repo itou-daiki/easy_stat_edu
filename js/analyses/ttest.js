@@ -1,6 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, getEffectSizeInterpretation } from '../utils.js';
-// Removed MultiSelect import
+import { renderDataOverview, getEffectSizeInterpretation, createVariableSelector } from '../utils.js';
 
 // 要約統計量の計算と表示
 function displaySummaryStatistics(variables) {
@@ -475,19 +474,8 @@ export function render(container, characteristics) {
 
                 <!-- 対応なしt検定の設定 -->
                 <div id="independent-controls" style="display: block;">
-                    <div style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
-                        <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                            <i class="fas fa-layer-group"></i> グループ変数（カテゴリ変数、2群）を選択:
-                        </label>
-                        <select id="group-var" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem;"></select>
-                    </div>
-
-                    <div style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
-                         <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                             <i class="fas fa-check-square"></i> 従属変数を選択（複数選択可）:
-                         </label>
-                         <select id="dep-var" multiple style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; min-height: 150px;"></select>
-                    </div>
+                    <div id="group-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+                    <div id="dep-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
 
                     <button id="run-independent-btn" class="btn-analysis" style="margin-top: 1.5rem; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
                         <i class="fas fa-play"></i> 対応なしt検定を実行
@@ -496,19 +484,8 @@ export function render(container, characteristics) {
 
                 <!-- 対応ありt検定の設定 -->
                 <div id="paired-controls" style="display: none;">
-                    <div style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
-                        <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                            <i class="fas fa-circle" style="color: #1e90ff;"></i> 観測変数を選択:
-                        </label>
-                        <select id="pre-var" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem;"></select>
-                    </div>
-
-                    <div style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
-                        <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                            <i class="fas fa-circle" style="color: #1e90ff;"></i> 測定変数を選択:
-                        </label>
-                        <select id="post-var" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem;"></select>
-                    </div>
+                    <div id="pre-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+                    <div id="post-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
 
                     <button id="run-paired-btn" class="btn-analysis" style="margin-top: 1.5rem; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
                         <i class="fas fa-play"></i> 対応ありt検定を実行
@@ -530,46 +507,30 @@ export function render(container, characteristics) {
 
     const { numericColumns, categoricalColumns } = characteristics;
 
-    // グループ変数
-    const groupVarSelect = document.getElementById('group-var');
-    if (categoricalColumns.length === 0) {
-        groupVarSelect.innerHTML = '<option value="">カテゴリ変数が見つかりません</option>';
-        groupVarSelect.disabled = true;
-    } else {
-        groupVarSelect.innerHTML = '<option value="">選択してください...</option>' +
-            categoricalColumns.map(col => `<option value="${col}">${col}</option>`).join('');
-    }
+    // グループ変数 (Single Select)
+    createVariableSelector('group-var-container', categoricalColumns, 'group-var', {
+        label: '<i class="fas fa-layer-group"></i> グループ変数（カテゴリ変数、2群）を選択:',
+        multiple: false,
+        placeholder: '選択してください...'
+    });
 
-    // 従属変数 (Native Select Multiple)
-    const depVarSelect = document.getElementById('dep-var');
-    if (numericColumns.length === 0) {
-        depVarSelect.innerHTML = '<option value="">数値変数が見つかりません</option>';
-        depVarSelect.disabled = true;
-    } else {
-        depVarSelect.innerHTML = numericColumns.map(col => `<option value="${col}">${col}</option>`).join('');
+    // 従属変数 (Multi Select with click-toggle)
+    createVariableSelector('dep-var-container', numericColumns, 'dep-var', {
+        label: '<i class="fas fa-check-square"></i> 従属変数を選択（複数選択可）:',
+        multiple: true
+    });
 
-        // Ctrl/Cmdなしでクリックだけで選択/解除できるようにする
-        depVarSelect.addEventListener('mousedown', function (e) {
-            if (e.target.tagName === 'OPTION') {
-                e.preventDefault();
-                const originalScrollTop = this.scrollTop;
-                e.target.selected = !e.target.selected;
-                setTimeout(() => {
-                    this.scrollTop = originalScrollTop;
-                }, 0);
-                this.focus();
-            }
-        });
-    }
+    // 対応あり観測変数 (Single Select)
+    createVariableSelector('pre-var-container', numericColumns, 'pre-var', {
+        label: '<i class="fas fa-circle" style="color: #1e90ff;"></i> 観測変数を選択:',
+        multiple: false
+    });
 
-    // 対応あり
-    const preVarSelect = document.getElementById('pre-var');
-    const postVarSelect = document.getElementById('post-var');
-    const numOptions = '<option value="">選択してください...</option>' +
-        numericColumns.map(col => `<option value="${col}">${col}</option>`).join('');
-
-    preVarSelect.innerHTML = numOptions;
-    postVarSelect.innerHTML = numOptions;
+    // 対応あり測定変数 (Single Select)
+    createVariableSelector('post-var-container', numericColumns, 'post-var', {
+        label: '<i class="fas fa-circle" style="color: #1e90ff;"></i> 測定変数を選択:',
+        multiple: false
+    });
 
     document.querySelectorAll('input[name="test-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => {

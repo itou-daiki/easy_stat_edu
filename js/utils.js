@@ -360,3 +360,91 @@ export function renderDataOverview(containerSelector, data, characteristics, opt
         header.addEventListener('click', () => toggleCollapsible(header));
     });
 }
+// ==========================================
+// UI Generators
+// ==========================================
+
+/**
+ * Creates a standard variable selector (select element).
+ * Supports single and multiple selection (with click-to-toggle for multiple).
+ * @param {HTMLElement|string} container - The container element or ID.
+ * @param {string[]} columns - The list of column names to display as options.
+ * @param {string} id - The ID for the select element.
+ * @param {Object} options - Configuration options.
+ * @param {boolean} options.multiple - Whether to allow multiple selection.
+ * @param {string} options.label - Optional label text to display before the select.
+ * @param {string} options.placeholder - Placeholder text for the first option (for single select).
+ * @param {boolean} options.disabled - Whether the select should be disabled initially.
+ * @returns {HTMLSelectElement} The created select element.
+ */
+export function createVariableSelector(container, columns, id, options = {}) {
+    const {
+        multiple = false,
+        label = null,
+        placeholder = '選択してください...',
+        disabled = false
+    } = options;
+
+    const targetContainer = typeof container === 'string' ? document.getElementById(container) : container;
+    
+    // Clear container content explicitly if needed, but usually we append or overwrite.
+    if (targetContainer) {
+        targetContainer.innerHTML = '';
+        
+        if (label) {
+            const labelEl = document.createElement('label');
+            labelEl.style.fontWeight = 'bold';
+            labelEl.style.color = '#2d3748';
+            labelEl.style.display = 'block';
+            labelEl.style.marginBottom = '0.5rem';
+            labelEl.innerHTML = label;
+            targetContainer.appendChild(labelEl);
+        }
+    }
+
+    const select = document.createElement('select');
+    select.id = id;
+    select.style.width = '100%';
+    select.style.padding = '0.75rem';
+    select.style.border = '2px solid #cbd5e0';
+    select.style.borderRadius = '8px';
+    select.style.fontSize = '1rem';
+    
+    if (multiple) {
+        select.multiple = true;
+        select.style.minHeight = '150px';
+    }
+
+    if (disabled || !columns || columns.length === 0) {
+        select.disabled = true;
+        select.innerHTML = `<option value="">${placeholder}</option>`;
+    } else {
+        let html = '';
+        if (!multiple) {
+            html += `<option value="">${placeholder}</option>`;
+        }
+        html += columns.map(col => `<option value="${col}">${col}</option>`).join('');
+        select.innerHTML = html;
+
+        // Click-to-toggle logic for multiple select
+        if (multiple) {
+             select.addEventListener('mousedown', function(e) {
+                if (e.target.tagName === 'OPTION') {
+                    e.preventDefault();
+                    const originalScrollTop = this.scrollTop;
+                    e.target.selected = !e.target.selected;
+                    setTimeout(() => {
+                        this.scrollTop = originalScrollTop;
+                    }, 0);
+                    this.focus();
+                }
+            });
+        }
+    }
+
+    if (targetContainer) {
+        targetContainer.appendChild(select);
+    }
+
+    return select;
+}
