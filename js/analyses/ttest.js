@@ -70,7 +70,7 @@ function displaySummaryStatistics(variables) {
 function runIndependentTTest() {
     const groupVar = document.getElementById('group-var').value;
     const selectedVars = Array.from(document.querySelectorAll('.dep-var-checkbox:checked'))
-                              .map(cb => cb.value);
+        .map(cb => cb.value);
 
     if (!groupVar) {
         alert('グループ変数を選択してください');
@@ -223,11 +223,11 @@ function runIndependentTTest() {
 
     // サンプルサイズの表示
     resultsContainer.innerHTML += `
-        <div style="background: #f0f9ff; padding: 1rem; border-left: 4px solid #0ea5e9; border-radius: 4px; margin-top: 1rem;">
-            <h5 style="color: #0c4a6e; margin: 0 0 0.5rem 0;">サンプルサイズ</h5>
-            <p style="margin: 0; color: #0c4a6e;">全体N = ${currentData.length}</p>
-            <p style="margin: 0; color: #0c4a6e;">● ${groups[0]}: ${group0Data.length}</p>
-            <p style="margin: 0; color: #0c4a6e;">● ${groups[1]}: ${group1Data.length}</p>
+        <div style="background: #f0f9ff; padding: 1rem; border-left: 4px solid #1e90ff; border-radius: 4px; margin-top: 1rem;">
+            <h5 style="color: #1e90ff; margin: 0 0 0.5rem 0;">サンプルサイズ</h5>
+            <p style="margin: 0; color: #2d3748;">全体N = ${currentData.length}</p>
+            <p style="margin: 0; color: #2d3748;">● ${groups[0]}: ${group0Data.length}</p>
+            <p style="margin: 0; color: #2d3748;">● ${groups[1]}: ${group1Data.length}</p>
         </div>
     `;
 
@@ -342,9 +342,9 @@ function runPairedTTest() {
             </p>
         </div>
 
-        <div style="background: #f0f9ff; padding: 1rem; border-left: 4px solid #0ea5e9; border-radius: 4px;">
-            <h5 style="color: #0c4a6e; margin: 0 0 0.5rem 0;">サンプルサイズ</h5>
-            <p style="margin: 0; color: #0c4a6e;">全体N = ${n}</p>
+        <div style="background: #f0f9ff; padding: 1rem; border-left: 4px solid #1e90ff; border-radius: 4px;">
+            <h5 style="color: #1e90ff; margin: 0 0 0.5rem 0;">サンプルサイズ</h5>
+            <p style="margin: 0; color: #2d3748;">全体N = ${n}</p>
         </div>
     `;
 

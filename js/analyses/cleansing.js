@@ -133,9 +133,9 @@ function processData() {
 
     // 処理サマリーを表示
     const summaryHtml = `
-        <div style="margin: 1rem 0; padding: 1rem; background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 4px;">
-            <p style="margin: 0; font-weight: bold; color: #0c4a6e;">処理完了</p>
-            <p style="margin: 0.5rem 0 0 0; color: #0c4a6e;">
+        <div style="margin: 1rem 0; padding: 1rem; background: #f0f9ff; border-left: 4px solid #1e90ff; border-radius: 4px;">
+            <p style="margin: 0; font-weight: bold; color: #1e90ff;">処理完了</p>
+            <p style="margin: 0.5rem 0 0 0; color: #2d3748;">
                 削除された行数: ${removedRows}行 / 削除された列数: ${removedCols}列
             </p>
         </div>
@@ -315,20 +315,25 @@ export function render(container) {
     processedCharacteristics = null;
 
     container.innerHTML = `
-        <div class="cleansing-container">
-            <!-- データ品質情報 -->
-            <div class="cleansing-section" style="margin-bottom: 2rem;">
-                <h4>データ品質情報</h4>
+    container.innerHTML = `
+        < div class="cleansing-container" >
+            < !--データ品質情報 -->
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-check-circle"></i> データ品質情報
+                </h4>
                 <div id="data-quality-info"></div>
             </div>
 
-            <!-- 元のデータプレビューと要約統計量（トップページと同じ仕様） -->
+            <!--元のデータプレビューと要約統計量（トップページと同じ仕様） -->
             <div id="original-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
-            <!-- 処理オプション -->
-            <div class="cleansing-section" style="margin-bottom: 2rem;">
-                <h4>処理オプション</h4>
-                <div style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <!--処理オプション -->
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-cogs"></i> 処理オプション
+                </h4>
+                <div style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
                     <label style="display: flex; align-items: center; cursor: pointer;">
                         <input type="checkbox" id="remove-outliers-checkbox" style="margin-right: 0.75rem; width: 18px; height: 18px; cursor: pointer;">
                         <span style="font-size: 1rem;">外れ値の削除（IQR法：Q1-1.5×IQR ～ Q3+1.5×IQR の範囲外を削除）</span>
@@ -342,31 +347,37 @@ export function render(container) {
                         <span style="font-size: 1rem;">値が入っていないカラム（列）の削除</span>
                     </label>
                 </div>
-                <button id="process-data-btn" class="btn-analysis" style="margin-top: 1rem;">データ処理</button>
+                <button id="process-data-btn" class="btn-analysis" style="margin-top: 1.5rem; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
+                    <i class="fas fa-broom"></i> データ処理を実行
+                </button>
             </div>
 
-            <!-- 処理サマリー -->
+            <!--処理サマリー -->
             <div id="processing-summary" style="margin-bottom: 2rem;"></div>
 
-            <!-- 処理済みデータプレビューと要約統計量 -->
+            <!--処理済みデータプレビューと要約統計量 -->
             <div id="processed-data-overview-section" class="info-sections" style="display: none; margin-bottom: 2rem;">
                 <div id="processed-data-overview"></div>
             </div>
 
-            <!-- ダウンロードセクション -->
-            <div id="download-section" class="cleansing-section" style="display: none; margin-bottom: 2rem;">
-                <h4>ダウンロード</h4>
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <label for="file-format-select" style="font-weight: 500;">ファイル形式:</label>
-                    <select id="file-format-select" style="padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 1rem;">
-                        <option value="excel">Excel</option>
-                        <option value="csv">CSV</option>
-                    </select>
-                    <button id="download-btn" class="btn-analysis">処理済みデータをダウンロード</button>
-                </div>
+            <!--ダウンロードセクション -->
+        <div id="download-section" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: none; margin-bottom: 2rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                <i class="fas fa-download"></i> ダウンロード
+            </h4>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <label for="file-format-select" style="font-weight: 500;">ファイル形式:</label>
+                <select id="file-format-select" style="padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 1rem;">
+                    <option value="excel">Excel</option>
+                    <option value="csv">CSV</option>
+                </select>
+                <button id="download-btn" class="btn-analysis" style="font-weight: bold;">
+                    <i class="fas fa-file-export"></i> 処理済みデータをダウンロード
+                </button>
             </div>
         </div>
-    `;
+        </div > >
+        `;
 
     // データ品質情報を表示
     displayDataQualityInfo();
