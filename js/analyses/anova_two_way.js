@@ -436,7 +436,7 @@ function runTwoWayMixedANOVA(currentData) {
 
         // Interpretation
         // Re-use independent helper but carefully named vars
-        displayTwoWayInterpretation("Mixed Results", pGroup, pTime, pInteraction, betweenFactor, "条件(Time)");
+        displayTwoWayInterpretation("Mixed Results", pGroup, pTime, pInteraction, betweenFactor, "条件(Time)", 'interpretation-Mixed-MixedDesignResult');
 
     } catch (e) {
         console.error(e);
@@ -493,6 +493,10 @@ function renderANOVAOutput(container, title, type, result) {
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Interpretation injected here -->
+            <div id="interpretation-${type}-${title.replace(/\s/g, '')}" style="margin-top: 1rem;"></div>
+
             <div id="plot-${type}-${title.replace(/\s/g, '')}" style="margin-top: 1.5rem;"></div>
         </div>
     `;

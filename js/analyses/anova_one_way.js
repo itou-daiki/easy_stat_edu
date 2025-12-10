@@ -218,11 +218,19 @@ function runOneWayIndependentANOVA(currentData) {
                     </table>
                 </div>
                 <div id="sample-size-${sectionId}"></div>
+                
+                <!-- Interpretation injected here -->
+                <div id="interpretation-${sectionId}" style="margin-top: 1rem;"></div>
+
                 <div id="plot-${sectionId}" style="margin-top: 1.5rem;"></div>
             </div>
         `;
         varResultDiv.innerHTML = html;
         outputContainer.appendChild(varResultDiv);
+
+        // Interpretation
+        // Display immediately after stats
+        displayANOVADescription(depVar, fValue, dfBetween, dfWithin, pValue, etaSquared, groups, groupData, `interpretation-${sectionId}`);
 
         // Sample Size Info
         const groupSampleSizes = groups.map((g, i) => {
@@ -292,16 +300,6 @@ function runOneWayIndependentANOVA(currentData) {
                     }
                     levels[levelIndex].push({ start, end });
 
-                    // Height calculation matching python logic roughly
-                    // Bracket bottom is max(bar1, bar2) + margin? No, usually uniform levels above all bars look cleaner,
-                    // but python script does dynamic bottom: max(y1, y2) + offset.
-                    // Let's use uniform stepping for simplicity and robustness against overlap.
-                    // Actually, let's use the Python reference idea:
-                    // y_vline_bottom = max(mean1+err1, mean2+err2) + offset
-                    // But if we have multiple levels, they must clear ALL bars in between? 
-                    // To be safe, we place brackets above the GLOBAL max of the involved bars?
-                    // "Stacked" approach is safer for web: just stack them above the highest point of the chart.
-
                     const bracketY = currentLevelY + (levelIndex * step);
 
                     let text = 'n.s.';
@@ -352,18 +350,20 @@ function runOneWayIndependentANOVA(currentData) {
                 }, createPlotlyConfig('一要因分散分析', depVar));
             }
         }, 100);
-
-        // Interpretation
-        displayANOVADescription(depVar, fValue, dfBetween, dfWithin, pValue, etaSquared, groups, groupData);
     });
 
     document.getElementById('analysis-results').style.display = 'block';
 }
 
 // Helper: Interpretation
-function displayANOVADescription(varName, F, df1, df2, p, eta, groups, groupData) {
-    const container = document.getElementById('interpretation-section');
-    if (!container.innerHTML) {
+function displayANOVADescription(varName, F, df1, df2, p, eta, groups, groupData, targetId) {
+    const containerId = targetId || 'interpretation-section';
+    const container = document.getElementById(containerId);
+
+    if (!container) return; // safety
+
+    if (containerId === 'interpretation-section' && !container.innerHTML) {
+        // Only create header wrapper if using the global section
         container.innerHTML = `
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
@@ -378,15 +378,27 @@ function displayANOVADescription(varName, F, df1, df2, p, eta, groups, groupData
     if (p < 0.05) sigText = "統計的に有意な差が見られました。";
     else sigText = "統計的に有意な差は見られませんでした。";
 
-    const content = document.getElementById('interpretation-content');
-    content.innerHTML += `
-        <p style="margin: 0.5rem 0; padding: 0.75rem; background: white; border-left: 4px solid #1e90ff; border-radius: 4px;">
-            <strong style="color: #1e90ff;">${varName}</strong>について：<br>
-            F(${df1}, ${df2}) = ${F.toFixed(2)}, p = ${p.toFixed(3)}, η² = ${eta.toFixed(2)}.<br>
-            結果：<strong>${sigText}</strong><br>
-            ${p < 0.05 ? '<span style="font-size:0.9em; color:#666;">※ どの群間に差があるかは、事後検定の結果（グラフのブラケットや注釈）を確認してください。</span>' : ''}
-        </p>
-    `;
+    // If using specific target, write directly. If global, append to #interpretation-content.
+    if (targetId) {
+        container.innerHTML = `
+            <div style="padding: 1rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+                <strong><i class="fas fa-lightbulb" style="color:#1e90ff"></i> 解釈: ${varName}</strong><br>
+                F(${df1}, ${df2}) = ${F.toFixed(2)}, p = ${p.toFixed(3)}, η² = ${eta.toFixed(2)}.<br>
+                結果：<strong>${sigText}</strong><br>
+                ${p < 0.05 ? '<span style="font-size:0.9em; color:#666;">※ どの群間に差があるかは、下のグラフのブラケットや注釈を確認してください。</span>' : ''}
+            </div>
+        `;
+    } else {
+        const content = document.getElementById('interpretation-content');
+        content.innerHTML += `
+            <p style="margin: 0.5rem 0; padding: 0.75rem; background: white; border-left: 4px solid #1e90ff; border-radius: 4px;">
+                <strong style="color: #1e90ff;">${varName}</strong>について：<br>
+                F(${df1}, ${df2}) = ${F.toFixed(2)}, p = ${p.toFixed(3)}, η² = ${eta.toFixed(2)}.<br>
+                結果：<strong>${sigText}</strong><br>
+                ${p < 0.05 ? '<span style="font-size:0.9em; color:#666;">※ どの群間に差があるかは、事後検定の結果（グラフのブラケットや注釈）を確認してください。</span>' : ''}
+            </p>
+        `;
+    }
 }
 
 
@@ -511,16 +523,27 @@ function runOneWayRepeatedANOVA(currentData) {
                 </table>
             </div>
             
-            <div id="sample-size-rep"></div>
-            <div id="plot-rep" style="margin-top: 1.5rem;"></div>
+            <!-- Interpretation injected here -->
+            <div id="interpretation-repeated-one" style="margin-top: 1rem;"></div>
+
+            <div id="plot-anova-one-time" style="margin-top: 1.5rem;"></div>
         </div>
     `;
     resultDiv.innerHTML = html;
     outputContainer.appendChild(resultDiv);
-    renderSampleSizeInfo(document.getElementById('sample-size-rep'), N);
+    renderSampleSizeInfo(document.getElementById('sample-size-rep'), N); // This line should be removed or its target changed if sample-size-rep is removed from HTML. Assuming it's meant to be removed as per the instruction's implied change to HTML.
+
+    // Interpretation Repeated - Immediate
+    displayANOVADescription(
+        `条件(${dependentVars.join(', ')})`,
+        fValue, dfConditions, dfError, pValue, etaSquared,
+        dependentVars,
+        {}, // Dummy
+        'interpretation-repeated-one'
+    );
 
     setTimeout(() => {
-        const plotDiv = document.getElementById('plot-rep');
+        const plotDiv = document.getElementById('plot-anova-one-time');
         if (plotDiv) {
             const sigPairs = performRepeatedPostHocTests(dependentVars, currentData);
 
