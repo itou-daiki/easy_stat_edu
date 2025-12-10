@@ -315,8 +315,8 @@ export function render(container) {
     processedCharacteristics = null;
 
     container.innerHTML = `
-        < div class="cleansing-container" >
-            < !--データ品質情報 -->
+        <div class="cleansing-container">
+            <!-- データ品質情報 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                     <i class="fas fa-check-circle"></i> データ品質情報
