@@ -13,13 +13,20 @@ function runCorrelationAnalysis(var1, var2) {
 
     const xVector = data.map(d => d.x);
     const yVector = data.map(d => d.y);
+    const n = xVector.length;
 
-    if (xVector.length < 3) {
+    if (n < 3) {
         resultsContainer.innerHTML = '<p>分析に必要なデータが不足しています（最低3件必要）。</p>';
         return;
     }
 
     const correlation = jStat.corr(xVector, yVector);
+
+    // p値の計算
+    const t_stat = correlation * Math.sqrt((n - 2) / (1 - correlation**2));
+    const df = n - 2;
+    const p_value = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;
+
     const xJStat = jStat(xVector);
     const yJStat = jStat(yVector);
     const slope = correlation * (yJStat.stdev() / xJStat.stdev());
@@ -36,11 +43,14 @@ function runCorrelationAnalysis(var1, var2) {
         <h5>相関分析結果: ${var1} vs ${var2}</h5>
         <table class="table">
             <tr><th>項目</th><th>値</th></tr>
-            <tr><td>サンプルサイズ</td><td>${xVector.length}</td></tr>
+            <tr><td>サンプルサイズ</td><td>${n}</td></tr>
             <tr><td>相関係数 (r)</td><td>${correlation.toFixed(4)}</td></tr>
-            <tr><td colspan="2" class="text-muted"><small>p値の計算は現在サポートされていません。</small></td></tr>
+            <tr><td>t統計量</td><td>${t_stat.toFixed(4)}</td></tr>
+            <tr><td>自由度 (df)</td><td>${df}</td></tr>
+            <tr><td>p値</td><td>${p_value.toExponential(4)}</td></tr>
         </table>
         <h5>結果の解釈</h5>
+        <p><strong>統計的有意性:</strong> ${p_value < 0.05 ? `統計的に有意な相関関係があります (p < 0.05)。` : '統計的に有意な相関関係は認められませんでした (p >= 0.05)。'}</p>
         <p><strong>相関の強さ:</strong> ${getCorrelationStrength(correlation)}</p>
         <p><strong>相関の方向:</strong> ${correlation > 0 ? '正の相関' : '負の相関'}</p>
     `;

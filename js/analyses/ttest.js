@@ -63,7 +63,7 @@ function runTTestAnalysis(type, var1, var2) {
             <tr><th>項目</th><th>値</th></tr>
             <tr><td>t統計量</td><td>${t_stat.toFixed(4)}</td></tr>
             <tr><td>自由度</td><td>${df}</td></tr>
-            <tr><td>p値</td><td>${p_value.toFixed(4)}</td></tr>
+            <tr><td>p値</td><td>${p_value.toExponential(4)}</td></tr>
             <tr><td>効果量 (Cohen's d)</td><td>${cohens_d.toFixed(4)}</td></tr>
         </table>
         <h5>結果の解釈</h5>
@@ -74,7 +74,64 @@ function runTTestAnalysis(type, var1, var2) {
     
     const plotId = 'ttest-plot';
     resultsContainer.innerHTML += `<div id="${plotId}" class="plot-container"></div>`;
-    Plotly.newPlot(plotId, [{ y: data1, type: 'box', name: var1 }, { y: data2, type: 'box', name: var2 }], { title: `箱ひげ図: ${var1} vs ${var2}` });
+
+    // グラフ描画用のレイアウト設定
+    const layout = { 
+        title: `箱ひげ図: ${var1} vs ${var2}`,
+        showlegend: false,
+        xaxis: {
+            categoryorder: 'array',
+            categoryarray: [var1, var2]
+        }
+    };
+
+    // p値が有意水準未満の場合のみアノテーションを追加
+    if (p_value < 0.05) {
+        const y_max = Math.max(...data1, ...data2);
+        const y_range = jStat.range(data1.concat(data2));
+        const bracket_y = y_max + y_range * 0.15;
+        const annotation_y = bracket_y + y_range * 0.05;
+
+        let significance_text = '';
+        if (p_value < 0.001) significance_text = '***';
+        else if (p_value < 0.01) significance_text = '**';
+        else if (p_value < 0.05) significance_text = '*';
+        
+        layout.annotations = [{
+            x: 0.5,
+            y: annotation_y,
+            xref: 'x',
+            yref: 'y',
+            text: significance_text,
+            showarrow: false,
+            font: { size: 16, color: 'black' }
+        }];
+
+        layout.shapes = [{
+            type: 'line',
+            x0: 0, y0: bracket_y,
+            x1: 1, y1: bracket_y,
+            xref: 'x', yref: 'y',
+            line: { color: 'black', width: 2 }
+        }, {
+            type: 'line',
+            x0: 0, y0: bracket_y,
+            x1: 0, y1: bracket_y - y_range * 0.04,
+            xref: 'x', yref: 'y',
+            line: { color: 'black', width: 2 }
+        }, {
+            type: 'line',
+            x0: 1, y0: bracket_y,
+            x1: 1, y1: bracket_y - y_range * 0.04,
+            xref: 'x', yref: 'y',
+            line: { color: 'black', width: 2 }
+        }];
+    }
+    
+    Plotly.newPlot(plotId, [
+        { y: data1, type: 'box', name: var1 }, 
+        { y: data2, type: 'box', name: var2 }
+    ], layout);
 }
 
 export function render(container, characteristics) {
