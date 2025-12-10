@@ -1,8 +1,6 @@
 import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, getEffectSizeInterpretation } from '../utils.js';
-import { MultiSelect } from '../components/MultiSelect.js';
-
-let dependentVarSelect = null; // Store instance
+// Removed MultiSelect import
 
 // 要約統計量の計算と表示
 function displaySummaryStatistics(variables) {
@@ -72,8 +70,8 @@ function displaySummaryStatistics(variables) {
 // 対応なしt検定の実行
 function runIndependentTTest() {
     const groupVar = document.getElementById('group-var').value;
-    // Multi-select instance value
-    const selectedVars = dependentVarSelect ? dependentVarSelect.getValue() : [];
+    const depVarSelect = document.getElementById('dep-var');
+    const selectedVars = Array.from(depVarSelect.selectedOptions).map(opt => opt.value);
 
     if (!groupVar) {
         alert('グループ変数を選択してください');
@@ -234,13 +232,11 @@ function runIndependentTTest() {
         </div>
     `;
 
-    // 解釈・可視化
     displayInterpretation(testResults, groupVar, 'independent');
     displayVisualization(testResults, 'independent');
     document.getElementById('results-section').style.display = 'block';
 }
 
-// 対応ありt検定（変更なし）
 function runPairedTTest() {
     const preVar = document.getElementById('pre-var').value;
     const postVar = document.getElementById('post-var').value;
@@ -488,9 +484,9 @@ export function render(container, characteristics) {
 
                     <div style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
                          <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                             <i class="fas fa-check-square"></i> 従属変数を選択（複数選択可）:
+                             <i class="fas fa-check-square"></i> 従属変数を選択（複数選択可: Ctrl/Cmd+Click）:
                          </label>
-                         <div id="dep-var-container" style="margin-top:0.5rem;"></div>
+                         <select id="dep-var" multiple style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; min-height: 150px;"></select>
                     </div>
 
                     <button id="run-independent-btn" class="btn-analysis" style="margin-top: 1.5rem; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
@@ -544,19 +540,29 @@ export function render(container, characteristics) {
             categoricalColumns.map(col => `<option value="${col}">${col}</option>`).join('');
     }
 
-    // 従属変数 (MultiSelect)
-    const depVarContainer = document.getElementById('dep-var-container');
+    // 従属変数 (Native Select Multiple)
+    const depVarSelect = document.getElementById('dep-var');
     if (numericColumns.length === 0) {
-        depVarContainer.innerHTML = '<p style="color:red;">数値変数が見つかりません</p>';
+        depVarSelect.innerHTML = '<option value="">数値変数が見つかりません</option>';
+        depVarSelect.disabled = true;
     } else {
-        // Initialize MultiSelect
-        dependentVarSelect = new MultiSelect(depVarContainer, numericColumns, {
-            placeholder: '変数を検索・選択...',
-            defaultSelected: []
+        depVarSelect.innerHTML = numericColumns.map(col => `<option value="${col}">${col}</option>`).join('');
+
+        // Ctrl/Cmdなしでクリックだけで選択/解除できるようにする
+        depVarSelect.addEventListener('mousedown', function (e) {
+            if (e.target.tagName === 'OPTION') {
+                e.preventDefault();
+                const originalScrollTop = this.scrollTop;
+                e.target.selected = !e.target.selected;
+                setTimeout(() => {
+                    this.scrollTop = originalScrollTop;
+                }, 0);
+                this.focus();
+            }
         });
     }
 
-    // 対応ありの変数
+    // 対応あり
     const preVarSelect = document.getElementById('pre-var');
     const postVarSelect = document.getElementById('post-var');
     const numOptions = '<option value="">選択してください...</option>' +
