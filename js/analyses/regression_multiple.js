@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
 
 // 重回帰分析の実行
 function runMultipleRegression() {
@@ -337,9 +337,7 @@ export function render(container, characteristics) {
                     <div id="dependent-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                     <div id="independent-vars-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
 
-                    <button id="run-regression-btn" class="btn-analysis" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                        <i class="fas fa-play"></i> 重回帰分析を実行
-                    </button>
+                    <div id="run-regression-btn-container"></div>
                 </div>
             </div>
 
@@ -365,5 +363,5 @@ export function render(container, characteristics) {
         multiple: true
     });
 
-    document.getElementById('run-regression-btn').addEventListener('click', runMultipleRegression);
+    createAnalysisButton('run-regression-btn-container', '重回帰分析を実行', runMultipleRegression, { id: 'run-regression-btn' });
 }

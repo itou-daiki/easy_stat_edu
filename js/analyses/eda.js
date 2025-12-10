@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
 
 // ヒストグラムの描画
 function plotHistograms(variables) {
@@ -237,13 +237,15 @@ export function render(container, characteristics) {
                     <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-chart-bar"></i> 分布の確認</h4>
                     
                     <div id="hist-vars-container" style="margin-bottom: 1rem;"></div>
-                    <button id="plot-hist-btn" class="btn-analysis">ヒストグラムを描画</button>
+                    <div id="hist-vars-container" style="margin-bottom: 1rem;"></div>
+                    <div id="plot-hist-btn-container"></div>
                     <div id="histograms-container" style="margin-top: 2rem;"></div>
 
                     <hr style="margin: 2rem 0; border-top: 1px solid #eee;">
 
                     <div id="bar-vars-container" style="margin-bottom: 1rem;"></div>
-                    <button id="plot-bar-btn" class="btn-analysis">棒グラフを描画</button>
+                    <div id="bar-vars-container" style="margin-bottom: 1rem;"></div>
+                    <div id="plot-bar-btn-container"></div>
                     <div id="barcharts-container" style="margin-top: 2rem;"></div>
                 </div>
             </div>
@@ -252,7 +254,8 @@ export function render(container, characteristics) {
                 <div class="control-panel" style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-box"></i> 箱ひげ図で比較</h4>
                     <div id="box-vars-container" style="margin-bottom: 1rem;"></div>
-                    <button id="plot-box-btn" class="btn-analysis">箱ひげ図を描画</button>
+                    <div id="box-vars-container" style="margin-bottom: 1rem;"></div>
+                    <div id="plot-box-btn-container"></div>
                     <div id="boxplots-container" style="margin-top: 2rem;"></div>
                 </div>
             </div>
@@ -265,7 +268,8 @@ export function render(container, characteristics) {
                         <div id="scatter-y-container"></div>
                     </div>
                     <div id="scatter-color-container" style="margin-top: 1rem;"></div>
-                    <button id="plot-scatter-btn" class="btn-analysis" style="margin-top: 1rem;">散布図を描画</button>
+                    <div id="scatter-color-container" style="margin-top: 1rem; margin-bottom: 1rem;"></div>
+                    <div id="plot-scatter-btn-container"></div>
                     <div id="scatter-container" style="margin-top: 2rem;"></div>
                 </div>
 
@@ -275,7 +279,9 @@ export function render(container, characteristics) {
                         <div id="cross-row-container"></div>
                         <div id="cross-col-container"></div>
                     </div>
-                    <button id="plot-cross-btn" class="btn-analysis" style="margin-top: 1rem;">ヒートマップを描画</button>
+                        <div id="cross-col-container"></div>
+                    </div>
+                    <div id="plot-cross-btn-container" style="margin-top: 1rem;"></div>
                     <div id="crosstab-container" style="margin-top: 2rem;"></div>
                 </div>
             </div>
@@ -288,7 +294,9 @@ export function render(container, characteristics) {
                         <div id="grouped-y-container"></div>
                         <div id="grouped-g-container"></div>
                     </div>
-                    <button id="plot-grouped-btn" class="btn-analysis" style="margin-top: 1rem;">層別散布図を描画</button>
+                        <div id="grouped-g-container"></div>
+                    </div>
+                    <div id="plot-grouped-btn-container" style="margin-top: 1rem;"></div>
                     <div id="grouped-scatter-container" style="margin-top: 2rem;"></div>
                 </div>
             </div>
@@ -333,44 +341,44 @@ export function render(container, characteristics) {
     createVariableSelector('grouped-g-container', categoricalColumns, 'grouped-g', { label: 'グループ（カテゴリ）', multiple: false });
 
     // --- Event Listeners ---
-    document.getElementById('plot-hist-btn').addEventListener('click', () => {
+    createAnalysisButton('plot-hist-btn-container', 'ヒストグラムを描画', () => {
         const selected = Array.from(document.getElementById('hist-vars').selectedOptions).map(o => o.value);
         if (selected.length) plotHistograms(selected);
         else alert('変数を1つ以上選択してください');
-    });
+    }, { id: 'plot-hist-btn', color: '#10b981', icon: 'fas fa-chart-bar' });
 
-    document.getElementById('plot-bar-btn').addEventListener('click', () => {
+    createAnalysisButton('plot-bar-btn-container', '棒グラフを描画', () => {
         const selected = Array.from(document.getElementById('bar-vars').selectedOptions).map(o => o.value);
         if (selected.length) plotBarCharts(selected);
         else alert('変数を1つ以上選択してください');
-    });
+    }, { id: 'plot-bar-btn', color: '#10b981', icon: 'fas fa-chart-column' });
 
-    document.getElementById('plot-box-btn').addEventListener('click', () => {
+    createAnalysisButton('plot-box-btn-container', '箱ひげ図を描画', () => {
         const selected = Array.from(document.getElementById('box-vars').selectedOptions).map(o => o.value);
         if (selected.length) plotBoxPlots(selected);
         else alert('変数を1つ以上選択してください');
-    });
+    }, { id: 'plot-box-btn', color: '#8b5cf6', icon: 'fas fa-box' });
 
-    document.getElementById('plot-scatter-btn').addEventListener('click', () => {
+    createAnalysisButton('plot-scatter-btn-container', '散布図を描画', () => {
         const x = document.getElementById('scatter-x').value;
         const y = document.getElementById('scatter-y').value;
         const c = document.getElementById('scatter-color').value;
         if (x && y) plotScatter(x, y, c);
         else alert('X軸とY軸を選択してください');
-    });
+    }, { id: 'plot-scatter-btn', color: '#f59e0b', icon: 'fas fa-project-diagram' });
 
-    document.getElementById('plot-cross-btn').addEventListener('click', () => {
+    createAnalysisButton('plot-cross-btn-container', 'ヒートマップを描画', () => {
         const r = document.getElementById('cross-row').value;
         const c = document.getElementById('cross-col').value;
         if (r && c) plotCrosstab(r, c);
         else alert('行と列を選択してください');
-    });
+    }, { id: 'plot-cross-btn', color: '#f59e0b', icon: 'fas fa-th' });
 
-    document.getElementById('plot-grouped-btn').addEventListener('click', () => {
+    createAnalysisButton('plot-grouped-btn-container', '層別散布図を描画', () => {
         const x = document.getElementById('grouped-x').value;
         const y = document.getElementById('grouped-y').value;
         const g = document.getElementById('grouped-g').value;
         if (x && y && g) plotGroupedScatter(x, y, g);
         else alert('全ての変数を選択してください');
-    });
+    }, { id: 'plot-grouped-btn', color: '#ec4899', icon: 'fas fa-layer-group' });
 }

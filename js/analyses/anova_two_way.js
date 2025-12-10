@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
 
 function runTwoWayANOVA() {
     const factor1 = document.getElementById('factor1-var').value;
@@ -232,10 +232,7 @@ export function render(container, characteristics) {
                 </div>
 
                 <div id="dependent-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
-
-                <button id="run-anova-btn" class="btn-analysis" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                    <i class="fas fa-play"></i> 二要因分散分析を実行
-                </button>
+                <div id="run-anova-btn-container"></div>
             </div>
 
             <!-- 結果エリア -->
@@ -263,5 +260,5 @@ export function render(container, characteristics) {
         multiple: true
     });
 
-    document.getElementById('run-anova-btn').addEventListener('click', runTwoWayANOVA);
+    createAnalysisButton('run-anova-btn-container', '二要因分散分析を実行', runTwoWayANOVA, { id: 'run-anova-btn' });
 }

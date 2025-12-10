@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
 
 function runSimpleRegression() {
     const xVar = document.getElementById('independent-var').value;
@@ -167,9 +167,7 @@ export function render(container, characteristics) {
                 <div id="independent-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                 <div id="dependent-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
 
-                <button id="run-regression-btn" class="btn-analysis" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                    <i class="fas fa-play"></i> 単回帰分析を実行
-                </button>
+                <div id="run-regression-btn-container"></div>
             </div>
 
             <!-- 結果エリア -->
@@ -191,5 +189,5 @@ export function render(container, characteristics) {
         multiple: false
     });
 
-    document.getElementById('run-regression-btn').addEventListener('click', runSimpleRegression);
+    createAnalysisButton('run-regression-btn-container', '単回帰分析を実行', runSimpleRegression, { id: 'run-regression-btn' });
 }

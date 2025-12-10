@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, getEffectSizeInterpretation, createVariableSelector, renderSampleSizeInfo } from '../utils.js';
+import { renderDataOverview, getEffectSizeInterpretation, createVariableSelector, renderSampleSizeInfo, createAnalysisButton } from '../utils.js';
 
 // 要約統計量の計算と表示
 function displaySummaryStatistics(variables) {
@@ -469,20 +469,14 @@ export function render(container, characteristics) {
                 <div id="independent-controls" style="display: block;">
                     <div id="group-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                     <div id="dep-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
-
-                    <button id="run-independent-btn" class="btn-analysis" style="margin-top: 1.5rem; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                        <i class="fas fa-play"></i> 対応なしt検定を実行
-                    </button>
+                    <div id="independent-btn-container"></div>
                 </div>
 
                 <!-- 対応ありt検定の設定 -->
                 <div id="paired-controls" style="display: none;">
                     <div id="pre-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                     <div id="post-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
-
-                    <button id="run-paired-btn" class="btn-analysis" style="margin-top: 1.5rem; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                        <i class="fas fa-play"></i> 対応ありt検定を実行
-                    </button>
+                    <div id="paired-btn-container"></div>
                 </div>
             </div>
 
@@ -531,6 +525,6 @@ export function render(container, characteristics) {
         });
     });
 
-    document.getElementById('run-independent-btn').addEventListener('click', runIndependentTTest);
-    document.getElementById('run-paired-btn').addEventListener('click', runPairedTTest);
+    createAnalysisButton('independent-btn-container', '対応なしt検定を実行', runIndependentTTest, { id: 'run-independent-btn' });
+    createAnalysisButton('paired-btn-container', '対応ありt検定を実行', runPairedTTest, { id: 'run-paired-btn' });
 }

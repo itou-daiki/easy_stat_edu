@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
 
 // 相関マトリックスの計算
 function calculateCorrelationMatrix(variables) {
@@ -172,9 +172,7 @@ export function render(container, characteristics) {
 
                 <div id="corr-vars-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
 
-                <button id="run-correlation-btn" class="btn-analysis" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                    <i class="fas fa-play"></i> 相関分析を実行
-                </button>
+                <div id="run-correlation-btn-container"></div>
             </div>
 
             <!-- 結果エリア -->
@@ -211,5 +209,5 @@ export function render(container, characteristics) {
         multiple: true
     });
 
-    document.getElementById('run-correlation-btn').addEventListener('click', runCorrelationAnalysis);
+    createAnalysisButton('run-correlation-btn-container', '相関分析を実行', runCorrelationAnalysis, { id: 'run-correlation-btn' });
 }

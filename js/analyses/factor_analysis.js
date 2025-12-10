@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
 
 // 因子抽出（主因子法）
 function exactFactors(variables, numFactors) {
@@ -346,9 +346,10 @@ export function render(container, characteristics) {
                      <input type="number" id="num-factors" value="2" min="1" max="10" style="padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; width: 100px;">
                 </div>
 
-                <button id="run-factor-btn" class="btn-analysis" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                    <i class="fas fa-play"></i> 因子分析を実行
-                </button>
+                     <input type="number" id="num-factors" value="2" min="1" max="10" style="padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; width: 100px;">
+                </div>
+
+                <div id="run-factor-btn-container"></div>
             </div>
 
             <!-- 結果エリア -->
@@ -379,5 +380,5 @@ export function render(container, characteristics) {
         multiple: true
     });
 
-    document.getElementById('run-factor-btn').addEventListener('click', runFactorAnalysis);
+    createAnalysisButton('run-factor-btn-container', '因子分析を実行', runFactorAnalysis, { id: 'run-factor-btn' });
 }

@@ -499,3 +499,56 @@ export function renderSampleSizeInfo(container, totalN, groups = []) {
     wrapper.innerHTML = html;
     target.appendChild(wrapper.firstElementChild);
 }
+
+/**
+ * 分析実行ボタンを生成して表示する
+ * @param {HTMLElement|string} container - 表示先のコンテナ要素またはID
+ * @param {string} text - ボタンのテキスト
+ * @param {Function} onClick - クリック時のコールバック関数
+ * @param {Object} options - オプション { icon: "fas fa-play", id: "btn-id", color: "#1e90ff" }
+ */
+export function createAnalysisButton(container, text, onClick, options = {}) {
+    const target = typeof container === 'string' ? document.getElementById(container) : container;
+    if (!target) return;
+
+    const iconClass = options.icon || 'fas fa-play';
+    const btnId = options.id || `run-analysis-btn-${Date.now()}`;
+    const btnColor = options.color || '#1e90ff';
+
+    // 既存のボタンがあれば削除（再描画時など）
+    if (options.id) {
+        const existingBtn = document.getElementById(options.id);
+        if (existingBtn) existingBtn.remove();
+    }
+
+    const button = document.createElement('button');
+    button.id = btnId;
+    button.className = 'btn-analysis';
+    button.style.cssText = `
+        margin-top: 1.5rem; 
+        width: 100%; 
+        padding: 1rem; 
+        font-size: 1.1rem; 
+        font-weight: bold; 
+        background-color: ${btnColor};
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        transition: opacity 0.2s;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    `;
+
+    button.innerHTML = `<i class="${iconClass}"></i> ${text}`;
+
+    button.addEventListener('mouseenter', () => button.style.opacity = '0.9');
+    button.addEventListener('mouseleave', () => button.style.opacity = '1');
+    button.addEventListener('click', onClick);
+
+    target.appendChild(button);
+    return button;
+}

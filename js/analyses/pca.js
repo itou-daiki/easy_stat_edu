@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
 
 function runPCA() {
     const varsSelect = document.getElementById('pca-vars');
@@ -240,9 +240,7 @@ export function render(container, characteristics) {
 
                 <div id="pca-vars-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                 
-                <button id="run-pca-btn" class="btn-analysis" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                    <i class="fas fa-play"></i> 主成分分析を実行
-                </button>
+                <div id="run-pca-btn-container"></div>
             </div>
 
             <!-- 結果エリア -->
@@ -279,5 +277,5 @@ export function render(container, characteristics) {
         multiple: true
     });
 
-    document.getElementById('run-pca-btn').addEventListener('click', runPCA);
+    createAnalysisButton('run-pca-btn-container', '主成分分析を実行', runPCA, { id: 'run-pca-btn' });
 }

@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
 
 function runChiSquare() {
     const rowVar = document.getElementById('row-var').value;
@@ -199,9 +199,12 @@ export function render(container, characteristics) {
                     <div id="col-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                 </div>
 
-                <button id="run-chi-btn" class="btn-analysis" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                    <i class="fas fa-play"></i> 検定を実行
-                </button>
+                <div class="grid-2-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div id="row-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+                    <div id="col-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+                </div>
+
+                <div id="run-chi-btn-container"></div>
             </div>
 
             <!-- 結果エリア -->
@@ -223,5 +226,5 @@ export function render(container, characteristics) {
         multiple: false
     });
 
-    document.getElementById('run-chi-btn').addEventListener('click', runChiSquare);
+    createAnalysisButton('run-chi-btn-container', '検定を実行', runChiSquare, { id: 'run-chi-btn' });
 }

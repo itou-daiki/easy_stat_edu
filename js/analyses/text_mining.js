@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
 
 let tokenizer = null;
 
@@ -171,9 +171,7 @@ export function render(container, characteristics) {
 
                 <div id="text-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
 
-                <button id="run-text-btn" class="btn-analysis" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                    <i class="fas fa-play"></i> 解析を実行
-                </button>
+                <div id="run-text-btn-container"></div>
             </div>
 
             <!-- 結果エリア -->
@@ -205,5 +203,5 @@ export function render(container, characteristics) {
         multiple: false
     });
 
-    document.getElementById('run-text-btn').addEventListener('click', runTextMining);
+    createAnalysisButton('run-text-btn-container', '解析を実行', runTextMining, { id: 'run-text-btn' });
 }
