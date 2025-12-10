@@ -1,6 +1,6 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, renderSampleSizeInfo } from '../utils.js';
 
-// Pairwise t-test helper
+// Pairwise t-test helper for Between-Subjects (Independent)
 function performPostHocTests(groups, groupData) {
     const pairs = [];
     const numGroups = groups.length;
@@ -39,22 +39,70 @@ function performPostHocTests(groups, groupData) {
             // Bonferroni correction
             let p_adj = Math.min(1, p_raw * numComparisons);
 
-            if (p_adj < 0.1) { // Keep if at least trendy
-                pairs.push({
-                    g1, g2,
-                    p: p_adj,
-                    mean1, mean2,
-                    std1, std2,
-                    n1, n2
-                });
-            }
+            pairs.push({
+                g1, g2,
+                p: p_adj,
+                mean1, mean2,
+                std1, std2,
+                n1, n2
+            });
         }
     }
     return pairs;
 }
 
-// function runOneWayANOVA(currentData) { ... }
-function runOneWayANOVA(currentData) {
+// Pairwise t-test helper for Within-Subjects (Repeated)
+function performRepeatedPostHocTests(dependentVars, currentData) {
+    const pairs = [];
+    const numVars = dependentVars.length;
+    const numComparisons = (numVars * (numVars - 1)) / 2;
+
+    for (let i = 0; i < numVars; i++) {
+        for (let j = i + 1; j < numVars; j++) {
+            const var1 = dependentVars[i];
+            const var2 = dependentVars[j];
+
+            // Extract pairs where both are present
+            const validPairs = currentData
+                .map(row => ({ v1: row[var1], v2: row[var2] }))
+                .filter(p => p.v1 != null && !isNaN(p.v1) && p.v2 != null && !isNaN(p.v2));
+
+            if (validPairs.length < 2) continue;
+
+            const n = validPairs.length;
+            const values1 = validPairs.map(p => p.v1);
+            const values2 = validPairs.map(p => p.v2);
+            const mean1 = jStat.mean(values1);
+            const mean2 = jStat.mean(values2);
+
+            // Paired t-test calculation
+            const diffs = validPairs.map(p => p.v1 - p.v2);
+            const diffMean = jStat.mean(diffs);
+            const diffStd = jStat.stdev(diffs, true);
+            const se = diffStd / Math.sqrt(n);
+            const t_stat = diffMean / se;
+            const df = n - 1;
+
+            let p_raw = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;
+            let p_adj = Math.min(1, p_raw * numComparisons);
+
+            pairs.push({
+                g1: var1,
+                g2: var2,
+                p: p_adj,
+                mean1, mean2,
+                n
+            });
+        }
+    }
+    return pairs;
+}
+
+
+// ----------------------------------------------------------------------
+// One-Way ANOVA (Between-Subjects)
+// ----------------------------------------------------------------------
+function runOneWayIndependentANOVA(currentData) {
     const factorVar = document.getElementById('factor-var').value;
     const dependentVarSelect = document.getElementById('dependent-var');
     const dependentVars = Array.from(dependentVarSelect.selectedOptions).map(o => o.value);
@@ -68,9 +116,9 @@ function runOneWayANOVA(currentData) {
         return;
     }
 
-    const groups = [...new Set(currentData.map(row => row[factorVar]))].filter(v => v != null);
+    const groups = [...new Set(currentData.map(row => row[factorVar]))].filter(v => v != null).sort();
     if (groups.length < 3) {
-        alert(`一要因分散分析には3群以上必要です（現在: ${groups.length} 群）`);
+        alert(`一要因分散分析（対応なし）には3群以上必要です（現在: ${groups.length} 群）`);
         return;
     }
 
@@ -90,11 +138,9 @@ function runOneWayANOVA(currentData) {
         });
 
         // ANOVA計算
-        // 全体平均
         const allValues = currentData.map(r => r[depVar]).filter(v => v != null && !isNaN(v));
         const grandMean = jStat.mean(allValues);
 
-        // 平方和の計算
         let ssBetween = 0;
         let ssWithin = 0;
         let dfBetween = groups.length - 1;
@@ -104,24 +150,25 @@ function runOneWayANOVA(currentData) {
             const vals = groupData[g];
             const n = vals.length;
             const mean = jStat.mean(vals);
-
-            ssBetween += n * Math.pow(mean - grandMean, 2);
-            ssWithin += vals.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0);
+            if (n > 0) {
+                ssBetween += n * Math.pow(mean - grandMean, 2);
+                ssWithin += vals.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0);
+            }
         });
 
         const msBetween = ssBetween / dfBetween;
         const msWithin = ssWithin / dfWithin;
         const fValue = msBetween / msWithin;
         const pValue = 1 - jStat.centralF.cdf(fValue, dfBetween, dfWithin);
-
-        // 効果量 (eta squared)
         const etaSquared = ssBetween / (ssBetween + ssWithin);
 
-        // 結果表示 HTML構築
-        const sectionId = `anova - ${depVar} `;
+        // UI Generation
+        const sectionId = `anova-ind-${depVar}`;
+        const varResultDiv = document.createElement('div');
+        varResultDiv.className = 'anova-result-block';
 
         let html = `
-    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">
                     変数: ${depVar}
                 </h4>
@@ -150,7 +197,7 @@ function runOneWayANOVA(currentData) {
                                 <td>${etaSquared.toFixed(3)}</td>
                             </tr>
                             <tr>
-                                <td>要因内 (Within)</td>
+                                <td>要因内 (Error)</td>
                                 <td>${ssWithin.toFixed(2)}</td>
                                 <td>${dfWithin}</td>
                                 <td>${msWithin.toFixed(2)}</td>
@@ -170,42 +217,15 @@ function runOneWayANOVA(currentData) {
                         </tbody>
                     </table>
                 </div>
-
-                <p style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">
-                    注: p < 0.05 で有意、η² は0.01(小), 0.06(中), 0.14(大)が目安
-                </p>
-
+                <div id="sample-size-${sectionId}"></div>
                 <div id="plot-${sectionId}" style="margin-top: 1.5rem;"></div>
-            </div >
-    `;
-
-        outputContainer.innerHTML += html;
-
-        // サンプルサイズ (renderSampleSizeInfo will append to result container div inside the loop issue - wait, outputContainer is cleared at start)
-        // Need to target specific section. The loop creates a `sectionId` div? No, just dumps html.
-        // Let's modify the html structure. `html` is a huge block.
-        // I should probably inject it AFTER the table inside the white box or create a new box.
-        // The current loop appends `html` string to `outputContainer`. 
-        // I should append sample size info to the specific div created for this variable.
-        // But `renderSampleSizeInfo` appends to a DOM element.
-        // Solution: Create a placeholder div in `html`, then after `outputContainer.innerHTML += html`, find that div and render sample size.
-
-        // Wait, using `innerHTML += ` destroys event listeners and references.
-        // Better approach:
-
-        // 1. Create a wrapper div for this variable's results
-        const varResultDiv = document.createElement('div');
-        varResultDiv.className = 'anova-result-block';
+            </div>
+        `;
         varResultDiv.innerHTML = html;
         outputContainer.appendChild(varResultDiv);
 
-        // 2. Render sample size inside this wrapper
-        const sampleSizeContainer = document.createElement('div');
-        varResultDiv.firstElementChild.appendChild(sampleSizeContainer); // Append to the white box (firstElementChild of varResultDiv which is the white box in `html`)
-
-        // Generate group data for sample size
+        // Sample Size Info
         const groupSampleSizes = groups.map((g, i) => {
-            // Generate colors cyclically or randomly if many groups
             const colors = ['#11b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'];
             return {
                 label: g,
@@ -213,22 +233,12 @@ function runOneWayANOVA(currentData) {
                 color: colors[i % colors.length]
             };
         });
+        renderSampleSizeInfo(document.getElementById(`sample-size-${sectionId}`), totalN, groupSampleSizes);
 
-        renderSampleSizeInfo(sampleSizeContainer, totalN, groupSampleSizes);
-
-        // 箱ひげ図の描画 (Plotly)
-        // 非同期でないとDOM描画後にplotできないが、innerHTML += だと都度再描画される
-        // ここではループ内でHTML文字列を連結してから一括挿入の方が良いが、
-        // 簡易実装として、setTimeoutで描画を遅らせる
-    });
-
-    // Plotly描画 (ループ終了後に実行)
-    setTimeout(() => {
-        dependentVars.forEach(depVar => {
-            const sectionId = `anova - ${depVar} `;
-            const plotDiv = document.getElementById(`plot - ${sectionId} `);
+        // Plotly Visualization (Async)
+        setTimeout(() => {
+            const plotDiv = document.getElementById(`plot-${sectionId}`);
             if (plotDiv) {
-                // Determine group data for this variable again (or could have stored it)
                 const currentGroupData = {};
                 groups.forEach(g => {
                     currentGroupData[g] = currentData
@@ -237,136 +247,54 @@ function runOneWayANOVA(currentData) {
                         .filter(v => v != null && !isNaN(v));
                 });
 
-                // Calculate significant pairs
                 const sigPairs = performPostHocTests(groups, currentGroupData);
 
-                // --- Calculate Layout for Brackets ---
-                // We need to know the Y range to place brackets above the plot.
-                // Find global max y (+ buffer for box plot whiskers typically 1.5IQR, but max data point is safer proxy for simple view)
+                // Determine Y range for brackets
                 let globalMaxY = -Infinity;
-                groups.forEach(g => {
-                    const maxVal = jStat.max(currentGroupData[g]);
-                    if (maxVal > globalMaxY) globalMaxY = maxVal;
-                });
-
-                // Define bracket step size
-                const yRange = globalMaxY - jStat.min(currentData.map(r => r[depVar]).filter(v => typeof v === 'number')); // rough range
-                const step = (yRange || 1) * 0.1; // 10% of range as step
+                Object.values(currentGroupData).flat().forEach(v => { if (v > globalMaxY) globalMaxY = v; });
+                const yRange = globalMaxY - jStat.min(Object.values(currentGroupData).flat());
+                const step = (yRange || 1) * 0.1;
                 let currentLevelY = globalMaxY + step * 0.5;
 
-                const shapes = [];
-                const annotations = [];
-
-                // Sort pairs by distance (shorter brackets first usually looks better or vice versa? 
-                // overlapping logic matters more. Let's just iterate and stack.)
-                // Actually, standard is to put wider brackets higher up.
-                // Let's sort comparison pairs by index distance in `groups` array to roughly approximate 'width'.
-                sigPairs.sort((a, b) => {
-                    const distA = Math.abs(groups.indexOf(a.g1) - groups.indexOf(a.g2));
-                    const distB = Math.abs(groups.indexOf(b.g1) - groups.indexOf(b.g2));
-                    return distA - distB; // Shorter first? Or verify overlap logic.
-                });
-
-                // Simple overlap detection: store occupied intervals at each level
-                // levels[levelIndex] = [{start, end}, ...]
                 const levels = [];
+                const shapesFinal = [];
+                const annotationsFinal = [];
 
                 sigPairs.forEach(pair => {
-                    if (pair.p >= 0.1) return; // Ignore non-significant for plot
+                    if (pair.p >= 0.1) return;
 
                     const idx1 = groups.indexOf(pair.g1);
                     const idx2 = groups.indexOf(pair.g2);
                     const start = Math.min(idx1, idx2);
                     const end = Math.max(idx1, idx2);
 
-                    // Find first level where this interval [start, end] doesn't overlap
                     let levelIndex = 0;
                     while (true) {
-                        if (!levels[levelIndex]) {
-                            levels[levelIndex] = [];
-                            break;
-                        }
-                        // Check overlap with existing brackets at this level
-                        const overlap = levels[levelIndex].some(interval => {
-                            // Interval overlap: (StartA < EndB) and (EndA > StartB)
-                            // We add a tiny buffer to avoid touching
-                            return (start < interval.end + 0.1) && (end > interval.start - 0.1);
-                        });
-                        if (!overlap) {
-                            break;
-                        }
+                        if (!levels[levelIndex]) levels[levelIndex] = [];
+                        const overlap = levels[levelIndex].some(interval => (start < interval.end + 0.1) && (end > interval.start - 0.1));
+                        if (!overlap) break;
                         levelIndex++;
                     }
-
-                    // Assign to this level
                     levels[levelIndex].push({ start, end });
 
-                    // Add bracket shape
-                    // y-position for this level
                     const bracketY = currentLevelY + (levelIndex * step);
-                    const textY = bracketY + step * 0.2;
-
-                    // Significance symbol
                     let text = 'n.s.';
                     if (pair.p < 0.01) text = '**';
                     else if (pair.p < 0.05) text = '*';
                     else if (pair.p < 0.1) text = '†';
 
-                    // Color
-                    const color = 'rgba(0,0,0,0.8)';
+                    // Bracket Lines
+                    shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY - step * 0.1, x1: idx1, y1: bracketY, line: { color: 'black', width: 1 } });
+                    shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY, x1: idx2, y1: bracketY, line: { color: 'black', width: 1 } });
+                    shapesFinal.push({ type: 'line', x0: idx2, y0: bracketY, x1: idx2, y1: bracketY - step * 0.1, line: { color: 'black', width: 1 } });
 
-                    // Draw bracket (line down, line across, line down)
-                    // x coordinates are group indices.
-
-                    shapes.push({
-                        type: 'line',
-                        x0: pair.g1, y0: bracketY - step * 0.2,
-                        x1: pair.g1, y1: bracketY,
-                        line: { color: color, width: 1.5 }
+                    annotationsFinal.push({
+                        x: (idx1 + idx2) / 2,
+                        y: bracketY + step * 0.2,
+                        text: text,
+                        showarrow: false,
+                        font: { size: 12, color: 'black' }
                     });
-                    shapes.push({
-                        type: 'line',
-                        x0: pair.g1, y0: bracketY,
-                        x1: pair.g2, y1: bracketY,
-                        line: { color: color, width: 1.5 }
-                    });
-                    shapes.push({
-                        type: 'line',
-                        x0: pair.g2, y0: bracketY,
-                        x1: pair.g2, y1: bracketY - step * 0.2, // Small tick down
-                        line: { color: color, width: 1.5 }
-                    });
-
-                    annotations.push({
-                        x: (idx1 + idx2) / 2, // Midpoint based on index? No, usually x matches category name in Plotly categorical axes if x is data.
-                        // Wait, for categorical x-axis, x coordinates can be the category names directly?
-                        // Plotly places categories at integer indices 0, 1, 2... internally but we should use the string values for x0/x1?
-                        // Yes, for categorical axes, x0/x1 can be category names.
-                        // BUT, to calculate midpoint for annotation, we can't easily average strings.
-                        // We might need to supply index if we used 'array' mapping but simple box plot uses names.
-                        // WORKAROUND: Plotly usually maps categories to 0,1,2... 
-                        // Let's try specifying x as indices? No, mixed types might fail.
-                        // Let's try assuming x is category name.
-                        // Midpoint for annotation: we can't set x = (name1 + name2)/2.
-                        // We likely need to reference x by the category name, but for the text annotation, how to center it?
-                        // Maybe simpler to just not support complex midpoint logic and hope 'x' works?
-                        // Actually, looking closer at Plotly docs, for categorical axes, you can often use numeric indices for shapes if you reference the underlying scale, but it's tricky.
-                        // Safer approach: Calculate x position relative to the axis range if possible, OR
-                        // Just use the category names for lines, but for the TEXT annotation, we need one specific x.
-                        // Ideally we pick one of the categories and offset? No.
-                        // Let's try using the category name of the one on the "left" + offset? Hard to know order.
-                        // OK, let's rely on the order in `groups` array.
-                        // If we use `groups` array order, we know indices.
-                        // Can we just map "Group A" to index 0?
-                        // If we provide specific x values to traces, we can control it.
-                        // Let's render the detailed trace as we do below using `groups.map`.
-                    });
-
-                    // Re-do annotation: using paper coordinates or trying to interpolate?
-                    // Actually, let's keep it simple.
-                    // If we use numeric indices for x-axis, we have full control.
-                    // Instead of automatic categorical mapping, let's force x to be 0, 1, 2... and provide tickvals/ticktext.
-
                 });
 
                 const traces = groups.map((g, i) => ({
@@ -375,70 +303,11 @@ function runOneWayANOVA(currentData) {
                     name: g,
                     boxpoints: 'outliers',
                     marker: { color: '#1e90ff' },
-                    // Force x position to be integer index to allow easy bracket drawing
-                    x: currentGroupData[g].map(() => i),
+                    x: currentGroupData[g].map(() => i), // Force numeric X for easy bracket placement
                     showlegend: false
                 }));
 
-                // Re-generate shapes with numeric x
-                const shapesFinal = [];
-                const annotationsFinal = [];
-
-                // Recalculate loop with numeric indices
-                levels.forEach((lvl, lvlIdx) => {
-                    // level info is sparse array structure from before?
-                    // Wait, `levels` array contains arrays of intervals. I need to iterate the pairs again or store the shapes earlier.
-                });
-                // Let's just re-run the logic cleanly now that we decided on numeric X.
-
-                const finalLevels = [];
-
-                sigPairs.forEach(pair => {
-                    const idx1 = groups.indexOf(pair.g1);
-                    const idx2 = groups.indexOf(pair.g2);
-                    const start = Math.min(idx1, idx2);
-                    const end = Math.max(idx1, idx2);
-
-                    let levelIndex = 0;
-                    while (true) {
-                        if (!finalLevels[levelIndex]) finalLevels[levelIndex] = [];
-                        const overlap = finalLevels[levelIndex].some(interval => (start < interval.end + 0.1) && (end > interval.start - 0.1));
-                        if (!overlap) break;
-                        levelIndex++;
-                    }
-                    finalLevels[levelIndex].push({ start, end });
-
-                    const bracketY = currentLevelY + (levelIndex * step);
-                    let text = 'n.s.';
-                    if (pair.p < 0.01) text = '**';
-                    else if (pair.p < 0.05) text = '*';
-
-                    // Lines
-                    shapesFinal.push({
-                        type: 'line', x0: idx1, y0: bracketY - step * 0.1, x1: idx1, y1: bracketY,
-                        line: { color: 'black', width: 1 }
-                    });
-                    shapesFinal.push({
-                        type: 'line', x0: idx1, y0: bracketY, x1: idx2, y1: bracketY,
-                        line: { color: 'black', width: 1 }
-                    });
-                    shapesFinal.push({
-                        type: 'line', x0: idx2, y0: bracketY, x1: idx2, y1: bracketY - step * 0.1,
-                        line: { color: 'black', width: 1 }
-                    });
-
-                    // Text
-                    annotationsFinal.push({
-                        x: (idx1 + idx2) / 2,
-                        y: bracketY + step * 0.2, // slightly above
-                        text: text,
-                        showarrow: false,
-                        font: { size: 12, color: 'black' }
-                    });
-                });
-
-                // Adjust margin to fit brackets
-                const topMargin = 50 + (finalLevels.length * 30); // Dynamic margin
+                const topMargin = 50 + (levels.length * 30);
 
                 Plotly.newPlot(plotDiv, traces, {
                     title: `${depVar} のグループ別箱ひげ図`,
@@ -453,10 +322,272 @@ function runOneWayANOVA(currentData) {
                     margin: { t: topMargin }
                 }, createPlotlyConfig('一要因分散分析', depVar));
             }
-        });
+        }, 100);
+    });
+
+    document.getElementById('analysis-results').style.display = 'block';
+}
+
+
+// ----------------------------------------------------------------------
+// One-Way Repeated Measures ANOVA (Within-Subjects)
+// ----------------------------------------------------------------------
+function runOneWayRepeatedANOVA(currentData) {
+    const dependentVarSelect = document.getElementById('rep-dependent-var');
+    const dependentVars = Array.from(dependentVarSelect.selectedOptions).map(o => o.value);
+
+    if (dependentVars.length < 3) {
+        alert('対応あり分散分析には3つ以上の変数（条件）が必要です');
+        return;
+    }
+
+    const outputContainer = document.getElementById('anova-results');
+    outputContainer.innerHTML = '';
+
+    // Calculate ANOVA for the selected set of variables
+    // Data preparation: extract valid rows where all selected vars are present (complete cases)
+    const validData = currentData
+        .map(row => dependentVars.map(v => row[v]))
+        .filter(vals => vals.every(v => v != null && !isNaN(v)));
+
+    const N = validData.length;
+    const k = dependentVars.length;
+
+    if (N < 2) {
+        alert('有効なデータ（全条件が揃っている行）が不足しています');
+        return;
+    }
+
+    // Calculations
+    const grandMean = jStat.mean(validData.flat());
+
+    // SS_Total
+    let ssTotal = 0;
+    validData.flat().forEach(v => ssTotal += Math.pow(v - grandMean, 2));
+
+    // SS_Subjects (Between Subjects)
+    let ssSubjects = 0;
+    validData.forEach(subjectVals => {
+        const subjectMean = jStat.mean(subjectVals);
+        ssSubjects += k * Math.pow(subjectMean - grandMean, 2);
+    });
+
+    // SS_Conditions (Between Treatments / Time)
+    let ssConditions = 0;
+    const conditionMeans = [];
+    for (let i = 0; i < k; i++) {
+        const colVals = validData.map(row => row[i]);
+        const colMean = jStat.mean(colVals);
+        conditionMeans.push(colMean);
+        ssConditions += N * Math.pow(colMean - grandMean, 2);
+    }
+
+    // SS_Error (Residual)
+    // SS_Total = SS_Subjects + SS_Conditions + SS_Error
+    const ssError = ssTotal - ssSubjects - ssConditions;
+
+    // Degrees of Freedom
+    const dfSubjects = N - 1;
+    const dfConditions = k - 1;
+    const dfError = (N - 1) * (k - 1);
+    const dfTotal = (N * k) - 1;
+
+    // Mean Squares
+    const msConditions = ssConditions / dfConditions;
+    const msError = ssError / dfError;
+
+    // F-statistic
+    const fValue = msConditions / msError;
+
+    // P-value
+    const pValue = 1 - jStat.centralF.cdf(fValue, dfConditions, dfError);
+
+    // Effect Size (Partial Eta Squared)
+    // For Repeated Measures, eta_partial = SS_Conditions / (SS_Conditions + SS_Error)
+    const etaSquared = ssConditions / (ssConditions + ssError);
+
+    // UI Generation
+    const resultDiv = document.createElement('div');
+    resultDiv.className = 'anova-result-block';
+
+    let html = `
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">
+                要因: ${dependentVars.join(', ')}
+            </h4>
+            
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>変動要因</th>
+                            <th>平方和 (SS)</th>
+                            <th>自由度 (df)</th>
+                            <th>平均平方 (MS)</th>
+                            <th>F値</th>
+                            <th>p値</th>
+                            <th>効果量 (ηp²)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>条件間 (Time)</td>
+                            <td>${ssConditions.toFixed(2)}</td>
+                            <td>${dfConditions}</td>
+                            <td>${msConditions.toFixed(2)}</td>
+                            <td>${fValue.toFixed(2)}</td>
+                            <td style="${pValue < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${pValue.toFixed(3)} ${pValue < 0.01 ? '**' : (pValue < 0.05 ? '*' : '')}</td>
+                            <td>${etaSquared.toFixed(3)}</td>
+                        </tr>
+                        <tr>
+                            <td>誤差 (Error)</td>
+                            <td>${ssError.toFixed(2)}</td>
+                            <td>${dfError}</td>
+                            <td>${msError.toFixed(2)}</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>被験者間 (Subjects)</td>
+                            <td>${ssSubjects.toFixed(2)}</td>
+                            <td>${dfSubjects}</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
+                        <tr style="background: #f8f9fa; font-weight: bold;">
+                            <td>合計 (Total)</td>
+                            <td>${ssTotal.toFixed(2)}</td>
+                            <td>${dfTotal}</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="sample-size-rep"></div>
+            <div id="plot-rep" style="margin-top: 1.5rem;"></div>
+        </div>
+    `;
+    resultDiv.innerHTML = html;
+    outputContainer.appendChild(resultDiv);
+
+    // Sample Size Info
+    renderSampleSizeInfo(document.getElementById('sample-size-rep'), N);
+
+    // Visualization
+    setTimeout(() => {
+        const plotDiv = document.getElementById('plot-rep');
+        if (plotDiv) {
+            // Post-hoc Tests
+            const sigPairs = performRepeatedPostHocTests(dependentVars, currentData);
+
+            // Brackets Logic (Generic Reuse)
+            // Use numeric X axis for categories
+            const xLabels = dependentVars;
+
+            // Plot Traces (Bar chart often used for repeated measures means, but box plot shows distribution better)
+            // Let's use Box Plot for consistency and info density.
+            const traces = dependentVars.map((v, i) => {
+                const vals = validData.map(row => row[i]);
+                return {
+                    y: vals,
+                    type: 'box',
+                    name: v,
+                    boxpoints: 'outliers',
+                    marker: { color: '#1e90ff' },
+                    x: vals.map(() => i),
+                    showlegend: false
+                };
+            });
+
+            // Calculate Brackets
+            let globalMaxY = -Infinity;
+            validData.flat().forEach(v => { if (v > globalMaxY) globalMaxY = v; });
+            const yRange = globalMaxY - jStat.min(validData.flat());
+            const step = (yRange || 1) * 0.1;
+            let currentLevelY = globalMaxY + step * 0.5;
+
+            const levels = [];
+            const shapesFinal = [];
+            const annotationsFinal = [];
+
+            sigPairs.forEach(pair => {
+                if (pair.p >= 0.1) return;
+
+                const idx1 = dependentVars.indexOf(pair.g1);
+                const idx2 = dependentVars.indexOf(pair.g2);
+                const start = Math.min(idx1, idx2);
+                const end = Math.max(idx1, idx2);
+
+                let levelIndex = 0;
+                while (true) {
+                    if (!levels[levelIndex]) levels[levelIndex] = [];
+                    const overlap = levels[levelIndex].some(interval => (start < interval.end + 0.1) && (end > interval.start - 0.1));
+                    if (!overlap) break;
+                    levelIndex++;
+                }
+                levels[levelIndex].push({ start, end });
+
+                const bracketY = currentLevelY + (levelIndex * step);
+                let text = 'n.s.';
+                if (pair.p < 0.01) text = '**';
+                else if (pair.p < 0.05) text = '*';
+                else if (pair.p < 0.1) text = '†';
+
+                shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY - step * 0.1, x1: idx1, y1: bracketY, line: { color: 'black', width: 1 } });
+                shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY, x1: idx2, y1: bracketY, line: { color: 'black', width: 1 } });
+                shapesFinal.push({ type: 'line', x0: idx2, y0: bracketY, x1: idx2, y1: bracketY - step * 0.1, line: { color: 'black', width: 1 } });
+
+                annotationsFinal.push({
+                    x: (idx1 + idx2) / 2,
+                    y: bracketY + step * 0.2,
+                    text: text,
+                    showarrow: false,
+                    font: { size: 12, color: 'black' }
+                });
+            });
+
+            const topMargin = 50 + (levels.length * 30);
+
+            Plotly.newPlot(plotDiv, traces, {
+                title: '条件ごとの比較（対応あり）',
+                yaxis: { title: '値' },
+                xaxis: {
+                    tickvals: dependentVars.map((_, i) => i),
+                    ticktext: dependentVars
+                },
+                showlegend: false,
+                shapes: shapesFinal,
+                annotations: annotationsFinal,
+                margin: { t: topMargin }
+            }, createPlotlyConfig('一要因分散分析（対応あり）', 'Repeated'));
+        }
     }, 100);
 
     document.getElementById('analysis-results').style.display = 'block';
+}
+
+
+// ----------------------------------------------------------------------
+// Main Render
+// ----------------------------------------------------------------------
+function switchTestType(testType) {
+    const indControls = document.getElementById('independent-controls');
+    const repControls = document.getElementById('repeated-controls');
+    if (testType === 'independent') {
+        indControls.style.display = 'block';
+        repControls.style.display = 'none';
+    } else {
+        indControls.style.display = 'none';
+        repControls.style.display = 'block';
+    }
+    document.getElementById('analysis-results').style.display = 'none';
 }
 
 export function render(container, currentData, characteristics) {
@@ -471,7 +602,7 @@ export function render(container, currentData, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">3群以上の平均値の差を検定します</p>
             </div>
 
-            <!--分析の概要・解釈 -->
+            <!-- 分析の概要 -->
             <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
                 <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
                     <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
@@ -479,56 +610,82 @@ export function render(container, currentData, characteristics) {
                 </div>
                 <div class="collapsible-content collapsed">
                     <div class="note">
-                        <strong><i class="fas fa-lightbulb"></i> 一要因分散分析 (One-way ANOVA) とは？</strong>
-                        <p>3つ以上のグループ（群）間で平均値に差があるかどうかを一度に調べる手法です。t検定を繰り返すと誤りが増えるため、この手法が使われます。</p>
-                        <img src="image/anova_one_way.png" alt="分散分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <strong><i class="fas fa-lightbulb"></i> 一要因分散分析とは？</strong>
+                        <p>3つ以上のグループ（群）または条件間で平均値に差があるかを調べます。</p>
                     </div>
-                    <h4>どういう時に使うの？</h4>
-                    <ul>
-                        <li>3種類以上の薬の効果に違いがあるか比較したい（薬A、薬B、プラセボ）</li>
-                        <li>年代別（20代、30代、40代...）に商品満足度に差があるか調べたい</li>
-                    </ul>
-                    <h4>結果の読み方</h4>
-                    <ul>
-                        <li><strong>全体的な検定 (F検定):</strong> 少なくとも1つのグループ間に差があるかどうかを判定します（p < 0.05なら差あり）。</li>
-                        <li><strong>多重比較 (Tukey法など):</strong> 全体で「差がある」となった場合、具体的に「どのグループとどのグループの間」に差があるかを特定します。</li>
-                        <li><strong>効果量 (Eta-squared):</strong> 要因がデータの変動をどれくらい説明できているか（影響力の強さ）を表します。</li>
-                    </ul>
                 </div>
             </div>
 
-            <!--データ概要 -->
             <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
-            <!--分析設定 -->
+            <!-- 設定エリア -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
+                    <div style="display: flex; gap: 1rem;">
+                        <label style="flex: 1; padding: 1rem; background: #f0f8ff; border: 2px solid #1e90ff; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" name="anova-type" value="independent" checked>
+                            <strong>対応なし（独立測度）</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">異なる被験者グループ間を比較</p>
+                        </label>
+                        <label style="flex: 1; padding: 1rem; background: #fafbfc; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" name="anova-type" value="repeated">
+                            <strong>対応あり（反復測度）</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">同じ被験者の異なる条件間を比較</p>
+                        </label>
+                    </div>
+                </div>
 
-                <div id="factor-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
-                <div id="dependent-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+                <!-- 対応なし用の設定 -->
+                <div id="independent-controls" style="display: block;">
+                    <div id="factor-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+                    <div id="dependent-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+                    <div id="run-ind-btn-container"></div>
+                </div>
 
-                <div id="run-anova-btn-container"></div>
+                <!-- 対応あり用の設定 -->
+                <div id="repeated-controls" style="display: none;">
+                    <div id="rep-dependent-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+                    <div id="run-rep-btn-container"></div>
+                </div>
             </div>
 
-            <!--結果エリア -->
-    <div id="analysis-results" style="display: none;">
-        <div id="anova-results"></div>
+            <div id="analysis-results" style="display: none;">
+                <div id="anova-results"></div>
+            </div>
     </div>
-        </div >
     `;
 
     renderDataOverview('#anova-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
-    // Single Select
+    // Independent Selectors
     createVariableSelector('factor-var-container', categoricalColumns, 'factor-var', {
-        label: '<i class="fas fa-layer-group"></i> 要因（グループ変数・3群以上）を選択:',
+        label: '<i class="fas fa-layer-group"></i> 要因（グループ変数・3群以上）:',
         multiple: false
     });
-
-    // Multi Select for batch analysis
     createVariableSelector('dependent-var-container', numericColumns, 'dependent-var', {
-        label: '<i class="fas fa-check-square"></i> 従属変数を選択（複数選択可）:',
+        label: '<i class="fas fa-check-square"></i> 従属変数を選択（複数可）:',
         multiple: true
     });
+    createAnalysisButton('run-ind-btn-container', '分析を実行（対応なし）', () => runOneWayIndependentANOVA(currentData), { id: 'run-ind-anova-btn' });
 
-    createAnalysisButton('run-anova-btn-container', '分析を実行', () => runOneWayANOVA(currentData), { id: 'run-anova-btn' });
+    // Repeated Selectors
+    createVariableSelector('rep-dependent-var-container', numericColumns, 'rep-dependent-var', {
+        label: '<i class="fas fa-list-ol"></i> 比較する変数（条件）を選択（3つ以上）:',
+        multiple: true
+    });
+    createAnalysisButton('run-rep-btn-container', '分析を実行（対応あり）', () => runOneWayRepeatedANOVA(currentData), { id: 'run-rep-anova-btn' });
+
+    // Toggle Logic
+    document.querySelectorAll('input[name="anova-type"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            switchTestType(e.target.value);
+            // Visual toggle of active state style
+            document.querySelectorAll('input[name="anova-type"]').forEach(r => {
+                r.closest('label').style.background = r.checked ? '#f0f8ff' : '#fafbfc';
+                r.closest('label').style.borderColor = r.checked ? '#1e90ff' : '#e2e8f0';
+            });
+        });
+    });
 }
