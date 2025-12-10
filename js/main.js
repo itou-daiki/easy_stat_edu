@@ -8,6 +8,8 @@ import { getAnalysisTitle, showError, showLoadingMessage, hideLoadingMessage, to
 // ==========================================
 export let currentData = null;
 export let dataCharacteristics = null;
+let originalData = null; // 元のデータを保持
+let sortState = { column: null, direction: 'asc' }; // ソート状態を管理
 
 // ==========================================
 // DOM Elements
@@ -42,10 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Event Listeners
 // ==========================================
 function setupEventListeners() {
-    uploadBtn.addEventListener('click', () => {
-        console.log('Upload button clicked, attempting to trigger file input.');
-        fileInput.click();
-    });
+    uploadBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (file) handleFile(file);
@@ -54,24 +53,25 @@ function setupEventListeners() {
         event.preventDefault();
         uploadArea.classList.add('drag-over');
     });
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('drag-over');
-    });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
     uploadArea.addEventListener('drop', (event) => {
         event.preventDefault();
         uploadArea.classList.remove('drag-over');
         const file = event.dataTransfer.files[0];
         if (file) handleFile(file);
     });
-    demoBtn.addEventListener('click', () => {
-        loadDemoData('eda_demo.xlsx');
+    demoBtn.addEventListener('click', () => loadDemoData('eda_demo.xlsx'));
+
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', () => toggleCollapsible(header));
     });
 
-    // Add event listeners for collapsible sections
-    document.querySelectorAll('.collapsible-header').forEach(header => {
-        header.addEventListener('click', () => {
-            toggleCollapsible(header);
-        });
+    // ソート用のイベントリスナー (イベント委任)
+    document.getElementById('dataframe-container').addEventListener('click', (event) => {
+        const th = event.target.closest('th');
+        if (th && th.dataset.column) {
+            handleSort(th.dataset.column);
+        }
     });
 }
 
@@ -90,7 +90,6 @@ function handleFile(file) {
             }
             processData(file.name, jsonData);
         } catch (error) {
-            console.error('File reading error:', error);
             showError('ファイルの読み込みに失敗しました。');
         }
     };
@@ -108,40 +107,32 @@ async function loadDemoData(fileName) {
         const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
         processData(fileName, jsonData);
     } catch (error) {
-        console.error('Demo data loading error:', error);
         showError(`デモデータ (${fileName}) の読み込みに失敗しました。`);
     }
 }
 
 function processData(fileName, jsonData) {
-    window.currentData = jsonData;
-    currentData = jsonData;
+    originalData = jsonData; // 元データを保存
+    currentData = [...originalData]; // 表示・ソート用のコピーを作成
+
+    sortState = { column: null, direction: 'asc' };
     
-    // Make dataCharacteristics mutable for cleansing operations
     const characteristics = analyzeDataCharacteristics(jsonData);
     window.dataCharacteristics = characteristics;
     dataCharacteristics = characteristics;
     
-    console.log('Data processed:', { fileName, dataCharacteristics });
-    
     updateFileInfo(fileName, jsonData);
     
-    // データプレビューと統計量をレンダリング
-    renderDataFrame(jsonData);
+    renderDataFrame();
     renderSummaryStatistics(jsonData, characteristics);
     
-    // プレビューセクションを表示
     const dataPreviewSection = document.getElementById('data-preview-section');
     dataPreviewSection.style.display = 'block';
     
-    // 新しく追加された折りたたみ要素にイベントリスナーを設定
     dataPreviewSection.querySelectorAll('.collapsible-header').forEach(header => {
-        // 既存のリスナーがあれば削除してから追加（重複防止）
         const newHeader = header.cloneNode(true);
         header.parentNode.replaceChild(newHeader, header);
-        newHeader.addEventListener('click', () => {
-            toggleCollapsible(newHeader);
-        });
+        newHeader.addEventListener('click', () => toggleCollapsible(newHeader));
     });
 
     updateFeatureCards();
@@ -160,11 +151,8 @@ function analyzeDataCharacteristics(data) {
         const isNumeric = values.every(val => typeof val === 'number' || (typeof val === 'string' && val.trim() !== '' && !isNaN(Number(val))));
         if (isNumeric) {
             characteristics.numericColumns.push(col);
-            // Convert string numbers to actual numbers
             data.forEach(row => { 
-                if(row[col] !== null && row[col] !== undefined) {
-                    row[col] = Number(row[col]);
-                }
+                if(row[col] != null) row[col] = Number(row[col]);
             });
         } else {
             const uniqueRatio = new Set(values).size / values.length;
@@ -177,9 +165,36 @@ function analyzeDataCharacteristics(data) {
     });
     return characteristics;
 }
-// For access from cleansing.js
-window.analyzeDataCharacteristics = analyzeDataCharacteristics; 
+window.analyzeDataCharacteristics = analyzeDataCharacteristics;
 
+// ==========================================
+// Sorting Logic
+// ==========================================
+function handleSort(column) {
+    if (sortState.column === column) {
+        sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortState.column = column;
+        sortState.direction = 'asc';
+    }
+
+    currentData.sort((a, b) => {
+        const valA = a[column];
+        const valB = b[column];
+        const direction = sortState.direction === 'asc' ? 1 : -1;
+
+        if (valA === null || valA === undefined) return 1 * direction;
+        if (valB === null || valB === undefined) return -1 * direction;
+        
+        if (typeof valA === 'number' && typeof valB === 'number') {
+            return (valA - valB) * direction;
+        }
+        
+        return String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' }) * direction;
+    });
+
+    renderDataFrame();
+}
 
 // ==========================================
 // UI Updates & View Management
@@ -192,11 +207,11 @@ function updateFileInfo(fileName, data) {
 }
 
 function updateFeatureCards() {
-    if (!window.dataCharacteristics) return;
+    if (!dataCharacteristics) return;
     const counts = { 
-        numeric: window.dataCharacteristics.numericColumns.length, 
-        categorical: window.dataCharacteristics.categoricalColumns.length, 
-        text: window.dataCharacteristics.textColumns.length 
+        numeric: dataCharacteristics.numericColumns.length, 
+        categorical: dataCharacteristics.categoricalColumns.length, 
+        text: dataCharacteristics.textColumns.length 
     };
 
     featureGrid.querySelectorAll('.feature-card').forEach(card => {
@@ -212,7 +227,6 @@ function updateFeatureCards() {
         meetsRequirements ? enableCard(card) : disableCard(card);
     });
 }
-// For access from cleansing.js
 window.updateFeatureCards = updateFeatureCards;
 
 function enableCard(card) {
@@ -230,7 +244,6 @@ function disableCard(card) {
 }
 
 async function showAnalysisView(analysisType) {
-    console.log(`Switching to analysis view: ${analysisType}`);
     document.getElementById('navigation-section').style.display = 'none';
     document.getElementById('upload-section-main').style.display = 'none';
     
@@ -247,33 +260,38 @@ async function showAnalysisView(analysisType) {
         const analysisModule = await import(modulePath);
         analysisModule.render(analysisContent, dataCharacteristics);
     } catch (error) {
-        console.error(`Failed to load analysis module for ${analysisType}:`, error);
         analysisContent.innerHTML = `<p class="error-message">分析機能の読み込みに失敗しました。(${analysisType}.js)<br>この機能はまだ実装されていない可能性があります。</p>`;
     }
 }
 
-function renderDataFrame(data) {
+function renderDataFrame() {
     const container = document.getElementById('dataframe-container');
+    const data = currentData;
+
     if (!data || data.length === 0) {
         container.innerHTML = '<p>表示するデータがありません。</p>';
         return;
     }
 
     const columns = Object.keys(data[0]);
-
     let tableHtml = '<table class="table">';
-    // Header
+    
     tableHtml += '<thead><tr>';
-    columns.forEach(col => tableHtml += `<th>${col}</th>`);
+    columns.forEach(col => {
+        let indicator = '';
+        if (sortState.column === col) {
+            indicator = sortState.direction === 'asc' ? ' <i class="fas fa-sort-up"></i>' : ' <i class="fas fa-sort-down"></i>';
+        }
+        tableHtml += `<th data-column="${col}" style="cursor: pointer;">${col}${indicator}</th>`;
+    });
     tableHtml += '</tr></thead>';
 
-    // Body
     tableHtml += '<tbody>';
     data.forEach(row => {
         tableHtml += '<tr>';
         columns.forEach(col => {
             const value = row[col];
-            tableHtml += `<td>${value !== null && value !== undefined ? value : ''}</td>`;
+            tableHtml += `<td>${value != null ? value : ''}</td>`;
         });
         tableHtml += '</tr>';
     });
@@ -298,21 +316,22 @@ function renderSummaryStatistics(data, characteristics) {
                     '</tr></thead><tbody>';
 
     allColumns.forEach(col => {
-        const values = data.map(row => row[col]).filter(v => v !== null && v !== undefined);
-        const missingCount = data.length - values.length;
-        const missingRate = ((missingCount / data.length) * 100).toFixed(1);
+        const values = data.map(row => row[col]).filter(v => v != null);
+        const missingRate = (( (data.length - values.length) / data.length) * 100).toFixed(1);
 
         let type = '不明';
         let stats = { mean: '-', std: '-', min: '-', median: '-', max: '-', unique: '-' };
         
         if (numericColumns.includes(col)) {
             type = '数値';
-            const jstat = jStat(values);
-            stats.mean = jstat.mean().toFixed(3);
-            stats.std = jstat.stdev(true).toFixed(3);
-            stats.min = jstat.min().toFixed(3);
-            stats.median = jstat.median().toFixed(3);
-            stats.max = jstat.max().toFixed(3);
+            if (values.length > 0) {
+                const jstat = jStat(values);
+                stats.mean = jstat.mean().toFixed(3);
+                stats.std = jstat.stdev(true).toFixed(3);
+                stats.min = jstat.min().toFixed(3);
+                stats.median = jstat.median().toFixed(3);
+                stats.max = jstat.max().toFixed(3);
+            }
             stats.unique = new Set(values).size;
         } else {
             if(categoricalColumns.includes(col)) type = 'カテゴリ';
@@ -339,7 +358,6 @@ function renderSummaryStatistics(data, characteristics) {
     container.innerHTML = tableHtml;
 }
 
-// Make backToHome globally accessible
 window.backToHome = () => {
     document.getElementById('analysis-area').style.display = 'none';
     document.getElementById('navigation-section').style.display = 'block';
