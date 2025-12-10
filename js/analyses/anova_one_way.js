@@ -200,17 +200,18 @@ export function render(container, characteristics) {
 
     container.innerHTML = `
         <div class="anova-container">
+            <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
+                    <i class="fas fa-sitemap"></i> 一要因分散分析 (One-way ANOVA)
+                </h3>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">3群以上の平均値の差を検定します</p>
+            </div>
+
             <!-- データ概要 -->
             <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!-- 分析設定 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
-                        <i class="fas fa-sitemap"></i> 一要因分散分析 (One-way ANOVA)
-                    </h3>
-                    <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">3群以上の平均値の差を検定します</p>
-                </div>
 
                 <div id="factor-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                 <div id="dependent-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>

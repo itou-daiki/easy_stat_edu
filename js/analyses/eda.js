@@ -745,6 +745,13 @@ function switchTab(tabName) {
 export function render(container, characteristics) {
     container.innerHTML = `
         <div class="eda-container">
+            <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
+                    <i class="fas fa-search"></i> 探索的データ分析 (EDA)
+                </h3>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">データの分布や変数の関係を探索的に分析します</p>
+            </div>
+
             <!-- データプレビューと要約統計量（トップページと同じ仕様） -->
             <div id="eda-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 

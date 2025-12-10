@@ -437,17 +437,18 @@ function switchTestType(testType) {
 export function render(container, characteristics) {
     container.innerHTML = `
         <div class="ttest-container">
+            <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
+                    <i class="fas fa-vial"></i> t検定
+                </h3>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">検定タイプを選択して分析を実行します</p>
+            </div>
+
             <!-- データプレビューと要約統計量 -->
             <div id="ttest-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!-- 検定タイプ選択 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
-                        <i class="fas fa-vial"></i> t検定
-                    </h3>
-                    <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">検定タイプを選択して分析を実行します</p>
-                </div>
 
                 <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>

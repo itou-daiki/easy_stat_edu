@@ -182,17 +182,18 @@ export function render(container, characteristics) {
 
     container.innerHTML = `
         <div class="chisquare-container">
+            <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
+                    <i class="fas fa-border-all"></i> カイ二乗検定
+                </h3>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つのカテゴリ変数の独立性を検定します</p>
+            </div>
+
             <!-- データ概要 -->
             <div id="chi-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!-- 分析設定 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
-                        <i class="fas fa-border-all"></i> カイ二乗検定
-                    </h3>
-                    <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つのカテゴリ変数の独立性を検定します</p>
-                </div>
 
                 <div class="grid-2-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                     <div id="row-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>

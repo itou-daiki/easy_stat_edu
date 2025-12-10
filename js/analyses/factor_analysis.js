@@ -325,17 +325,18 @@ export function render(container, characteristics) {
 
     container.innerHTML = `
         <div class="factor-analysis-container">
+            <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
+                    <i class="fas fa-search-dollar"></i> 因子分析
+                </h3>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">背後に潜む共通因子を探索します</p>
+            </div>
+
             <!-- データ概要 -->
             <div id="fa-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!-- 分析設定 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
-                        <i class="fas fa-search-dollar"></i> 因子分析
-                    </h3>
-                    <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">背後に潜む共通因子を探索します</p>
-                </div>
 
                 <div id="factor-vars-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                 

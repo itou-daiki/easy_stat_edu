@@ -152,17 +152,18 @@ export function render(container, characteristics) {
 
     container.innerHTML = `
         <div class="regression-container">
+            <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
+                    <i class="fas fa-chart-line"></i> 単回帰分析
+                </h3>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つの量的変数の関係を直線でモデル化します</p>
+            </div>
+
             <!-- データ概要 -->
-            <div id="simple-reg-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
+            <div id="reg-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!-- 分析設定 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
-                        <i class="fas fa-chart-line"></i> 単回帰分析
-                    </h3>
-                    <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">1つの要因から結果を予測します</p>
-                </div>
 
                 <div id="independent-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                 <div id="dependent-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
