@@ -185,7 +185,7 @@ export function render(container, currentData, characteristics) {
             </div>
 
             <!-- データ概要 -->
-            <div id="reg-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
+            <div id="simple-reg-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!-- 分析設定 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">

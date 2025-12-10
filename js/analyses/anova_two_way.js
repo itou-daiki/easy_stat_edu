@@ -283,5 +283,5 @@ export function render(container, currentData, characteristics) {
         multiple: true
     });
 
-    createAnalysisButton('run-twoway-anova-btn-container', '分析を実行', () => runTwoWayANOVA(currentData), { id: 'run-twoway-anova-btn' });
+    createAnalysisButton('run-anova-btn-container', '分析を実行', () => runTwoWayANOVA(currentData), { id: 'run-twoway-anova-btn' });
 }

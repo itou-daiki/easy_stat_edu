@@ -387,4 +387,3 @@ export function render(container, currentData, characteristics) {
 
     createAnalysisButton('run-regression-btn-container', '分析を実行', () => runMultipleRegression(currentData), { id: 'run-regression-btn' });
 }
-```

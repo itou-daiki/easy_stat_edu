@@ -121,7 +121,7 @@ function runOneWayANOVA(currentData) {
         const sectionId = `anova - ${depVar} `;
 
         let html = `
-    < div style = "background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;" >
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">
                     変数: ${depVar}
                 </h4>
@@ -463,7 +463,7 @@ export function render(container, currentData, characteristics) {
     const { numericColumns, categoricalColumns } = characteristics;
 
     container.innerHTML = `
-    < div class="anova-container" >
+    <div class="anova-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                     <i class="fas fa-sitemap"></i> 一要因分散分析 (One-way ANOVA)

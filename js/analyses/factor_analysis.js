@@ -1,7 +1,7 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 // 因子抽出（主因子法）
-function exactFactors(variables, numFactors) {
+function exactFactors(variables, numFactors, currentData) {
     const data = currentData.map(row => variables.map(v => row[v]));
     // 実際には多変量解析ライブラリが必要だが、jStatやmath.jsだけでは困難。
     // ここではPCAをベースにした簡易的なエミュレーションを行う

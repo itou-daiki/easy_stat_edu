@@ -556,4 +556,3 @@ export function render(container, currentData, characteristics) {
     createAnalysisButton('independent-btn-container', '対応なしt検定を実行', () => runIndependentTTest(currentData), { id: 'run-independent-btn' });
     createAnalysisButton('paired-btn-container', '対応ありt検定を実行', () => runTTest(currentData), { id: 'run-paired-btn' });
 }
-```
