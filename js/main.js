@@ -254,7 +254,8 @@ async function showAnalysisView(analysisType) {
         const analysisModule = await import(modulePath);
         analysisModule.render(analysisContent, dataCharacteristics);
     } catch (error) {
-        analysisContent.innerHTML = `<p class="error-message">分析機能の読み込みに失敗しました。(${analysisType}.js)<br>この機能はまだ実装されていない可能性があります。</p>`;
+        console.error(error);
+        analysisContent.innerHTML = `<p class="error-message">分析機能の読み込みに失敗しました。(${analysisType}.js)<br>エラー詳細: ${error.message}<br><pre>${error.stack}</pre></p>`;
     }
 }
 
