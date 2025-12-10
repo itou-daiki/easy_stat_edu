@@ -237,13 +237,11 @@ export function render(container, characteristics) {
                     <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-chart-bar"></i> 分布の確認</h4>
                     
                     <div id="hist-vars-container" style="margin-bottom: 1rem;"></div>
-                    <div id="hist-vars-container" style="margin-bottom: 1rem;"></div>
                     <button id="plot-hist-btn" class="btn-analysis">ヒストグラムを描画</button>
                     <div id="histograms-container" style="margin-top: 2rem;"></div>
 
                     <hr style="margin: 2rem 0; border-top: 1px solid #eee;">
 
-                    <div id="bar-vars-container" style="margin-bottom: 1rem;"></div>
                     <div id="bar-vars-container" style="margin-bottom: 1rem;"></div>
                     <button id="plot-bar-btn" class="btn-analysis">棒グラフを描画</button>
                     <div id="barcharts-container" style="margin-top: 2rem;"></div>
@@ -253,7 +251,6 @@ export function render(container, characteristics) {
             <div id="num-compare" class="tab-content">
                 <div class="control-panel" style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-box"></i> 箱ひげ図で比較</h4>
-                    <div id="box-vars-container" style="margin-bottom: 1rem;"></div>
                     <div id="box-vars-container" style="margin-bottom: 1rem;"></div>
                     <button id="plot-box-btn" class="btn-analysis">箱ひげ図を描画</button>
                     <div id="boxplots-container" style="margin-top: 2rem;"></div>
@@ -268,7 +265,6 @@ export function render(container, characteristics) {
                         <div id="scatter-y-container"></div>
                     </div>
                     <div id="scatter-color-container" style="margin-top: 1rem;"></div>
-                    <div id="scatter-color-container" style="margin-top: 1rem;"></div>
                     <button id="plot-scatter-btn" class="btn-analysis" style="margin-top: 1rem;">散布図を描画</button>
                     <div id="scatter-container" style="margin-top: 2rem;"></div>
                 </div>
@@ -278,9 +274,7 @@ export function render(container, characteristics) {
                     <div class="grid-2-cols">
                         <div id="cross-row-container"></div>
                         <div id="cross-col-container"></div>
-                    </div>
-                        <div id="cross-col-container"></div>
-                    </div>
+                     </div>
                     <button id="plot-cross-btn" class="btn-analysis" style="margin-top: 1rem;">ヒートマップを描画</button>
                     <div id="crosstab-container" style="margin-top: 2rem;"></div>
                 </div>
@@ -293,9 +287,7 @@ export function render(container, characteristics) {
                         <div id="grouped-x-container"></div>
                         <div id="grouped-y-container"></div>
                         <div id="grouped-g-container"></div>
-                    </div>
-                        <div id="grouped-g-container"></div>
-                    </div>
+                     </div>
                     <button id="plot-grouped-btn" class="btn-analysis" style="margin-top: 1rem;">層別散布図を描画</button>
                     <div id="grouped-scatter-container" style="margin-top: 2rem;"></div>
                 </div>
