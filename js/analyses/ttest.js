@@ -484,7 +484,7 @@ export function render(container, characteristics) {
 
                     <div style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
                          <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                             <i class="fas fa-check-square"></i> 従属変数を選択（複数選択可: Ctrl/Cmd+Click）:
+                             <i class="fas fa-check-square"></i> 従属変数を選択（複数選択可）:
                          </label>
                          <select id="dep-var" multiple style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; min-height: 150px;"></select>
                     </div>
