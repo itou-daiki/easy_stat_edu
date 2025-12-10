@@ -256,6 +256,9 @@ function runTwoWayIndependentANOVA(currentData) {
                 }
             });
 
+            // Interpretation
+            displayTwoWayInterpretation(depVar, pA, pB, pAxB, factor1, factor2);
+
         } catch (e) {
             console.error(e);
             outputContainer.innerHTML += `<p class="error">エラー (${depVar}): 計算できませんでした</p>`;
@@ -263,6 +266,43 @@ function runTwoWayIndependentANOVA(currentData) {
     });
 
     document.getElementById('analysis-results').style.display = 'block';
+}
+
+function displayTwoWayInterpretation(varName, pA, pB, pAxB, factor1, factor2) {
+    const container = document.getElementById('interpretation-section');
+    if (!container.innerHTML) {
+        container.innerHTML = `
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-lightbulb"></i> 解釈の補助
+                </h4>
+                <div id="interpretation-content" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+            </div>
+        `;
+    }
+
+    let text = `<strong style="color: #1e90ff;">${varName}</strong>の結果について：<br>`;
+
+    // Interaction
+    text += `<strong>交互作用:</strong> `;
+    if (pAxB < 0.05) text += `有意な交互作用が認められました。<span style="color:red">要因間の組み合わせによる効果があります。</span> 単純主効果の検定を確認してください。<br>`;
+    else text += `有意な交互作用は認められませんでした。<span style="color:green">要因間の組み合わせによる特殊な効果はないようです。</span><br>`;
+
+    // Main Effects
+    text += `<strong>${factor1} (主効果):</strong> `;
+    if (pA < 0.05) text += `有意です。<br>`;
+    else text += `有意ではありません。<br>`;
+
+    text += `<strong>${factor2} (主効果):</strong> `;
+    if (pB < 0.05) text += `有意です。<br>`;
+    else text += `有意ではありません。<br>`;
+
+    const content = document.getElementById('interpretation-content');
+    content.innerHTML += `
+        <p style="margin: 0.5rem 0; padding: 0.75rem; background: white; border-left: 4px solid #1e90ff; border-radius: 4px;">
+            ${text}
+        </p>
+    `;
 }
 
 
@@ -393,6 +433,10 @@ function runTwoWayMixedANOVA(currentData) {
                 depVarLabel: "Value"
             }
         });
+
+        // Interpretation
+        // Re-use independent helper but carefully named vars
+        displayTwoWayInterpretation("Mixed Results", pGroup, pTime, pInteraction, betweenFactor, "条件(Time)");
 
     } catch (e) {
         console.error(e);
@@ -750,6 +794,24 @@ export function render(container, currentData, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つの要因とその交互作用を分析します</p>
             </div>
 
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> 二要因分散分析とは？</strong>
+                        <p>2つの要因（例：性別 × 条件）が結果に与える影響や、その相互作用（組み合わせによる特殊な効果）を調べます。</p>
+                        <ul>
+                            <li><strong>主効果:</strong> 各要因単独の影響</li>
+                            <li><strong>交互作用:</strong> 要因の組み合わせによる影響（例：薬Aは男性には効くが女性には効かない、など）</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="anova2-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -800,6 +862,7 @@ export function render(container, currentData, characteristics) {
 
             <div id="analysis-results" style="display: none;">
                 <div id="anova-results"></div>
+                <div id="interpretation-section" style="margin-top: 2rem;"></div>
             </div>
         </div>
     `;

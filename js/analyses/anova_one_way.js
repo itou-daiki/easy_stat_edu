@@ -352,9 +352,41 @@ function runOneWayIndependentANOVA(currentData) {
                 }, createPlotlyConfig('一要因分散分析', depVar));
             }
         }, 100);
+
+        // Interpretation
+        displayANOVADescription(depVar, fValue, dfBetween, dfWithin, pValue, etaSquared, groups, groupData);
     });
 
     document.getElementById('analysis-results').style.display = 'block';
+}
+
+// Helper: Interpretation
+function displayANOVADescription(varName, F, df1, df2, p, eta, groups, groupData) {
+    const container = document.getElementById('interpretation-section');
+    if (!container.innerHTML) {
+        container.innerHTML = `
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-lightbulb"></i> 解釈の補助
+                </h4>
+                <div id="interpretation-content" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+            </div>
+        `;
+    }
+
+    let sigText = "";
+    if (p < 0.05) sigText = "統計的に有意な差が見られました。";
+    else sigText = "統計的に有意な差は見られませんでした。";
+
+    const content = document.getElementById('interpretation-content');
+    content.innerHTML += `
+        <p style="margin: 0.5rem 0; padding: 0.75rem; background: white; border-left: 4px solid #1e90ff; border-radius: 4px;">
+            <strong style="color: #1e90ff;">${varName}</strong>について：<br>
+            F(${df1}, ${df2}) = ${F.toFixed(2)}, p = ${p.toFixed(3)}, η² = ${eta.toFixed(2)}.<br>
+            結果：<strong>${sigText}</strong><br>
+            ${p < 0.05 ? '<span style="font-size:0.9em; color:#666;">※ どの群間に差があるかは、事後検定の結果（グラフのブラケットや注釈）を確認してください。</span>' : ''}
+        </p>
+    `;
 }
 
 
@@ -582,6 +614,14 @@ function runOneWayRepeatedANOVA(currentData) {
         }
     }, 100);
 
+    // Interpretation Repeated
+    displayANOVADescription(
+        `条件(${dependentVars.join(', ')})`,
+        fValue, dfConditions, dfError, pValue, etaSquared,
+        dependentVars,
+        {} // Dummy for group stats, not needed for basic text
+    );
+
     document.getElementById('analysis-results').style.display = 'block';
 }
 
@@ -614,15 +654,18 @@ export function render(container, currentData, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">3群以上の平均値の差を検定します</p>
             </div>
 
+            <!-- 分析の概要・解釈 -->
             <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
                 <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
                     <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
                     <i class="fas fa-chevron-down toggle-icon"></i>
                 </div>
+                <!-- ... existing content ... -->
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 一要因分散分析とは？</strong>
                         <p>3つ以上のグループ（群）または条件間で平均値に差があるかを調べます。</p>
+                        <p>例：クラスA、B、Cでテストの平均点に差があるか？</p>
                     </div>
                 </div>
             </div>
@@ -660,7 +703,11 @@ export function render(container, currentData, characteristics) {
             </div>
 
             <div id="analysis-results" style="display: none;">
+                <!-- 結果エリア -->
                 <div id="anova-results"></div>
+                
+                <!-- 解釈の補助セクション (追加) -->
+                <div id="interpretation-section" style="margin-top: 2rem;"></div>
             </div>
     </div>
     `;
