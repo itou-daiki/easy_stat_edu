@@ -247,15 +247,27 @@ function plotCombinedPathDiagram(independentVars, allResults) {
         sizes.push(50);
         colors.push('#1e90ff'); // Dark Blue
 
-        // R2 Annotation near Dependent Var
-        const r2 = allResults[i].r2;
+        // Stats Annotation near Dependent Var
+        const res = allResults[i];
+        const r2 = res.r2;
+        const fVal = res.fValue;
+        const pVal = res.pValueModel;
+        const n = res.n;
+        const k = independentVars.length;
+        const df1 = k;
+        const df2 = n - k - 1;
+
+        let pText = pVal < 0.001 ? 'p<.001' : `p=${pVal.toFixed(3)}`;
+
         annotations.push({
             x: 0.85,
             y: yPos,
-            text: `R²=${r2.toFixed(2)}`,
+            text: `R²=${r2.toFixed(2)}<br>F(${df1},${df2})=${fVal.toFixed(2)}<br>${pText}`,
             showarrow: false,
             xanchor: 'left',
-            font: { size: 11, color: '#64748b' }
+            yanchor: 'middle',
+            font: { size: 10, color: '#64748b' },
+            align: 'left'
         });
     });
 
