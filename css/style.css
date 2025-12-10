@@ -703,6 +703,8 @@ table tr:hover {
 .table-container {
     overflow-x: auto;
     margin: 1rem 0;
+    max-height: 50vh;
+    overflow-y: auto;
 }
 
 /* 情報セクション */
