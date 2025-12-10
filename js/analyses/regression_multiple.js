@@ -260,14 +260,14 @@ function plotCombinedPathDiagram(independentVars, allResults) {
         let pText = pVal < 0.001 ? 'p<.001' : `p=${pVal.toFixed(3)}`;
 
         annotations.push({
-            x: 0.85,
-            y: yPos,
+            x: 0.8,
+            y: yPos - 0.06,
             text: `R²=${r2.toFixed(2)}<br>F(${df1},${df2})=${fVal.toFixed(2)}<br>${pText}`,
             showarrow: false,
-            xanchor: 'left',
-            yanchor: 'middle',
+            xanchor: 'center',
+            yanchor: 'top',
             font: { size: 10, color: '#64748b' },
-            align: 'left'
+            align: 'center'
         });
     });
 
