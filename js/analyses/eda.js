@@ -241,13 +241,13 @@ function renderCategoricalPlot(col, valueCounts, plotId, sortOrder) {
     if (sortOrder === 'name') {
         // 名前順にソート
         const sorted = labels.map((label, i) => ({ label, value: values[i] }))
-                             .sort((a, b) => a.label.localeCompare(b.label));
+            .sort((a, b) => a.label.localeCompare(b.label));
         labels = sorted.map(item => item.label);
         values = sorted.map(item => item.value);
     } else {
         // 度数順にソート（降順）
         const sorted = labels.map((label, i) => ({ label, value: values[i] }))
-                             .sort((a, b) => b.value - a.value);
+            .sort((a, b) => b.value - a.value);
         labels = sorted.map(item => item.label);
         values = sorted.map(item => item.value);
     }
@@ -466,7 +466,7 @@ function plotNumericVsNumeric(var1, var2, container) {
     const pairs = currentData
         .map(row => ({ x: row[var1], y: row[var2] }))
         .filter(pair => pair.x !== null && pair.x !== undefined && !isNaN(pair.x) &&
-                       pair.y !== null && pair.y !== undefined && !isNaN(pair.y));
+            pair.y !== null && pair.y !== undefined && !isNaN(pair.y));
 
     const x = pairs.map(p => p.x);
     const y = pairs.map(p => p.y);
@@ -754,16 +754,16 @@ export function render(container, characteristics) {
             <!-- タブナビゲーション -->
             <div class="tab-navigation" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 3px solid #e2e8f0;">
                 <button class="tab-button active" data-tab="general-eda" style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: bold; background: #1e90ff; color: white; border: none; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-                    <i class="fas fa-chart-line"></i> 一般EDA
+                    <i class="fas fa-chart-line"></i> 基本統計・分布
                 </button>
                 <button class="tab-button" data-tab="bulk-boxplot" style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: bold; background: #e2e8f0; color: #4a5568; border: none; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-                    <i class="fas fa-layer-group"></i> 一括箱ひげ図
+                    <i class="fas fa-layer-group"></i> 数値変数の比較
                 </button>
                 <button class="tab-button" data-tab="two-vars" style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: bold; background: #e2e8f0; color: #4a5568; border: none; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-                    <i class="fas fa-project-diagram"></i> ２変数
+                    <i class="fas fa-project-diagram"></i> ２変数の関係
                 </button>
                 <button class="tab-button" data-tab="three-vars" style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: bold; background: #e2e8f0; color: #4a5568; border: none; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-                    <i class="fas fa-cubes"></i> ３変数
+                    <i class="fas fa-cubes"></i> ３変数の関係
                 </button>
             </div>
 
@@ -771,7 +771,7 @@ export function render(container, characteristics) {
             <div id="tab-general-eda" class="tab-content" style="display: block;">
                 <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
-                        <i class="fas fa-chart-line"></i> 一般EDA
+                        <i class="fas fa-chart-line"></i> 基本統計・分布
                     </h3>
                     <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">各変数の個別分析を行います</p>
                 </div>
@@ -783,7 +783,7 @@ export function render(container, characteristics) {
             <div id="tab-bulk-boxplot" class="tab-content" style="display: none;">
                 <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
-                        <i class="fas fa-layer-group"></i> 一括箱ひげ図
+                        <i class="fas fa-layer-group"></i> 数値変数の比較
                     </h3>
                     <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">全ての数値変数を一括で比較します</p>
                 </div>
