@@ -1,5 +1,8 @@
 import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, getEffectSizeInterpretation } from '../utils.js';
+import { MultiSelect } from '../components/MultiSelect.js';
+
+let dependentVarSelect = null; // Store instance
 
 // 要約統計量の計算と表示
 function displaySummaryStatistics(variables) {
@@ -69,9 +72,8 @@ function displaySummaryStatistics(variables) {
 // 対応なしt検定の実行
 function runIndependentTTest() {
     const groupVar = document.getElementById('group-var').value;
-    const depVarSelect = document.getElementById('dep-var');
-    // Multi-select collection
-    const selectedVars = Array.from(depVarSelect.selectedOptions).map(opt => opt.value);
+    // Multi-select instance value
+    const selectedVars = dependentVarSelect ? dependentVarSelect.getValue() : [];
 
     if (!groupVar) {
         alert('グループ変数を選択してください');
@@ -150,7 +152,7 @@ function runIndependentTTest() {
         const var1 = std1 * std1;
         const var2 = std2 * std2;
 
-        // Welchのt検定（等分散を仮定しない）
+        // Welchのt検定
         const se_welch = Math.sqrt(var1 / n1 + var2 / n2);
         const t_stat = (mean1 - mean2) / se_welch;
 
@@ -159,14 +161,14 @@ function runIndependentTTest() {
         const df_denominator = (var1 / n1) ** 2 / (n1 - 1) + (var2 / n2) ** 2 / (n2 - 1);
         const df_welch = df_numerator / df_denominator;
 
-        // p値の計算
+        // p値
         const p_value = jStat.studentt.cdf(-Math.abs(t_stat), df_welch) * 2;
 
-        // 効果量dの計算（プールされた標準偏差）
+        // 効果量d
         const pooled_std = Math.sqrt(((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2));
         const cohens_d = Math.abs((mean1 - mean2) / pooled_std);
 
-        // 有意性の判定
+        // 有意性
         let significance;
         if (p_value < 0.01) significance = '**';
         else if (p_value < 0.05) significance = '*';
@@ -222,7 +224,7 @@ function runIndependentTTest() {
 
     document.getElementById('test-results-table').innerHTML = resultsTableHtml;
 
-    // サンプルサイズの表示
+    // サンプルサイズ
     resultsContainer.innerHTML += `
         <div style="background: #f0f9ff; padding: 1rem; border-left: 4px solid #1e90ff; border-radius: 4px; margin-top: 1rem;">
             <h5 style="color: #1e90ff; margin: 0 0 0.5rem 0;">サンプルサイズ</h5>
@@ -232,16 +234,13 @@ function runIndependentTTest() {
         </div>
     `;
 
-    // 解釈の補助
+    // 解釈・可視化
     displayInterpretation(testResults, groupVar, 'independent');
-
-    // 可視化
     displayVisualization(testResults, 'independent');
-
     document.getElementById('results-section').style.display = 'block';
 }
 
-// 対応ありt検定の実行 (Unchanged logic, just keeping it consistent)
+// 対応ありt検定（変更なし）
 function runPairedTTest() {
     const preVar = document.getElementById('pre-var').value;
     const postVar = document.getElementById('post-var').value;
@@ -250,49 +249,38 @@ function runPairedTTest() {
         alert('観測変数と測定変数を選択してください');
         return;
     }
-
     if (preVar === postVar) {
         alert('異なる変数を選択してください');
         return;
     }
-
     displaySummaryStatistics([preVar, postVar]);
-
     const pairs = currentData
         .map(row => ({ pre: row[preVar], post: row[postVar] }))
         .filter(p => p.pre != null && !isNaN(p.pre) && p.post != null && !isNaN(p.post));
-
     if (pairs.length < 2) {
         alert('有効なペアデータが不足しています（最低2ペア必要）');
         return;
     }
-
     const preValues = pairs.map(p => p.pre);
     const postValues = pairs.map(p => p.post);
-
     const n = preValues.length;
     const mean1 = jStat.mean(preValues);
     const mean2 = jStat.mean(postValues);
     const std1 = jStat.stdev(preValues, true);
     const std2 = jStat.stdev(postValues, true);
-
     const diff = preValues.map((val, i) => val - postValues[i]);
     const diffMean = jStat.mean(diff);
     const diffStd = jStat.stdev(diff, true);
     const se = diffStd / Math.sqrt(n);
-
     const t_stat = diffMean / se;
     const df = n - 1;
     const p_value = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;
     const cohens_d = Math.abs(diffMean / diffStd);
-
     let significance;
     if (p_value < 0.01) significance = '**';
     else if (p_value < 0.05) significance = '*';
     else if (p_value < 0.1) significance = '†';
     else significance = 'n.s.';
-
-    // 結果セクションの表示
     const resultsContainer = document.getElementById('test-results-section');
     resultsContainer.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -335,39 +323,25 @@ function runPairedTTest() {
                 <strong>sign</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†
             </p>
         </div>
-
         <div style="background: #f0f9ff; padding: 1rem; border-left: 4px solid #1e90ff; border-radius: 4px;">
             <h5 style="color: #1e90ff; margin: 0 0 0.5rem 0;">サンプルサイズ</h5>
             <p style="margin: 0; color: #2d3748;">全体N = ${n}</p>
         </div>
     `;
-
     const testResults = [{
         varName: `${preVar} → ${postVar}`,
         groups: [preVar, postVar],
-        mean1,
-        mean2,
-        std1,
-        std2,
-        n1: n,
-        n2: n,
-        t_stat,
-        p_value,
-        cohens_d,
-        significance,
-        group0Values: preValues,
-        group1Values: postValues
+        mean1, mean2, std1, std2, n1: n, n2: n,
+        t_stat, p_value, cohens_d, significance,
+        group0Values: preValues, group1Values: postValues
     }];
-
     displayInterpretation(testResults, null, 'paired');
     displayVisualization(testResults, 'paired');
     document.getElementById('results-section').style.display = 'block';
 }
 
-// 解釈の補助
 function displayInterpretation(testResults, groupVar, testType) {
     const container = document.getElementById('interpretation-section');
-
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
@@ -376,24 +350,15 @@ function displayInterpretation(testResults, groupVar, testType) {
             <div id="interpretation-content" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
         </div>
     `;
-
     const contentContainer = document.getElementById('interpretation-content');
     let interpretationHtml = '';
-
     testResults.forEach(result => {
         const comparison = result.mean1 > result.mean2 ? '＞' : '＜';
         let significanceText;
-
-        if (result.significance === '**' || result.significance === '*') {
-            significanceText = '有意な差が生まれる';
-        } else if (result.significance === '†') {
-            significanceText = '有意な差が生まれる傾向にある';
-        } else {
-            significanceText = '有意な差が生まれない';
-        }
-
+        if (result.significance === '**' || result.significance === '*') significanceText = '有意な差が生まれる';
+        else if (result.significance === '†') significanceText = '有意な差が生まれる傾向にある';
+        else significanceText = '有意な差が生まれない';
         let description = `<p style="margin: 0.5rem 0; padding: 0.75rem; background: white; border-left: 4px solid #1e90ff; border-radius: 4px;">`;
-
         if (testType === 'independent') {
             description += `<strong style="color: #1e90ff;">${groupVar}</strong>によって、<strong>${result.varName}</strong>には${significanceText}`;
             description += `（${result.groups[0]} ${comparison} ${result.groups[1]}）`;
@@ -401,20 +366,15 @@ function displayInterpretation(testResults, groupVar, testType) {
             description += `<strong style="color: #1e90ff;">${result.varName}</strong>には${significanceText}`;
             description += `（観測値 ${comparison} 測定値）`;
         }
-
         description += ` <span style="color: #6b7280;">(p= ${result.p_value.toFixed(2)})</span>`;
         description += '</p>';
-
         interpretationHtml += description;
     });
-
     contentContainer.innerHTML = interpretationHtml;
 }
 
-// 可視化
 function displayVisualization(testResults, testType) {
     const container = document.getElementById('visualization-section');
-
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
@@ -423,10 +383,8 @@ function displayVisualization(testResults, testType) {
             <div id="visualization-plots"></div>
         </div>
     `;
-
     const plotsContainer = document.getElementById('visualization-plots');
     let plotsHtml = '';
-
     testResults.forEach((result, index) => {
         const plotId = `ttest-plot-${index}`;
         plotsHtml += `
@@ -440,90 +398,44 @@ function displayVisualization(testResults, testType) {
             </div>
         `;
     });
-
     plotsContainer.innerHTML = plotsHtml;
-
-    // グラフの描画
     testResults.forEach((result, index) => {
         const plotId = `ttest-plot-${index}`;
-
-        // 標準誤差の計算
         const se1 = result.std1 / Math.sqrt(result.n1);
         const se2 = result.std2 / Math.sqrt(result.n2);
-
         const trace = {
             x: result.groups,
             y: [result.mean1, result.mean2],
-            error_y: {
-                type: 'data',
-                array: [se1, se2],
-                visible: true
-            },
-            type: 'bar',
-            marker: { color: 'rgba(30, 144, 255, 0.7)' }
+            error_y: { type: 'data', array: [se1, se2], visible: true },
+            type: 'bar', marker: { color: 'rgba(30, 144, 255, 0.7)' }
         };
-
-        // 有意性のブラケット表示
         const annotations = [];
         const shapes = [];
-
         if (result.p_value < 0.05) {
             const yMax = Math.max(result.mean1 + se1, result.mean2 + se2);
             const yRange = yMax * 0.15;
             const bracketY = yMax + yRange * 0.5;
             const annotationY = bracketY + yRange * 0.3;
-
             let significanceText;
             if (result.p_value < 0.01) significanceText = 'p < 0.01 **';
             else if (result.p_value < 0.05) significanceText = 'p < 0.05 *';
             else significanceText = 'p < 0.1 †';
-
-            // ブラケット
-            shapes.push({
-                type: 'line',
-                x0: 0, y0: bracketY, x1: 1, y1: bracketY,
-                line: { color: 'black', width: 2 }
-            });
-            shapes.push({
-                type: 'line',
-                x0: 0, y0: yMax + yRange * 0.3, x1: 0, y1: bracketY,
-                line: { color: 'black', width: 2 }
-            });
-            shapes.push({
-                type: 'line',
-                x0: 1, y0: yMax + yRange * 0.3, x1: 1, y1: bracketY,
-                line: { color: 'black', width: 2 }
-            });
-
-            annotations.push({
-                x: 0.5,
-                y: annotationY,
-                text: significanceText,
-                showarrow: false,
-                font: { size: 14, color: 'black', weight: 'bold' }
-            });
+            shapes.push({ type: 'line', x0: 0, y0: bracketY, x1: 1, y1: bracketY, line: { color: 'black', width: 2 } });
+            shapes.push({ type: 'line', x0: 0, y0: yMax + yRange * 0.3, x1: 0, y1: bracketY, line: { color: 'black', width: 2 } });
+            shapes.push({ type: 'line', x0: 1, y0: yMax + yRange * 0.3, x1: 1, y1: bracketY, line: { color: 'black', width: 2 } });
+            annotations.push({ x: 0.5, y: annotationY, text: significanceText, showarrow: false, font: { size: 14, color: 'black', weight: 'bold' } });
         }
-
         const layout = {
-            title: testType === 'paired'
-                ? `平均値の比較：${result.varName}`
-                : `平均値の比較：${result.varName} by グループ`,
-            xaxis: { title: '' },
-            yaxis: { title: '値' },
-            showlegend: false,
-            annotations: annotations,
-            shapes: shapes
+            title: testType === 'paired' ? `平均値の比較：${result.varName}` : `平均値の比較：${result.varName} by グループ`,
+            xaxis: { title: '' }, yaxis: { title: '値' }, showlegend: false, annotations: annotations, shapes: shapes
         };
-
         Plotly.newPlot(plotId, [trace], layout);
     });
 }
 
-// 検定タイプの切り替え
 function switchTestType(testType) {
     const independentControls = document.getElementById('independent-controls');
     const pairedControls = document.getElementById('paired-controls');
-
     if (testType === 'independent') {
         independentControls.style.display = 'block';
         pairedControls.style.display = 'none';
@@ -531,8 +443,6 @@ function switchTestType(testType) {
         independentControls.style.display = 'none';
         pairedControls.style.display = 'block';
     }
-
-    // 結果セクションを非表示
     document.getElementById('results-section').style.display = 'none';
 }
 
@@ -578,9 +488,9 @@ export function render(container, characteristics) {
 
                     <div style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
                          <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                             <i class="fas fa-check-square"></i> 従属変数を選択（複数選択可: Ctrl/Cmd+Click）:
+                             <i class="fas fa-check-square"></i> 従属変数を選択（複数選択可）:
                          </label>
-                         <select id="dep-var" multiple style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; min-height: 150px;"></select>
+                         <div id="dep-var-container" style="margin-top:0.5rem;"></div>
                     </div>
 
                     <button id="run-independent-btn" class="btn-analysis" style="margin-top: 1.5rem; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
@@ -624,6 +534,7 @@ export function render(container, characteristics) {
 
     const { numericColumns, categoricalColumns } = characteristics;
 
+    // グループ変数
     const groupVarSelect = document.getElementById('group-var');
     if (categoricalColumns.length === 0) {
         groupVarSelect.innerHTML = '<option value="">カテゴリ変数が見つかりません</option>';
@@ -633,14 +544,19 @@ export function render(container, characteristics) {
             categoricalColumns.map(col => `<option value="${col}">${col}</option>`).join('');
     }
 
-    const depVarSelect = document.getElementById('dep-var');
+    // 従属変数 (MultiSelect)
+    const depVarContainer = document.getElementById('dep-var-container');
     if (numericColumns.length === 0) {
-        depVarSelect.innerHTML = '<option value="">数値変数が見つかりません</option>';
-        depVarSelect.disabled = true;
+        depVarContainer.innerHTML = '<p style="color:red;">数値変数が見つかりません</p>';
     } else {
-        depVarSelect.innerHTML = numericColumns.map(col => `<option value="${col}">${col}</option>`).join('');
+        // Initialize MultiSelect
+        dependentVarSelect = new MultiSelect(depVarContainer, numericColumns, {
+            placeholder: '変数を検索・選択...',
+            defaultSelected: []
+        });
     }
 
+    // 対応ありの変数
     const preVarSelect = document.getElementById('pre-var');
     const postVarSelect = document.getElementById('post-var');
     const numOptions = '<option value="">選択してください...</option>' +
