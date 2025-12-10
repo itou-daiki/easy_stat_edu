@@ -1,4 +1,3 @@
-import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
 
 let tokenizer = null;
@@ -152,7 +151,7 @@ function displayTopWords(sortedWords) {
     `).join('');
 }
 
-export function render(container, characteristics) {
+export function render(container, currentData, characteristics) {
     const { textColumns } = characteristics;
 
     container.innerHTML = `

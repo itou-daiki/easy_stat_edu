@@ -1,4 +1,3 @@
-import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 function runTwoWayANOVA() {
@@ -209,7 +208,7 @@ function runTwoWayANOVA() {
     document.getElementById('analysis-results').style.display = 'block';
 }
 
-export function render(container, characteristics) {
+export function render(container, currentData, characteristics) {
     const { numericColumns, categoricalColumns } = characteristics;
 
     container.innerHTML = `

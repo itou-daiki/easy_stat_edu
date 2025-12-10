@@ -252,7 +252,7 @@ async function showAnalysisView(analysisType) {
     try {
         const modulePath = `./analyses/${analysisType}.js`;
         const analysisModule = await import(modulePath);
-        analysisModule.render(analysisContent, dataCharacteristics);
+        analysisModule.render(analysisContent, currentData, dataCharacteristics);
     } catch (error) {
         console.error(error);
         analysisContent.innerHTML = `<p class="error-message">分析機能の読み込みに失敗しました。(${analysisType}.js)<br>エラー詳細: ${error.message}<br><pre>${error.stack}</pre></p>`;

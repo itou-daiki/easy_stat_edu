@@ -1,4 +1,3 @@
-import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 // 重回帰分析の実行
@@ -316,7 +315,7 @@ function plotPathDiagram(dependentVar, independentVars, standardizedCoefs, r2) {
     Plotly.newPlot('plot-area', data, layout, createPlotlyConfig('重回帰分析_パス図', [dependentVar, ...independentVars]));
 }
 
-export function render(container, characteristics) {
+export function render(container, currentData, characteristics) {
     const { numericColumns } = characteristics;
 
     container.innerHTML = `

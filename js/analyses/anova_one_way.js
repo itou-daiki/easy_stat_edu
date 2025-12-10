@@ -1,4 +1,3 @@
-import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, renderSampleSizeInfo } from '../utils.js';
 
 // Pairwise t-test helper
@@ -459,7 +458,7 @@ function runOneWayANOVA() {
     document.getElementById('analysis-results').style.display = 'block';
 }
 
-export function render(container, characteristics) {
+export function render(container, currentData, characteristics) {
     const { numericColumns, categoricalColumns } = characteristics;
 
     container.innerHTML = `

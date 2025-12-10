@@ -1,4 +1,3 @@
-import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 function runSimpleRegression() {
@@ -147,7 +146,7 @@ function runSimpleRegression() {
     document.getElementById('analysis-results').style.display = 'block';
 }
 
-export function render(container, characteristics) {
+export function render(container, currentData, characteristics) {
     const { numericColumns } = characteristics;
 
     container.innerHTML = `

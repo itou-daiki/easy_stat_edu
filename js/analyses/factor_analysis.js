@@ -1,4 +1,3 @@
-import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 // 因子抽出（主因子法）
@@ -320,7 +319,7 @@ function plotLoadingsHeatmap(variables, loadings) {
 }
 
 
-export function render(container, characteristics) {
+export function render(container, currentData, characteristics) {
     const { numericColumns } = characteristics;
 
     container.innerHTML = `

@@ -1,4 +1,3 @@
-import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 // Keep for now if needed later, or remove. Instructions say remove.
 // Actually, let's just remove the line if it's the only import.
@@ -746,7 +745,8 @@ function switchTab(tabName) {
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
 }
 
-export function render(container, characteristics) {
+// Main Render Function
+export function render(container, currentData, characteristics) {
     container.innerHTML = `
         <div class="eda-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">

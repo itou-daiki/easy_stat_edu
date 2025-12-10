@@ -1,4 +1,3 @@
-import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 // 相関マトリックスの計算
@@ -246,7 +245,7 @@ function plotScatterMatrix(variables) {
     Plotly.newPlot('scatter-matrix', traces, layout, createPlotlyConfig('散布図行列', variables));
 }
 
-export function render(container, characteristics) {
+export function render(container, currentData, characteristics) {
     const { numericColumns } = characteristics;
 
     container.innerHTML = `

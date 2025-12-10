@@ -1,4 +1,3 @@
-import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 function runChiSquare() {
@@ -177,7 +176,7 @@ function displayResults(rowVar, colVar, rowKeys, colKeys, observed, expected, ad
     document.getElementById('analysis-results').style.display = 'block';
 }
 
-export function render(container, characteristics) {
+export function render(container, currentData, characteristics) {
     const { categoricalColumns } = characteristics;
 
     container.innerHTML = `

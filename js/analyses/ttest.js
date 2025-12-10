@@ -1,4 +1,3 @@
-import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 // 要約統計量の計算と表示
@@ -436,7 +435,7 @@ function switchTestType(testType) {
     document.getElementById('results-section').style.display = 'none';
 }
 
-export function render(container, characteristics) {
+export function render(container, currentData, characteristics) {
     container.innerHTML = `
         <div class="ttest-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">

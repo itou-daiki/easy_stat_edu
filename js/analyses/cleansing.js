@@ -1,4 +1,3 @@
-import { currentData, dataCharacteristics } from '../main.js';
 import { renderDataOverview } from '../utils.js';
 
 // 元のデータのコピーを保持
@@ -307,7 +306,7 @@ function displayDataQualityInfo() {
     document.getElementById('data-quality-info').innerHTML = qualityHtml;
 }
 
-export function render(container) {
+export function render(container, currentData, dataCharacteristics) {
     // 元のデータを保存
     originalData = JSON.parse(JSON.stringify(currentData));
     originalCharacteristics = JSON.parse(JSON.stringify(dataCharacteristics));
