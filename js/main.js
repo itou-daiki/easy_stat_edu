@@ -125,6 +125,25 @@ function processData(fileName, jsonData) {
     console.log('Data processed:', { fileName, dataCharacteristics });
     
     updateFileInfo(fileName, jsonData);
+    
+    // データプレビューと統計量をレンダリング
+    renderDataFrame(jsonData);
+    renderSummaryStatistics(jsonData, characteristics);
+    
+    // プレビューセクションを表示
+    const dataPreviewSection = document.getElementById('data-preview-section');
+    dataPreviewSection.style.display = 'block';
+    
+    // 新しく追加された折りたたみ要素にイベントリスナーを設定
+    dataPreviewSection.querySelectorAll('.collapsible-header').forEach(header => {
+        // 既存のリスナーがあれば削除してから追加（重複防止）
+        const newHeader = header.cloneNode(true);
+        header.parentNode.replaceChild(newHeader, header);
+        newHeader.addEventListener('click', () => {
+            toggleCollapsible(newHeader);
+        });
+    });
+
     updateFeatureCards();
     hideLoadingMessage();
 }
@@ -231,6 +250,98 @@ async function showAnalysisView(analysisType) {
         console.error(`Failed to load analysis module for ${analysisType}:`, error);
         analysisContent.innerHTML = `<p class="error-message">分析機能の読み込みに失敗しました。(${analysisType}.js)<br>この機能はまだ実装されていない可能性があります。</p>`;
     }
+}
+
+function renderDataFrame(data) {
+    const container = document.getElementById('dataframe-container');
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p>表示するデータがありません。</p>';
+        return;
+    }
+
+    const columns = Object.keys(data[0]);
+    const dataSubset = data.slice(0, 10); // 先頭10行
+
+    let tableHtml = '<table class="table">';
+    // Header
+    tableHtml += '<thead><tr>';
+    columns.forEach(col => tableHtml += `<th>${col}</th>`);
+    tableHtml += '</tr></thead>';
+
+    // Body
+    tableHtml += '<tbody>';
+    dataSubset.forEach(row => {
+        tableHtml += '<tr>';
+        columns.forEach(col => {
+            const value = row[col];
+            tableHtml += `<td>${value !== null && value !== undefined ? value : ''}</td>`;
+        });
+        tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+
+    if (data.length > 10) {
+        tableHtml += `<p class="text-muted" style="text-align: right; margin-top: 0.5rem;">全 ${data.length} 件中、先頭 10 件を表示しています。</p>`;
+    }
+
+    container.innerHTML = tableHtml;
+}
+
+function renderSummaryStatistics(data, characteristics) {
+    const container = document.getElementById('summary-stats-container');
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p>統計量を計算するデータがありません。</p>';
+        return;
+    }
+    
+    const { numericColumns, categoricalColumns, textColumns } = characteristics;
+    const allColumns = Object.keys(data[0]);
+
+    let tableHtml = '<table class="table"><thead><tr>' +
+                    '<th>変数名</th><th>型</th><th>欠損値(%)</th><th>平均</th><th>標準偏差</th>' + 
+                    '<th>最小値</th><th>中央値</th><th>最大値</th><th>ユニーク数</th>' +
+                    '</tr></thead><tbody>';
+
+    allColumns.forEach(col => {
+        const values = data.map(row => row[col]).filter(v => v !== null && v !== undefined);
+        const missingCount = data.length - values.length;
+        const missingRate = ((missingCount / data.length) * 100).toFixed(1);
+
+        let type = '不明';
+        let stats = { mean: '-', std: '-', min: '-', median: '-', max: '-', unique: '-' };
+        
+        if (numericColumns.includes(col)) {
+            type = '数値';
+            const jstat = jStat(values);
+            stats.mean = jstat.mean().toFixed(3);
+            stats.std = jstat.stdev(true).toFixed(3);
+            stats.min = jstat.min().toFixed(3);
+            stats.median = jstat.median().toFixed(3);
+            stats.max = jstat.max().toFixed(3);
+            stats.unique = new Set(values).size;
+        } else {
+            if(categoricalColumns.includes(col)) type = 'カテゴリ';
+            else if(textColumns.includes(col)) type = 'テキスト';
+            stats.unique = new Set(values).size;
+        }
+
+        tableHtml += `
+            <tr>
+                <td><strong>${col}</strong></td>
+                <td>${type}</td>
+                <td>${missingRate}%</td>
+                <td>${stats.mean}</td>
+                <td>${stats.std}</td>
+                <td>${stats.min}</td>
+                <td>${stats.median}</td>
+                <td>${stats.max}</td>
+                <td>${stats.unique}</td>
+            </tr>
+        `;
+    });
+
+    tableHtml += '</tbody></table>';
+    container.innerHTML = tableHtml;
 }
 
 // Make backToHome globally accessible
