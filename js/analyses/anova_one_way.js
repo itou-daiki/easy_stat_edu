@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, renderSampleSizeInfo } from '../utils.js';
 
 // Pairwise t-test helper
 function performPostHocTests(groups, groupData) {
