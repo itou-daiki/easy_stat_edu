@@ -43,7 +43,7 @@ function runCorrelationAnalysis(currentData) {
     const matrix = calculateCorrelationMatrix(selectedVars, currentData);
     displayResults(selectedVars, matrix);
     plotHeatmap(selectedVars, matrix);
-    plotScatterMatrix(selectedVars);
+    plotScatterMatrix(selectedVars, currentData);
 
     document.getElementById('analysis-results').style.display = 'block';
 }

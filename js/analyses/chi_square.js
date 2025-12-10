@@ -226,10 +226,7 @@ export function render(container, currentData, characteristics) {
                     <div id="col-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                 </div>
 
-                <div class="grid-2-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div id="row-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
-                    <div id="col-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
-                </div>
+
 
                 <div id="run-chi-btn-container"></div>
             </div>

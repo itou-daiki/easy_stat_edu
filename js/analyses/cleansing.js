@@ -400,7 +400,7 @@ export function render(container, currentData, dataCharacteristics) {
                 </button>
             </div>
         </div>
-        </div > >
+        </div>
         `;
 
     // データ品質情報を表示

@@ -224,4 +224,3 @@ export function render(container, currentData, characteristics) {
 
     createAnalysisButton('run-text-btn-container', '分析を実行', () => runTextMining(currentData), { id: 'run-text-btn' });
 }
-```
