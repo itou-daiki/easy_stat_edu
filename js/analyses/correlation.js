@@ -121,36 +121,129 @@ function plotHeatmap(variables, matrix) {
 }
 
 function plotScatterMatrix(variables) {
-    // データの準備（最大1000件に制限してパフォーマンス確保）
+    // データの準備（最大1000件に制限）
     const plotData = currentData.slice(0, 1000);
+    const n = variables.length;
 
-    const dimensions = variables.map(v => ({
-        label: v,
-        values: plotData.map(row => row[v])
-    }));
+    // 相関行列の計算（テキスト表示用）
+    const matrix = calculateCorrelationMatrix(variables);
 
-    const data = [{
-        type: 'splom',
-        dimensions: dimensions,
-        marker: {
-            color: '#1e90ff',
-            size: 5,
-            opacity: 0.5
-        },
-        diagonal: { visible: false } // 対角線はヒストグラム等にした方が良いがsplomは簡易的に
-    }];
-
+    const traces = [];
     const layout = {
-        title: '散布図行列（上位1000件）',
-        height: 800,
-        width: 800,
-        hovermode: 'closest',
-        dragmode: 'select',
-        plot_bgcolor: 'rgba(240,240,240, 0.95)',
-        margin: { l: 50, r: 50, t: 50, b: 50 }
+        title: '散布図行列（対角:ヒストグラム, 右上:相関係数, 左下:散布図）',
+        height: 150 * n, // 変数が増えると高さを自動調整
+        width: 150 * n,  // 幅も自動調整
+        showlegend: false,
+        plot_bgcolor: '#f8fafc',
+        margin: { l: 60, r: 60, t: 80, b: 60 } // マージン調整
     };
 
-    Plotly.newPlot('scatter-matrix', data, layout);
+    // グリッド作成用のループ
+    for (let i = 0; i < n; i++) { // 行 (Y軸に対応)
+        for (let j = 0; j < n; j++) { // 列 (X軸に対応)
+
+            // 軸のID生成 (Plotlyは1始まり、最初だけ番号なしだが、統一のため全部番号つきで管理し、layout設定で紐付ける)
+            // ここでは domain を使って配置する手法をとる
+            // i=0 (Top row), j=0 (Left col)
+
+            const xaxis = `x${i * n + j + 1}`;
+            const yaxis = `y${i * n + j + 1}`;
+
+            const varRow = variables[i]; // Y variable
+            const varCol = variables[j]; // X variable
+
+            // ドメイン計算 (余白 gap を考慮)
+            const gap = 0.05;
+            const size = (1 - (n - 1) * gap) / n;
+            const xDomainStart = j * (size + gap);
+            const xDomainEnd = xDomainStart + size;
+            const yDomainStart = 1 - (i + 1) * (size + gap) + gap; // 上から配置
+            const yDomainEnd = yDomainStart + size;
+
+            layout[`xaxis${i * n + j + 1}`] = {
+                domain: [xDomainStart, xDomainEnd],
+                showgrid: false,
+                zeroline: false,
+                showticklabels: i === n - 1, // 一番下の行だけラベル表示
+                title: i === n - 1 ? varCol : undefined // 一番下の行だけタイトル表示
+            };
+
+            layout[`yaxis${i * n + j + 1}`] = {
+                domain: [yDomainStart, yDomainEnd],
+                showgrid: false,
+                zeroline: false,
+                showticklabels: j === 0, // 一番左の列だけラベル表示
+                title: j === 0 ? varRow : undefined // 一番左の列だけタイトル表示
+            };
+
+            // トレース追加
+            if (i === j) {
+                // 対角線：ヒストグラム
+                traces.push({
+                    x: plotData.map(row => row[varRow]),
+                    type: 'histogram',
+                    xaxis: xaxis,
+                    yaxis: yaxis,
+                    marker: { color: '#87CEEB' }, // lightblue
+                    showlegend: false
+                });
+            } else if (i < j) {
+                // 右上：相関係数テキスト
+                const corr = matrix[i][j];
+                // 相関係数の強さを判定
+                const absCorr = Math.abs(corr);
+                let textColor = 'black';
+                let weight = 'normal';
+                if (absCorr >= 0.7) { textColor = '#dc2626'; weight = 'bold'; } // strong red
+                else if (absCorr >= 0.4) { textColor = '#ea580c'; } // medium orange
+
+                traces.push({
+                    x: [0.5],
+                    y: [0.5],
+                    text: [isNaN(corr) ? '-' : corr.toFixed(3)],
+                    mode: 'text',
+                    xaxis: xaxis,
+                    yaxis: yaxis,
+                    type: 'scatter',
+                    textfont: {
+                        size: 16,
+                        color: textColor,
+                        weight: weight
+                    },
+                    hoverinfo: 'none'
+                });
+
+                // テキスト表示用の軸設定（範囲固定）
+                layout[`xaxis${i * n + j + 1}`].range = [0, 1];
+                layout[`xaxis${i * n + j + 1}`].showticklabels = false;
+                layout[`yaxis${i * n + j + 1}`].range = [0, 1];
+                layout[`yaxis${i * n + j + 1}`].showticklabels = false;
+
+            } else {
+                // 左下：散布図
+                traces.push({
+                    x: plotData.map(row => row[varCol]),
+                    y: plotData.map(row => row[varRow]),
+                    mode: 'markers',
+                    type: 'scatter',
+                    xaxis: xaxis,
+                    yaxis: yaxis,
+                    marker: {
+                        size: 4,
+                        color: '#1e90ff',
+                        opacity: 0.6
+                    },
+                    hoverinfo: 'text',
+                    text: plotData.map((_, idx) => `${varCol}: ${plotData[idx][varCol]}<br>${varRow}: ${plotData[idx][varRow]}`)
+                });
+            }
+        }
+    }
+
+    // レイアウトの微調整（全体のタイトルなど）
+    // layout.grid を使わず manual domain 設定で実装したため、これ以上特別な設定は不要
+
+    Plotly.newPlot('scatter-matrix', traces, layout);
 }
 
 export function render(container, characteristics) {
@@ -166,7 +259,7 @@ export function render(container, characteristics) {
             </div>
 
             <!-- 分析の概要・解釈 -->
-            <div class="collapsible-section" style="margin-bottom: 2rem;">
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
                 <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
                     <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
                     <i class="fas fa-chevron-down toggle-icon"></i>

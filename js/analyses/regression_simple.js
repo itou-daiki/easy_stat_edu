@@ -160,7 +160,7 @@ export function render(container, characteristics) {
             </div>
 
             <!-- 分析の概要・解釈 -->
-            <div class="collapsible-section" style="margin-bottom: 2rem;">
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
                 <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
                     <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
                     <i class="fas fa-chevron-down toggle-icon"></i>
