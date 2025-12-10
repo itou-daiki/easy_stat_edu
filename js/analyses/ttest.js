@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, getEffectSizeInterpretation, createVariableSelector } from '../utils.js';
+import { renderDataOverview, getEffectSizeInterpretation, createVariableSelector, renderSampleSizeInfo } from '../utils.js';
 
 // 要約統計量の計算と表示
 function displaySummaryStatistics(variables) {
@@ -222,14 +222,10 @@ function runIndependentTTest() {
     document.getElementById('test-results-table').innerHTML = resultsTableHtml;
 
     // サンプルサイズ
-    resultsContainer.innerHTML += `
-        <div style="background: #f0f9ff; padding: 1rem; border-left: 4px solid #1e90ff; border-radius: 4px; margin-top: 1rem;">
-            <h5 style="color: #1e90ff; margin: 0 0 0.5rem 0;">サンプルサイズ</h5>
-            <p style="margin: 0; color: #2d3748;">全体N = ${currentData.length}</p>
-            <p style="margin: 0; color: #2d3748;">● ${groups[0]}: ${group0Data.length}</p>
-            <p style="margin: 0; color: #2d3748;">● ${groups[1]}: ${group1Data.length}</p>
-        </div>
-    `;
+    renderSampleSizeInfo(resultsContainer, currentData.length, [
+        { label: groups[0], count: group0Data.length, color: '#11b981' },
+        { label: groups[1], count: group1Data.length, color: '#f59e0b' }
+    ]);
 
     displayInterpretation(testResults, groupVar, 'independent');
     displayVisualization(testResults, 'independent');
@@ -318,10 +314,7 @@ function runPairedTTest() {
                 <strong>sign</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†
             </p>
         </div>
-        <div style="background: #f0f9ff; padding: 1rem; border-left: 4px solid #1e90ff; border-radius: 4px;">
-            <h5 style="color: #1e90ff; margin: 0 0 0.5rem 0;">サンプルサイズ</h5>
-            <p style="margin: 0; color: #2d3748;">全体N = ${n}</p>
-        </div>
+    renderSampleSizeInfo(resultsContainer, n);
     `;
     const testResults = [{
         varName: `${preVar} → ${postVar}`,

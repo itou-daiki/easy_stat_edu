@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, getEffectSizeInterpretation, createVariableSelector } from '../utils.js';
+import { renderDataOverview, getEffectSizeInterpretation, createVariableSelector, renderSampleSizeInfo } from '../utils.js';
 
 function runOneWayANOVA() {
     const factorVar = document.getElementById('factor-var').value;
@@ -127,6 +127,41 @@ function runOneWayANOVA() {
         `;
 
         outputContainer.innerHTML += html;
+
+        // サンプルサイズ (renderSampleSizeInfo will append to result container div inside the loop issue - wait, outputContainer is cleared at start)
+        // Need to target specific section. The loop creates a `sectionId` div? No, just dumps html.
+        // Let's modify the html structure. `html` is a huge block.
+        // I should probably inject it AFTER the table inside the white box or create a new box.
+        // The current loop appends `html` string to `outputContainer`. 
+        // I should append sample size info to the specific div created for this variable.
+        // But `renderSampleSizeInfo` appends to a DOM element.
+        // Solution: Create a placeholder div in `html`, then after `outputContainer.innerHTML += html`, find that div and render sample size.
+
+        // Wait, using `innerHTML +=` destroys event listeners and references.
+        // Better approach:
+
+        // 1. Create a wrapper div for this variable's results
+        const varResultDiv = document.createElement('div');
+        varResultDiv.className = 'anova-result-block';
+        varResultDiv.innerHTML = html;
+        outputContainer.appendChild(varResultDiv);
+
+        // 2. Render sample size inside this wrapper
+        const sampleSizeContainer = document.createElement('div');
+        varResultDiv.firstElementChild.appendChild(sampleSizeContainer); // Append to the white box (firstElementChild of varResultDiv which is the white box in `html`)
+
+        // Generate group data for sample size
+        const groupSampleSizes = groups.map((g, i) => {
+            // Generate colors cyclically or randomly if many groups
+            const colors = ['#11b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'];
+            return {
+                label: g,
+                count: groupData[g].length,
+                color: colors[i % colors.length]
+            };
+        });
+
+        renderSampleSizeInfo(sampleSizeContainer, totalN, groupSampleSizes);
 
         // 箱ひげ図の描画 (Plotly)
         // 非同期でないとDOM描画後にplotできないが、innerHTML += だと都度再描画される
