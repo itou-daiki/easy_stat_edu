@@ -260,7 +260,6 @@ function renderDataFrame(data) {
     }
 
     const columns = Object.keys(data[0]);
-    const dataSubset = data.slice(0, 10); // 先頭10行
 
     let tableHtml = '<table class="table">';
     // Header
@@ -270,7 +269,7 @@ function renderDataFrame(data) {
 
     // Body
     tableHtml += '<tbody>';
-    dataSubset.forEach(row => {
+    data.forEach(row => {
         tableHtml += '<tr>';
         columns.forEach(col => {
             const value = row[col];
@@ -279,10 +278,6 @@ function renderDataFrame(data) {
         tableHtml += '</tr>';
     });
     tableHtml += '</tbody></table>';
-
-    if (data.length > 10) {
-        tableHtml += `<p class="text-muted" style="text-align: right; margin-top: 0.5rem;">全 ${data.length} 件中、先頭 10 件を表示しています。</p>`;
-    }
 
     container.innerHTML = tableHtml;
 }
