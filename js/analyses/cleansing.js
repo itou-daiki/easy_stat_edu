@@ -1,50 +1,11 @@
 import { currentData, dataCharacteristics } from '../main.js';
+import { renderDataOverview } from '../utils.js';
 
 // 元のデータのコピーを保持
 let originalData = null;
 let processedData = null;
-
-// データをテーブル形式で表示
-function displayDataTable(data, containerId, title) {
-    const container = document.getElementById(containerId);
-    if (!data || data.length === 0) {
-        container.innerHTML = '<p>データがありません。</p>';
-        return;
-    }
-
-    const columns = Object.keys(data[0]);
-    const maxRows = 100; // 表示する最大行数
-    const displayData = data.slice(0, maxRows);
-
-    let tableHtml = `
-        <h5>${title} (${data.length}行 × ${columns.length}列)</h5>
-        ${data.length > maxRows ? `<p style="color: #64748b; font-size: 0.875rem;">※最初の${maxRows}行のみ表示</p>` : ''}
-        <div class="table-container" style="overflow-x: auto; max-height: 400px;">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th style="position: sticky; top: 0; background: #f1f5f9;">#</th>
-                    ${columns.map(col => `<th style="position: sticky; top: 0; background: #f1f5f9;">${col}</th>`).join('')}
-                </tr>
-            </thead>
-            <tbody>
-                ${displayData.map((row, i) => `
-                    <tr>
-                        <td>${i + 1}</td>
-                        ${columns.map(col => {
-                            const val = row[col];
-                            const displayVal = val === null || val === undefined ? '<span style="color: #94a3b8;">null</span>' : val;
-                            return `<td>${displayVal}</td>`;
-                        }).join('')}
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-        </div>
-    `;
-
-    container.innerHTML = tableHtml;
-}
+let originalCharacteristics = null;
+let processedCharacteristics = null;
 
 // 外れ値の削除（IQR法）
 function removeOutliers(data, numericColumns) {
@@ -167,8 +128,8 @@ function processData() {
     const removedRows = originalRowCount - processedRowCount;
     const removedCols = originalColCount - processedColCount;
 
-    // 処理済みデータを表示
-    displayDataTable(processedData, 'processed-data-container', '処理済みのデータ');
+    // 処理済みデータの特性を分析
+    processedCharacteristics = window.analyzeDataCharacteristics(processedData);
 
     // 処理サマリーを表示
     const summaryHtml = `
@@ -180,6 +141,12 @@ function processData() {
         </div>
     `;
     document.getElementById('processing-summary').innerHTML = summaryHtml;
+
+    // 処理済みデータセクションを表示
+    document.getElementById('processed-data-overview-section').style.display = 'block';
+
+    // 処理済みデータを表示（折りたたみ可能）
+    renderDataOverview('#processed-data-overview', processedData, processedCharacteristics, { initiallyCollapsed: false });
 
     // ダウンロードセクションを表示
     document.getElementById('download-section').style.display = 'block';
@@ -343,7 +310,9 @@ function displayDataQualityInfo() {
 export function render(container) {
     // 元のデータを保存
     originalData = JSON.parse(JSON.stringify(currentData));
+    originalCharacteristics = JSON.parse(JSON.stringify(dataCharacteristics));
     processedData = null;
+    processedCharacteristics = null;
 
     container.innerHTML = `
         <div class="cleansing-container">
@@ -353,10 +322,8 @@ export function render(container) {
                 <div id="data-quality-info"></div>
             </div>
 
-            <!-- 元のデータ -->
-            <div class="cleansing-section" style="margin-bottom: 2rem;">
-                <div id="original-data-container"></div>
-            </div>
+            <!-- 元のデータプレビューと要約統計量（トップページと同じ仕様） -->
+            <div id="original-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!-- 処理オプション -->
             <div class="cleansing-section" style="margin-bottom: 2rem;">
@@ -381,9 +348,9 @@ export function render(container) {
             <!-- 処理サマリー -->
             <div id="processing-summary" style="margin-bottom: 2rem;"></div>
 
-            <!-- 処理済みデータ -->
-            <div class="cleansing-section" style="margin-bottom: 2rem;">
-                <div id="processed-data-container"></div>
+            <!-- 処理済みデータプレビューと要約統計量 -->
+            <div id="processed-data-overview-section" class="info-sections" style="display: none; margin-bottom: 2rem;">
+                <div id="processed-data-overview"></div>
             </div>
 
             <!-- ダウンロードセクション -->
@@ -404,8 +371,8 @@ export function render(container) {
     // データ品質情報を表示
     displayDataQualityInfo();
 
-    // 元のデータを表示
-    displayDataTable(originalData, 'original-data-container', '元のデータ');
+    // 元のデータを表示（折りたたみ可能、トップページと同じ仕様）
+    renderDataOverview('#original-data-overview', originalData, originalCharacteristics, { initiallyCollapsed: true });
 
     // イベントリスナーを追加
     document.getElementById('process-data-btn').addEventListener('click', processData);

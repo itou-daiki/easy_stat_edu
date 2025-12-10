@@ -1,15 +1,13 @@
 // ==========================================
 // Imports
 // ==========================================
-import { getAnalysisTitle, showError, showLoadingMessage, hideLoadingMessage, toggleCollapsible } from './utils.js';
+import { getAnalysisTitle, showError, showLoadingMessage, hideLoadingMessage, toggleCollapsible, renderDataPreview, renderSummaryStatistics, renderDataOverview } from './utils.js';
 
 // ==========================================
 // Global Variables & Exports for Modules
 // ==========================================
 export let currentData = null;
 export let dataCharacteristics = null;
-let originalData = null; // 元のデータを保持
-let sortState = { column: null, direction: 'asc' }; // ソート状態を管理
 
 // ==========================================
 // DOM Elements
@@ -65,14 +63,6 @@ function setupEventListeners() {
     document.querySelectorAll('.collapsible-header').forEach(header => {
         header.addEventListener('click', () => toggleCollapsible(header));
     });
-
-    // ソート用のイベントリスナー (イベント委任)
-    document.getElementById('dataframe-container').addEventListener('click', (event) => {
-        const th = event.target.closest('th');
-        if (th && th.dataset.column) {
-            handleSort(th.dataset.column);
-        }
-    });
 }
 
 // ==========================================
@@ -112,23 +102,21 @@ async function loadDemoData(fileName) {
 }
 
 function processData(fileName, jsonData) {
-    originalData = jsonData; // 元データを保存
-    currentData = [...originalData]; // 表示・ソート用のコピーを作成
+    currentData = jsonData;
 
-    sortState = { column: null, direction: 'asc' };
-    
     const characteristics = analyzeDataCharacteristics(jsonData);
     window.dataCharacteristics = characteristics;
     dataCharacteristics = characteristics;
-    
+
     updateFileInfo(fileName, jsonData);
-    
-    renderDataFrame();
-    renderSummaryStatistics(jsonData, characteristics);
-    
+
+    // 共通関数を使用してデータプレビューと要約統計量を表示
+    renderDataPreview('dataframe-container', currentData, 'データプレビュー');
+    renderSummaryStatistics('summary-stats-container', currentData, characteristics, '要約統計量');
+
     const dataPreviewSection = document.getElementById('data-preview-section');
     dataPreviewSection.style.display = 'block';
-    
+
     dataPreviewSection.querySelectorAll('.collapsible-header').forEach(header => {
         const newHeader = header.cloneNode(true);
         header.parentNode.replaceChild(newHeader, header);
@@ -166,35 +154,6 @@ function analyzeDataCharacteristics(data) {
     return characteristics;
 }
 window.analyzeDataCharacteristics = analyzeDataCharacteristics;
-
-// ==========================================
-// Sorting Logic
-// ==========================================
-function handleSort(column) {
-    if (sortState.column === column) {
-        sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
-    } else {
-        sortState.column = column;
-        sortState.direction = 'asc';
-    }
-
-    currentData.sort((a, b) => {
-        const valA = a[column];
-        const valB = b[column];
-        const direction = sortState.direction === 'asc' ? 1 : -1;
-
-        if (valA === null || valA === undefined) return 1 * direction;
-        if (valB === null || valB === undefined) return -1 * direction;
-        
-        if (typeof valA === 'number' && typeof valB === 'number') {
-            return (valA - valB) * direction;
-        }
-        
-        return String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' }) * direction;
-    });
-
-    renderDataFrame();
-}
 
 // ==========================================
 // UI Updates & View Management
@@ -265,100 +224,6 @@ async function showAnalysisView(analysisType) {
     } catch (error) {
         analysisContent.innerHTML = `<p class="error-message">分析機能の読み込みに失敗しました。(${analysisType}.js)<br>この機能はまだ実装されていない可能性があります。</p>`;
     }
-}
-
-function renderDataFrame() {
-    const container = document.getElementById('dataframe-container');
-    const data = currentData;
-
-    if (!data || data.length === 0) {
-        container.innerHTML = '<p>表示するデータがありません。</p>';
-        return;
-    }
-
-    const columns = Object.keys(data[0]);
-    let tableHtml = '<table class="table">';
-    
-    tableHtml += '<thead><tr>';
-    columns.forEach(col => {
-        let indicator = '';
-        if (sortState.column === col) {
-            indicator = sortState.direction === 'asc' ? ' <i class="fas fa-sort-up"></i>' : ' <i class="fas fa-sort-down"></i>';
-        }
-        tableHtml += `<th data-column="${col}" style="cursor: pointer;">${col}${indicator}</th>`;
-    });
-    tableHtml += '</tr></thead>';
-
-    tableHtml += '<tbody>';
-    data.forEach(row => {
-        tableHtml += '<tr>';
-        columns.forEach(col => {
-            const value = row[col];
-            tableHtml += `<td>${value != null ? value : ''}</td>`;
-        });
-        tableHtml += '</tr>';
-    });
-    tableHtml += '</tbody></table>';
-
-    container.innerHTML = tableHtml;
-}
-
-function renderSummaryStatistics(data, characteristics) {
-    const container = document.getElementById('summary-stats-container');
-    if (!data || data.length === 0) {
-        container.innerHTML = '<p>統計量を計算するデータがありません。</p>';
-        return;
-    }
-    
-    const { numericColumns, categoricalColumns, textColumns } = characteristics;
-    const allColumns = Object.keys(data[0]);
-
-    let tableHtml = '<table class="table"><thead><tr>' +
-                    '<th>変数名</th><th>型</th><th>欠損値(%)</th><th>平均</th><th>標準偏差</th>' + 
-                    '<th>最小値</th><th>中央値</th><th>最大値</th><th>ユニーク数</th>' +
-                    '</tr></thead><tbody>';
-
-    allColumns.forEach(col => {
-        const values = data.map(row => row[col]).filter(v => v != null);
-        const missingRate = (( (data.length - values.length) / data.length) * 100).toFixed(1);
-
-        let type = '不明';
-        let stats = { mean: '-', std: '-', min: '-', median: '-', max: '-', unique: '-' };
-        
-        if (numericColumns.includes(col)) {
-            type = '数値';
-            if (values.length > 0) {
-                const jstat = jStat(values);
-                stats.mean = jstat.mean().toFixed(3);
-                stats.std = jstat.stdev(true).toFixed(3);
-                stats.min = jstat.min().toFixed(3);
-                stats.median = jstat.median().toFixed(3);
-                stats.max = jstat.max().toFixed(3);
-            }
-            stats.unique = new Set(values).size;
-        } else {
-            if(categoricalColumns.includes(col)) type = 'カテゴリ';
-            else if(textColumns.includes(col)) type = 'テキスト';
-            stats.unique = new Set(values).size;
-        }
-
-        tableHtml += `
-            <tr>
-                <td><strong>${col}</strong></td>
-                <td>${type}</td>
-                <td>${missingRate}%</td>
-                <td>${stats.mean}</td>
-                <td>${stats.std}</td>
-                <td>${stats.min}</td>
-                <td>${stats.median}</td>
-                <td>${stats.max}</td>
-                <td>${stats.unique}</td>
-            </tr>
-        `;
-    });
-
-    tableHtml += '</tbody></table>';
-    container.innerHTML = tableHtml;
 }
 
 window.backToHome = () => {

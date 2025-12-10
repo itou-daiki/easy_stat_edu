@@ -97,3 +97,266 @@ export function getEffectSizeInterpretation(d) {
     if (absD >= 0.2) return `小さい効果 (|d| = ${absD.toFixed(3)})`;
     return `効果はほとんどない (|d| = ${absD.toFixed(3)})`;
 };
+
+// ==========================================
+// Data Preview and Summary Statistics
+// ==========================================
+
+/**
+ * Renders a sortable data preview table with all rows displayed.
+ * @param {string} containerId - The ID of the container element.
+ * @param {Array<Object>} data - The data array to display.
+ * @param {string} title - The title for the data preview section.
+ * @returns {Object} An object with methods to control the data preview.
+ */
+export function renderDataPreview(containerId, data, title = 'データプレビュー') {
+    const container = document.getElementById(containerId);
+    if (!container) {
+        console.error(`Container with ID "${containerId}" not found`);
+        return null;
+    }
+
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p>表示するデータがありません。</p>';
+        return null;
+    }
+
+    // 内部状態
+    let currentData = [...data];
+    let originalData = [...data];
+    let sortState = { column: null, direction: 'asc' };
+
+    // ソート処理
+    function handleSort(column) {
+        if (sortState.column === column) {
+            sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortState.column = column;
+            sortState.direction = 'asc';
+        }
+
+        currentData.sort((a, b) => {
+            const valA = a[column];
+            const valB = b[column];
+            const direction = sortState.direction === 'asc' ? 1 : -1;
+
+            if (valA === null || valA === undefined) return 1 * direction;
+            if (valB === null || valB === undefined) return -1 * direction;
+
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                return (valA - valB) * direction;
+            }
+
+            return String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' }) * direction;
+        });
+
+        renderTable();
+    }
+
+    // テーブルのレンダリング
+    function renderTable() {
+        const columns = Object.keys(currentData[0]);
+        let tableHtml = `
+            <h5>${title} (${currentData.length}行 × ${columns.length}列)</h5>
+            <div class="table-container" style="overflow-x: auto; max-height: 600px; overflow-y: auto;">
+            <table class="table">
+                <thead>
+                    <tr style="position: sticky; top: 0; background: #f1f5f9; z-index: 10;">
+        `;
+
+        columns.forEach(col => {
+            let indicator = '';
+            if (sortState.column === col) {
+                indicator = sortState.direction === 'asc' ? ' <i class="fas fa-sort-up"></i>' : ' <i class="fas fa-sort-down"></i>';
+            }
+            tableHtml += `<th data-column="${col}" style="cursor: pointer;">${col}${indicator}</th>`;
+        });
+
+        tableHtml += `
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        currentData.forEach(row => {
+            tableHtml += '<tr>';
+            columns.forEach(col => {
+                const value = row[col];
+                tableHtml += `<td>${value != null ? value : ''}</td>`;
+            });
+            tableHtml += '</tr>';
+        });
+
+        tableHtml += `
+                </tbody>
+            </table>
+            </div>
+        `;
+
+        container.innerHTML = tableHtml;
+
+        // ソートイベントリスナーを再設定
+        container.querySelectorAll('th[data-column]').forEach(th => {
+            th.addEventListener('click', () => handleSort(th.dataset.column));
+        });
+    }
+
+    // 初期レンダリング
+    renderTable();
+
+    // 外部からアクセス可能なメソッド
+    return {
+        updateData: (newData) => {
+            currentData = [...newData];
+            originalData = [...newData];
+            sortState = { column: null, direction: 'asc' };
+            renderTable();
+        },
+        refresh: () => renderTable()
+    };
+}
+
+/**
+ * Renders summary statistics for the given data.
+ * @param {string} containerId - The ID of the container element.
+ * @param {Array<Object>} data - The data array to analyze.
+ * @param {Object} characteristics - The data characteristics object with numericColumns, categoricalColumns, textColumns.
+ * @param {string} title - The title for the summary statistics section.
+ */
+export function renderSummaryStatistics(containerId, data, characteristics, title = '要約統計量') {
+    const container = document.getElementById(containerId);
+    if (!container) {
+        console.error(`Container with ID "${containerId}" not found`);
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p>統計量を計算するデータがありません。</p>';
+        return;
+    }
+
+    const { numericColumns, categoricalColumns, textColumns } = characteristics;
+    const allColumns = Object.keys(data[0]);
+
+    let tableHtml = `
+        <h5>${title}</h5>
+        <div class="table-container" style="overflow-x: auto; max-height: 600px; overflow-y: auto;">
+        <table class="table">
+            <thead>
+                <tr style="position: sticky; top: 0; background: #f1f5f9; z-index: 10;">
+                    <th>変数名</th>
+                    <th>型</th>
+                    <th>欠損値(%)</th>
+                    <th>平均</th>
+                    <th>標準偏差</th>
+                    <th>最小値</th>
+                    <th>中央値</th>
+                    <th>最大値</th>
+                    <th>ユニーク数</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    allColumns.forEach(col => {
+        const values = data.map(row => row[col]).filter(v => v != null);
+        const missingRate = (( (data.length - values.length) / data.length) * 100).toFixed(1);
+
+        let type = '不明';
+        let stats = { mean: '-', std: '-', min: '-', median: '-', max: '-', unique: '-' };
+
+        if (numericColumns.includes(col)) {
+            type = '数値';
+            if (values.length > 0) {
+                const jstat = jStat(values);
+                stats.mean = jstat.mean().toFixed(3);
+                stats.std = jstat.stdev(true).toFixed(3);
+                stats.min = jstat.min().toFixed(3);
+                stats.median = jstat.median().toFixed(3);
+                stats.max = jstat.max().toFixed(3);
+            }
+            stats.unique = new Set(values).size;
+        } else {
+            if(categoricalColumns.includes(col)) type = 'カテゴリ';
+            else if(textColumns.includes(col)) type = 'テキスト';
+            stats.unique = new Set(values).size;
+        }
+
+        tableHtml += `
+            <tr>
+                <td><strong>${col}</strong></td>
+                <td>${type}</td>
+                <td>${missingRate}%</td>
+                <td>${stats.mean}</td>
+                <td>${stats.std}</td>
+                <td>${stats.min}</td>
+                <td>${stats.median}</td>
+                <td>${stats.max}</td>
+                <td>${stats.unique}</td>
+            </tr>
+        `;
+    });
+
+    tableHtml += `
+            </tbody>
+        </table>
+        </div>
+    `;
+
+    container.innerHTML = tableHtml;
+}
+
+/**
+ * Renders a collapsible data overview section with data preview and summary statistics (like the top page).
+ * @param {string} containerSelector - The CSS selector for the container element.
+ * @param {Array<Object>} data - The data array to display.
+ * @param {Object} characteristics - The data characteristics object.
+ * @param {Object} options - Options for customization.
+ * @param {boolean} options.initiallyCollapsed - Whether sections should start collapsed (default: true).
+ */
+export function renderDataOverview(containerSelector, data, characteristics, options = {}) {
+    const { initiallyCollapsed = true } = options;
+    const container = document.querySelector(containerSelector);
+
+    if (!container) {
+        console.error(`Container with selector "${containerSelector}" not found`);
+        return;
+    }
+
+    const collapsedClass = initiallyCollapsed ? 'collapsed' : '';
+
+    // 折りたたみ可能なセクションのHTML構造を作成
+    container.innerHTML = `
+        <div class="collapsible-section">
+            <div class="collapsible-header ${collapsedClass}">
+                <h3><i class="fas fa-table"></i> データプレビュー</h3>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="collapsible-content ${collapsedClass}">
+                <div id="${containerSelector.replace(/[^a-zA-Z0-9]/g, '_')}_dataframe" class="table-container"></div>
+            </div>
+        </div>
+
+        <div class="collapsible-section">
+            <div class="collapsible-header ${collapsedClass}">
+                <h3><i class="fas fa-chart-bar"></i> 要約統計量</h3>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="collapsible-content ${collapsedClass}">
+                <div id="${containerSelector.replace(/[^a-zA-Z0-9]/g, '_')}_summary" class="table-container"></div>
+            </div>
+        </div>
+    `;
+
+    // データプレビューと要約統計量をレンダリング
+    const dataframeId = `${containerSelector.replace(/[^a-zA-Z0-9]/g, '_')}_dataframe`;
+    const summaryId = `${containerSelector.replace(/[^a-zA-Z0-9]/g, '_')}_summary`;
+
+    renderDataPreview(dataframeId, data, 'データプレビュー');
+    renderSummaryStatistics(summaryId, data, characteristics, '要約統計量');
+
+    // 折りたたみイベントリスナーを追加
+    container.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', () => toggleCollapsible(header));
+    });
+}
