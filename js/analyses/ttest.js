@@ -66,7 +66,7 @@ function displaySummaryStatistics(variables, currentData) {
 }
 
 // 対応なしt検定の実行
-function runIndependentTTest(currentData) {
+function runIndependentTTest(dataset) {
     const groupVar = document.getElementById('group-var').value;
     const depVarSelect = document.getElementById('dep-var');
     const selectedVars = Array.from(depVarSelect.selectedOptions).map(opt => opt.value);
@@ -81,8 +81,10 @@ function runIndependentTTest(currentData) {
         return;
     }
 
+    console.log('runIndependentTTest called with dataset:', dataset ? 'present' : 'missing');
+
     // グループの抽出
-    const groups = [...new Set(currentData.map(row => row[groupVar]).filter(v => v != null))];
+    const groups = [...new Set(dataset.map(row => row[groupVar]).filter(v => v != null))];
 
     if (groups.length !== 2) {
         alert(`グループ変数は2群である必要があります（現在: ${groups.length}群）`);
@@ -90,7 +92,7 @@ function runIndependentTTest(currentData) {
     }
 
     // 要約統計量の表示
-    displaySummaryStatistics(selectedVars, currentData);
+    displaySummaryStatistics(selectedVars, dataset);
 
     // 結果セクションの表示
     const resultsContainer = document.getElementById('test-results-section');
@@ -103,8 +105,8 @@ function runIndependentTTest(currentData) {
         </div>
     `;
 
-    const group0Data = currentData.filter(row => row[groupVar] === groups[0]);
-    const group1Data = currentData.filter(row => row[groupVar] === groups[1]);
+    const group0Data = dataset.filter(row => row[groupVar] === groups[0]);
+    const group1Data = dataset.filter(row => row[groupVar] === groups[1]);
 
     let resultsTableHtml = `
         <div class="table-container" style="overflow-x: auto;">
@@ -131,7 +133,7 @@ function runIndependentTTest(currentData) {
     const testResults = [];
 
     selectedVars.forEach(varName => {
-        const allValues = currentData.map(row => row[varName]).filter(v => v != null && !isNaN(v));
+        const allValues = dataset.map(row => row[varName]).filter(v => v != null && !isNaN(v));
         const group0Values = group0Data.map(row => row[varName]).filter(v => v != null && !isNaN(v));
         const group1Values = group1Data.map(row => row[varName]).filter(v => v != null && !isNaN(v));
 
@@ -221,7 +223,7 @@ function runIndependentTTest(currentData) {
     document.getElementById('test-results-table').innerHTML = resultsTableHtml;
 
     // サンプルサイズ
-    renderSampleSizeInfo(resultsContainer, currentData.length, [
+    renderSampleSizeInfo(resultsContainer, dataset.length, [
         { label: groups[0], count: group0Data.length, color: '#11b981' },
         { label: groups[1], count: group1Data.length, color: '#f59e0b' }
     ]);
