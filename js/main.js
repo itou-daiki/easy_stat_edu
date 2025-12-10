@@ -163,8 +163,11 @@ function updateFileInfo(fileName, data) {
     const nCols = Object.keys(data[0] || {}).length;
 
     fileInfo.innerHTML = `
-        <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
-            <div style="flex: 2; min-width: 200px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; color: #1e293b;">
+            <i class="fas fa-info-circle" style="color: #1e90ff;"></i> データ情報
+        </h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+            <div style="flex: 2; min-width: 200px; background: #f8fafc; padding: 1rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
                 <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
                     <i class="fas fa-file-excel" style="margin-right: 0.5rem; color: #1e90ff;"></i>ファイル名
                 </div>
@@ -173,7 +176,7 @@ function updateFileInfo(fileName, data) {
                 </div>
             </div>
             
-            <div style="flex: 1; min-width: 120px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="flex: 1; min-width: 120px; background: #f8fafc; padding: 1rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
                 <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
                     <i class="fas fa-list-ol" style="margin-right: 0.5rem; color: #1e90ff;"></i>行数
                 </div>
@@ -182,7 +185,7 @@ function updateFileInfo(fileName, data) {
                 </div>
             </div>
             
-            <div style="flex: 1; min-width: 120px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="flex: 1; min-width: 120px; background: #f8fafc; padding: 1rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
                 <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
                     <i class="fas fa-columns" style="margin-right: 0.5rem; color: #1e90ff;"></i>列数
                 </div>
