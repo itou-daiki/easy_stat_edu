@@ -68,7 +68,7 @@ function runMultipleRegression(currentData) {
 
         // 標準誤差とt値、p値
         const mse = rss / (n - k - 1);
-        const seBeta = math.sqrt(math.diag(math.multiply(mse, XTX_inv)));
+        const seBeta = math.map(math.diag(math.multiply(mse, XTX_inv)), math.sqrt);
 
         // F値の計算
         const msm = (tss - rss) / k; // 回帰の平均平方
