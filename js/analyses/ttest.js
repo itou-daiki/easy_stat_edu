@@ -7,7 +7,7 @@ function displaySummaryStatistics(variables) {
 
     let tableHtml = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #667eea; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                 <i class="fas fa-table"></i> 要約統計量
             </h4>
             <div class="table-container" style="overflow-x: auto;">
@@ -43,7 +43,7 @@ function displaySummaryStatistics(variables) {
 
             tableHtml += `
                 <tr>
-                    <td style="font-weight: bold; color: #667eea;">${varName}</td>
+                    <td style="font-weight: bold; color: #1e90ff;">${varName}</td>
                     <td>${stats.n}</td>
                     <td>${stats.mean.toFixed(2)}</td>
                     <td>${stats.median.toFixed(2)}</td>
@@ -97,7 +97,7 @@ function runIndependentTTest() {
     const resultsContainer = document.getElementById('test-results-section');
     resultsContainer.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #667eea; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                 <i class="fas fa-calculator"></i> 平均値の差の検定（対応なし）
             </h4>
             <div id="test-results-table"></div>
@@ -177,7 +177,7 @@ function runIndependentTTest() {
 
         resultsTableHtml += `
             <tr>
-                <td style="font-weight: bold; color: #667eea;">${varName}</td>
+                <td style="font-weight: bold; color: #1e90ff;">${varName}</td>
                 <td>${allMean.toFixed(2)}</td>
                 <td>${allStd.toFixed(2)}</td>
                 <td>${mean1.toFixed(2)}</td>
@@ -302,7 +302,7 @@ function runPairedTTest() {
     const resultsContainer = document.getElementById('test-results-section');
     resultsContainer.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #667eea; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                 <i class="fas fa-calculator"></i> 平均値の差の検定（対応あり）
             </h4>
             <div class="table-container" style="overflow-x: auto;">
@@ -323,7 +323,7 @@ function runPairedTTest() {
                     </thead>
                     <tbody>
                         <tr>
-                            <td style="font-weight: bold; color: #667eea;">${preVar} → ${postVar}</td>
+                            <td style="font-weight: bold; color: #1e90ff;">${preVar} → ${postVar}</td>
                             <td>${mean1.toFixed(2)}</td>
                             <td>${std1.toFixed(2)}</td>
                             <td>${mean2.toFixed(2)}</td>
@@ -380,7 +380,7 @@ function displayInterpretation(testResults, groupVar, testType) {
 
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #667eea; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                 <i class="fas fa-lightbulb"></i> 解釈の補助
             </h4>
             <div id="interpretation-content" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
@@ -402,13 +402,13 @@ function displayInterpretation(testResults, groupVar, testType) {
             significanceText = '有意な差が生まれない';
         }
 
-        let description = `<p style="margin: 0.5rem 0; padding: 0.75rem; background: white; border-left: 4px solid #667eea; border-radius: 4px;">`;
+        let description = `<p style="margin: 0.5rem 0; padding: 0.75rem; background: white; border-left: 4px solid #1e90ff; border-radius: 4px;">`;
 
         if (testType === 'independent') {
-            description += `<strong style="color: #667eea;">${groupVar}</strong>によって、<strong>${result.varName}</strong>には${significanceText}`;
+            description += `<strong style="color: #1e90ff;">${groupVar}</strong>によって、<strong>${result.varName}</strong>には${significanceText}`;
             description += `（${result.groups[0]} ${comparison} ${result.groups[1]}）`;
         } else {
-            description += `<strong style="color: #667eea;">${result.varName}</strong>には${significanceText}`;
+            description += `<strong style="color: #1e90ff;">${result.varName}</strong>には${significanceText}`;
             description += `（観測値 ${comparison} 測定値）`;
         }
 
@@ -427,7 +427,7 @@ function displayVisualization(testResults, testType) {
 
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h4 style="color: #667eea; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                 <i class="fas fa-chart-bar"></i> 可視化
             </h4>
             <div id="visualization-plots"></div>
@@ -470,7 +470,7 @@ function displayVisualization(testResults, testType) {
                 visible: true
             },
             type: 'bar',
-            marker: { color: 'rgba(102, 126, 234, 0.7)' }
+            marker: { color: 'rgba(30, 144, 255, 0.7)' }
         };
 
         // 有意性のブラケット表示
@@ -554,7 +554,7 @@ export function render(container, characteristics) {
 
             <!-- 検定タイプ選択 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                         <i class="fas fa-vial"></i> t検定
                     </h3>
@@ -564,7 +564,7 @@ export function render(container, characteristics) {
                 <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
                     <div style="display: flex; gap: 1rem;">
-                        <label style="flex: 1; padding: 1rem; background: #f0f4ff; border: 2px solid #667eea; border-radius: 8px; cursor: pointer;">
+                        <label style="flex: 1; padding: 1rem; background: #f0f8ff; border: 2px solid #1e90ff; border-radius: 8px; cursor: pointer;">
                             <input type="radio" name="test-type" value="independent" checked style="margin-right: 0.5rem;">
                             <strong>対応なしt検定</strong>
                             <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">2つの独立したグループ間の平均値を比較</p>
@@ -602,14 +602,14 @@ export function render(container, characteristics) {
                 <div id="paired-controls" style="display: none;">
                     <div style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
                         <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                            <i class="fas fa-circle" style="color: #667eea;"></i> 観測変数を選択:
+                            <i class="fas fa-circle" style="color: #1e90ff;"></i> 観測変数を選択:
                         </label>
                         <select id="pre-var" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem;"></select>
                     </div>
 
                     <div style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
                         <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                            <i class="fas fa-circle" style="color: #764ba2;"></i> 測定変数を選択:
+                            <i class="fas fa-circle" style="color: #1e90ff;"></i> 測定変数を選択:
                         </label>
                         <select id="post-var" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem;"></select>
                     </div>

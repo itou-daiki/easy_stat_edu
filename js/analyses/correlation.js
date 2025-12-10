@@ -39,7 +39,7 @@ function displayCorrelationMatrix(corrMatrix, columns) {
 
     let tableHtml = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #667eea; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                 <i class="fas fa-table"></i> 相関マトリックス
             </h4>
             <div class="table-container" style="overflow-x: auto;">
@@ -50,7 +50,7 @@ function displayCorrelationMatrix(corrMatrix, columns) {
     `;
 
     columns.forEach(col => {
-        tableHtml += `<th style="font-weight: bold; color: #667eea;">${col}</th>`;
+        tableHtml += `<th style="font-weight: bold; color: #1e90ff;">${col}</th>`;
     });
 
     tableHtml += `
@@ -60,7 +60,7 @@ function displayCorrelationMatrix(corrMatrix, columns) {
     `;
 
     corrMatrix.forEach((row, i) => {
-        tableHtml += `<tr><td style="font-weight: bold; color: #667eea;">${columns[i]}</td>`;
+        tableHtml += `<tr><td style="font-weight: bold; color: #1e90ff;">${columns[i]}</td>`;
         row.forEach(val => {
             tableHtml += `<td>${val.toFixed(4)}</td>`;
         });
@@ -83,7 +83,7 @@ function displayHeatmap(corrMatrix, columns) {
 
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #667eea; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                 <i class="fas fa-th"></i> 相関係数のヒートマップ
             </h4>
             <div id="heatmap-plot" class="plot-container"></div>
@@ -138,7 +138,7 @@ function displayScatterMatrix(data, columns, corrMatrix) {
 
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #667eea; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                 <i class="fas fa-chart-scatter"></i> 散布図行列とヒストグラム
             </h4>
             <p style="color: #6b7280; margin-bottom: 1rem;">対角線: ヒストグラム、左下: 散布図、右上: 相関係数</p>
@@ -210,7 +210,7 @@ function displayScatterMatrix(data, columns, corrMatrix) {
                     showarrow: false,
                     font: {
                         size: 16,
-                        color: '#667eea',
+                        color: '#1e90ff',
                         weight: 'bold'
                     },
                     xanchor: 'center',
@@ -272,7 +272,7 @@ function displayInterpretation(corrMatrix, columns) {
 
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #667eea; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                 <i class="fas fa-lightbulb"></i> 解釈の補助
             </h4>
             <div id="interpretation-content" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
@@ -288,8 +288,8 @@ function displayInterpretation(corrMatrix, columns) {
             const col2 = columns[j];
             const correlation = corrMatrix[i][j];
 
-            let description = `<p style="margin: 0.5rem 0; padding: 0.75rem; background: white; border-left: 4px solid #667eea; border-radius: 4px;">`;
-            description += `<strong style="color: #667eea;">【${col1}】と【${col2}】</strong>には `;
+            let description = `<p style="margin: 0.5rem 0; padding: 0.75rem; background: white; border-left: 4px solid #1e90ff; border-radius: 4px;">`;
+            description += `<strong style="color: #1e90ff;">【${col1}】と【${col2}】</strong>には `;
 
             if (correlation > 0.7) {
                 description += `<span style="color: #059669; font-weight: bold;">強い正の相関がある</span> <span style="color: #6b7280;">(r=${correlation.toFixed(2)})</span>`;
@@ -342,7 +342,7 @@ export function render(container, characteristics) {
 
             <!-- 変数選択セクション -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                         <i class="fas fa-check-square"></i> 数値変数の選択
                     </h3>
@@ -396,7 +396,7 @@ export function render(container, characteristics) {
 
         // ホバー効果
         checkbox.addEventListener('mouseenter', () => {
-            checkbox.style.borderColor = '#667eea';
+            checkbox.style.borderColor = '#1e90ff';
             checkbox.style.background = '#f0f4ff';
         });
         checkbox.addEventListener('mouseleave', () => {
