@@ -69,18 +69,19 @@ function displaySummaryStatistics(variables) {
 // 対応なしt検定の実行
 function runIndependentTTest() {
     const groupVar = document.getElementById('group-var').value;
-    const selectedVars = Array.from(document.querySelectorAll('.dep-var-checkbox:checked'))
-        .map(cb => cb.value);
+    const depVar = document.getElementById('dep-var').value; // Single selection
 
     if (!groupVar) {
         alert('グループ変数を選択してください');
         return;
     }
 
-    if (selectedVars.length === 0) {
-        alert('従属変数を少なくとも1つ選択してください');
+    if (!depVar) {
+        alert('従属変数を選択してください');
         return;
     }
+
+    const selectedVars = [depVar];
 
     // グループの抽出
     const groups = [...new Set(currentData.map(row => row[groupVar]).filter(v => v != null))];
@@ -587,10 +588,10 @@ export function render(container, characteristics) {
                     </div>
 
                     <div style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
-                        <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                            <i class="fas fa-check-square"></i> 従属変数（数値変数）を選択:
-                        </label>
-                        <div id="dep-var-selection" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem;"></div>
+                         <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
+                             <i class="fas fa-check-square"></i> 従属変数（数値変数）を選択:
+                         </label>
+                         <select id="dep-var" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem;"></select>
                     </div>
 
                     <button id="run-independent-btn" class="btn-analysis" style="margin-top: 1.5rem; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
@@ -645,26 +646,14 @@ export function render(container, characteristics) {
             categoricalColumns.map(col => `<option value="${col}">${col}</option>`).join('');
     }
 
-    // 従属変数のチェックボックス
-    const depVarSelection = document.getElementById('dep-var-selection');
+    // 従属変数のセレクトボックス
+    const depVarSelect = document.getElementById('dep-var');
     if (numericColumns.length === 0) {
-        depVarSelection.innerHTML = '<p style="color: #718096;">数値変数が見つかりません。</p>';
+        depVarSelect.innerHTML = '<option value="">数値変数が見つかりません</option>';
+        depVarSelect.disabled = true;
     } else {
-        numericColumns.forEach(col => {
-            const checkbox = document.createElement('label');
-            checkbox.style.display = 'flex';
-            checkbox.style.alignItems = 'center';
-            checkbox.style.cursor = 'pointer';
-            checkbox.style.padding = '0.75rem';
-            checkbox.style.background = 'white';
-            checkbox.style.borderRadius = '8px';
-            checkbox.style.border = '2px solid #e2e8f0';
-            checkbox.innerHTML = `
-                <input type="checkbox" value="${col}" class="dep-var-checkbox" style="margin-right: 0.75rem; width: 20px; height: 20px; cursor: pointer;">
-                <span style="font-size: 1rem; font-weight: 500; color: #2d3748;">${col}</span>
-            `;
-            depVarSelection.appendChild(checkbox);
-        });
+        depVarSelect.innerHTML = '<option value="">選択してください...</option>' +
+            numericColumns.map(col => `<option value="${col}">${col}</option>`).join('');
     }
 
     // 観測変数・測定変数のセレクトボックス
