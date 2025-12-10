@@ -256,7 +256,7 @@ function renderCategoricalPlot(col, valueCounts, plotId, sortOrder) {
         x: labels,
         y: values,
         type: 'bar',
-        marker: { color: 'rgba(118, 75, 162, 0.7)' }
+        marker: { color: 'rgba(30, 144, 255, 0.7)' }
     };
 
     const barLayout = {
@@ -330,7 +330,7 @@ function visualizeNumericVariables() {
         const histTrace = {
             x: dataVector,
             type: 'histogram',
-            marker: { color: 'rgba(102, 126, 234, 0.7)' }
+            marker: { color: 'rgba(30, 144, 255, 0.7)' }
         };
         const histLayout = {
             title: `【${col}】のヒストグラム`,
@@ -345,7 +345,7 @@ function visualizeNumericVariables() {
             y: dataVector,
             type: 'box',
             name: col,
-            marker: { color: 'rgba(102, 126, 234, 0.7)' }
+            marker: { color: 'rgba(30, 144, 255, 0.7)' }
         };
         const boxLayout = {
             title: `【${col}】の箱ひげ図`,
@@ -493,7 +493,7 @@ function plotNumericVsNumeric(var1, var2, container) {
         mode: 'markers',
         type: 'scatter',
         marker: {
-            color: 'rgba(102, 126, 234, 0.6)',
+            color: 'rgba(30, 144, 255, 0.6)',
             size: 8
         }
     };
