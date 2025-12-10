@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataPreview, renderSummaryStatistics } from '../utils.js';
+import { renderDataOverview } from '../utils.js';
 
 // 元のデータのコピーを保持
 let originalData = null;
@@ -143,12 +143,10 @@ function processData() {
     document.getElementById('processing-summary').innerHTML = summaryHtml;
 
     // 処理済みデータセクションを表示
-    document.getElementById('processed-data-section').style.display = 'block';
-    document.getElementById('processed-stats-section').style.display = 'block';
+    document.getElementById('processed-data-overview-section').style.display = 'block';
 
-    // 処理済みデータを表示
-    renderDataPreview('processed-data-preview', processedData, '処理済みのデータ');
-    renderSummaryStatistics('processed-summary-stats', processedData, processedCharacteristics, '処理済みデータの要約統計量');
+    // 処理済みデータを表示（折りたたみ可能）
+    renderDataOverview('#processed-data-overview', processedData, processedCharacteristics, { initiallyCollapsed: false });
 
     // ダウンロードセクションを表示
     document.getElementById('download-section').style.display = 'block';
@@ -324,17 +322,8 @@ export function render(container) {
                 <div id="data-quality-info"></div>
             </div>
 
-            <!-- 元のデータプレビュー -->
-            <div class="cleansing-section" style="margin-bottom: 2rem;">
-                <h4><i class="fas fa-table"></i> 元のデータプレビュー</h4>
-                <div id="original-data-preview"></div>
-            </div>
-
-            <!-- 元のデータの要約統計量 -->
-            <div class="cleansing-section" style="margin-bottom: 2rem;">
-                <h4><i class="fas fa-chart-bar"></i> 元のデータの要約統計量</h4>
-                <div id="original-summary-stats"></div>
-            </div>
+            <!-- 元のデータプレビューと要約統計量（トップページと同じ仕様） -->
+            <div id="original-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!-- 処理オプション -->
             <div class="cleansing-section" style="margin-bottom: 2rem;">
@@ -359,16 +348,9 @@ export function render(container) {
             <!-- 処理サマリー -->
             <div id="processing-summary" style="margin-bottom: 2rem;"></div>
 
-            <!-- 処理済みデータプレビュー -->
-            <div id="processed-data-section" class="cleansing-section" style="display: none; margin-bottom: 2rem;">
-                <h4><i class="fas fa-table"></i> 処理済みデータプレビュー</h4>
-                <div id="processed-data-preview"></div>
-            </div>
-
-            <!-- 処理済みデータの要約統計量 -->
-            <div id="processed-stats-section" class="cleansing-section" style="display: none; margin-bottom: 2rem;">
-                <h4><i class="fas fa-chart-bar"></i> 処理済みデータの要約統計量</h4>
-                <div id="processed-summary-stats"></div>
+            <!-- 処理済みデータプレビューと要約統計量 -->
+            <div id="processed-data-overview-section" class="info-sections" style="display: none; margin-bottom: 2rem;">
+                <div id="processed-data-overview"></div>
             </div>
 
             <!-- ダウンロードセクション -->
@@ -389,9 +371,8 @@ export function render(container) {
     // データ品質情報を表示
     displayDataQualityInfo();
 
-    // 元のデータを表示（共通関数を使用）
-    renderDataPreview('original-data-preview', originalData, '元のデータ');
-    renderSummaryStatistics('original-summary-stats', originalData, originalCharacteristics, '元のデータの要約統計量');
+    // 元のデータを表示（折りたたみ可能、トップページと同じ仕様）
+    renderDataOverview('#original-data-overview', originalData, originalCharacteristics, { initiallyCollapsed: true });
 
     // イベントリスナーを追加
     document.getElementById('process-data-btn').addEventListener('click', processData);

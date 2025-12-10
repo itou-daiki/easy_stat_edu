@@ -305,3 +305,58 @@ export function renderSummaryStatistics(containerId, data, characteristics, titl
 
     container.innerHTML = tableHtml;
 }
+
+/**
+ * Renders a collapsible data overview section with data preview and summary statistics (like the top page).
+ * @param {string} containerSelector - The CSS selector for the container element.
+ * @param {Array<Object>} data - The data array to display.
+ * @param {Object} characteristics - The data characteristics object.
+ * @param {Object} options - Options for customization.
+ * @param {boolean} options.initiallyCollapsed - Whether sections should start collapsed (default: true).
+ */
+export function renderDataOverview(containerSelector, data, characteristics, options = {}) {
+    const { initiallyCollapsed = true } = options;
+    const container = document.querySelector(containerSelector);
+
+    if (!container) {
+        console.error(`Container with selector "${containerSelector}" not found`);
+        return;
+    }
+
+    const collapsedClass = initiallyCollapsed ? 'collapsed' : '';
+
+    // 折りたたみ可能なセクションのHTML構造を作成
+    container.innerHTML = `
+        <div class="collapsible-section">
+            <div class="collapsible-header ${collapsedClass}">
+                <h3><i class="fas fa-table"></i> データプレビュー</h3>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="collapsible-content ${collapsedClass}">
+                <div id="${containerSelector.replace(/[^a-zA-Z0-9]/g, '_')}_dataframe" class="table-container"></div>
+            </div>
+        </div>
+
+        <div class="collapsible-section">
+            <div class="collapsible-header ${collapsedClass}">
+                <h3><i class="fas fa-chart-bar"></i> 要約統計量</h3>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="collapsible-content ${collapsedClass}">
+                <div id="${containerSelector.replace(/[^a-zA-Z0-9]/g, '_')}_summary" class="table-container"></div>
+            </div>
+        </div>
+    `;
+
+    // データプレビューと要約統計量をレンダリング
+    const dataframeId = `${containerSelector.replace(/[^a-zA-Z0-9]/g, '_')}_dataframe`;
+    const summaryId = `${containerSelector.replace(/[^a-zA-Z0-9]/g, '_')}_summary`;
+
+    renderDataPreview(dataframeId, data, 'データプレビュー');
+    renderSummaryStatistics(summaryId, data, characteristics, '要約統計量');
+
+    // 折りたたみイベントリスナーを追加
+    container.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', () => toggleCollapsible(header));
+    });
+}
