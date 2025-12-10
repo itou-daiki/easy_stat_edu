@@ -950,14 +950,14 @@ table tr:hover {
 }
 
 .multiselect-input {
-    min-height: 42px;
-    border: 1px solid var(--border-color);
+    min-height: 45px; /* Match standard select height roughly */
+    border: 2px solid #cbd5e0; /* Match t-test group var border */
     border-radius: 8px;
-    padding: 4px 8px;
+    padding: 0.5rem 0.75rem; /* Match padding */
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     cursor: pointer;
     background: white;
     transition: all 0.3s ease;
