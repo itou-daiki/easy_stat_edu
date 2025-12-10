@@ -230,7 +230,9 @@ export function render(container, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 二要因分散分析 (Two-way ANOVA) とは？</strong>
-                        <p>2つの要因（カテゴリ変数）が数値データに与える影響を調べる手法です。それぞれの要因の「主効果」だけでなく、要因同士が影響し合う「交互作用効果」も分析できます。</p>
+                        <p>2つの要因（例：性別と年代）が、結果（例：売上）にどのように影響するか、またその組み合わせ効果（交互作用）があるかを調べる手法です。</p>
+                        <img src="image/二要因分散分析.png" alt="二要因分散分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <p>それぞれの要因の「主効果」だけでなく、要因同士が影響し合う「交互作用効果」も分析できます。</p>
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

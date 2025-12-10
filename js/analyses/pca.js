@@ -242,7 +242,8 @@ export function render(container, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 主成分分析 (PCA) とは？</strong>
-                        <p>たくさんの変数の情報を、できるだけ損なわずに少数の「主成分（新しい総合指標）」に要約する手法です。データを圧縮して可視化したり、特徴を把握しやすくしたりします。</p>
+                        <p>たくさんの変数（データ）の情報をできるだけ損なわずに、少数の新しい指標（主成分）に要約する手法です。多次元のデータを2次元や3次元に圧縮して可視化する際によく使われます。</p>
+                        <img src="image/主成分分析.png" alt="主成分分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

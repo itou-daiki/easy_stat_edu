@@ -198,7 +198,9 @@ export function render(container, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> カイ二乗検定 (Chi-Square Test) とは？</strong>
-                        <p>2つのカテゴリ変数（質的データ）の間に関連があるかどうか（独立かどうか）を調べる手法です。「観測された度数」と「期待される度数」のズレを評価します。</p>
+                        <p>２つのカテゴリ変数（性別：男/女 と 喫煙：する/しない など）の間に関連があるかどうかを調べる手法です。クロス集計表を用いて独立性を検定します。</p>
+                        <img src="image/カイ二乗分析.png" alt="カイ二乗分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <p>「観測された度数」と「期待される度数」のズレを評価します。</p>
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

@@ -341,7 +341,8 @@ export function render(container, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 因子分析 (Factor Analysis) とは？</strong>
-                        <p>たくさんの変数（観測データ）の背後に潜んでいる、目に見えない共通の「因子（要因）」を見つけ出す手法です。データの構造をシンプルに理解するために使われます。</p>
+                        <p>多数の変数（アンケート項目など）の背後にある、直接は測定できない共通の要因（因子）を見つけ出す手法です。「数学」「物理」の点数から「理数系能力」という因子を見つけるなどが例です。</p>
+                        <img src="image/因子分析.png" alt="因子分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

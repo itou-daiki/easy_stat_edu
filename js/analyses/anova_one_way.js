@@ -481,6 +481,7 @@ export function render(container, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 一要因分散分析 (One-way ANOVA) とは？</strong>
                         <p>3つ以上のグループ（群）間で平均値に差があるかどうかを一度に調べる手法です。t検定を繰り返すと誤りが増えるため、この手法が使われます。</p>
+                        <img src="image/分散分析.png" alt="分散分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
