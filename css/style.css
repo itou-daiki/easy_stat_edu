@@ -89,10 +89,10 @@ body {
 .hero-section {
     background: var(--primary-color);
     border-radius: 24px;
-    padding: 4rem 2rem;
+    padding: 3rem 2rem;
     text-align: center;
     color: white;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
     box-shadow: var(--shadow-xl);
     position: relative;
     overflow: hidden;
@@ -397,11 +397,14 @@ button:disabled {
     border: 3px dashed var(--border-color);
     border-radius: 16px;
     padding: 1.5rem 2rem;
-    text-align: center;
     background: var(--background);
     transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
 }
 
 .upload-area:hover {
@@ -415,35 +418,47 @@ button:disabled {
     transform: scale(1.02);
 }
 
+.upload-info {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    text-align: left;
+}
+
 .upload-icon {
     font-size: 2.5rem;
     color: var(--primary-color);
-    margin-bottom: 0.5rem;
     animation: float 3s ease-in-out infinite;
+    margin-bottom: 0;
 }
 
 .upload-area h3 {
     font-size: 1.25rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     color: var(--text-primary);
 }
 
 @keyframes float {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-8px); }
 }
 
 .upload-text {
     font-size: 0.95rem;
     color: var(--text-secondary);
-    margin-bottom: 1rem;
+    margin-bottom: 0;
+}
+
+.upload-buttons {
+    text-align: center;
+    flex-shrink: 0;
 }
 
 .btn-upload {
     background: var(--primary-color);
     color: white;
     border: none;
-    padding: 0.875rem 2rem;
+    padding: 0.75rem 1.75rem;
     border-radius: 12px;
     font-weight: 600;
     font-size: 1rem;
@@ -453,6 +468,7 @@ button:disabled {
     align-items: center;
     gap: 0.5rem;
     box-shadow: var(--shadow-md);
+    margin-bottom: 0.5rem;
 }
 
 .btn-upload:hover {
@@ -462,9 +478,27 @@ button:disabled {
 }
 
 .upload-hint {
-    margin-top: 0.75rem;
+    margin: 0;
     font-size: 0.8rem;
     color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.btn-demo {
+    background: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    padding: 0.6rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.btn-demo:hover {
+    background: rgba(30, 144, 255, 0.1);
+    color: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
 }
 
 /* ファイル情報 */

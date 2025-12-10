@@ -43,17 +43,21 @@
         <!-- データアップロードセクション -->
         <div class="upload-section-main" id="upload-section-main">
             <div class="upload-area" id="main-upload-area" style="opacity: 0.5; pointer-events: none; position: relative;">
-                <div class="upload-icon">
-                    <i class="fas fa-cloud-upload-alt"></i>
+                <div class="upload-info">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div>
+                        <h3>データファイルをアップロード</h3>
+                        <p class="upload-text">統計エンジンを初期化しています...</p>
+                    </div>
                 </div>
-                <h3>データファイルをアップロード</h3>
-                <p class="upload-text">統計エンジンを初期化しています...</p>
-                <input type="file" id="main-data-file" accept=".xlsx,.xls,.csv" style="display: none;" disabled>
-                <button class="btn-upload" id="main-upload-btn" disabled>
-                    <i class="fas fa-spinner fa-spin"></i> 初期化中...
-                </button>
-                <p class="upload-hint">または</p>
-                <div class="demo-data-section">
+                <div class="upload-buttons">
+                    <input type="file" id="main-data-file" accept=".xlsx,.xls,.csv" style="display: none;" disabled>
+                    <button class="btn-upload" id="main-upload-btn" disabled>
+                        <i class="fas fa-spinner fa-spin"></i> 初期化中...
+                    </button>
+                    <p class="upload-hint">または</p>
                     <button class="btn-demo" id="load-demo-btn">デモデータを試す</button>
                 </div>
             </div>
