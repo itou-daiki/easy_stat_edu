@@ -452,6 +452,9 @@ button:disabled {
 .upload-buttons {
     text-align: center;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .btn-upload {
@@ -478,10 +481,10 @@ button:disabled {
 }
 
 .upload-hint {
-    margin: 0;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
     font-size: 0.8rem;
     color: var(--text-secondary);
-    margin-bottom: 0.5rem;
 }
 
 .btn-demo {
