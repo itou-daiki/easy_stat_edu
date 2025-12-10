@@ -239,26 +239,41 @@ function runOneWayIndependentANOVA(currentData) {
         setTimeout(() => {
             const plotDiv = document.getElementById(`plot-${sectionId}`);
             if (plotDiv) {
-                const currentGroupData = {};
+                // Calculate Means and SEs for Bar Chart
+                const means = [];
+                const errors = [];
+                const xLabels = groups;
+
                 groups.forEach(g => {
-                    currentGroupData[g] = currentData
-                        .filter(row => row[factorVar] === g)
-                        .map(row => row[depVar])
-                        .filter(v => v != null && !isNaN(v));
+                    const vals = groupData[g];
+                    const m = jStat.mean(vals);
+                    const std = jStat.stdev(vals, true);
+                    const se = std / Math.sqrt(vals.length);
+                    means.push(m);
+                    errors.push(se);
                 });
 
-                const sigPairs = performPostHocTests(groups, currentGroupData);
+                // Post-hoc
+                const sigPairs = performPostHocTests(groups, groupData);
 
-                // Determine Y range for brackets
-                let globalMaxY = -Infinity;
-                Object.values(currentGroupData).flat().forEach(v => { if (v > globalMaxY) globalMaxY = v; });
-                const yRange = globalMaxY - jStat.min(Object.values(currentGroupData).flat());
-                const step = (yRange || 1) * 0.1;
-                let currentLevelY = globalMaxY + step * 0.5;
+                // Brackets Setup
+                const maxVal = Math.max(...means.map((m, i) => m + errors[i]));
+                // Dynamic spacing
+                const yOffset = maxVal * (0.15 / groups.length); // Factor from logic
+                const step = maxVal * (0.25 / groups.length);
+                let currentLevelY = maxVal + yOffset * 2.5; // Initial base above bars
 
-                const levels = [];
                 const shapesFinal = [];
                 const annotationsFinal = [];
+
+                // Sort pairs by width (narrower first) to stack correctly
+                sigPairs.sort((a, b) => {
+                    const distA = Math.abs(groups.indexOf(a.g1) - groups.indexOf(a.g2));
+                    const distB = Math.abs(groups.indexOf(b.g1) - groups.indexOf(b.g2));
+                    return distA - distB;
+                });
+
+                const levels = [];
 
                 sigPairs.forEach(pair => {
                     if (pair.p >= 0.1) return;
@@ -271,22 +286,32 @@ function runOneWayIndependentANOVA(currentData) {
                     let levelIndex = 0;
                     while (true) {
                         if (!levels[levelIndex]) levels[levelIndex] = [];
-                        const overlap = levels[levelIndex].some(interval => (start < interval.end + 0.1) && (end > interval.start - 0.1));
+                        const overlap = levels[levelIndex].some(interval => (start < interval.end + 0.5) && (end > interval.start - 0.5));
                         if (!overlap) break;
                         levelIndex++;
                     }
                     levels[levelIndex].push({ start, end });
 
+                    // Height calculation matching python logic roughly
+                    // Bracket bottom is max(bar1, bar2) + margin? No, usually uniform levels above all bars look cleaner,
+                    // but python script does dynamic bottom: max(y1, y2) + offset.
+                    // Let's use uniform stepping for simplicity and robustness against overlap.
+                    // Actually, let's use the Python reference idea:
+                    // y_vline_bottom = max(mean1+err1, mean2+err2) + offset
+                    // But if we have multiple levels, they must clear ALL bars in between? 
+                    // To be safe, we place brackets above the GLOBAL max of the involved bars?
+                    // "Stacked" approach is safer for web: just stack them above the highest point of the chart.
+
                     const bracketY = currentLevelY + (levelIndex * step);
+
                     let text = 'n.s.';
                     if (pair.p < 0.01) text = '**';
                     else if (pair.p < 0.05) text = '*';
                     else if (pair.p < 0.1) text = '†';
 
-                    // Bracket Lines
-                    shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY - step * 0.1, x1: idx1, y1: bracketY, line: { color: 'black', width: 1 } });
+                    shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY - step * 0.2, x1: idx1, y1: bracketY, line: { color: 'black', width: 1 } });
                     shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY, x1: idx2, y1: bracketY, line: { color: 'black', width: 1 } });
-                    shapesFinal.push({ type: 'line', x0: idx2, y0: bracketY, x1: idx2, y1: bracketY - step * 0.1, line: { color: 'black', width: 1 } });
+                    shapesFinal.push({ type: 'line', x0: idx2, y0: bracketY, x1: idx2, y1: bracketY - step * 0.2, line: { color: 'black', width: 1 } });
 
                     annotationsFinal.push({
                         x: (idx1 + idx2) / 2,
@@ -297,23 +322,27 @@ function runOneWayIndependentANOVA(currentData) {
                     });
                 });
 
-                const traces = groups.map((g, i) => ({
-                    y: currentGroupData[g],
-                    type: 'box',
-                    name: g,
-                    boxpoints: 'outliers',
-                    marker: { color: '#1e90ff' },
-                    x: currentGroupData[g].map(() => i), // Force numeric X for easy bracket placement
-                    showlegend: false
-                }));
+                const topMargin = 50 + (levels.length * 40);
 
-                const topMargin = 50 + (levels.length * 30);
+                const trace = {
+                    x: xLabels,
+                    y: means,
+                    type: 'bar',
+                    name: depVar,
+                    marker: { color: '#87CEEB' }, // skyblue
+                    error_y: {
+                        type: 'data',
+                        array: errors,
+                        visible: true,
+                        color: 'black'
+                    }
+                };
 
-                Plotly.newPlot(plotDiv, traces, {
-                    title: `${depVar} のグループ別箱ひげ図`,
+                Plotly.newPlot(plotDiv, [trace], {
+                    title: `${depVar} のグループ別平均値 (Bar + SE)`,
                     yaxis: { title: depVar },
                     xaxis: {
-                        tickvals: groups.map((_, i) => i),
+                        tickvals: groups.map((_, i) => i), // Map to indices
                         ticktext: groups
                     },
                     showlegend: false,
@@ -344,8 +373,7 @@ function runOneWayRepeatedANOVA(currentData) {
     const outputContainer = document.getElementById('anova-results');
     outputContainer.innerHTML = '';
 
-    // Calculate ANOVA for the selected set of variables
-    // Data preparation: extract valid rows where all selected vars are present (complete cases)
+    // Data preparation
     const validData = currentData
         .map(row => dependentVars.map(v => row[v]))
         .filter(vals => vals.every(v => v != null && !isNaN(v)));
@@ -358,55 +386,36 @@ function runOneWayRepeatedANOVA(currentData) {
         return;
     }
 
-    // Calculations
+    // Calculations (same as before)
     const grandMean = jStat.mean(validData.flat());
-
-    // SS_Total
     let ssTotal = 0;
     validData.flat().forEach(v => ssTotal += Math.pow(v - grandMean, 2));
-
-    // SS_Subjects (Between Subjects)
     let ssSubjects = 0;
     validData.forEach(subjectVals => {
-        const subjectMean = jStat.mean(subjectVals);
-        ssSubjects += k * Math.pow(subjectMean - grandMean, 2);
+        ssSubjects += k * Math.pow(jStat.mean(subjectVals) - grandMean, 2);
     });
-
-    // SS_Conditions (Between Treatments / Time)
     let ssConditions = 0;
     const conditionMeans = [];
+    const conditionSEs = []; // For plotting
     for (let i = 0; i < k; i++) {
         const colVals = validData.map(row => row[i]);
         const colMean = jStat.mean(colVals);
+        const colStd = jStat.stdev(colVals, true);
         conditionMeans.push(colMean);
+        conditionSEs.push(colStd / Math.sqrt(N));
         ssConditions += N * Math.pow(colMean - grandMean, 2);
     }
-
-    // SS_Error (Residual)
-    // SS_Total = SS_Subjects + SS_Conditions + SS_Error
     const ssError = ssTotal - ssSubjects - ssConditions;
-
-    // Degrees of Freedom
     const dfSubjects = N - 1;
     const dfConditions = k - 1;
     const dfError = (N - 1) * (k - 1);
     const dfTotal = (N * k) - 1;
-
-    // Mean Squares
     const msConditions = ssConditions / dfConditions;
     const msError = ssError / dfError;
-
-    // F-statistic
     const fValue = msConditions / msError;
-
-    // P-value
     const pValue = 1 - jStat.centralF.cdf(fValue, dfConditions, dfError);
-
-    // Effect Size (Partial Eta Squared)
-    // For Repeated Measures, eta_partial = SS_Conditions / (SS_Conditions + SS_Error)
     const etaSquared = ssConditions / (ssConditions + ssError);
 
-    // UI Generation
     const resultDiv = document.createElement('div');
     resultDiv.className = 'anova-result-block';
 
@@ -476,46 +485,35 @@ function runOneWayRepeatedANOVA(currentData) {
     `;
     resultDiv.innerHTML = html;
     outputContainer.appendChild(resultDiv);
-
-    // Sample Size Info
     renderSampleSizeInfo(document.getElementById('sample-size-rep'), N);
 
-    // Visualization
     setTimeout(() => {
         const plotDiv = document.getElementById('plot-rep');
         if (plotDiv) {
-            // Post-hoc Tests
             const sigPairs = performRepeatedPostHocTests(dependentVars, currentData);
 
-            // Brackets Logic (Generic Reuse)
-            // Use numeric X axis for categories
+            // Bar Chart Setup
             const xLabels = dependentVars;
+            const means = conditionMeans;
+            const errors = conditionSEs;
 
-            // Plot Traces (Bar chart often used for repeated measures means, but box plot shows distribution better)
-            // Let's use Box Plot for consistency and info density.
-            const traces = dependentVars.map((v, i) => {
-                const vals = validData.map(row => row[i]);
-                return {
-                    y: vals,
-                    type: 'box',
-                    name: v,
-                    boxpoints: 'outliers',
-                    marker: { color: '#1e90ff' },
-                    x: vals.map(() => i),
-                    showlegend: false
-                };
-            });
+            // Bracket Setup
+            const maxVal = Math.max(...means.map((m, i) => m + errors[i]));
+            const yOffset = maxVal * 0.15;
+            const step = maxVal * 0.25 / k;
+            let currentLevelY = maxVal + yOffset;
 
-            // Calculate Brackets
-            let globalMaxY = -Infinity;
-            validData.flat().forEach(v => { if (v > globalMaxY) globalMaxY = v; });
-            const yRange = globalMaxY - jStat.min(validData.flat());
-            const step = (yRange || 1) * 0.1;
-            let currentLevelY = globalMaxY + step * 0.5;
-
-            const levels = [];
             const shapesFinal = [];
             const annotationsFinal = [];
+            const levels = [];
+
+            sigPairs.sort((a, b) => {
+                const idxA1 = dependentVars.indexOf(a.g1), idxA2 = dependentVars.indexOf(a.g2);
+                const idxB1 = dependentVars.indexOf(b.g1), idxB2 = dependentVars.indexOf(b.g2);
+                const distA = Math.abs(idxA1 - idxA2);
+                const distB = Math.abs(idxB1 - idxB2);
+                return distA - distB;
+            });
 
             sigPairs.forEach(pair => {
                 if (pair.p >= 0.1) return;
@@ -528,7 +526,7 @@ function runOneWayRepeatedANOVA(currentData) {
                 let levelIndex = 0;
                 while (true) {
                     if (!levels[levelIndex]) levels[levelIndex] = [];
-                    const overlap = levels[levelIndex].some(interval => (start < interval.end + 0.1) && (end > interval.start - 0.1));
+                    const overlap = levels[levelIndex].some(interval => (start < interval.end + 0.5) && (end > interval.start - 0.5));
                     if (!overlap) break;
                     levelIndex++;
                 }
@@ -540,9 +538,9 @@ function runOneWayRepeatedANOVA(currentData) {
                 else if (pair.p < 0.05) text = '*';
                 else if (pair.p < 0.1) text = '†';
 
-                shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY - step * 0.1, x1: idx1, y1: bracketY, line: { color: 'black', width: 1 } });
+                shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY - step * 0.2, x1: idx1, y1: bracketY, line: { color: 'black', width: 1 } });
                 shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY, x1: idx2, y1: bracketY, line: { color: 'black', width: 1 } });
-                shapesFinal.push({ type: 'line', x0: idx2, y0: bracketY, x1: idx2, y1: bracketY - step * 0.1, line: { color: 'black', width: 1 } });
+                shapesFinal.push({ type: 'line', x0: idx2, y0: bracketY, x1: idx2, y1: bracketY - step * 0.2, line: { color: 'black', width: 1 } });
 
                 annotationsFinal.push({
                     x: (idx1 + idx2) / 2,
@@ -553,11 +551,25 @@ function runOneWayRepeatedANOVA(currentData) {
                 });
             });
 
-            const topMargin = 50 + (levels.length * 30);
+            const topMargin = 50 + (levels.length * 40);
 
-            Plotly.newPlot(plotDiv, traces, {
-                title: '条件ごとの比較（対応あり）',
-                yaxis: { title: '値' },
+            const trace = {
+                x: xLabels,
+                y: means,
+                type: 'bar',
+                name: 'Mean',
+                marker: { color: '#87CEEB' },
+                error_y: {
+                    type: 'data',
+                    array: errors,
+                    visible: true,
+                    color: 'black'
+                }
+            };
+
+            Plotly.newPlot(plotDiv, [trace], {
+                title: '条件ごとの平均値の比較 (Bar + SE)',
+                yaxis: { title: 'Mean Value' },
                 xaxis: {
                     tickvals: dependentVars.map((_, i) => i),
                     ticktext: dependentVars
@@ -602,7 +614,6 @@ export function render(container, currentData, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">3群以上の平均値の差を検定します</p>
             </div>
 
-            <!-- 分析の概要 -->
             <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
                 <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
                     <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
@@ -618,7 +629,6 @@ export function render(container, currentData, characteristics) {
 
             <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
-            <!-- 設定エリア -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 
                 <div style="margin-bottom: 1.5rem;">
@@ -637,14 +647,12 @@ export function render(container, currentData, characteristics) {
                     </div>
                 </div>
 
-                <!-- 対応なし用の設定 -->
                 <div id="independent-controls" style="display: block;">
                     <div id="factor-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                     <div id="dependent-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                     <div id="run-ind-btn-container"></div>
                 </div>
 
-                <!-- 対応あり用の設定 -->
                 <div id="repeated-controls" style="display: none;">
                     <div id="rep-dependent-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                     <div id="run-rep-btn-container"></div>
@@ -659,7 +667,6 @@ export function render(container, currentData, characteristics) {
 
     renderDataOverview('#anova-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
-    // Independent Selectors
     createVariableSelector('factor-var-container', categoricalColumns, 'factor-var', {
         label: '<i class="fas fa-layer-group"></i> 要因（グループ変数・3群以上）:',
         multiple: false
@@ -670,21 +677,19 @@ export function render(container, currentData, characteristics) {
     });
     createAnalysisButton('run-ind-btn-container', '分析を実行（対応なし）', () => runOneWayIndependentANOVA(currentData), { id: 'run-ind-anova-btn' });
 
-    // Repeated Selectors
     createVariableSelector('rep-dependent-var-container', numericColumns, 'rep-dependent-var', {
         label: '<i class="fas fa-list-ol"></i> 比較する変数（条件）を選択（3つ以上）:',
         multiple: true
     });
     createAnalysisButton('run-rep-btn-container', '分析を実行（対応あり）', () => runOneWayRepeatedANOVA(currentData), { id: 'run-rep-anova-btn' });
 
-    // Toggle Logic
     document.querySelectorAll('input[name="anova-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             switchTestType(e.target.value);
-            // Visual toggle of active state style
             document.querySelectorAll('input[name="anova-type"]').forEach(r => {
-                r.closest('label').style.background = r.checked ? '#f0f8ff' : '#fafbfc';
-                r.closest('label').style.borderColor = r.checked ? '#1e90ff' : '#e2e8f0';
+                const label = r.closest('label');
+                label.style.background = r.checked ? '#f0f8ff' : '#fafbfc';
+                label.style.borderColor = r.checked ? '#1e90ff' : '#e2e8f0';
             });
         });
     });
