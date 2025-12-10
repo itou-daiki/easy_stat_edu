@@ -316,6 +316,32 @@ export function render(container) {
 
     container.innerHTML = `
         <div class="cleansing-container">
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section" style="margin-bottom: 2rem;">
+                <div class="collapsible-header" style="background: linear-gradient(135deg, #e6f3ff 0%, #f0f9ff 100%); border-left: 5px solid #1e90ff; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.3s ease;">
+                    <h3 style="margin: 0; color: #1e90ff; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; gap: 1rem;">
+                        <span style="background: #1e90ff; color: white; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 1.25rem;">
+                            <i class="fas fa-broom"></i>
+                        </span>
+                        データクレンジングについて
+                    </h3>
+                    <i class="fas fa-chevron-down toggle-icon" style="color: #1e90ff; transition: transform 0.3s ease;"></i>
+                </div>
+                <div class="collapsible-content" style="background: white; border-radius: 0 0 12px 12px; padding: 2rem; border: 1px solid #e2e8f0; border-top: none; margin-top: -5px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> データクレンジング (Data Cleansing) とは？</strong>
+                        <p>分析を行う前にデータのエラーや不整合を修正・削除するプロセスのことです。欠損値（データがない箇所）や外れ値（極端な値）を処理することで、分析の精度を高めます。</p>
+                        <img src="image/data_cleansing.png" alt="データクレンジングのイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                    </div>
+                    <h4>何ができるの？</h4>
+                    <ul>
+                        <li><strong>欠損値処理:</strong> 空白データの削除</li>
+                        <li><strong>外れ値処理:</strong> IQR法を用いた極端な値の自動除去</li>
+                        <li><strong>データ型確認:</strong> 各列が数値か文字列かの確認</li>
+                    </ul>
+                </div>
+            </div>
+
             <!-- データ品質情報 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">

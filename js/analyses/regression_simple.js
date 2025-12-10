@@ -169,7 +169,7 @@ export function render(container, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 単回帰分析 (Simple Linear Regression) とは？</strong>
                         <p>1つの変数（説明変数）から、もう1つの変数（目的変数）を予測する式（直線）を作る手法です。「身長から体重を予測する」などが代表例です。</p>
-                        <img src="image/単回帰分析.png" alt="単回帰分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <img src="image/regression_simple.png" alt="単回帰分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

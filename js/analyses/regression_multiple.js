@@ -338,7 +338,7 @@ export function render(container, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 重回帰分析 (Multiple Linear Regression) とは？</strong>
                         <p>複数の変数（説明変数）を使って、1つの変数（目的変数）を予測する手法です。「駅からの距離、築年数、広さ」から「家賃」を予測する場合などに使われます。</p>
-                        <img src="image/重回帰分析.png" alt="重回帰分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <img src="image/regression_multiple.png" alt="重回帰分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

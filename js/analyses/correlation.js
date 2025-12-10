@@ -267,7 +267,7 @@ export function render(container, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 相関分析 (Correlation Analysis) とは？</strong>
                         <p>2つの変数の間に「一方が増えればもう一方も増える（または減る）」という直線的な関係があるかを調べる手法です。「身長と体重」「気温とビール販売量」などの関係を見ます。</p>
-                        <img src="image/相関分析.png" alt="相関分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <img src="image/correlation.png" alt="相関分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

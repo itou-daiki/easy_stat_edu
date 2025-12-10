@@ -456,7 +456,7 @@ export function render(container, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> t検定とは？</strong>
                         <p>2つのグループ（群）の平均値に「統計的に意味のある差（有意差）」があるかどうかを調べる手法です。</p>
-                        <img src="image/t検定.jpg" alt="t検定のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <img src="image/ttest.jpg" alt="t検定のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

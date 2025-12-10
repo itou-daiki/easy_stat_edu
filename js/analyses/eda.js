@@ -765,7 +765,7 @@ export function render(container, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 探索的データ分析 (EDA) とは？</strong>
                         <p>本格的な統計検定を行う前に、データの分布、外れ値、変数間の関係性などをグラフや表で確認するプロセスのことです。「データの顔」を知るための重要なステップです。</p>
-                        <img src="image/データクレンジング.png" alt="EDAのイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <img src="image/data_cleansing.png" alt="EDAのイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>何ができるの？</h4>
                     <ul>
