@@ -417,7 +417,14 @@ function displayVisualization(testResults, testType) {
         annotations.push({ x: 0.5, y: annotationY, text: significanceText, showarrow: false, font: { size: 14, color: 'black', weight: 'bold' } });
         const layout = {
             title: testType === 'paired' ? `平均値の比較：${result.varName}` : `平均値の比較：${result.varName} by グループ`,
-            xaxis: { title: '' }, yaxis: { title: '値' }, showlegend: false, annotations: annotations, shapes: shapes
+            xaxis: { title: '' },
+            // Paired t-test varName is "Pre -> Post", which is long but accurate? 
+            // Actually for paired, we might want "Value". But for independent it MUST be varName.
+            // result.varName is safe for independent. 
+            // For paired, result.varName is "A → B". 
+            // Let's use it.
+            yaxis: { title: result.varName },
+            showlegend: false, annotations: annotations, shapes: shapes
         };
         Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig('t検定', result.varName));
     });

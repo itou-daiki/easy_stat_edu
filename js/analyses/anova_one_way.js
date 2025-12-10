@@ -601,7 +601,7 @@ function runOneWayRepeatedANOVA(currentData) {
 
             Plotly.newPlot(plotDiv, [trace], {
                 title: '条件ごとの平均値の比較 (Bar + SE)',
-                yaxis: { title: 'Mean Value' },
+                yaxis: { title: dependentVars.length <= 3 ? dependentVars.join('/') : 'Value' },
                 xaxis: {
                     tickvals: dependentVars.map((_, i) => i),
                     ticktext: dependentVars

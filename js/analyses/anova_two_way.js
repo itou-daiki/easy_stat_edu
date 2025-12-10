@@ -750,7 +750,10 @@ function plotMixedBar(div, data) {
 
     Plotly.newPlot(div, traces, {
         title: 'Mixed ANOVA Results (Group Differences at each Time)',
-        yaxis: { title: 'Value', range: [0, (currentLevelY > 0 ? currentLevelY : globalMax) * 1.2] },
+        yaxis: {
+            title: withinVars.length <= 3 ? withinVars.join('/') : 'Value',
+            range: [0, (currentLevelY > 0 ? currentLevelY : globalMax) * 1.2]
+        },
         xaxis: {
             tickvals: groups.map((_, i) => i),
             ticktext: groups,
