@@ -69,19 +69,19 @@ function displaySummaryStatistics(variables) {
 // 対応なしt検定の実行
 function runIndependentTTest() {
     const groupVar = document.getElementById('group-var').value;
-    const depVar = document.getElementById('dep-var').value; // Single selection
+    const depVarSelect = document.getElementById('dep-var');
+    // Multi-select collection
+    const selectedVars = Array.from(depVarSelect.selectedOptions).map(opt => opt.value);
 
     if (!groupVar) {
         alert('グループ変数を選択してください');
         return;
     }
 
-    if (!depVar) {
-        alert('従属変数を選択してください');
+    if (selectedVars.length === 0) {
+        alert('従属変数を少なくとも1つ選択してください');
         return;
     }
-
-    const selectedVars = [depVar];
 
     // グループの抽出
     const groups = [...new Set(currentData.map(row => row[groupVar]).filter(v => v != null))];
@@ -241,7 +241,7 @@ function runIndependentTTest() {
     document.getElementById('results-section').style.display = 'block';
 }
 
-// 対応ありt検定の実行
+// 対応ありt検定の実行 (Unchanged logic, just keeping it consistent)
 function runPairedTTest() {
     const preVar = document.getElementById('pre-var').value;
     const postVar = document.getElementById('post-var').value;
@@ -256,10 +256,8 @@ function runPairedTTest() {
         return;
     }
 
-    // 要約統計量の表示
     displaySummaryStatistics([preVar, postVar]);
 
-    // ペアデータの抽出
     const pairs = currentData
         .map(row => ({ pre: row[preVar], post: row[postVar] }))
         .filter(p => p.pre != null && !isNaN(p.pre) && p.post != null && !isNaN(p.post));
@@ -278,21 +276,16 @@ function runPairedTTest() {
     const std1 = jStat.stdev(preValues, true);
     const std2 = jStat.stdev(postValues, true);
 
-    // 差分の計算
     const diff = preValues.map((val, i) => val - postValues[i]);
     const diffMean = jStat.mean(diff);
     const diffStd = jStat.stdev(diff, true);
     const se = diffStd / Math.sqrt(n);
 
-    // t統計量とp値
     const t_stat = diffMean / se;
     const df = n - 1;
     const p_value = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;
-
-    // 効果量d（対応ありの場合は差分の標準偏差を使用）
     const cohens_d = Math.abs(diffMean / diffStd);
 
-    // 有意性の判定
     let significance;
     if (p_value < 0.01) significance = '**';
     else if (p_value < 0.05) significance = '*';
@@ -366,12 +359,8 @@ function runPairedTTest() {
         group1Values: postValues
     }];
 
-    // 解釈の補助
     displayInterpretation(testResults, null, 'paired');
-
-    // 可視化
     displayVisualization(testResults, 'paired');
-
     document.getElementById('results-section').style.display = 'block';
 }
 
@@ -550,7 +539,7 @@ function switchTestType(testType) {
 export function render(container, characteristics) {
     container.innerHTML = `
         <div class="ttest-container">
-            <!-- データプレビューと要約統計量（トップページと同じ仕様） -->
+            <!-- データプレビューと要約統計量 -->
             <div id="ttest-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!-- 検定タイプ選択 -->
@@ -589,9 +578,9 @@ export function render(container, characteristics) {
 
                     <div style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
                          <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                             <i class="fas fa-check-square"></i> 従属変数（数値変数）を選択:
+                             <i class="fas fa-check-square"></i> 従属変数を選択（複数選択可: Ctrl/Cmd+Click）:
                          </label>
-                         <select id="dep-var" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem;"></select>
+                         <select id="dep-var" multiple style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; min-height: 150px;"></select>
                     </div>
 
                     <button id="run-independent-btn" class="btn-analysis" style="margin-top: 1.5rem; width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
@@ -631,12 +620,10 @@ export function render(container, characteristics) {
         </div>
     `;
 
-    // 共通のデータプレビューと要約統計量を表示（折りたたみ可能）
     renderDataOverview('#ttest-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
     const { numericColumns, categoricalColumns } = characteristics;
 
-    // グループ変数のセレクトボックス
     const groupVarSelect = document.getElementById('group-var');
     if (categoricalColumns.length === 0) {
         groupVarSelect.innerHTML = '<option value="">カテゴリ変数が見つかりません</option>';
@@ -646,17 +633,14 @@ export function render(container, characteristics) {
             categoricalColumns.map(col => `<option value="${col}">${col}</option>`).join('');
     }
 
-    // 従属変数のセレクトボックス
     const depVarSelect = document.getElementById('dep-var');
     if (numericColumns.length === 0) {
         depVarSelect.innerHTML = '<option value="">数値変数が見つかりません</option>';
         depVarSelect.disabled = true;
     } else {
-        depVarSelect.innerHTML = '<option value="">選択してください...</option>' +
-            numericColumns.map(col => `<option value="${col}">${col}</option>`).join('');
+        depVarSelect.innerHTML = numericColumns.map(col => `<option value="${col}">${col}</option>`).join('');
     }
 
-    // 観測変数・測定変数のセレクトボックス
     const preVarSelect = document.getElementById('pre-var');
     const postVarSelect = document.getElementById('post-var');
     const numOptions = '<option value="">選択してください...</option>' +
@@ -665,7 +649,6 @@ export function render(container, characteristics) {
     preVarSelect.innerHTML = numOptions;
     postVarSelect.innerHTML = numOptions;
 
-    // イベントリスナー
     document.querySelectorAll('input[name="test-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             switchTestType(e.target.value);
