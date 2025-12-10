@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadArea.style.pointerEvents = 'auto';
     uploadBtn.innerHTML = '<i class="fas fa-file-import"></i> ファイルを選択';
     uploadBtn.disabled = false;
+    fileInput.disabled = false;
     document.querySelector('.upload-text').textContent = 'ここにファイルをドラッグ＆ドロップ';
 
     setupEventListeners();
