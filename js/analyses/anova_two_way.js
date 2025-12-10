@@ -537,15 +537,60 @@ function plotIndependentBar(div, data) {
 
     // Layout Refs
     const maxVal = Math.max(...means.map((m, i) => m + errors[i]));
-    const yOffset = maxVal * (0.15 / Math.max(1, interactionGroups.length)); // scale by groups
-    const step = maxVal * 0.1; // 10% step
+    const yOffset = maxVal * 0.05; // Base offset
+    const step = maxVal * 0.1; // 10% step for stack height
+    const topMarginBase = 50;
 
-    // Brackets
-    // We assume interactionGroups indexes map to X axis 0, 1, 2...
-    const { shapes, annotations, totalLevels } = generateBrackets(sigPairs, interactionGroups, groupStats, step, yOffset);
+    // --- Robust Bracket Logic (from One-Way) ---
+    const levels = [];
+    const shapes = [];
+    const annotations = [];
+    let currentLevelY = maxVal + yOffset;
+
+    // Filter and Sort pairs by distance (optional but good for visuals)
+    // Actually One-Way just iterates. Let's keep it simple.
+
+    sigPairs.forEach(pair => {
+        if (pair.p >= 0.1) return;
+
+        const idx1 = interactionGroups.indexOf(pair.g1);
+        const idx2 = interactionGroups.indexOf(pair.g2);
+        const start = Math.min(idx1, idx2);
+        const end = Math.max(idx1, idx2);
+
+        let levelIndex = 0;
+        while (true) {
+            if (!levels[levelIndex]) levels[levelIndex] = [];
+            // Check overlap with existing brackets in this level
+            // Margin 0.5 to keep clear separation
+            const overlap = levels[levelIndex].some(interval => (start < interval.end + 0.5) && (end > interval.start - 0.5));
+            if (!overlap) break;
+            levelIndex++;
+        }
+        levels[levelIndex].push({ start, end });
+
+        const bracketY = currentLevelY + (levelIndex * step);
+
+        let text = 'n.s.';
+        if (pair.p < 0.01) text = '**';
+        else if (pair.p < 0.05) text = '*';
+        else if (pair.p < 0.1) text = '†';
+
+        shapes.push({ type: 'line', x0: idx1, y0: bracketY - step * 0.2, x1: idx1, y1: bracketY, line: { color: 'black', width: 1 } });
+        shapes.push({ type: 'line', x0: idx1, y0: bracketY, x1: idx2, y1: bracketY, line: { color: 'black', width: 1 } });
+        shapes.push({ type: 'line', x0: idx2, y0: bracketY, x1: idx2, y1: bracketY - step * 0.2, line: { color: 'black', width: 1 } });
+
+        annotations.push({
+            x: (idx1 + idx2) / 2,
+            y: bracketY + step * 0.2,
+            text: text,
+            showarrow: false,
+            font: { size: 12, color: 'black' }
+        });
+    });
 
     // Dynamic margin
-    const topMargin = 50 + (totalLevels * 30);
+    const topMargin = topMarginBase + (levels.length * 40);
 
     const trace = {
         x: interactionGroups,
@@ -644,51 +689,39 @@ function plotMixedBar(div, data) {
         });
     });
 
-    // --- Brackets Logic ---
-    // Req: Compare Groups AT each Time point (Ref 09).
-    const allShapes = [];
-    const allAnnotations = [];
-    let currentLevelY = -1; // Track max height
+    // --- Brackets Logic (Robust Stacking) ---
+    // Req: Compare Groups AT each Time point.
 
     // Determine global max Y first for setup
     let globalMax = 0;
     Object.values(groupStats).forEach(s => {
         if ((s.mean + s.se) > globalMax) globalMax = s.mean + s.se;
     });
-    const step = globalMax * 0.1;
 
-    // We iterate each Time Point validation
-    let totalLevelsGlobal = 0;
+    const step = globalMax * 0.1;
+    const allShapes = [];
+    const allAnnotations = [];
+    let currentLevelY = globalMax + step * 0.5; // Start above bars
+    let maxLevelIndexGlobal = 0;
+
+    // We process each Time Point. Brackets for different time points *could* overlap if x-ranges overlap.
+    // To be safe, we can use a SINGLE global levels array for the entire plot to prevent ANY overlap.
+    const globalLevels = [];
 
     withinVars.forEach((v, i) => {
         // 1. Get Group Data for this Time Point
-        // groupDataForTest: { g1: [vals], g2: [vals] }
         const dataForTest = {};
         groups.forEach(g => {
             dataForTest[g] = timePointData[v][g];
         });
 
-        // 2. Pairwise Test between Groups
+        // 2. Pairwise Tests
         const sigPairs = performPostHocTests(groups, dataForTest);
 
         // 3. Generate Brackets
-        // We need to map Group Name to X Index.
-        // Using `generateBrackets` helper? It expects integer indices matching array.
-        // But here X coords are Floats (manually shifted).
-        // I'll replicate logic inline or adapt helper.
-        // Let's adapt logic: sort pairs, find levels, calculate Y.
-
-        sigPairs.sort((a, b) => {
-            const distA = Math.abs(groups.indexOf(a.g1) - groups.indexOf(a.g2));
-            const distB = Math.abs(groups.indexOf(b.g1) - groups.indexOf(b.g2));
-            return distA - distB;
-        });
-
-        const levels = [];
         sigPairs.forEach(pair => {
             if (pair.p >= 0.1) return;
 
-            // Map pair (g1, g2) to actual X coords for this Time Point (v)
             const stat1 = groupStats[`${pair.g1}_${v}`];
             const stat2 = groupStats[`${pair.g2}_${v}`];
             const x1 = stat1.x;
@@ -699,67 +732,64 @@ function plotMixedBar(div, data) {
 
             let levelIndex = 0;
             while (true) {
-                if (!levels[levelIndex]) levels[levelIndex] = [];
-                // slight margin 0.1
-                const overlap = levels[levelIndex].some(interval => (start < interval.end + 0.1) && (end > interval.start - 0.1));
+                if (!globalLevels[levelIndex]) globalLevels[levelIndex] = [];
+                // Check overlap (margin 0.2 for safety in float coords)
+                const overlap = globalLevels[levelIndex].some(interval => (start < interval.end + 0.2) && (end > interval.start - 0.2));
                 if (!overlap) break;
                 levelIndex++;
             }
-            levels[levelIndex].push({ start, end });
+            globalLevels[levelIndex].push({ start, end });
 
-            // Y coord
-            const yBase1 = stat1.mean + stat1.se;
-            const yBase2 = stat2.mean + stat2.se;
-            const yVlineBottom = Math.max(yBase1, yBase2) + step * 0.2;
+            if (levelIndex > maxLevelIndexGlobal) maxLevelIndexGlobal = levelIndex;
 
-            // Global Level check? 
-            // If we have Brackets for Time1 and Time2, they might overlap ideally X wise they are distinct?
-            // Yes, adjacent clusters. Unless groups are very close? 
-            // Groups are 0, 1, 2... Shifts are +/- 0.2. Margin is sufficient.
-            // So we can treat levels independently per time point or shared?
-            // If they are independent, brackets might align at different Y heights.
-            // Usually fine.
+            // Calculate exact Y for this bracket
+            // To be uniform: use global stack height
+            const bracketY = currentLevelY + (levelIndex * step);
 
-            const bracketY = yVlineBottom + (levelIndex * step) + step * 0.2;
-
-            if (bracketY > currentLevelY) currentLevelY = bracketY;
-
+            // Text
             let text = 'n.s.';
             if (pair.p < 0.01) text = '**';
             else if (pair.p < 0.05) text = '*';
             else if (pair.p < 0.1) text = '†';
 
-            allShapes.push({ type: 'line', x0: x1, y0: yVlineBottom, x1: x1, y1: bracketY, line: { color: 'black', width: 1 } });
+            // Lines
+            // Vertical legs can go down to specific bar max, OR generic level?
+            // Existing logic supports generic level (floating bracket).
+            // Better: Legs go down to just above the specific bars involved? 
+            // One-Way logic used `bracketY - step * 0.2` for legs, meaning "floating bracket".
+            // Let's stick to "floating bracket" for consistency and simpler overlap freedom.
+            // (If we draw long legs down to bars, legs might cross other brackets).
+
+            allShapes.push({ type: 'line', x0: x1, y0: bracketY - step * 0.2, x1: x1, y1: bracketY, line: { color: 'black', width: 1 } });
             allShapes.push({ type: 'line', x0: x1, y0: bracketY, x1: x2, y1: bracketY, line: { color: 'black', width: 1 } });
-            allShapes.push({ type: 'line', x0: x2, y0: bracketY, x1: x2, y1: yVlineBottom, line: { color: 'black', width: 1 } });
+            allShapes.push({ type: 'line', x0: x2, y0: bracketY, x1: x2, y1: bracketY - step * 0.2, line: { color: 'black', width: 1 } });
 
             allAnnotations.push({
                 x: (x1 + x2) / 2,
-                y: bracketY + step * 0.1,
-                text: `p < ${pair.p.toFixed(3)} ${text}`,
+                y: bracketY + step * 0.2,
+                text: text, // Just symbols for clean look? Or p-value? One-way uses symbols.
+                // User requirement: "Same as One-Way". One-Way uses symbols.
                 showarrow: false,
-                font: { size: 10, color: 'black' }
+                font: { size: 12, color: 'black' }
             });
         });
-
-        // Add to total levels for margin estimation
-        if (levels.length > totalLevelsGlobal) totalLevelsGlobal = levels.length;
     });
 
-    const topMargin = 50 + (totalLevelsGlobal * 30);
+    const topMargin = 50 + (maxLevelIndexGlobal + 1) * 40;
+    const maxYRange = currentLevelY + (maxLevelIndexGlobal + 1) * step;
 
     Plotly.newPlot(div, traces, {
         title: 'Mixed ANOVA Results (Group Differences at each Time)',
         yaxis: {
             title: withinVars.length <= 3 ? withinVars.join('/') : 'Value',
-            range: [0, (currentLevelY > 0 ? currentLevelY : globalMax) * 1.2]
+            range: [0, maxYRange * 1.1]
         },
         xaxis: {
             tickvals: groups.map((_, i) => i),
             ticktext: groups,
             title: 'Subject Group'
         },
-        barmode: 'group', // redundant but fine with manual X
+        barmode: 'group',
         shapes: allShapes,
         annotations: allAnnotations,
         margin: { t: topMargin }
