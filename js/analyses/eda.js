@@ -1,4 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
+import { renderDataPreview, renderSummaryStatistics } from '../utils.js';
 
 // 歪度（Skewness）の計算
 function calculateSkewness(data) {
@@ -683,6 +684,17 @@ function plotGroupedBarChart(cat1, cat2, numVar) {
 export function render(container, characteristics) {
     container.innerHTML = `
         <div class="eda-container">
+            <!-- データプレビューと要約統計量 -->
+            <div class="eda-section" style="margin-bottom: 2rem;">
+                <h4><i class="fas fa-table"></i> データプレビュー</h4>
+                <div id="eda-data-preview"></div>
+            </div>
+
+            <div class="eda-section" style="margin-bottom: 2rem;">
+                <h4><i class="fas fa-chart-bar"></i> 要約統計量</h4>
+                <div id="eda-common-summary-stats"></div>
+            </div>
+
             <div id="eda-summary-stats" class="eda-section"></div>
             <div id="eda-categorical-viz" class="eda-section"></div>
             <div id="eda-numeric-viz" class="eda-section"></div>
@@ -691,6 +703,10 @@ export function render(container, characteristics) {
             <div id="eda-grouped-bar" class="eda-section"></div>
         </div>
     `;
+
+    // 共通のデータプレビューと要約統計量を表示
+    renderDataPreview('eda-data-preview', currentData, 'データプレビュー');
+    renderSummaryStatistics('eda-common-summary-stats', currentData, characteristics, '要約統計量');
 
     // 各セクションをレンダリング
     displaySummaryStatistics();
