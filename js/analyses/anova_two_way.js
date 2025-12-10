@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 function runTwoWayANOVA() {
     const factor1 = document.getElementById('factor1-var').value;
@@ -196,7 +196,7 @@ function runTwoWayANOVA() {
                         title: `交互作用プロット: ${depVar}`,
                         xaxis: { title: factor2 },
                         yaxis: { title: `平均値 (${depVar})` }
-                    });
+                    }, createPlotlyConfig('二要因分散分析', [depVar, factor1, factor2]));
                 }
             }, 100);
 

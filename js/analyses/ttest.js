@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, getEffectSizeInterpretation, createVariableSelector, renderSampleSizeInfo, createAnalysisButton } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 // 要約統計量の計算と表示
 function displaySummaryStatistics(variables) {
@@ -419,7 +419,7 @@ function displayVisualization(testResults, testType) {
             title: testType === 'paired' ? `平均値の比較：${result.varName}` : `平均値の比較：${result.varName} by グループ`,
             xaxis: { title: '' }, yaxis: { title: '値' }, showlegend: false, annotations: annotations, shapes: shapes
         };
-        Plotly.newPlot(plotId, [trace], layout);
+        Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig('t検定', result.varName));
     });
 }
 

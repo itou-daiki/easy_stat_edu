@@ -315,7 +315,6 @@ export function render(container) {
     processedCharacteristics = null;
 
     container.innerHTML = `
-    container.innerHTML = `
         < div class="cleansing-container" >
             < !--データ品質情報 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">

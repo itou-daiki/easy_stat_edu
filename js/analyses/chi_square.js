@@ -1,5 +1,4 @@
-import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 function runChiSquare() {
     const rowVar = document.getElementById('row-var').value;
@@ -172,7 +171,7 @@ function displayResults(rowVar, colVar, rowKeys, colKeys, observed, expected, ad
         type: 'heatmap',
         colorscale: 'Blues'
     }];
-    Plotly.newPlot('heatmap-plot', data, { title: '観測度数のヒートマップ' });
+    Plotly.newPlot('heatmap-plot', data, { title: '観測度数のヒートマップ' }, createPlotlyConfig('カイ二乗検定_ヒートマップ', [rowVar, colVar]));
 
     document.getElementById('analysis-results').style.display = 'block';
 }

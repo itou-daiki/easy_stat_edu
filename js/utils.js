@@ -529,3 +529,47 @@ export function createAnalysisButton(container, text, onClick, options = {}) {
     target.appendChild(button);
     return button;
 }
+
+/**
+ * Creates a standardized configuration object for Plotly charts.
+ * Enables PNG download with a custom filename based on analysis name, variables, and timestamp.
+ * 
+ * @param {string} analysisName - The name of the analysis (e.g., 't検定', '相関分析').
+ * @param {string|string[]} variables - Variable name(s) involved in the plot.
+ * @returns {Object} The Plotly configuration object.
+ */
+export function createPlotlyConfig(analysisName, variables) {
+    const now = new Date();
+    const dateStr = now.getFullYear() +
+        ('0' + (now.getMonth() + 1)).slice(-2) +
+        ('0' + now.getDate()).slice(-2) + '-' +
+        ('0' + now.getHours()).slice(-2) +
+        ('0' + now.getMinutes()).slice(-2);
+
+    let varStr = '';
+    if (Array.isArray(variables)) {
+        // Use first 3 variables to keep filename reasonable
+        varStr = variables.slice(0, 3).join('_');
+        if (variables.length > 3) varStr += '_etc';
+    } else {
+        varStr = variables;
+    }
+
+    // Sanitize filename (remove special chars if any, but usually var names are safe enough or we keep simple)
+    // Replace non-alphanumeric chars (except _ and -) could be good but let's trust variable names for now
+    const filename = `${analysisName}_${varStr}_${dateStr}`;
+
+    return {
+        responsive: true,
+        displayModeBar: true,
+        displaylogo: false,
+        toImageButtonOptions: {
+            format: 'png',
+            filename: filename,
+            height: 800,
+            width: 1200,
+            scale: 2 // High resolution
+        },
+        modeBarButtonsToRemove: ['lasso2d', 'select2d'] // Optional
+    };
+}

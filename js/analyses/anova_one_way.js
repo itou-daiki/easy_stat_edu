@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, getEffectSizeInterpretation, createVariableSelector, renderSampleSizeInfo, createAnalysisButton } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig } from '../utils.js';
 
 // Pairwise t-test helper
 function performPostHocTests(groups, groupData) {
@@ -70,7 +70,7 @@ function runOneWayANOVA() {
 
     const groups = [...new Set(currentData.map(row => row[factorVar]))].filter(v => v != null);
     if (groups.length < 3) {
-        alert(`一要因分散分析には3群以上必要です（現在: ${groups.length}群）`);
+        alert(`一要因分散分析には3群以上必要です（現在: ${groups.length} 群）`);
         return;
     }
 
@@ -118,10 +118,10 @@ function runOneWayANOVA() {
         const etaSquared = ssBetween / (ssBetween + ssWithin);
 
         // 結果表示 HTML構築
-        const sectionId = `anova-${depVar}`;
+        const sectionId = `anova - ${depVar} `;
 
         let html = `
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+    < div style = "background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;" >
                 <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">
                     変数: ${depVar}
                 </h4>
@@ -176,8 +176,8 @@ function runOneWayANOVA() {
                 </p>
 
                 <div id="plot-${sectionId}" style="margin-top: 1.5rem;"></div>
-            </div>
-        `;
+            </div >
+    `;
 
         outputContainer.innerHTML += html;
 
@@ -190,7 +190,7 @@ function runOneWayANOVA() {
         // But `renderSampleSizeInfo` appends to a DOM element.
         // Solution: Create a placeholder div in `html`, then after `outputContainer.innerHTML += html`, find that div and render sample size.
 
-        // Wait, using `innerHTML +=` destroys event listeners and references.
+        // Wait, using `innerHTML += ` destroys event listeners and references.
         // Better approach:
 
         // 1. Create a wrapper div for this variable's results
@@ -225,8 +225,8 @@ function runOneWayANOVA() {
     // Plotly描画 (ループ終了後に実行)
     setTimeout(() => {
         dependentVars.forEach(depVar => {
-            const sectionId = `anova-${depVar}`;
-            const plotDiv = document.getElementById(`plot-${sectionId}`);
+            const sectionId = `anova - ${depVar} `;
+            const plotDiv = document.getElementById(`plot - ${sectionId} `);
             if (plotDiv) {
                 // Determine group data for this variable again (or could have stored it)
                 const currentGroupData = {};
@@ -451,7 +451,7 @@ function runOneWayANOVA() {
                     shapes: shapesFinal,
                     annotations: annotationsFinal,
                     margin: { t: topMargin }
-                });
+                }, createPlotlyConfig('一要因分散分析', depVar));
             }
         });
     }, 100);
@@ -463,7 +463,7 @@ export function render(container, characteristics) {
     const { numericColumns, categoricalColumns } = characteristics;
 
     container.innerHTML = `
-        <div class="anova-container">
+    < div class="anova-container" >
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                     <i class="fas fa-sitemap"></i> 一要因分散分析 (One-way ANOVA)
@@ -471,7 +471,7 @@ export function render(container, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">3群以上の平均値の差を検定します</p>
             </div>
 
-            <!-- 分析の概要・解釈 -->
+            <!--分析の概要・解釈 -->
             <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
                 <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
                     <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
@@ -497,10 +497,10 @@ export function render(container, characteristics) {
                 </div>
             </div>
 
-            <!-- データ概要 -->
+            <!--データ概要 -->
             <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
-            <!-- 分析設定 -->
+            <!--分析設定 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
 
                 <div id="factor-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
@@ -509,11 +509,11 @@ export function render(container, characteristics) {
                 <div id="run-anova-btn-container"></div>
             </div>
 
-            <!-- 結果エリア -->
-            <div id="analysis-results" style="display: none;">
-                <div id="anova-results"></div>
-            </div>
-        </div>
+            <!--結果エリア -->
+    <div id="analysis-results" style="display: none;">
+        <div id="anova-results"></div>
+    </div>
+        </div >
     `;
 
     renderDataOverview('#anova-data-overview', currentData, characteristics, { initiallyCollapsed: true });

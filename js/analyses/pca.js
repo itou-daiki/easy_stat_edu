@@ -1,5 +1,4 @@
-import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 function runPCA() {
     const varsSelect = document.getElementById('pca-vars');
@@ -128,7 +127,7 @@ function plotScree(eigenvalues) {
         yaxis: { title: '固有値' }
     };
 
-    Plotly.newPlot('scree-plot', [trace, traceLine], layout);
+    Plotly.newPlot('scree-plot', [trace, traceLine], layout, createPlotlyConfig('主成分分析_スクリープロット', []));
 }
 
 function displayLoadings(variables, vectors, values) {
@@ -217,7 +216,7 @@ function plotBiplot(scores, vectors, variables) {
         height: 600
     };
 
-    Plotly.newPlot('biplot', [tracePoints], layout);
+    Plotly.newPlot('biplot', [tracePoints], layout, createPlotlyConfig('主成分分析_バイプロット', variables));
 }
 
 

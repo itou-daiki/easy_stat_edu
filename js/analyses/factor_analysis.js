@@ -1,5 +1,4 @@
-import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 // 因子抽出（主因子法）
 function exactFactors(variables, numFactors) {
@@ -292,7 +291,7 @@ function plotScree(eigenvalues) {
         shapes: [shape]
     };
 
-    Plotly.newPlot('scree-plot', [trace], layout);
+    Plotly.newPlot('scree-plot', [trace], layout, createPlotlyConfig('因子分析_スクリープロット', []));
 }
 
 function plotLoadingsHeatmap(variables, loadings) {
@@ -316,7 +315,7 @@ function plotLoadingsHeatmap(variables, loadings) {
         xaxis: { side: 'bottom' }
     };
 
-    Plotly.newPlot('loadings-heatmap', data, layout);
+    Plotly.newPlot('loadings-heatmap', data, layout, createPlotlyConfig('因子分析_負荷量', variables));
 }
 
 

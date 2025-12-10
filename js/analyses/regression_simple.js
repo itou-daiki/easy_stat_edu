@@ -1,5 +1,5 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 function runSimpleRegression() {
     const xVar = document.getElementById('independent-var').value;
@@ -142,7 +142,7 @@ function runSimpleRegression() {
         xaxis: { title: xVar },
         yaxis: { title: yVar },
         showlegend: true
-    });
+    }, createPlotlyConfig('単回帰分析', [yVar, xVar]));
 
     document.getElementById('analysis-results').style.display = 'block';
 }

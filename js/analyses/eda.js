@@ -1,4 +1,4 @@
-import { currentData, dataCharacteristics } from '../main.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 // Keep for now if needed later, or remove. Instructions say remove.
 // Actually, let's just remove the line if it's the only import.
 // Checking previous view... it is `import { renderDataOverview } from '../utils.js';`
@@ -341,7 +341,7 @@ function visualizeNumericVariables() {
             yaxis: { title: '度数' },
             bargap: 0.2
         };
-        Plotly.newPlot(histId, [histTrace], histLayout);
+        Plotly.newPlot(histId, [histTrace], histLayout, createPlotlyConfig('EDA_ヒストグラム', col));
 
         // 箱ひげ図
         const boxTrace = {
@@ -354,7 +354,7 @@ function visualizeNumericVariables() {
             title: `【${col}】の箱ひげ図`,
             yaxis: { title: col }
         };
-        Plotly.newPlot(boxId, [boxTrace], boxLayout);
+        Plotly.newPlot(boxId, [boxTrace], boxLayout, createPlotlyConfig('EDA_箱ひげ図', col));
     });
 }
 
@@ -397,7 +397,7 @@ function visualizeMultipleNumericVariables() {
         height: 500
     };
 
-    Plotly.newPlot('multiple-numeric-plot', traces, layout);
+    Plotly.newPlot('multiple-numeric-plot', traces, layout, createPlotlyConfig('EDA_数値変数一括', numericColumns));
 }
 
 // 2変数の可視化
@@ -507,7 +507,7 @@ function plotNumericVsNumeric(var1, var2, container) {
         yaxis: { title: var2 }
     };
 
-    Plotly.newPlot(plotId, [trace], layout);
+    Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig('EDA_散布図', [var1, var2]));
 }
 
 // カテゴリ×カテゴリの可視化
@@ -562,7 +562,7 @@ function plotCategoricalVsCategorical(var1, var2, container) {
         yaxis: { title: var1 }
     };
 
-    Plotly.newPlot(plotId, [trace], layout);
+    Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig('EDA_クロス集計', [var1, var2]));
 }
 
 // カテゴリ×数値の可視化
@@ -605,7 +605,7 @@ function plotCategoricalVsNumeric(catVar, numVar, container) {
         yaxis: { title: numVar }
     };
 
-    Plotly.newPlot(plotId, traces, layout);
+    Plotly.newPlot(plotId, traces, layout, createPlotlyConfig('EDA_箱ひげ図_層別', [catVar, numVar]));
 }
 
 // 2つのカテゴリ変数と1つの数値変数による棒グラフ

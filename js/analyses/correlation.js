@@ -1,5 +1,4 @@
-import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
 
 // 相関マトリックスの計算
 function calculateCorrelationMatrix(variables) {
@@ -117,7 +116,7 @@ function plotHeatmap(variables, matrix) {
         margin: { b: 100 }
     };
 
-    Plotly.newPlot('correlation-heatmap', data, layout);
+    Plotly.newPlot('correlation-heatmap', data, layout, createPlotlyConfig('相関ヒートマップ', variables));
 }
 
 function plotScatterMatrix(variables) {
@@ -243,7 +242,7 @@ function plotScatterMatrix(variables) {
     // レイアウトの微調整（全体のタイトルなど）
     // layout.grid を使わず manual domain 設定で実装したため、これ以上特別な設定は不要
 
-    Plotly.newPlot('scatter-matrix', traces, layout);
+    Plotly.newPlot('scatter-matrix', traces, layout, createPlotlyConfig('散布図行列', variables));
 }
 
 export function render(container, characteristics) {
