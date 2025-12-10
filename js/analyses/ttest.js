@@ -66,7 +66,7 @@ function displaySummaryStatistics(variables, currentData) {
 }
 
 // 対応なしt検定の実行
-function runIndependentTTest() {
+function runIndependentTTest(currentData) {
     const groupVar = document.getElementById('group-var').value;
     const depVarSelect = document.getElementById('dep-var');
     const selectedVars = Array.from(depVarSelect.selectedOptions).map(opt => opt.value);
@@ -90,7 +90,7 @@ function runIndependentTTest() {
     }
 
     // 要約統計量の表示
-    displaySummaryStatistics(selectedVars);
+    displaySummaryStatistics(selectedVars, currentData);
 
     // 結果セクションの表示
     const resultsContainer = document.getElementById('test-results-section');
