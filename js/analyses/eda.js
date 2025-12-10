@@ -31,7 +31,7 @@ function calculateKurtosis(data) {
 function displaySummaryStatistics() {
     const resultsContainer = document.getElementById('eda-summary-stats');
     resultsContainer.innerHTML = `
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                 <i class="fas fa-chart-line"></i> 要約統計量
             </h3>
@@ -46,7 +46,7 @@ function displaySummaryStatistics() {
     if (numericColumns.length > 0) {
         let tableHtml = `
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <h4 style="color: #667eea; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                     <i class="fas fa-hashtag"></i> 数値変数の統計量
                 </h4>
                 <div class="table-container" style="overflow-x: auto;">
@@ -88,7 +88,7 @@ function displaySummaryStatistics() {
 
                 tableHtml += `
                     <tr>
-                        <td style="font-weight: bold; color: #667eea;">${col}</td>
+                        <td style="font-weight: bold; color: #1e90ff;">${col}</td>
                         <td>${stats.count}</td>
                         <td>${stats.mean.toFixed(4)}</td>
                         <td>${stats.median.toFixed(4)}</td>
@@ -117,7 +117,7 @@ function displaySummaryStatistics() {
     if (categoricalColumns.length > 0) {
         let tableHtml = `
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <h4 style="color: #764ba2; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                     <i class="fas fa-tag"></i> カテゴリ変数の統計量
                 </h4>
                 <div class="table-container" style="overflow-x: auto;">
@@ -148,7 +148,7 @@ function displaySummaryStatistics() {
 
                 tableHtml += `
                     <tr>
-                        <td style="font-weight: bold; color: #764ba2;">${col}</td>
+                        <td style="font-weight: bold; color: #1e90ff;">${col}</td>
                         <td>${dataVector.length}</td>
                         <td>${uniqueCount}</td>
                         <td>${mode}</td>
@@ -173,7 +173,7 @@ function visualizeCategoricalVariables() {
     const container = document.getElementById('categorical-viz-section');
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #764ba2; margin-bottom: 1.5rem; font-size: 1.3rem; font-weight: bold; border-bottom: 3px solid #764ba2; padding-bottom: 0.5rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1.5rem; font-size: 1.3rem; font-weight: bold; border-bottom: 3px solid #1e90ff; padding-bottom: 0.5rem;">
                 <i class="fas fa-tags"></i> カテゴリ変数の可視化
             </h4>
             <div id="categorical-plots-container"></div>
@@ -195,9 +195,9 @@ function visualizeCategoricalVariables() {
         const plotId = `cat-plot-${index}`;
 
         plotsContainer.innerHTML += `
-            <div class="categorical-viz-section" style="margin-bottom: 2.5rem; padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #764ba2;">
+            <div class="categorical-viz-section" style="margin-bottom: 2.5rem; padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #1e90ff;">
                 <h5 style="color: #2d3748; font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;">
-                    <i class="fas fa-chart-bar" style="color: #764ba2;"></i> 変数名: <span style="color: #764ba2;">${col}</span>
+                    <i class="fas fa-chart-bar" style="color: #1e90ff;"></i> 変数名: <span style="color: #1e90ff;">${col}</span>
                 </h5>
                 <div class="control-group" style="margin-bottom: 1rem;">
                     <label for="${selectId}" style="font-weight: 500; margin-right: 0.5rem;">並び替え順:</label>
@@ -274,7 +274,7 @@ function visualizeNumericVariables() {
     const container = document.getElementById('numeric-viz-section');
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #667eea; margin-bottom: 1.5rem; font-size: 1.3rem; font-weight: bold; border-bottom: 3px solid #667eea; padding-bottom: 0.5rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1.5rem; font-size: 1.3rem; font-weight: bold; border-bottom: 3px solid #1e90ff; padding-bottom: 0.5rem;">
                 <i class="fas fa-chart-area"></i> 数値変数の個別可視化
             </h4>
             <div id="numeric-plots-container"></div>
@@ -307,13 +307,13 @@ function visualizeNumericVariables() {
         const boxId = `num-box-${index}`;
 
         plotsContainer.innerHTML += `
-            <div class="numeric-viz-section" style="margin-bottom: 2.5rem; padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #667eea;">
+            <div class="numeric-viz-section" style="margin-bottom: 2.5rem; padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #1e90ff;">
                 <h5 style="color: #2d3748; font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;">
-                    <i class="fas fa-chart-line" style="color: #667eea;"></i> 変数名: <span style="color: #667eea;">${col}</span>
+                    <i class="fas fa-chart-line" style="color: #1e90ff;"></i> 変数名: <span style="color: #1e90ff;">${col}</span>
                 </h5>
-                <div class="stats-summary" style="margin-bottom: 1rem; padding: 1rem; background: #e6f0ff; border-radius: 8px; border: 1px solid #667eea;">
+                <div class="stats-summary" style="margin-bottom: 1rem; padding: 1rem; background: #e6f0ff; border-radius: 8px; border: 1px solid #1e90ff;">
                     <p style="margin: 0; color: #2d3748; line-height: 1.6;">
-                        <strong style="color: #667eea;">統計量:</strong><br>
+                        <strong style="color: #1e90ff;">統計量:</strong><br>
                         平均: <strong>${stats.mean.toFixed(4)}</strong>,
                         中央値: <strong>${stats.median.toFixed(4)}</strong>,
                         標準偏差: <strong>${stats.stdev.toFixed(4)}</strong><br>
@@ -367,7 +367,7 @@ function visualizeMultipleNumericVariables() {
 
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #667eea; margin-bottom: 1.5rem; font-size: 1.3rem; font-weight: bold; border-bottom: 3px solid #667eea; padding-bottom: 0.5rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1.5rem; font-size: 1.3rem; font-weight: bold; border-bottom: 3px solid #1e90ff; padding-bottom: 0.5rem;">
                 <i class="fas fa-layer-group"></i> 数値変数の一括箱ひげ図
             </h4>
             <div id="multiple-numeric-plot" class="plot-container"></div>
@@ -414,13 +414,13 @@ function visualizeTwoVariables() {
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <div class="control-group" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
                 <label for="two-var-1" style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                    <i class="fas fa-circle" style="color: #667eea;"></i> 変数1を選択:
+                    <i class="fas fa-circle" style="color: #1e90ff;"></i> 変数1を選択:
                 </label>
                 <select id="two-var-1" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; font-weight: 500;">${options}</select>
             </div>
             <div class="control-group" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
                 <label for="two-var-2" style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                    <i class="fas fa-circle" style="color: #764ba2;"></i> 変数2を選択:
+                    <i class="fas fa-circle" style="color: #1e90ff;"></i> 変数2を選択:
                 </label>
                 <select id="two-var-2" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; font-weight: 500;">${options.replace(`value="${allColumns[0]}"`, `value="${allColumns[Math.min(1, allColumns.length - 1)]}" selected`)}</select>
             </div>
@@ -476,11 +476,11 @@ function plotNumericVsNumeric(var1, var2, container) {
 
     const plotId = 'two-vars-plot';
     container.innerHTML = `
-        <div style="padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #667eea;">
+        <div style="padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #1e90ff;">
             <h5 style="color: #2d3748; font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;">
-                <i class="fas fa-chart-scatter" style="color: #667eea;"></i> 散布図: <span style="color: #667eea;">${var1}</span> × <span style="color: #764ba2;">${var2}</span>
+                <i class="fas fa-chart-scatter" style="color: #1e90ff;"></i> 散布図: <span style="color: #1e90ff;">${var1}</span> × <span style="color: #1e90ff;">${var2}</span>
             </h5>
-            <p style="font-size: 1.2rem; font-weight: bold; color: #667eea; background: #e6f0ff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+            <p style="font-size: 1.2rem; font-weight: bold; color: #1e90ff; background: #e6f0ff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                 <i class="fas fa-link"></i> 相関係数: ${correlation.toFixed(4)}
             </p>
             <div id="${plotId}" class="plot-container"></div>
@@ -536,9 +536,9 @@ function plotCategoricalVsCategorical(var1, var2, container) {
 
     const plotId = 'two-vars-plot';
     container.innerHTML = `
-        <div style="padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #764ba2;">
+        <div style="padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #1e90ff;">
             <h5 style="color: #2d3748; font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;">
-                <i class="fas fa-th" style="color: #764ba2;"></i> クロス集計: <span style="color: #667eea;">${var1}</span> × <span style="color: #764ba2;">${var2}</span>
+                <i class="fas fa-th" style="color: #1e90ff;"></i> クロス集計: <span style="color: #1e90ff;">${var1}</span> × <span style="color: #1e90ff;">${var2}</span>
             </h5>
             <div id="${plotId}" class="plot-container"></div>
         </div>
@@ -588,9 +588,9 @@ function plotCategoricalVsNumeric(catVar, numVar, container) {
 
     const plotId = 'two-vars-plot';
     container.innerHTML = `
-        <div style="padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #667eea;">
+        <div style="padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #1e90ff;">
             <h5 style="color: #2d3748; font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;">
-                <i class="fas fa-chart-bar" style="color: #667eea;"></i> 箱ひげ図: <span style="color: #764ba2;">${catVar}</span> × <span style="color: #667eea;">${numVar}</span>
+                <i class="fas fa-chart-bar" style="color: #1e90ff;"></i> 箱ひげ図: <span style="color: #1e90ff;">${catVar}</span> × <span style="color: #1e90ff;">${numVar}</span>
             </h5>
             <div id="${plotId}" class="plot-container"></div>
         </div>
@@ -622,19 +622,19 @@ function visualizeGroupedBarChart() {
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <div class="control-group" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
                 <label for="grouped-cat-1" style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                    <i class="fas fa-tag" style="color: #764ba2;"></i> カテゴリ変数1を選択:
+                    <i class="fas fa-tag" style="color: #1e90ff;"></i> カテゴリ変数1を選択:
                 </label>
                 <select id="grouped-cat-1" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; font-weight: 500;">${catOptions}</select>
             </div>
             <div class="control-group" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
                 <label for="grouped-cat-2" style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                    <i class="fas fa-tag" style="color: #764ba2;"></i> カテゴリ変数2を選択:
+                    <i class="fas fa-tag" style="color: #1e90ff;"></i> カテゴリ変数2を選択:
                 </label>
                 <select id="grouped-cat-2" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; font-weight: 500;">${catOptions.replace(`value="${categoricalColumns[0]}"`, `value="${categoricalColumns[Math.min(1, categoricalColumns.length - 1)]}" selected`)}</select>
             </div>
             <div class="control-group" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
                 <label for="grouped-num" style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                    <i class="fas fa-hashtag" style="color: #667eea;"></i> 数値変数を選択:
+                    <i class="fas fa-hashtag" style="color: #1e90ff;"></i> 数値変数を選択:
                 </label>
                 <select id="grouped-num" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; font-weight: 500;">${numOptions}</select>
             </div>
@@ -705,9 +705,9 @@ function plotGroupedBarChart(cat1, cat2, numVar) {
 
     const plotId = 'grouped-bar-plot';
     resultContainer.innerHTML = `
-        <div style="padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #764ba2;">
+        <div style="padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #1e90ff;">
             <h5 style="color: #2d3748; font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;">
-                <i class="fas fa-chart-bar" style="color: #764ba2;"></i> グループ化棒グラフ: <span style="color: #764ba2;">${cat1}</span> × <span style="color: #764ba2;">${cat2}</span> × <span style="color: #667eea;">${numVar}</span>
+                <i class="fas fa-chart-bar" style="color: #1e90ff;"></i> グループ化棒グラフ: <span style="color: #1e90ff;">${cat1}</span> × <span style="color: #1e90ff;">${cat2}</span> × <span style="color: #1e90ff;">${numVar}</span>
             </h5>
             <div id="${plotId}" class="plot-container"></div>
         </div>
@@ -753,7 +753,7 @@ export function render(container, characteristics) {
 
             <!-- タブナビゲーション -->
             <div class="tab-navigation" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 3px solid #e2e8f0;">
-                <button class="tab-button active" data-tab="general-eda" style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: bold; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.3s;">
+                <button class="tab-button active" data-tab="general-eda" style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: bold; background: #1e90ff; color: white; border: none; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.3s;">
                     <i class="fas fa-chart-line"></i> 一般EDA
                 </button>
                 <button class="tab-button" data-tab="bulk-boxplot" style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: bold; background: #e2e8f0; color: #4a5568; border: none; cursor: pointer; border-radius: 8px 8px 0 0; transition: all 0.3s;">
@@ -769,7 +769,7 @@ export function render(container, characteristics) {
 
             <!-- タブ1: 一般EDA -->
             <div id="tab-general-eda" class="tab-content" style="display: block;">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                         <i class="fas fa-chart-line"></i> 一般EDA
                     </h3>
@@ -781,7 +781,7 @@ export function render(container, characteristics) {
 
             <!-- タブ2: 一括箱ひげ図 -->
             <div id="tab-bulk-boxplot" class="tab-content" style="display: none;">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                         <i class="fas fa-layer-group"></i> 一括箱ひげ図
                     </h3>
@@ -792,7 +792,7 @@ export function render(container, characteristics) {
 
             <!-- タブ3: ２変数 -->
             <div id="tab-two-vars" class="tab-content" style="display: none;">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                         <i class="fas fa-project-diagram"></i> ２変数の関係
                     </h3>
@@ -803,7 +803,7 @@ export function render(container, characteristics) {
 
             <!-- タブ4: ３変数 -->
             <div id="tab-three-vars" class="tab-content" style="display: none;">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                         <i class="fas fa-cubes"></i> ３変数の関係
                     </h3>
@@ -829,7 +829,7 @@ export function render(container, characteristics) {
             background: #cbd5e0 !important;
         }
         .tab-button.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            background: #1e90ff !important;
             color: white !important;
         }
     `;
