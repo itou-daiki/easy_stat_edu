@@ -131,7 +131,7 @@ function analyzeDataCharacteristics(data) {
     if (!data || data.length === 0) return null;
     const characteristics = { numericColumns: [], categoricalColumns: [], textColumns: [] };
     const columns = Object.keys(data[0]);
-    
+
     columns.forEach(col => {
         const values = data.map(row => row[col]).filter(val => val != null);
         if (values.length === 0) return;
@@ -139,8 +139,8 @@ function analyzeDataCharacteristics(data) {
         const isNumeric = values.every(val => typeof val === 'number' || (typeof val === 'string' && val.trim() !== '' && !isNaN(Number(val))));
         if (isNumeric) {
             characteristics.numericColumns.push(col);
-            data.forEach(row => { 
-                if(row[col] != null) row[col] = Number(row[col]);
+            data.forEach(row => {
+                if (row[col] != null) row[col] = Number(row[col]);
             });
         } else {
             const uniqueRatio = new Set(values).size / values.length;
@@ -161,16 +161,46 @@ window.analyzeDataCharacteristics = analyzeDataCharacteristics;
 function updateFileInfo(fileName, data) {
     const nRows = data.length;
     const nCols = Object.keys(data[0] || {}).length;
-    fileInfo.innerHTML = `<p><strong>ファイル名:</strong> ${fileName}</p><p><strong>行数:</strong> ${nRows}</p><p><strong>列数:</strong> ${nCols}</p>`;
+
+    fileInfo.innerHTML = `
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
+            <div style="flex: 2; min-width: 200px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                    <i class="fas fa-file-excel" style="margin-right: 0.5rem; color: #1e90ff;"></i>ファイル名
+                </div>
+                <div style="font-weight: bold; color: #1e293b; font-size: 1.1rem; word-break: break-all;">
+                    ${fileName}
+                </div>
+            </div>
+            
+            <div style="flex: 1; min-width: 120px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                    <i class="fas fa-list-ol" style="margin-right: 0.5rem; color: #1e90ff;"></i>行数
+                </div>
+                <div style="font-weight: bold; color: #1e293b; font-size: 1.5rem;">
+                    ${nRows.toLocaleString()}
+                </div>
+            </div>
+            
+            <div style="flex: 1; min-width: 120px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                    <i class="fas fa-columns" style="margin-right: 0.5rem; color: #1e90ff;"></i>列数
+                </div>
+                <div style="font-weight: bold; color: #1e293b; font-size: 1.5rem;">
+                    ${nCols.toLocaleString()}
+                </div>
+            </div>
+        </div>
+    `;
     fileInfo.style.display = 'block';
 }
 
 function updateFeatureCards() {
     if (!dataCharacteristics) return;
-    const counts = { 
-        numeric: dataCharacteristics.numericColumns.length, 
-        categorical: dataCharacteristics.categoricalColumns.length, 
-        text: dataCharacteristics.textColumns.length 
+    const counts = {
+        numeric: dataCharacteristics.numericColumns.length,
+        categorical: dataCharacteristics.categoricalColumns.length,
+        text: dataCharacteristics.textColumns.length
     };
 
     featureGrid.querySelectorAll('.feature-card').forEach(card => {
@@ -205,12 +235,12 @@ function disableCard(card) {
 async function showAnalysisView(analysisType) {
     document.getElementById('navigation-section').style.display = 'none';
     document.getElementById('upload-section-main').style.display = 'none';
-    
+
     const analysisHeader = document.getElementById('analysis-header');
     const analysisArea = document.getElementById('analysis-area');
     const analysisTitle = document.getElementById('analysis-title');
     const analysisContent = document.getElementById('analysis-content');
-    
+
     analysisTitle.textContent = getAnalysisTitle(analysisType);
     analysisContent.innerHTML = `<div class="loading"><i class="fas fa-spinner fa-spin"></i> 分析モジュールを読み込み中...</div>`;
 
