@@ -75,7 +75,9 @@ body {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* メインアプリ */
@@ -105,13 +107,22 @@ body {
     right: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
     animation: pulse 4s ease-in-out infinite;
 }
 
 @keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 0.5; }
-    50% { transform: scale(1.1); opacity: 0.3; }
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.3;
+    }
 }
 
 .hero-title {
@@ -120,7 +131,7 @@ body {
     margin-bottom: 0.5rem;
     position: relative;
     z-index: 1;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .hero-caption {
@@ -330,6 +341,37 @@ body {
     .feature-grid {
         grid-template-columns: 1fr;
     }
+
+    /* Mobile Upload Area */
+    .upload-area {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+
+    .upload-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .upload-buttons {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.75rem;
+        align-items: stretch;
+    }
+
+    .upload-hint {
+        margin: 0.5rem 0;
+    }
+
+    .btn-upload,
+    .btn-demo {
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 0;
+    }
 }
 
 /* フォーム要素 */
@@ -439,8 +481,15 @@ button:disabled {
 }
 
 @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
 }
 
 .upload-text {
@@ -569,15 +618,37 @@ button:disabled {
 }
 
 /* ユーティリティクラス */
-.mb-1 { margin-bottom: 0.5rem; }
-.mb-2 { margin-bottom: 1rem; }
-.mb-3 { margin-bottom: 1.5rem; }
-.mt-1 { margin-top: 0.5rem; }
-.mt-2 { margin-top: 1rem; }
-.mt-3 { margin-top: 1.5rem; }
+.mb-1 {
+    margin-bottom: 0.5rem;
+}
 
-.text-center { text-align: center; }
-.text-muted { color: var(--text-secondary); }
+.mb-2 {
+    margin-bottom: 1rem;
+}
+
+.mb-3 {
+    margin-bottom: 1.5rem;
+}
+
+.mt-1 {
+    margin-top: 0.5rem;
+}
+
+.mt-2 {
+    margin-top: 1rem;
+}
+
+.mt-3 {
+    margin-top: 1.5rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: var(--text-secondary);
+}
 
 /* グラフエリア */
 #plot-area {
@@ -943,6 +1014,7 @@ table tr:hover {
 .github-info a:hover {
     text-decoration: underline;
 }
+
 /* MultiSelect Component Styles */
 .multiselect-wrapper {
     position: relative;
@@ -950,10 +1022,13 @@ table tr:hover {
 }
 
 .multiselect-input {
-    min-height: 45px; /* Match standard select height roughly */
-    border: 2px solid #cbd5e0; /* Match t-test group var border */
+    min-height: 45px;
+    /* Match standard select height roughly */
+    border: 2px solid #cbd5e0;
+    /* Match t-test group var border */
     border-radius: 8px;
-    padding: 0.5rem 0.75rem; /* Match padding */
+    padding: 0.5rem 0.75rem;
+    /* Match padding */
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -975,7 +1050,8 @@ table tr:hover {
 }
 
 .multiselect-tag {
-    background: #e0f2fe; /* Light blue */
+    background: #e0f2fe;
+    /* Light blue */
     color: var(--primary-dark);
     border: 1px solid #bae6fd;
     border-radius: 4px;
