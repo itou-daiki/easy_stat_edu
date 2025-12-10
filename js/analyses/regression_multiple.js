@@ -325,7 +325,28 @@ export function render(container, characteristics) {
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                     <i class="fas fa-layer-group"></i> 重回帰分析
                 </h3>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">複数の説明変数を用いて目的変数を予測・分析します</p>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">複数の変数から1つの変数を予測します</p>
+            </div>
+
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> 重回帰分析 (Multiple Linear Regression) とは？</strong>
+                        <p>複数の「原因（説明変数）」を使って、1つの「結果（目的変数）」を予測・説明する分析です。単回帰分析の拡張版で、より複雑な現実世界の現象をモデル化できます。</p>
+                    </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li>「駅からの距離」「広さ」「築年数」から「家賃」を予測したい</li>
+                        <li>「勉強時間」「睡眠時間」「出席率」から「テストの成績」に何が一番効いているか調べたい</li>
+                    </ul>
+                    <h4>注意点：多重共線性 (Multicollinearity)</h4>
+                    <p>説明変数同士の相関が強すぎると、計算がおかしくなることがあります（マルチコ）。VIF統計量などを確認して、似たような変数を同時に投入しないよう注意が必要です。</p>
+                </div>
             </div>
 
             <!-- データプレビュー -->

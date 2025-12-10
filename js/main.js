@@ -1,7 +1,7 @@
 // ==========================================
 // Imports
 // ==========================================
-import { getAnalysisTitle, showError, showLoadingMessage, hideLoadingMessage, toggleCollapsible, renderDataPreview, renderSummaryStatistics, renderDataOverview } from './utils.js';
+import { showError, showLoadingMessage, hideLoadingMessage, toggleCollapsible, renderDataPreview, renderSummaryStatistics, renderDataOverview } from './utils.js';
 
 // ==========================================
 // Global Variables & Exports for Modules
@@ -238,10 +238,9 @@ async function showAnalysisView(analysisType) {
 
     const analysisHeader = document.getElementById('analysis-header');
     const analysisArea = document.getElementById('analysis-area');
-    const analysisTitle = document.getElementById('analysis-title');
     const analysisContent = document.getElementById('analysis-content');
 
-    analysisTitle.textContent = getAnalysisTitle(analysisType);
+
     analysisContent.innerHTML = `<div class="loading"><i class="fas fa-spinner fa-spin"></i> 分析モジュールを読み込み中...</div>`;
 
     analysisHeader.style.display = 'flex';

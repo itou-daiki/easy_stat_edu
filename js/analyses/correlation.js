@@ -162,7 +162,36 @@ export function render(container, characteristics) {
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                     <i class="fas fa-project-diagram"></i> 相関分析
                 </h3>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">変数間の関係性の強さを分析します</p>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">変数間の関係の強さを分析します</p>
+            </div>
+
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> 相関分析 (Correlation Analysis) とは？</strong>
+                        <p>2つの変数の間に「どのような関係があるか（相関）」を数値（相関係数）で表す手法です。「片方が増えると、もう片方も増える（正の相関）」などを見つけます。</p>
+                    </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li>「身長」と「体重」に関係があるか知りたい</li>
+                        <li>「勉強時間」と「テストの点数」に関係があるか調べたい</li>
+                    </ul>
+                    <h4>結果の読み方</h4>
+                    <ul>
+                        <li><strong>相関係数 (r):</strong> -1から+1の範囲の値をとります。
+                            <ul>
+                                <li><strong>0.7 〜 1.0:</strong> 強い正の相関（一方が増ともう一方も強く増える）</li>
+                                <li><strong>-0.7 〜 -1.0:</strong> 強い負の相関（一方が増えるともう一方は強く減る）</li>
+                                <li><strong>0付近:</strong> 相関なし（関係性が見られない）</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
             </div>
 
             <!-- データプレビュー -->

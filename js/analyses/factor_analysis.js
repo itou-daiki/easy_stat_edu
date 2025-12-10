@@ -329,7 +329,31 @@ export function render(container, characteristics) {
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                     <i class="fas fa-search-dollar"></i> 因子分析
                 </h3>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">背後に潜む共通因子を探索します</p>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">多数の変数の背後にある共通因子を抽出します</p>
+            </div>
+
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> 因子分析 (Factor Analysis) とは？</strong>
+                        <p>たくさんの変数（観測データ）の背後に潜んでいる、目に見えない共通の「因子（要因）」を見つけ出す手法です。データの構造をシンプルに理解するために使われます。</p>
+                    </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li>「国語」「数学」「理科」...など多数のテスト結果から、「文系能力」「理系能力」という因子を見つけたい</li>
+                        <li>アンケートの多くの質問項目から、「ブランド志向」「価格志向」などの潜在的な消費者心理を特定したい</li>
+                    </ul>
+                    <h4>主な用語</h4>
+                    <ul>
+                        <li><strong>因子負荷量:</strong> 各変数がその因子とどれくらい強く関係しているか（相関係数のようなもの）。</li>
+                        <li><strong>スクリープロット:</strong> 抽出する因子の数を決めるためのグラフ。</li>
+                    </ul>
+                </div>
             </div>
 
             <!-- データ概要 -->

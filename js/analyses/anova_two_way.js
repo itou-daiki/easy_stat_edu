@@ -218,9 +218,30 @@ export function render(container, characteristics) {
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                     <i class="fas fa-th-large"></i> 二要因分散分析 (Two-way ANOVA)
                 </h3>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つの要因とその交互作用を検定します</p>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つの要因とその交互作用を分析します</p>
             </div>
-            
+
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> 二要因分散分析 (Two-way ANOVA) とは？</strong>
+                        <p>2つの要因（カテゴリ変数）が数値データに与える影響を調べる手法です。それぞれの要因の「主効果」だけでなく、要因同士が影響し合う「交互作用効果」も分析できます。</p>
+                    </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li>「性別（男性・女性）」と「指導法（A・B）」がテストの点数にどう影響するか調べたい</li>
+                        <li>「温度（高・低）」と「湿度（高・低）」が植物の成長にどう影響するか、組み合わせによる特殊な効果があるか知りたい</li>
+                    </ul>
+                    <h4>重要な概念：交互作用</h4>
+                    <p>ある要因の効果が、もう一方の要因の水準によって変わることです。例えば、「指導法Aは男性には効果的だが、女性には効果が薄い」といった場合、交互作用があると言います。</p>
+                </div>
+            </div>
+
             <!-- データ概要 -->
             <div id="anova2-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 

@@ -156,7 +156,32 @@ export function render(container, characteristics) {
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                     <i class="fas fa-chart-line"></i> 単回帰分析
                 </h3>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つの量的変数の関係を直線でモデル化します</p>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">1つの変数から別の変数を予測します</p>
+            </div>
+
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> 単回帰分析 (Simple Linear Regression) とは？</strong>
+                        <p>1つの「原因（説明変数）」から「結果（目的変数）」を予測する直線を引く分析です。2つの変数の間にどのような直線的な関係があるかを数式（y = ax + b）でモデル化します。</p>
+                    </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li>「広告費」から「売上」を予測したい</li>
+                        <li>「気温」から「アイスクリームの販売数」を予測したい</li>
+                    </ul>
+                    <h4>主な指標</h4>
+                    <ul>
+                        <li><strong>決定係数 (R²):</strong> モデルの当てはまりの良さ（予測精度）。1に近いほど精度が高いです。</li>
+                        <li><strong>回帰係数:</strong> 説明変数が1増えたときに、目的変数がどれくらい増えるかを表します。</li>
+                        <li><strong>p値:</strong> その関係が偶然でないかどうかを示します。</li>
+                    </ul>
+                </div>
             </div>
 
             <!-- データ概要 -->

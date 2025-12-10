@@ -164,6 +164,25 @@ export function render(container, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">テキストデータの構造を可視化します（日本語対応）</p>
             </div>
 
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> テキストマイニング (Text Mining) とは？</strong>
+                        <p>アンケートの自由記述などの文章データを単語に分解し、出現頻度や単語同士のつながりを分析・可視化する手法です。</p>
+                    </div>
+                    <h4>主な機能</h4>
+                    <ul>
+                        <li><strong>ワードクラウド:</strong> 出現頻度の高い単語を大きく表示し、全体像を直感的に把握します。</li>
+                        <li><strong>共起ネットワーク:</strong> 一緒に出現することの多い単語同士を線で結び、話題のつながりや文脈を可視化します。</li>
+                    </ul>
+                </div>
+            </div>
+
             <!-- データ概要 -->
             <div id="tm-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 

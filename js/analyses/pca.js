@@ -233,6 +233,30 @@ export function render(container, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">多次元データを要約して可視化します</p>
             </div>
 
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> 主成分分析 (PCA) とは？</strong>
+                        <p>たくさんの変数の情報を、できるだけ損なわずに少数の「主成分（新しい総合指標）」に要約する手法です。データを圧縮して可視化したり、特徴を把握しやすくしたりします。</p>
+                    </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li>5教科の点数を「総合学力」という1つの指標にまとめたい</li>
+                        <li>10個の体力測定の結果を「パワー」「スピード」のような少ない指標に要約してマップ化したい</li>
+                    </ul>
+                    <h4>因子分析との違い</h4>
+                    <ul>
+                        <li><strong>PCA:</strong> データの「情報（分散）」を要約・圧縮するのが目的。</li>
+                        <li><strong>因子分析:</strong> データの背後にある「原因（因子）」を探るのが目的。</li>
+                    </ul>
+                </div>
+            </div>
+
             <!-- データ概要 -->
             <div id="pca-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 

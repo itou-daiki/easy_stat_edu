@@ -189,6 +189,30 @@ export function render(container, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つのカテゴリ変数の独立性を検定します</p>
             </div>
 
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> カイ二乗検定 (Chi-Square Test) とは？</strong>
+                        <p>2つのカテゴリ変数（質的データ）の間に関連があるかどうか（独立かどうか）を調べる手法です。「観測された度数」と「期待される度数」のズレを評価します。</p>
+                    </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li>「性別（男女）」と「好きなジャンル（A・B）」に関連があるか調べたい</li>
+                        <li>「喫煙習慣（あり・なし）」と「肺がん（あり・なし）」に関連があるか調べたい</li>
+                    </ul>
+                    <h4>結果の読み方</h4>
+                    <ul>
+                        <li><strong>p値 < 0.05:</strong> 2つの変数は独立ではない（関連がある）と判断します。</li>
+                        <li><strong>残差分析:</strong> どの組み合わせが特に多かった（または少なかった）かを確認します。調整済み残差が1.96以上だと「有意に多い」と判断されます。</li>
+                    </ul>
+                </div>
+            </div>
+
             <!-- データ概要 -->
             <div id="chi-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 

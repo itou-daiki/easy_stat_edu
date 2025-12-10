@@ -1,5 +1,8 @@
 import { currentData, dataCharacteristics } from '../main.js';
-import { renderDataOverview } from '../utils.js';
+// Keep for now if needed later, or remove. Instructions say remove.
+// Actually, let's just remove the line if it's the only import.
+// Checking previous view... it is `import { renderDataOverview } from '../utils.js';`
+
 
 // 歪度（Skewness）の計算
 function calculateSkewness(data) {
@@ -752,8 +755,27 @@ export function render(container, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">データの分布や変数の関係を探索的に分析します</p>
             </div>
 
-            <!-- データプレビューと要約統計量（トップページと同じ仕様） -->
-            <div id="eda-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> 探索的データ分析 (EDA) とは？</strong>
+                        <p>本格的な統計検定を行う前に、データの分布、外れ値、変数間の関係性などをグラフや表で確認するプロセスのことです。「データの顔」を知るための重要なステップです。</p>
+                    </div>
+                    <h4>何ができるの？</h4>
+                    <ul>
+                        <li>ヒストグラムでデータのばらつきを確認する</li>
+                        <li>箱ひげ図で外れ値がないかチェックする</li>
+                        <li>散布図で変数同士の関係を視覚的に把握する</li>
+                    </ul>
+                </div>
+            </div>
+
+
 
             <!-- 要約統計量セクション -->
             <div id="eda-summary-stats" class="eda-section" style="margin-bottom: 2rem;"></div>
@@ -843,7 +865,7 @@ export function render(container, characteristics) {
     document.head.appendChild(style);
 
     // 共通のデータプレビューと要約統計量を表示（折りたたみ可能）
-    renderDataOverview('#eda-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+    // renderDataOverview('#eda-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
     // 各セクションをレンダリング
     displaySummaryStatistics();

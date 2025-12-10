@@ -399,20 +399,22 @@ function displayVisualization(testResults, testType) {
         };
         const annotations = [];
         const shapes = [];
-        if (result.p_value < 0.05) {
-            const yMax = Math.max(result.mean1 + se1, result.mean2 + se2);
-            const yRange = yMax * 0.15;
-            const bracketY = yMax + yRange * 0.5;
-            const annotationY = bracketY + yRange * 0.3;
-            let significanceText;
-            if (result.p_value < 0.01) significanceText = 'p < 0.01 **';
-            else if (result.p_value < 0.05) significanceText = 'p < 0.05 *';
-            else significanceText = 'p < 0.1 †';
-            shapes.push({ type: 'line', x0: 0, y0: bracketY, x1: 1, y1: bracketY, line: { color: 'black', width: 2 } });
-            shapes.push({ type: 'line', x0: 0, y0: yMax + yRange * 0.3, x1: 0, y1: bracketY, line: { color: 'black', width: 2 } });
-            shapes.push({ type: 'line', x0: 1, y0: yMax + yRange * 0.3, x1: 1, y1: bracketY, line: { color: 'black', width: 2 } });
-            annotations.push({ x: 0.5, y: annotationY, text: significanceText, showarrow: false, font: { size: 14, color: 'black', weight: 'bold' } });
-        }
+        // Always show bracket
+        const yMax = Math.max(result.mean1 + se1, result.mean2 + se2);
+        const yRange = yMax * 0.15;
+        const bracketY = yMax + yRange * 0.5;
+        const annotationY = bracketY + yRange * 0.3;
+
+        let significanceText;
+        if (result.p_value < 0.01) significanceText = 'p < 0.01 **';
+        else if (result.p_value < 0.05) significanceText = 'p < 0.05 *';
+        else if (result.p_value < 0.1) significanceText = 'p < 0.1 †';
+        else significanceText = 'n.s.';
+
+        shapes.push({ type: 'line', x0: 0, y0: bracketY, x1: 1, y1: bracketY, line: { color: 'black', width: 2 } });
+        shapes.push({ type: 'line', x0: 0, y0: yMax + yRange * 0.3, x1: 0, y1: bracketY, line: { color: 'black', width: 2 } });
+        shapes.push({ type: 'line', x0: 1, y0: yMax + yRange * 0.3, x1: 1, y1: bracketY, line: { color: 'black', width: 2 } });
+        annotations.push({ x: 0.5, y: annotationY, text: significanceText, showarrow: false, font: { size: 14, color: 'black', weight: 'bold' } });
         const layout = {
             title: testType === 'paired' ? `平均値の比較：${result.varName}` : `平均値の比較：${result.varName} by グループ`,
             xaxis: { title: '' }, yaxis: { title: '値' }, showlegend: false, annotations: annotations, shapes: shapes
@@ -442,6 +444,31 @@ export function render(container, characteristics) {
                     <i class="fas fa-vial"></i> t検定
                 </h3>
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">検定タイプを選択して分析を実行します</p>
+            </div>
+
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> t検定とは？</strong>
+                        <p>2つのグループ（群）の平均値に「統計的に意味のある差（有意差）」があるかどうかを調べる手法です。</p>
+                    </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li>新薬を投与したグループと投与していないグループで治癒期間に差があるか知りたい</li>
+                        <li>新しい教育メソッドを実施したクラスと従来のクラスでテストの点数に差があるか知りたい</li>
+                        <li>同じ人がダイエット前後で体重が変わったか知りたい（対応あり）</li>
+                    </ul>
+                    <h4>主な用語</h4>
+                    <ul>
+                        <li><strong>p値 (p-value):</strong> 偶然そのような差が生じる確率。「0.05 (5%)」より小さければ「有意差あり（偶然ではない）」と判断するのが一般的です。</li>
+                        <li><strong>効果量 (Cohen's d):</strong> 差の大きさ（インパクト）を表す指標。サンプル数に依存せず、実質的な差の大きさを評価できます。</li>
+                    </ul>
+                </div>
             </div>
 
             <!-- データプレビューと要約統計量 -->

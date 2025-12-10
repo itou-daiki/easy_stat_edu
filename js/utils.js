@@ -13,29 +13,6 @@ export function toggleCollapsible(header) {
 }
 
 /**
- * Gets the title for a given analysis type.
- * @param {string} analysisType - The type of the analysis.
- * @returns {string} The display title.
- */
-export function getAnalysisTitle(analysisType) {
-    const titles = {
-        cleansing: 'データクレンジング',
-        eda: '探索的データ分析（EDA）',
-        correlation: '相関分析',
-        chi_square: 'カイ２乗検定',
-        ttest: 't検定',
-        anova_one_way: '一要因分散分析',
-        anova_two_way: '二要因分散分析',
-        regression_simple: '単回帰分析',
-        regression_multiple: '重回帰分析',
-        factor_analysis: '因子分析',
-        pca: '主成分分析',
-        text_mining: 'テキストマイニング',
-    };
-    return titles[analysisType] || '分析';
-}
-
-/**
  * Displays a loading message in the upload area.
  * @param {string} message - The message to display.
  */
