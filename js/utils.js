@@ -445,56 +445,57 @@ export function createVariableSelector(container, columns, id, options = {}) {
     if (targetContainer) {
         targetContainer.appendChild(select);
     }
-    /**
-     * サンプルサイズ情報（全体N、グループ別N）のHTMLを生成して表示する
-     * @param {HTMLElement|string} container - 表示先のコンテナ要素またはID
-     * @param {number} totalN - 全体サンプルサイズ
-     * @param {Array} groups - グループ情報の配列 [{ label: "Group A", count: 10, color: "#11b981", icon: "fas fa-user-tag" }, ...]
-     */
-    export function renderSampleSizeInfo(container, totalN, groups = []) {
-        const target = typeof container === 'string' ? document.getElementById(container) : container;
-        if (!target) return;
+    return select;
+}
 
-        // グループカードの生成
-        const groupCards = groups.map(g => {
-            const color = g.color || '#64748b'; // default grey
-            const icon = g.icon || 'fas fa-user-tag';
-            return `
-            <div style="flex: 1; min-width: 150px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid ${color}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
-                    <i class="${icon}" style="margin-right: 0.5rem; color: ${color};"></i>${g.label}
-                </div>
-                <div style="font-weight: bold; color: #1e293b; font-size: 1.5rem;">
-                   ${g.count}
-                </div>
+/**
+ * サンプルサイズ情報（全体N、グループ別N）のHTMLを生成して表示する
+ * @param {HTMLElement|string} container - 表示先のコンテナ要素またはID
+ * @param {number} totalN - 全体サンプルサイズ
+ * @param {Array} groups - グループ情報の配列 [{ label: "Group A", count: 10, color: "#11b981", icon: "fas fa-user-tag" }, ...]
+ */
+export function renderSampleSizeInfo(container, totalN, groups = []) {
+    const target = typeof container === 'string' ? document.getElementById(container) : container;
+    if (!target) return;
+
+    // グループカードの生成
+    const groupCards = groups.map(g => {
+        const color = g.color || '#64748b'; // default grey
+        const icon = g.icon || 'fas fa-user-tag';
+        return `
+        <div style="flex: 1; min-width: 150px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid ${color}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                <i class="${icon}" style="margin-right: 0.5rem; color: ${color};"></i>${g.label}
             </div>
-        `;
-        }).join('');
-
-        const html = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-users"></i> サンプルサイズ
-            </h4>
-            <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-                <div style="flex: 1; min-width: 150px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
-                        <i class="fas fa-globe" style="margin-right: 0.5rem; color: #1e90ff;"></i>全体
-                    </div>
-                    <div style="font-weight: bold; color: #1e293b; font-size: 1.5rem;">
-                       N = ${totalN}
-                    </div>
-                </div>
-                ${groupCards}
+            <div style="font-weight: bold; color: #1e293b; font-size: 1.5rem;">
+               ${g.count}
             </div>
         </div>
     `;
+    }).join('');
 
-        // 既存のコンテンツに追加するか、置き換えるか。
-        // ここでは新しいdivを作成して追加する安全な方法をとる
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = html;
-        target.appendChild(wrapper.firstElementChild);
-    }
-    return select;
+    const html = `
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
+        <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+            <i class="fas fa-users"></i> サンプルサイズ
+        </h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+            <div style="flex: 1; min-width: 150px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                    <i class="fas fa-globe" style="margin-right: 0.5rem; color: #1e90ff;"></i>全体
+                </div>
+                <div style="font-weight: bold; color: #1e293b; font-size: 1.5rem;">
+                   N = ${totalN}
+                </div>
+            </div>
+            ${groupCards}
+        </div>
+    </div>
+`;
+
+    // 既存のコンテンツに追加するか、置き換えるか。
+    // ここでは新しいdivを作成して追加する安全な方法をとる
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+    target.appendChild(wrapper.firstElementChild);
 }
