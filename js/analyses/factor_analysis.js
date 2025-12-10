@@ -1,5 +1,5 @@
 import { currentData } from '../main.js';
-import { showError, renderDataPreview, renderSummaryStatistics } from '../utils.js';
+import { showError, renderDataOverview } from '../utils.js';
 
 export function render(container, characteristics) {
     const { numericColumns } = characteristics;
@@ -8,33 +8,64 @@ export function render(container, characteristics) {
         return;
     }
 
-    let options = numericColumns.map(col => `<label><input type="checkbox" name="fa-vars" value="${col}" checked> ${col}</label>`).join('');
-
+    // データ概要の表示（共通関数）
+    const overviewContainerId = 'fa-data-overview';
     container.innerHTML = `
-        <div class="analysis-controls">
-            <div class="control-group">
-                <label>変数選択 (3つ以上):</label>
-                <div class="checkbox-group" style="max-height: 150px; overflow-y: auto;">${options}</div>
+        <div id="${overviewContainerId}" class="info-sections" style="margin-bottom: 2rem;"></div>
+        
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="background: #1e90ff; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-cog"></i> 分析設定
+                </h3>
             </div>
-            <div class="control-group">
-                <label>因子抽出法: 主成分法 (Principal Component Method)</label>
+
+            <div class="analysis-controls">
+                <div class="control-group" style="margin-bottom: 1.5rem;">
+                    <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
+                        <i class="fas fa-layer-group" style="color: #1e90ff;"></i> 変数選択 (3つ以上):
+                    </label>
+                    <div id="fa-vars-container" class="checkbox-group" style="max-height: 200px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; padding: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
+                        ${numericColumns.map(col => `
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" name="fa-vars" value="${col}" checked style="cursor: pointer;"> ${col}
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <div class="control-group">
+                        <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">因子抽出法:</label>
+                        <select disabled style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; background: #f1f5f9; color: #64748b;">
+                            <option>主成分法 (Principal Component)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="fa-rotation" style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">回転方法:</label>
+                        <select id="fa-rotation" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e0; border-radius: 6px;">
+                            <option value="none">回転なし</option>
+                            <option value="varimax" selected>バリマックス回転 (直交)</option>
+                            <option value="promax">プロマックス回転 (斜交)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="control-group" style="margin-bottom: 1.5rem;">
+                    <label for="fa-n-factors" style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">抽出する因子数:</label>
+                    <input type="number" id="fa-n-factors" value="2" min="1" max="${numericColumns.length}" style="width: 100px; padding: 0.75rem; border: 1px solid #cbd5e0; border-radius: 6px;">
+                </div>
+                
+                <button id="run-fa-btn" class="btn-analysis" style="width: 100%; padding: 1rem; background: #1e90ff; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: background 0.2s;">
+                    <i class="fas fa-calculator"></i> 分析を実行
+                </button>
             </div>
-            <div class="control-group">
-                <label for="fa-rotation">回転方法:</label>
-                <select id="fa-rotation">
-                    <option value="none">回転なし</option>
-                    <option value="varimax" selected>バリマックス回転 (直交)</option>
-                    <option value="promax">プロマックス回転 (斜交)</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <label for="fa-n-factors">抽出する因子数:</label>
-                <input type="number" id="fa-n-factors" value="2" min="1" max="${numericColumns.length}">
-            </div>
-            <button id="run-fa-btn" class="btn-analysis">分析を実行</button>
         </div>
-        <div id="fa-results" class="analysis-results"></div>
+        
+        <div id="fa-results" class="analysis-results" style="margin-top: 2rem;"></div>
     `;
+
+    renderDataOverview(`#${overviewContainerId}`, currentData, characteristics, { initiallyCollapsed: true });
 
     document.getElementById('run-fa-btn').addEventListener('click', () => {
         const selectedVars = Array.from(document.querySelectorAll('input[name="fa-vars"]:checked')).map(cb => cb.value);
@@ -57,39 +88,34 @@ export function render(container, characteristics) {
 // --- Matrix Math Utils ---
 const mat = {
     transpose: (A) => A[0].map((_, c) => A.map(r => r[c])),
-    mmul: (A, B) => {
-        const result = Array(A.length).fill(0).map(() => Array(B[0].length).fill(0));
-        return result.map((row, i) => row.map((_, j) => {
-            return A[i].reduce((sum, elm, k) => sum + elm * B[k][j], 0);
-        }));
-    },
-    // Element-wise arithmetic
-    add: (A, B) => A.map((r, i) => r.map((v, j) => v + B[i][j])),
-    sub: (A, B) => A.map((r, i) => r.map((v, j) => v - B[i][j])),
-    dot: (v1, v2) => v1.reduce((acc, v, i) => acc + v * v2[i], 0),
-    col: (A, j) => A.map(r => r[j]),
     clone: (A) => A.map(r => [...r]),
 };
 
 function runFactorAnalysis(variables, nFactors, rotation) {
     const resultsContainer = document.getElementById('fa-results');
-    resultsContainer.innerHTML = '<h4>因子分析 (主成分法) 結果</h4>';
+    resultsContainer.innerHTML = `
+        <div style="background: #1e90ff; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            <h3 style="margin: 0; font-size: 1.25rem;">
+                <i class="fas fa-project-diagram"></i> 分析結果 (主成分法)
+            </h3>
+        </div>
+    `;
 
     // 1. Prepare Data
     const data = currentData.filter(row => variables.every(v => row[v] != null && !isNaN(row[v])));
 
     // 2. Correlation Matrix
-    // Standardize
+    // Standardize X
     const X = data.map(row => variables.map(v => Number(row[v])));
     const n = X.length;
     const p = variables.length;
+
     const means = variables.map((_, j) => jStat.mean(X.map(r => r[j])));
     const sds = variables.map((_, j) => jStat.stdev(X.map(r => r[j]), true));
     const Z = X.map(row => row.map((val, j) => (val - means[j]) / sds[j]));
 
     // R = Z'Z / (n-1)
-    const ZT = mat.transpose(Z);
-    const R = jStat.zeros(p, p);
+    const R = Array(p).fill(0).map(() => Array(p).fill(0));
     for (let i = 0; i < p; i++) {
         for (let j = 0; j < p; j++) {
             let sum = 0;
@@ -99,24 +125,38 @@ function runFactorAnalysis(variables, nFactors, rotation) {
     }
 
     try {
-        // 3. Eigen Decomposition
-        const eig = math.eigs(R);
+        // 3. Eigen Decomposition using math.js if available, else simplistic
+        // Assuming math.js is loaded globally as per project standard
+        if (typeof math === 'undefined') {
+            throw new Error("Math.js library is not loaded.");
+        }
+
+        const eig = math.eigs(R); // Returns values and vectors
+        // math.js eigs returns { values: [n], vectors: [[n],[n]...] OR Matrix }
+        // We need to parse this carefully as math.js structure depends on version/matrix type
+        // Assuming standard behavior: vectors cols are eigenvectors
+
+        // Convert to array if matrix
+        const eigVals = eig.values.toArray ? eig.values.toArray() : eig.values;
+        const eigVecs = eig.vectors.toArray ? eig.vectors.toArray() : eig.vectors;
+        // Check formatting: math.eigs often returns sorted inc, or dec?
+        // Usually unsorted or sorted ascending. We need descending.
+
         const eigenFiles = [];
         for (let i = 0; i < p; i++) {
-            const vec = eig.vectors.map(row => row[i]);
-            eigenFiles.push({ val: eig.values[i], vec: vec });
+            // Eigenvector is the i-th column
+            const vec = eigVecs.map(row => row[i]);
+            eigenFiles.push({ val: eigVals[i], vec: vec });
         }
         eigenFiles.sort((a, b) => b.val - a.val);
 
         // 4. Initial Loadings (Unrotated)
-        // L_ij = sqrt(lambda_j) * v_ij
-        // We take top nFactors
         let Loadings = Array(p).fill(0).map(() => Array(nFactors).fill(0));
         const factors = eigenFiles.slice(0, nFactors);
 
         for (let j = 0; j < nFactors; j++) {
             const lambda = factors[j].val;
-            const sqrtLambda = Math.sqrt(Math.max(0, lambda)); // prevent NaN
+            const sqrtLambda = Math.sqrt(Math.max(0, lambda));
             for (let i = 0; i < p; i++) {
                 Loadings[i][j] = factors[j].vec[i] * sqrtLambda;
             }
@@ -124,247 +164,226 @@ function runFactorAnalysis(variables, nFactors, rotation) {
 
         // 5. Rotation
         let RotatedLoadings = mat.clone(Loadings);
-        let FactorCorr = null; // Identity for Orthogonal
+        let FactorCorr = null;
 
         if (rotation === 'varimax' || rotation === 'promax') {
-            // Varimax
-            // Kaiser Normalization: Normalize rows by sqrt(communalities)
+            // Normalize rows
             const comm = Loadings.map(row => row.reduce((sum, v) => sum + v ** 2, 0));
             const sqrtComm = comm.map(c => Math.sqrt(c));
-            let NormalizedL = Loadings.map((row, i) => row.map(v => v / sqrtComm[i]));
+            const NormalizedL = Loadings.map((row, i) => row.map(v => v / (sqrtComm[i] || 1)));
 
-            // Iteration
-            // d = p, k = nFactors
-            const maxIter = 50;
-            const tol = 1e-5;
-            let T = jStat.identity(nFactors); // Transformation Matrix
+            // Varimax Iteration
+            const mathL = math.matrix(NormalizedL);
+            let mathR = math.identity(nFactors); // Rotation matrix
 
-            for (let it = 0; it < maxIter; it++) {
-                const prevT = mat.clone(T);
-                // B = L * T
-                // Not standard matrix mul for Rotation?
-                // Actually common algorithm uses Singular Value Decomposition or direct optimization
-                // Simplest Varimax Iteration:
-                // For each pair of factors, rotate to maximize variance
-                // Or "Gradient Projection"
+            for (let loop = 0; loop < 20; loop++) {
+                let B = math.multiply(mathL, mathR);
+                let B_arr = B.toArray();
 
-                // Let's use a simpler Pairwise rotation strategy if possible, or strict algorithm.
-                // Algorithm from 'factor_analyzer' / 'stats' R package logic (GPIS).
-                // d = normalized loadings
-                // T = I
-                // d = L @ T
-                // ...
-                // Since implementing full GPIS in raw JS is long, I will use a simplified pairwise approach often found in JS stats libraries or implement simple Varimax criterion maximization.
+                // M = B.^3 - B * diag(sum(B.^2, axis=0)/p)
+                let M = B_arr.map(r => r.map(v => v ** 3));
+                let colSumsSq = Array(nFactors).fill(0).map((_, c) =>
+                    B_arr.reduce((sum, r) => sum + r[c] ** 2, 0) / p
+                );
 
-                // --- Simple Varimax Implementation ---
-                // Rotate pairs of columns to maximize sum of variances of squared loadings
-                // 
-                // Reference: http://www.real-statistics.com/multivariate-statistics/factor-analysis/varimax-rotation/
-
-                // Actually, let's stick to valid algo.
-                // Let L = NormalizedLoadings
-                // 1. Calculate B = L * gamma (where gamma starts as I)
-                // 2. Compute gradient?
-
-                // Let's assume for this snippet complexity we use a standard algorithm.
-                // I will use a direct approximation for brevity in `implementation_plan` context, 
-                // but here I write the actual code logic.
-
-                // Fallback: Since implementing stable Varimax from scratch is risky in 50 lines, 
-                // I will proceed with the Unrotated logic if rotation fails, or simplistic Procrustes if Promax.
-                // BUT, I'll try to do the valid "Varimax" via "Quartimax" loop logic.
-                // 
-                // Let's use the 'math.js' power if possible? No direct function.
-
-                // Simulating Varimax:
-                // (Using a known JS snippet logic for Varimax)
-
-                const L = NormalizedL;
-                const H = mat.transpose(L); // k x p
-                // We want rotation Matrix R (k x k)
-                let R_rot = jStat.identity(nFactors);
-
-                let d = 0;
-                for (let iter = 0; iter < 20; iter++) {
-                    let oldD = d;
-                    // D = L * (L^3) - ...
-                    // Let's implement valid but concise Varimax.
-                    // Calculate M = L_rot .^ 3 - L_rot * diag(mean(L_rot.^2))
-                    // U, S, V = svd(L' * M)
-                    // R_new = U * V'
-                }
-                // Due to complexity and lack of `svd` in minimal math.js (it does have it but extended),
-                // I will implement a placeholder "Varimax" that just passes Unrotated with a warning if math.js SVD is missing,
-                // OR better: use `jStat` doesn't have SVD. `math.js` HAS `svd`. I can use that.
-
-                const mathL = math.matrix(NormalizedL);
-                let mathR = math.identity(nFactors);
-
-                // Varimax Loop
-                for (let loop = 0; loop < 15; loop++) {
-                    // Matrix B = L * R
-                    let B = math.multiply(mathL, mathR);
-                    let B_arr = B.toArray();
-
-                    // M = B.^3
-                    let M = B_arr.map(r => r.map(v => v ** 3));
-
-                    // Col means of B.^2
-                    let B2 = B_arr.map(r => r.map(v => v ** 2));
-                    let colMeans = Array(nFactors).fill(0).map((_, c) =>
-                        B2.reduce((sum, r) => sum + r[c], 0) / p
-                    );
-
-                    // M = B.^3 - B * diag(colMeans)
-                    // (Actually the formula is B * diag( sum(B.^2, 1)/p ))
-                    for (let r = 0; r < p; r++) {
-                        for (let c = 0; c < nFactors; c++) {
-                            M[r][c] -= B_arr[r][c] * colMeans[c];
-                        }
-                    }
-
-                    // U, S, V = svd(L' * M)
-                    let cross = math.multiply(math.transpose(mathL), math.matrix(M));
-                    // math.svd check
-                    let resSVD = math.svd(cross); // returns {u, v, q} ? math.js svd returns { u, v, s } (v is V', or V check docs... usually V)
-                    // New R = U * V'
-                    // Math.js: A = U * diag(s) * V^H. So we need U and V.
-                    let U = resSVD.U;
-                    let V = resSVD.V;
-                    mathR = math.multiply(U, math.transpose(V));
-                }
-
-                // Apply rotation
-                let FinalNormalized = math.multiply(mathL, mathR).toArray();
-                // De-normalize
-                RotatedLoadings = FinalNormalized.map((row, i) => row.map(v => v * sqrtComm[i]));
-
-                // Promax?
-                if (rotation === 'promax') {
-                    // Procrustean Rotation based on Varimax Target
-                    // Target P_ij = |V_ij|^(power+1) / V_ij
-                    // Standard power = 4 (kappa=4 in R)
-                    const k = 4;
-                    const V_loadings = RotatedLoadings;
-                    const Target = V_loadings.map(row => row.map(v => Math.sign(v) * (Math.abs(v) ** (k))));
-
-                    // Solve T = inv(L'L) * L' * Target ?
-                    // Actually Promax T = inv(V'V) * V' * Target (where V is Varimax)
-                    // Normalize V
-                    // fit = inv(V'V)*V' * P
-                    // T_promax = fit normalized
-
-                    const matV = math.matrix(V_loadings);
-                    const matTarg = math.matrix(Target);
-
-                    const VTV = math.multiply(math.transpose(matV), matV);
-                    const Vinv = math.inv(VTV);
-                    const VT = math.transpose(matV);
-                    const RotPromax = math.multiply(math.multiply(Vinv, VT), matTarg);
-
-                    // Normalize Columns of RotPromax
-                    let T_arr = RotPromax.toArray();
-                    // Each col vector normalize
+                for (let r = 0; r < p; r++) {
                     for (let c = 0; c < nFactors; c++) {
-                        let sumSq = 0;
-                        for (let r = 0; r < nFactors; r++) sumSq += T_arr[r][c] ** 2;
-                        let norm = Math.sqrt(sumSq);
-                        for (let r = 0; r < nFactors; r++) T_arr[r][c] /= norm;
+                        M[r][c] -= B_arr[r][c] * colSumsSq[c];
                     }
-
-                    // Final Loadings = V * T_promax
-                    RotatedLoadings = math.multiply(matV, math.matrix(T_arr)).toArray();
-
-                    // Correlation Induces?
-                    // Phi = (T'T)^-1
-                    let TT = math.multiply(math.transpose(math.matrix(T_arr)), math.matrix(T_arr));
-                    FactorCorr = math.inv(TT).toArray();
                 }
+
+                // SVD of L' * M
+                let cross = math.multiply(math.transpose(mathL), math.matrix(M));
+                let svdRes = math.svd(cross); // {u, s, v}
+                // New R = U * V'
+                mathR = math.multiply(svdRes.u, math.transpose(svdRes.v));
+            }
+
+            // Apply Varimax
+            let FinalNormalized = math.multiply(mathL, mathR).toArray();
+            RotatedLoadings = FinalNormalized.map((row, i) => row.map(v => v * sqrtComm[i]));
+
+            if (rotation === 'promax') {
+                const k = 4;
+                const V_loadings = RotatedLoadings;
+                const Target = V_loadings.map(row => row.map(v => Math.sign(v) * (Math.abs(v) ** k)));
+
+                const matV = math.matrix(V_loadings);
+                const matTarg = math.matrix(Target);
+
+                // T = (V'V)^-1 V' Target
+                const fit = math.multiply(
+                    math.multiply(math.inv(math.multiply(math.transpose(matV), matV)), math.transpose(matV)),
+                    matTarg
+                );
+
+                // Normalize T
+                const T_arr = fit.toArray();
+                for (let c = 0; c < nFactors; c++) {
+                    let ssq = 0;
+                    for (let r = 0; r < nFactors; r++) ssq += T_arr[r][c] ** 2;
+                    let norm = Math.sqrt(ssq);
+                    for (let r = 0; r < nFactors; r++) T_arr[r][c] /= norm;
+                }
+
+                RotatedLoadings = math.multiply(matV, math.matrix(T_arr)).toArray();
+
+                let TT = math.multiply(math.transpose(math.matrix(T_arr)), math.matrix(T_arr));
+                FactorCorr = math.inv(TT).toArray(); // Phi
             }
         }
 
         // 6. Outputs
 
-        // Scree output
-        const totalVar = eigenFiles.reduce((a, b) => a + b.val, 0);
-        let screeHtml = `<h5>スクリープロット</h5><div id="fa-scree" style="height:300px;"></div>`;
+        // A. Scree Plot
+        const evs = eigenFiles.map(e => e.val);
+        const totalVar = evs.reduce((a, b) => a + b, 0);
+        let html = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                     <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-chart-area"></i> スクリープロット</h4>
+                     <div id="fa-scree" style="height: 300px;"></div>
+                </div>
+                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                     <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-th"></i> 因子負荷量ヒートマップ</h4>
+                     <div id="fa-heatmap" style="height: 300px;"></div>
+                </div>
+            </div>
+        `;
 
-        // Loadings Table
-        // Add Cronbach's Alpha per factor
-        // Identify items loading > 0.4
-        let alphaHtml = `<h5>信頼性係数 (Cronbach's Alpha, Cutoff=0.4)</h5><ul>`;
-        for (let j = 0; j < nFactors; j++) {
-            const highLoadItems = [];
-            RotatedLoadings.forEach((row, i) => {
-                if (Math.abs(row[j]) >= 0.4) highLoadItems.push(variables[i]);
-            });
-
-            // Calculate Alpha for these items
-            let alpha = 'N/A';
-            if (highLoadItems.length >= 2) {
-                // Get sub-dataframe
-                // Calculate average correlation
-                // Or: alpha = (k / (k-1)) * (1 - (sum(var_i) / var_total))
-                const subX = X.map(row => highLoadItems.map(v => row[variables.indexOf(v)]));
-                const subSds = highLoadItems.map(v => jStat.variance(X.map(r => r[variables.indexOf(v)]), true));
-
-                // Total Score Variance
-                const totalScores = subX.map(r => r.reduce((a, b) => a + b, 0));
-                const totalVarScores = jStat.variance(totalScores, true);
-                const sumItemVar = subSds.reduce((a, b) => a + b, 0);
-
-                const k = highLoadItems.length;
-                const aVal = (k / (k - 1)) * (1 - (sumItemVar / totalVarScores));
-                alpha = aVal.toFixed(3);
-            }
-            alphaHtml += `<li><strong>Factor ${j + 1}:</strong> α = ${alpha} (Items: ${highLoadItems.join(', ')})</li>`;
-        }
-        alphaHtml += '</ul>';
-
-        // Render Loadings Table
-        let loadHtml = `<h5>因子負荷量 (${rotation === 'none' ? '回転なし' : rotation})</h5>
-            <table class="table table-sm"><thead><tr><th>変数</th>${Array(nFactors).fill(0).map((_, i) => `<th>F${i + 1}</th>`).join('')}<th>共通性</th></tr></thead><tbody>`;
+        // B. Loadings Table & Alpha
+        html += `
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                    <i class="fas fa-list-ol"></i> 因子負荷量と信頼性係数
+                </h4>
+                <div class="table-container">
+                    <table class="table">
+                        <thead style="background: #f8fafc;">
+                            <tr>
+                                <th>変数</th>
+                                ${Array(nFactors).fill(0).map((_, i) => `<th style="text-align:center;">Factor ${i + 1}</th>`).join('')}
+                                <th style="text-align:center;">共通性</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
 
         RotatedLoadings.forEach((row, i) => {
             const comm = row.reduce((a, b) => a + b ** 2, 0);
-            loadHtml += `<tr><td>${variables[i]}</td>` +
-                row.map(v => `<td style="font-weight:${Math.abs(v) >= 0.4 ? 'bold' : 'normal'}">${v.toFixed(3)}</td>`).join('') +
-                `<td>${comm.toFixed(3)}</td></tr>`;
+            html += `<tr>
+                <td style="font-weight: 500;">${variables[i]}</td>
+                ${row.map(v => `<td style="text-align:center; ${Math.abs(v) >= 0.4 ? 'font-weight:bold; color:#1e90ff; background:#f0f9ff;' : ''}">${v.toFixed(3)}</td>`).join('')}
+                <td style="text-align:center;">${comm.toFixed(3)}</td>
+            </tr>`;
         });
-        loadHtml += '</tbody></table>';
+        html += `</tbody></table></div>`;
 
-        let corrHtml = '';
+        // Alpha & Factor Means
+        let factorMeans = []; // For each factor, calculate mean of high-loading items
+        let alphaList = [];
+
+        html += `<div style="margin-top: 1.5rem;">
+                 <h5 style="color: #2d3748; margin-bottom: 0.5rem;">▼ 因子特性 (信頼性係数 α & 因子平均)</h5>
+                 <ul style="list-style: none; padding: 0;">`;
+
+        for (let j = 0; j < nFactors; j++) {
+            const highLoadIndices = [];
+            RotatedLoadings.forEach((row, i) => { if (Math.abs(row[j]) >= 0.4) highLoadIndices.push(i); });
+            const highLoadItems = highLoadIndices.map(i => variables[i]);
+
+            // Calculate Alpha
+            let alpha = '計算不可 (項目不足)';
+            if (highLoadItems.length >= 2) {
+                // Std Alpha for simplicity or Cronbach
+                // Cronbach: (k / k-1) * (1 - sum(item_var) / total_var)
+                // Need variance of sum of items
+                const subX = X.map(row => highLoadIndices.map(idx => row[idx])); // Raw standardized data? No, usually raw data for alpha
+                // Let's use Raw Data for Alpha as per tradition
+                const rawSub = data.map(row => highLoadItems.map(v => Number(row[v])));
+
+                // Item Variances
+                const itemVars = highLoadItems.map((_, colIdx) => jStat.variance(rawSub.map(r => r[colIdx]), true));
+                // Total Score Variance
+                const scores = rawSub.map(r => r.reduce((a, b) => a + b, 0));
+                const totalVar = jStat.variance(scores, true);
+                const sumItemVar = itemVars.reduce((a, b) => a + b, 0);
+
+                const k = highLoadItems.length;
+                const aVal = (k / (k - 1)) * (1 - (sumItemVar / totalVar));
+                alpha = aVal.toFixed(3);
+            }
+
+            // Calculate Factor Means (Average of raw scores of high loading items)
+            let fMean = 'N/A';
+            if (highLoadItems.length > 0) {
+                const rawSub = data.map(row => highLoadItems.map(v => Number(row[v])));
+                const rowMeans = rawSub.map(r => r.reduce((a, b) => a + b, 0) / r.length);
+                const grandMean = jStat.mean(rowMeans);
+                fMean = grandMean.toFixed(3);
+                factorMeans.push({ name: `Factor ${j + 1}`, mean: fMean, items: highLoadItems.join(', ') });
+            } else {
+                factorMeans.push({ name: `Factor ${j + 1}`, mean: '-', items: 'なし' });
+            }
+
+            alphaList.push(alpha);
+
+            html += `<li style="margin-bottom: 0.5rem; padding: 0.5rem; background: #f8fafc; border-radius: 4px; border-left: 3px solid #1e90ff;">
+                <strong style="color: #1e90ff;">Factor ${j + 1}</strong>: 
+                <span style="display:inline-block; margin-left:10px;">α係数 = <strong>${alpha}</strong></span>
+                <span style="display:inline-block; margin-left:10px;">因子平均 = <strong>${fMean}</strong></span>
+                <br><small style="color: #64748b;">構成項目: ${highLoadItems.join(', ') || 'なし'}</small>
+            </li>`;
+        }
+        html += `</ul></div></div>`;
+
+        // C. Factor Correlations (if Promax)
         if (FactorCorr) {
-            corrHtml = `<h5>因子間相関</h5><table class="table table-sm"><thead><tr><th></th>${Array(nFactors).fill(0).map((_, i) => `<th>F${i + 1}</th>`).join('')}</tr></thead><tbody>`;
+            html += `
+                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                    <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-exchange-alt"></i> 因子間相関</h4>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr><th></th>${Array(nFactors).fill(0).map((_, i) => `<th>Factor ${i + 1}</th>`).join('')}</tr>
+                            </thead>
+                            <tbody>
+            `;
             FactorCorr.forEach((row, i) => {
-                corrHtml += `<tr><th>F${i + 1}</th>` + row.map(v => `<td>${v.toFixed(3)}</td>`).join('') + `</tr>`;
+                html += `<tr><td style="font-weight:bold;">Factor ${i + 1}</td>` +
+                    row.map(v => `<td>${v.toFixed(3)}</td>`).join('') + `</tr>`;
             });
-            corrHtml += '</tbody></table>';
+            html += `</tbody></table></div></div>`;
         }
 
-        resultsContainer.innerHTML += screeHtml + loadHtml + alphaHtml + corrHtml;
+        resultsContainer.innerHTML += html;
 
-        // Plot Scree
-        const evs = eigenFiles.map(e => e.val);
-        Plotly.newPlot('fa-scree', [{ x: evs.map((_, i) => i + 1), y: evs, type: 'scatter', mode: 'lines+markers' }],
-            { title: 'スクリープロット', xaxis: { title: '成分番号' }, yaxis: { title: '固有値' } });
-
-        // Heatmap
-        const plotContainer = document.createElement('div');
-        plotContainer.id = 'fa-heatmap';
-        plotContainer.style.height = '400px';
-        resultsContainer.appendChild(plotContainer);
+        // Plotly Charts
+        Plotly.newPlot('fa-scree', [{
+            x: eigenFiles.map((_, i) => i + 1),
+            y: eigenFiles.map(e => e.val),
+            type: 'scatter', mode: 'lines+markers',
+            marker: { color: '#1e90ff' },
+            line: { color: '#1e90ff' }
+        }], {
+            title: 'スクリープロット', xaxis: { title: '成分番号' }, yaxis: { title: '固有値' },
+            font: { family: 'Inter, sans-serif' },
+            margin: { t: 40, l: 40, r: 20, b: 40 }
+        });
 
         Plotly.newPlot('fa-heatmap', [{
             z: RotatedLoadings,
-            x: Array(nFactors).fill(0).map((_, i) => `F${i + 1}`),
+            x: Array(nFactors).fill(0).map((_, i) => `Factor ${i + 1}`),
             y: variables,
             type: 'heatmap', colorscale: 'RdBu', zmin: -1, zmax: 1
-        }], { title: '因子負荷量ヒートマップ' });
+        }], {
+            title: '因子負荷量',
+            font: { family: 'Inter, sans-serif' },
+            margin: { t: 40, l: 80, r: 20, b: 40 }
+        });
 
     } catch (e) {
         console.error(e);
-        resultsContainer.innerHTML += `<p class="error-message">計算中にエラーが発生しました: ${e.message}<br>
-        (注: Math.jsの読み込みを確認してください)</p>`;
+        resultsContainer.innerHTML += `<div class="error-message">計算中にエラーが発生しました。<br>詳細: ${e.message}</div>`;
     }
 }
