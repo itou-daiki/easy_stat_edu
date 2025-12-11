@@ -58,7 +58,7 @@ function setupEventListeners() {
         const file = event.dataTransfer.files[0];
         if (file) handleFile(file);
     });
-    demoBtn.addEventListener('click', () => loadDemoData('eda_demo.xlsx'));
+    demoBtn.addEventListener('click', () => loadDemoData('demo_all_analysis.csv'));
 
     document.querySelectorAll('.collapsible-header').forEach(header => {
         header.addEventListener('click', () => toggleCollapsible(header));
@@ -72,19 +72,32 @@ function handleFile(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
-            const workbook = XLSX.read(e.target.result, { type: 'array' });
-            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            const data = e.target.result;
+            let jsonData;
+
+            if (file.name.endsWith('.csv')) {
+                const workbook = XLSX.read(data, { type: 'string', raw: true });
+                jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            } else {
+                const workbook = XLSX.read(data, { type: 'array' });
+                jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            }
+
             if (jsonData.length === 0) {
                 showError('ファイルにデータが含まれていません。');
                 return;
             }
             processData(file.name, jsonData);
         } catch (error) {
+            console.error(error);
             showError('ファイルの読み込みに失敗しました。');
         }
     };
-    reader.onerror = () => showError('ファイルの読み取り中にエラーが発生しました。');
-    reader.readAsArrayBuffer(file);
+    if (file.name.endsWith('.csv')) {
+        reader.readAsText(file);
+    } else {
+        reader.readAsArrayBuffer(file);
+    }
 }
 
 async function loadDemoData(fileName) {
@@ -92,11 +105,21 @@ async function loadDemoData(fileName) {
     try {
         const response = await fetch(`./datasets/${fileName}`);
         if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-        const data = await response.arrayBuffer();
-        const workbook = XLSX.read(data, { type: 'array' });
-        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+
+        let jsonData;
+        if (fileName.endsWith('.csv')) {
+            const text = await response.text();
+            const workbook = XLSX.read(text, { type: 'string', raw: true });
+            jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+        } else {
+            const data = await response.arrayBuffer();
+            const workbook = XLSX.read(data, { type: 'array' });
+            jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+        }
+
         processData(fileName, jsonData);
     } catch (error) {
+        console.error(error);
         showError(`デモデータ (${fileName}) の読み込みに失敗しました。`);
     }
 }
