@@ -117,34 +117,33 @@ function runOneWayIndependentANOVA(currentData) {
     }
 
     const groups = [...new Set(currentData.map(row => row[factorVar]))].filter(v => v != null).sort();
-    if (groups.length < 3) {
-        alert(`一要因分散分析（対応なし）には3群以上必要です（現在: ${groups.length} 群）`);
-        return;
+    if (groups.length < 2) { // Changed to 2 for consistency, though ANOVA needs 3. Alert is more specific.
+        alert(`一要因分散分析には3群以上必要ですが、現在は ${groups.length} 群です。t検定をお勧めします。`);
+        if (groups.length < 3) return;
     }
 
     const outputContainer = document.getElementById('anova-results');
     outputContainer.innerHTML = '';
 
+    const results = [];
     dependentVars.forEach(depVar => {
-        // データ抽出
         const groupData = {};
         let totalN = 0;
         groups.forEach(g => {
-            groupData[g] = currentData
+            const dataForGroup = currentData
                 .filter(row => row[factorVar] === g)
                 .map(row => row[depVar])
                 .filter(v => v != null && !isNaN(v));
-            totalN += groupData[g].length;
+            groupData[g] = dataForGroup;
+            totalN += dataForGroup.length;
         });
 
-        const allValues = currentData.map(r => r[depVar]).filter(v => v != null && !isNaN(v));
-        const grandMean = jStat.mean(allValues);
+        const allValues = Object.values(groupData).flat();
+        if (allValues.length === 0) return;
 
+        const grandMean = jStat.mean(allValues);
         let ssBetween = 0;
         let ssWithin = 0;
-        let dfBetween = groups.length - 1;
-        let dfWithin = totalN - groups.length;
-
         groups.forEach(g => {
             const vals = groupData[g];
             const n = vals.length;
@@ -155,16 +154,21 @@ function runOneWayIndependentANOVA(currentData) {
             }
         });
 
+        const dfBetween = groups.length - 1;
+        const dfWithin = totalN - groups.length;
+
+        if (dfWithin <= 0) return; 
+
         const msBetween = ssBetween / dfBetween;
         const msWithin = ssWithin / dfWithin;
         const fValue = msBetween / msWithin;
         const pValue = 1 - jStat.centralF.cdf(fValue, dfBetween, dfWithin);
-        const etaSquared = ssBetween / (ssBetween + ssWithin);
 
         const ssTotal = ssBetween + ssWithin;
+        const etaSquared = ssBetween / ssTotal;
         const omegaSquared = (ssBetween - (dfBetween * msWithin)) / (ssTotal + msWithin);
 
-        const overallMean = jStat.mean(allValues);
+        const overallMean = grandMean;
         const overallStd = jStat.stdev(allValues, true);
         const groupMeans = groups.map(g => jStat.mean(groupData[g]));
         const groupStds = groups.map(g => jStat.stdev(groupData[g], true));
@@ -174,215 +178,72 @@ function runOneWayIndependentANOVA(currentData) {
         else if (pValue < 0.05) sign = '*';
         else if (pValue < 0.1) sign = '†';
 
-        // UI Generation
-        const sectionId = `anova-ind-${depVar}`;
-        const varResultDiv = document.createElement('div');
-        varResultDiv.className = 'anova-result-block';
-
-        const headers = ['全体M', '全体S.D', ...groups.map(g => `${g} M`), ...groups.map(g => `${g} S.D`), '群間自由度', '群内自由度', 'F', 'p', 'sign', 'η²', 'ω²'];
-        const values = [overallMean, overallStd, ...groupMeans, ...groupStds, dfBetween, dfWithin, fValue, pValue, sign, etaSquared, omegaSquared];
-        
-        let descriptiveTable = `<h5 style="color: #2d3748; margin-bottom: 1rem;">記述統計量: ${depVar}</h5><div class="table-container"><table class="table"><thead><tr>`;
-        headers.forEach(h => descriptiveTable += `<th>${h}</th>`);
-        descriptiveTable += '</tr></thead><tbody><tr>';
-        values.forEach(v => {
-            if (typeof v === 'number') {
-                descriptiveTable += `<td>${v.toFixed(2)}</td>`;
-            } else {
-                descriptiveTable += `<td>${v}</td>`;
-            }
+        results.push({
+            depVar,
+            overallMean,
+            overallStd,
+            groupMeans,
+            groupStds,
+            dfBetween,
+            dfWithin,
+            fValue,
+            pValue,
+            sign,
+            etaSquared,
+            omegaSquared
         });
-        descriptiveTable += '</tr></tbody></table></div>';
-
-
-        let html = `
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">
-                    変数: ${depVar}
-                </h4>
-                
-                ${descriptiveTable}
-
-                <h5 style="color: #2d3748; margin-bottom: 1rem; margin-top: 1.5rem;">分散分析表</h5>
-                <div class="table-container">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>変動要因</th>
-                                <th>平方和 (SS)</th>
-                                <th>自由度 (df)</th>
-                                <th>平均平方 (MS)</th>
-                                <th>F値</th>
-                                <th>p値</th>
-                                <th>効果量 (η²)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>要因間 (Between)</td>
-                                <td>${ssBetween.toFixed(2)}</td>
-                                <td>${dfBetween}</td>
-                                <td>${msBetween.toFixed(2)}</td>
-                                <td>${fValue.toFixed(2)}</td>
-                                <td style="${pValue < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${pValue.toFixed(3)} ${pValue < 0.01 ? '**' : (pValue < 0.05 ? '*' : '')}</td>
-                                <td>${etaSquared.toFixed(3)}</td>
-                            </tr>
-                            <tr>
-                                <td>要因内 (Error)</td>
-                                <td>${ssWithin.toFixed(2)}</td>
-                                <td>${dfWithin}</td>
-                                <td>${msWithin.toFixed(2)}</td>
-                                <td>-</td>
-                                <td>-</td>
-                                <td>-</td>
-                            </tr>
-                            <tr style="background: #f8f9fa; font-weight: bold;">
-                                <td>合計 (Total)</td>
-                                <td>${(ssBetween + ssWithin).toFixed(2)}</td>
-                                <td>${dfBetween + dfWithin}</td>
-                                <td>-</td>
-                                <td>-</td>
-                                <td>-</td>
-                                <td>-</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div id="sample-size-${sectionId}"></div>
-                
-                <!-- Interpretation injected here -->
-                <div id="interpretation-${sectionId}" style="margin-top: 1rem;"></div>
-
-                <div id="plot-${sectionId}" style="margin-top: 1.5rem;"></div>
-            </div>
-        `;
-        varResultDiv.innerHTML = html;
-        outputContainer.appendChild(varResultDiv);
-
-        // Interpretation
-        // Display immediately after stats
-        displayANOVADescription(depVar, fValue, dfBetween, dfWithin, pValue, etaSquared, groups, groupData, `interpretation-${sectionId}`);
-
-        // Sample Size Info
-        const groupSampleSizes = groups.map((g, i) => {
-            const colors = ['#11b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'];
-            return {
-                label: g,
-                count: groupData[g].length,
-                color: colors[i % colors.length]
-            };
-        });
-        renderSampleSizeInfo(document.getElementById(`sample-size-${sectionId}`), totalN, groupSampleSizes);
-
-        // Plotly Visualization (Async)
-        setTimeout(() => {
-            const plotDiv = document.getElementById(`plot-${sectionId}`);
-            if (plotDiv) {
-                // Calculate Means and SEs for Bar Chart
-                const means = [];
-                const errors = [];
-                const xLabels = groups;
-
-                groups.forEach(g => {
-                    const vals = groupData[g];
-                    const m = jStat.mean(vals);
-                    const std = jStat.stdev(vals, true);
-                    const se = std / Math.sqrt(vals.length);
-                    means.push(m);
-                    errors.push(se);
-                });
-
-                // Post-hoc
-                const sigPairs = performPostHocTests(groups, groupData);
-
-                // Brackets Setup
-                const maxVal = Math.max(...means.map((m, i) => m + errors[i]));
-                // Dynamic spacing
-                const yOffset = maxVal * (0.15 / groups.length); // Factor from logic
-                const step = maxVal * (0.25 / groups.length);
-                let currentLevelY = maxVal + yOffset * 2.5; // Initial base above bars
-
-                const shapesFinal = [];
-                const annotationsFinal = [];
-
-                // Sort pairs by width (narrower first) to stack correctly
-                sigPairs.sort((a, b) => {
-                    const distA = Math.abs(groups.indexOf(a.g1) - groups.indexOf(a.g2));
-                    const distB = Math.abs(groups.indexOf(b.g1) - groups.indexOf(b.g2));
-                    return distA - distB;
-                });
-
-                const levels = [];
-
-                sigPairs.forEach(pair => {
-                    if (pair.p >= 0.1) return;
-
-                    const idx1 = groups.indexOf(pair.g1);
-                    const idx2 = groups.indexOf(pair.g2);
-                    const start = Math.min(idx1, idx2);
-                    const end = Math.max(idx1, idx2);
-
-                    let levelIndex = 0;
-                    while (true) {
-                        if (!levels[levelIndex]) levels[levelIndex] = [];
-                        const overlap = levels[levelIndex].some(interval => (start < interval.end + 0.5) && (end > interval.start - 0.5));
-                        if (!overlap) break;
-                        levelIndex++;
-                    }
-                    levels[levelIndex].push({ start, end });
-
-                    const bracketY = currentLevelY + (levelIndex * step);
-
-                    let text = 'n.s.';
-                    if (pair.p < 0.01) text = '**';
-                    else if (pair.p < 0.05) text = '*';
-                    else if (pair.p < 0.1) text = '†';
-
-                    shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY - step * 0.2, x1: idx1, y1: bracketY, line: { color: 'black', width: 1 } });
-                    shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY, x1: idx2, y1: bracketY, line: { color: 'black', width: 1 } });
-                    shapesFinal.push({ type: 'line', x0: idx2, y0: bracketY, x1: idx2, y1: bracketY - step * 0.2, line: { color: 'black', width: 1 } });
-
-                    annotationsFinal.push({
-                        x: (idx1 + idx2) / 2,
-                        y: bracketY + step * 0.2,
-                        text: text,
-                        showarrow: false,
-                        font: { size: 12, color: 'black' }
-                    });
-                });
-
-                const topMargin = 50 + (levels.length * 40);
-
-                const trace = {
-                    x: xLabels,
-                    y: means,
-                    type: 'bar',
-                    name: depVar,
-                    marker: { color: '#87CEEB' }, // skyblue
-                    error_y: {
-                        type: 'data',
-                        array: errors,
-                        visible: true,
-                        color: 'black'
-                    }
-                };
-
-                Plotly.newPlot(plotDiv, [trace], {
-                    title: `${depVar} のグループ別平均値 (Bar + SE)`,
-                    yaxis: { title: depVar },
-                    xaxis: {
-                        tickvals: groups.map((_, i) => i), // Map to indices
-                        ticktext: groups
-                    },
-                    showlegend: false,
-                    shapes: shapesFinal,
-                    annotations: annotationsFinal,
-                    margin: { t: topMargin }
-                }, createPlotlyConfig('一要因分散分析', depVar));
-            }
-        }, 100);
     });
 
+    if (results.length === 0) {
+        outputContainer.innerHTML = '<p>分析対象のデータがありませんでした。</p>';
+        document.getElementById('analysis-results').style.display = 'block';
+        return;
+    }
+
+    const headers = ['変数', '全体M', '全体S.D', ...groups.map(g => `${g} M`), ...groups.map(g => `${g} S.D`), '群間<br>自由度', '群内<br>自由度', 'F', 'p', 'sign', 'η²', 'ω²'];
+    
+    let tableHtml = `<div class="table-container">
+        <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">平均値の差の検定（対応なし）</h4>
+        <table class="table">
+            <thead>
+                <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+    `;
+
+    results.forEach(res => {
+        const rowData = [
+            res.depVar,
+            res.overallMean,
+            res.overallStd,
+            ...res.groupMeans,
+            ...res.groupStds,
+            res.dfBetween,
+            res.dfWithin,
+            res.fValue,
+            res.pValue,
+            res.sign,
+            res.etaSquared,
+            res.omegaSquared
+        ];
+        tableHtml += `<tr>${rowData.map((d, i) => {
+            if (i === 0 || i === headers.indexOf('sign')) { // Variable name and sign
+                return `<td>${d}</td>`;
+            }
+            if(typeof d === 'number') {
+                return `<td>${d.toFixed(2)}</td>`;
+            }
+            return `<td>${d || ''}</td>`;
+        }).join('')}</tr>`;
+    });
+
+    tableHtml += `
+            </tbody>
+        </table>
+        <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p<0.01** p<0.05* p<0.1†</p>
+    </div>`;
+
+    outputContainer.innerHTML = tableHtml;
     document.getElementById('analysis-results').style.display = 'block';
 }
 
@@ -448,7 +309,6 @@ function runOneWayRepeatedANOVA(currentData) {
     const outputContainer = document.getElementById('anova-results');
     outputContainer.innerHTML = '';
 
-    // Data preparation
     const validData = currentData
         .map(row => dependentVars.map(v => row[v]))
         .filter(vals => vals.every(v => v != null && !isNaN(v)));
@@ -458,256 +318,96 @@ function runOneWayRepeatedANOVA(currentData) {
 
     if (N < 2) {
         alert('有効なデータ（全条件が揃っている行）が不足しています');
+        document.getElementById('analysis-results').style.display = 'block';
         return;
     }
 
-    // Calculations (same as before)
     const grandMean = jStat.mean(validData.flat());
     let ssTotal = 0;
     validData.flat().forEach(v => ssTotal += Math.pow(v - grandMean, 2));
+    
     let ssSubjects = 0;
     validData.forEach(subjectVals => {
         ssSubjects += k * Math.pow(jStat.mean(subjectVals) - grandMean, 2);
     });
+    
     let ssConditions = 0;
     const conditionMeans = [];
-    const conditionSEs = []; // For plotting
     for (let i = 0; i < k; i++) {
         const colVals = validData.map(row => row[i]);
         const colMean = jStat.mean(colVals);
-        const colStd = jStat.stdev(colVals, true);
         conditionMeans.push(colMean);
-        conditionSEs.push(colStd / Math.sqrt(N));
         ssConditions += N * Math.pow(colMean - grandMean, 2);
     }
+    
     const ssError = ssTotal - ssSubjects - ssConditions;
     const dfSubjects = N - 1;
     const dfConditions = k - 1;
     const dfError = (N - 1) * (k - 1);
-    const dfTotal = (N * k) - 1;
+
+    if (dfError <= 0) {
+        alert('誤差の自由度が0以下です。計算を実行できません。');
+        document.getElementById('analysis-results').style.display = 'block';
+        return;
+    }
+
     const msConditions = ssConditions / dfConditions;
     const msError = ssError / dfError;
     const fValue = msConditions / msError;
     const pValue = 1 - jStat.centralF.cdf(fValue, dfConditions, dfError);
-    const etaSquared = ssConditions / (ssConditions + ssError); // Partial Eta Squared
+    
+    const etaSquaredPartial = ssConditions / (ssConditions + ssError);
     const omegaSquared = (ssConditions - (dfConditions * msError)) / (ssTotal + msError);
 
     const overallMean = grandMean;
     const overallStd = jStat.stdev(validData.flat(), true);
-    const conditionStds = [];
-    for (let i = 0; i < k; i++) {
-        const colVals = validData.map(row => row[i]);
-        conditionStds.push(jStat.stdev(colVals, true));
-    }
+    const conditionStds = dependentVars.map((_, i) => jStat.stdev(validData.map(row => row[i]), true));
 
     let sign = 'n.s.';
     if (pValue < 0.01) sign = '**';
     else if (pValue < 0.05) sign = '*';
     else if (pValue < 0.1) sign = '†';
 
-    const resultDiv = document.createElement('div');
-    resultDiv.className = 'anova-result-block';
-
-    const headers = ['全体M', '全体S.D', ...dependentVars.map(v => `${v} M`), ...dependentVars.map(v => `${v} S.D`), '条件自由度', '誤差自由度', 'F', 'p', 'sign', 'ηp²', 'ω²'];
-    const values = [overallMean, overallStd, ...conditionMeans, ...conditionStds, dfConditions, dfError, fValue, pValue, sign, etaSquared, omegaSquared];
+    const factorName = dependentVars.join(' vs ');
+    const headers = ['要因', '全体M', '全体S.D', ...dependentVars.map(v => `${v} M`), ...dependentVars.map(v => `${v} S.D`), '条件<br>自由度', '誤差<br>自由度', 'F', 'p', 'sign', 'ηp²', 'ω²'];
     
-    let descriptiveTable = `<h5 style="color: #2d3748; margin-bottom: 1rem;">記述統計量</h5><div class="table-container"><table class="table"><thead><tr>`;
-    headers.forEach(h => descriptiveTable += `<th>${h}</th>`);
-    descriptiveTable += '</tr></thead><tbody><tr>';
-    values.forEach(v => {
-        if (typeof v === 'number') {
-            descriptiveTable += `<td>${v.toFixed(2)}</td>`;
-        } else {
-            descriptiveTable += `<td>${v}</td>`;
-        }
-    });
-    descriptiveTable += '</tr></tbody></table></div>';
+    const rowData = [
+        factorName,
+        overallMean,
+        overallStd,
+        ...conditionMeans,
+        ...conditionStds,
+        dfConditions,
+        dfError,
+        fValue,
+        pValue,
+        sign,
+        etaSquaredPartial,
+        omegaSquared
+    ];
 
-    let html = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">
-                要因: ${dependentVars.join(', ')}
-            </h4>
-            
-            ${descriptiveTable}
+    let tableHtml = `<div class="table-container">
+        <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">平均値の差の検定（対応あり）</h4>
+        <table class="table">
+            <thead>
+                <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+                <tr>${rowData.map((d, i) => {
+                    if (i === 0 || i === headers.indexOf('sign')) { // Factor name and sign
+                        return `<td>${d}</td>`;
+                    }
+                    if(typeof d === 'number') {
+                        return `<td>${d.toFixed(2)}</td>`;
+                    }
+                    return `<td>${d || ''}</td>`;
+                }).join('')}</tr>
+            </tbody>
+        </table>
+        <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p<0.01** p<0.05* p<0.1†</p>
+    </div>`;
 
-            <h5 style="color: #2d3748; margin-bottom: 1rem; margin-top: 1.5rem;">分散分析表</h5>
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>変動要因</th>
-                            <th>平方和 (SS)</th>
-                            <th>自由度 (df)</th>
-                            <th>平均平方 (MS)</th>
-                            <th>F値</th>
-                            <th>p値</th>
-                            <th>効果量 (ηp²)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>条件間 (Time)</td>
-                            <td>${ssConditions.toFixed(2)}</td>
-                            <td>${dfConditions}</td>
-                            <td>${msConditions.toFixed(2)}</td>
-                            <td>${fValue.toFixed(2)}</td>
-                            <td style="${pValue < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${pValue.toFixed(3)} ${pValue < 0.01 ? '**' : (pValue < 0.05 ? '*' : '')}</td>
-                            <td>${etaSquared.toFixed(3)}</td>
-                        </tr>
-                        <tr>
-                            <td>誤差 (Error)</td>
-                            <td>${ssError.toFixed(2)}</td>
-                            <td>${dfError}</td>
-                            <td>${msError.toFixed(2)}</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>-</td>
-                        </tr>
-                        <tr>
-                            <td>被験者間 (Subjects)</td>
-                            <td>${ssSubjects.toFixed(2)}</td>
-                            <td>${dfSubjects}</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>-</td>
-                        </tr>
-                        <tr style="background: #f8f9fa; font-weight: bold;">
-                            <td>合計 (Total)</td>
-                            <td>${ssTotal.toFixed(2)}</td>
-                            <td>${dfTotal}</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>-</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Interpretation injected here -->
-            <div id="interpretation-repeated-one" style="margin-top: 1rem;"></div>
-
-            <div id="plot-anova-one-time" style="margin-top: 1.5rem;"></div>
-        </div>
-    `;
-    resultDiv.innerHTML = html;
-    outputContainer.appendChild(resultDiv);
-    renderSampleSizeInfo(document.getElementById('sample-size-rep'), N); // This line should be removed or its target changed if sample-size-rep is removed from HTML. Assuming it's meant to be removed as per the instruction's implied change to HTML.
-
-    // Interpretation Repeated - Immediate
-    displayANOVADescription(
-        `条件(${dependentVars.join(', ')})`,
-        fValue, dfConditions, dfError, pValue, etaSquared,
-        dependentVars,
-        {}, // Dummy
-        'interpretation-repeated-one'
-    );
-
-    setTimeout(() => {
-        const plotDiv = document.getElementById('plot-anova-one-time');
-        if (plotDiv) {
-            const sigPairs = performRepeatedPostHocTests(dependentVars, currentData);
-
-            // Bar Chart Setup
-            const xLabels = dependentVars;
-            const means = conditionMeans;
-            const errors = conditionSEs;
-
-            // Bracket Setup
-            const maxVal = Math.max(...means.map((m, i) => m + errors[i]));
-            const yOffset = maxVal * 0.15;
-            const step = maxVal * 0.25 / k;
-            let currentLevelY = maxVal + yOffset;
-
-            const shapesFinal = [];
-            const annotationsFinal = [];
-            const levels = [];
-
-            sigPairs.sort((a, b) => {
-                const idxA1 = dependentVars.indexOf(a.g1), idxA2 = dependentVars.indexOf(a.g2);
-                const idxB1 = dependentVars.indexOf(b.g1), idxB2 = dependentVars.indexOf(b.g2);
-                const distA = Math.abs(idxA1 - idxA2);
-                const distB = Math.abs(idxB1 - idxB2);
-                return distA - distB;
-            });
-
-            sigPairs.forEach(pair => {
-                if (pair.p >= 0.1) return;
-
-                const idx1 = dependentVars.indexOf(pair.g1);
-                const idx2 = dependentVars.indexOf(pair.g2);
-                const start = Math.min(idx1, idx2);
-                const end = Math.max(idx1, idx2);
-
-                let levelIndex = 0;
-                while (true) {
-                    if (!levels[levelIndex]) levels[levelIndex] = [];
-                    const overlap = levels[levelIndex].some(interval => (start < interval.end + 0.5) && (end > interval.start - 0.5));
-                    if (!overlap) break;
-                    levelIndex++;
-                }
-                levels[levelIndex].push({ start, end });
-
-                const bracketY = currentLevelY + (levelIndex * step);
-                let text = 'n.s.';
-                if (pair.p < 0.01) text = '**';
-                else if (pair.p < 0.05) text = '*';
-                else if (pair.p < 0.1) text = '†';
-
-                shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY - step * 0.2, x1: idx1, y1: bracketY, line: { color: 'black', width: 1 } });
-                shapesFinal.push({ type: 'line', x0: idx1, y0: bracketY, x1: idx2, y1: bracketY, line: { color: 'black', width: 1 } });
-                shapesFinal.push({ type: 'line', x0: idx2, y0: bracketY, x1: idx2, y1: bracketY - step * 0.2, line: { color: 'black', width: 1 } });
-
-                annotationsFinal.push({
-                    x: (idx1 + idx2) / 2,
-                    y: bracketY + step * 0.2,
-                    text: text,
-                    showarrow: false,
-                    font: { size: 12, color: 'black' }
-                });
-            });
-
-            const topMargin = 50 + (levels.length * 40);
-
-            const trace = {
-                x: xLabels,
-                y: means,
-                type: 'bar',
-                name: 'Mean',
-                marker: { color: '#87CEEB' },
-                error_y: {
-                    type: 'data',
-                    array: errors,
-                    visible: true,
-                    color: 'black'
-                }
-            };
-
-            Plotly.newPlot(plotDiv, [trace], {
-                title: '条件ごとの平均値の比較 (Bar + SE)',
-                yaxis: { title: dependentVars.length <= 3 ? dependentVars.join('/') : 'Value' },
-                xaxis: {
-                    tickvals: dependentVars.map((_, i) => i),
-                    ticktext: dependentVars
-                },
-                showlegend: false,
-                shapes: shapesFinal,
-                annotations: annotationsFinal,
-                margin: { t: topMargin }
-            }, createPlotlyConfig('一要因分散分析（対応あり）', 'Repeated'));
-        }
-    }, 100);
-
-    // Interpretation Repeated
-    displayANOVADescription(
-        `条件(${dependentVars.join(', ')})`,
-        fValue, dfConditions, dfError, pValue, etaSquared,
-        dependentVars,
-        {} // Dummy for group stats, not needed for basic text
-    );
-
+    outputContainer.innerHTML = tableHtml;
     document.getElementById('analysis-results').style.display = 'block';
 }
 
