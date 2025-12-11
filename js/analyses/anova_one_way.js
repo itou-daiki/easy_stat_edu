@@ -251,12 +251,13 @@ function generateBracketsForPlot(sigPairs, groupNames, groupMeans, groupSEs) {
     if (sigPairs.length === 0) return { shapes, annotations, topMargin: 60 };
 
     const maxVal = Math.max(...groupMeans.map((m, i) => m + groupSEs[i]));
-    const yOffset = maxVal * 0.15;
-    const step = maxVal * 0.25 / Math.max(1, groupNames.length);
+    const yOffset = maxVal * 0.15; // Initial gap above bars
+    const step = maxVal * 0.15; // Step size between bracket levels
     let currentLevelY = maxVal + yOffset;
 
     const levels = [];
 
+    // Sort by distance (shorter brackets first) for better stacking visuals
     sigPairs.sort((a, b) => {
         const distA = Math.abs(groupNames.indexOf(a.g1) - groupNames.indexOf(a.g2));
         const distB = Math.abs(groupNames.indexOf(b.g1) - groupNames.indexOf(b.g2));
@@ -271,6 +272,7 @@ function generateBracketsForPlot(sigPairs, groupNames, groupMeans, groupSEs) {
         const start = Math.min(idx1, idx2);
         const end = Math.max(idx1, idx2);
 
+        // Find available level
         let levelIndex = 0;
         while (true) {
             if (!levels[levelIndex]) levels[levelIndex] = [];
@@ -281,15 +283,47 @@ function generateBracketsForPlot(sigPairs, groupNames, groupMeans, groupSEs) {
         levels[levelIndex].push({ start, end });
 
         const bracketY = currentLevelY + (levelIndex * step);
-        let text = pair.p < 0.01 ? '**' : pair.p < 0.05 ? '*' : '†';
+        const legHeight = step * 0.3; // Length of the vertical legs
 
-        shapes.push({ type: 'line', x0: idx1, y0: bracketY - step * 0.2, x1: idx1, y1: bracketY, line: { color: 'black', width: 1 } });
-        shapes.push({ type: 'line', x0: idx1, y0: bracketY, x1: idx2, y1: bracketY, line: { color: 'black', width: 1 } });
-        shapes.push({ type: 'line', x0: idx2, y0: bracketY, x1: idx2, y1: bracketY - step * 0.2, line: { color: 'black', width: 1 } });
-        annotations.push({ x: (idx1 + idx2) / 2, y: bracketY + step * 0.1, text: text, showarrow: false, font: { size: 12, color: 'black' } });
+        let text;
+        if (pair.p < 0.01) text = 'p < 0.01 **';
+        else if (pair.p < 0.05) text = 'p < 0.05 *';
+        else text = 'p < 0.1 †';
+
+        // Draw Bracket
+        // Horizontal line
+        shapes.push({
+            type: 'line',
+            x0: idx1, y0: bracketY,
+            x1: idx2, y1: bracketY,
+            line: { color: 'black', width: 2 }
+        });
+        // Left leg
+        shapes.push({
+            type: 'line',
+            x0: idx1, y0: bracketY - legHeight,
+            x1: idx1, y1: bracketY,
+            line: { color: 'black', width: 2 }
+        });
+        // Right leg
+        shapes.push({
+            type: 'line',
+            x0: idx2, y0: bracketY - legHeight,
+            x1: idx2, y1: bracketY,
+            line: { color: 'black', width: 2 }
+        });
+
+        // Annotation
+        annotations.push({
+            x: (idx1 + idx2) / 2,
+            y: bracketY + step * 0.2, // Slightly above the bracket
+            text: text,
+            showarrow: false,
+            font: { size: 14, color: 'black', weight: 'bold' }
+        });
     });
 
-    const topMargin = 60 + (levels.length * 40);
+    const topMargin = 60 + (levels.length * 50); // Increase margin for taller stack
     return { shapes, annotations, topMargin };
 }
 
@@ -364,7 +398,7 @@ function runOneWayIndependentANOVA(currentData) {
         if (pValue < 0.01) significance = '**';
         else if (pValue < 0.05) significance = '*';
         else if (pValue < 0.1) significance = '†';
-        
+
         const groupMeans = groups.map(g => jStat.mean(groupData[g]));
         const groupStds = groups.map(g => jStat.stdev(groupData[g], true));
         const groupSEs = groups.map(g => jStat.stdev(groupData[g], true) / Math.sqrt(groupData[g].length));
@@ -387,7 +421,7 @@ function runOneWayIndependentANOVA(currentData) {
             etaSquared,
             omegaSquared
         });
-        
+
         testResults.push({
             varName: depVar,
             groups: groups,
@@ -414,7 +448,7 @@ function runOneWayIndependentANOVA(currentData) {
                 <table class="table">
                     <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
                     <tbody>`;
-    
+
     mainResultsTable.forEach(res => {
         const rowData = [res.depVar, res.overallMean, res.overallStd, ...res.groupMeans, ...res.groupStds, res.dfBetween, res.dfWithin, res.fValue, res.pValue, res.sign, res.etaSquared, res.omegaSquared];
         tableHtml += `<tr>${rowData.map((d, i) => (i === 0 || i === headers.indexOf('sign')) ? `<td>${d}</td>` : `<td>${d.toFixed(2)}</td>`).join('')}</tr>`;
@@ -446,7 +480,7 @@ function runOneWayRepeatedANOVA(currentData) {
         alert('対応あり分散分析には3つ以上の変数（条件）が必要です');
         return;
     }
-    
+
     document.getElementById('analysis-results').style.display = 'none';
 
     // 1. Summary Statistics
@@ -464,7 +498,7 @@ function runOneWayRepeatedANOVA(currentData) {
     const grandMean = jStat.mean(validData.flat());
     const ssTotal = jStat.sum(validData.flat().map(v => Math.pow(v - grandMean, 2)));
     const ssSubjects = k * jStat.sum(validData.map(row => Math.pow(jStat.mean(row) - grandMean, 2)));
-    
+
     const conditionMeans = Array.from({ length: k }, (_, i) => jStat.mean(validData.map(row => row[i])));
     const ssConditions = N * jStat.sum(conditionMeans.map(mean => Math.pow(mean - grandMean, 2)));
 
@@ -472,7 +506,7 @@ function runOneWayRepeatedANOVA(currentData) {
     const dfConditions = k - 1;
     const dfError = (N - 1) * (k - 1);
     if (dfError <= 0) { alert('誤差の自由度が0以下です。'); return; }
-    
+
     const msConditions = ssConditions / dfConditions;
     const msError = ssError / dfError;
     const fValue = msConditions / msError;
@@ -481,13 +515,13 @@ function runOneWayRepeatedANOVA(currentData) {
     const etaSquaredPartial = ssConditions / (ssConditions + ssError);
     const omegaSquared = (ssConditions - (dfConditions * msError)) / (ssTotal + msError);
     let significance = pValue < 0.01 ? '**' : pValue < 0.05 ? '*' : pValue < 0.1 ? '†' : 'n.s.';
-    
+
     // 2. Main Test Results Table
     const resultsContainer = document.getElementById('test-results-section');
     const headers = ['要因', '全体M', '全体S.D', ...dependentVars.map(v => `${v} M`), ...dependentVars.map(v => `${v} S.D`), '条件<br>自由度', '誤差<br>自由度', 'F', 'p', 'sign', 'ηp²', 'ω²'];
     const conditionStds = dependentVars.map((v, i) => jStat.stdev(validData.map(row => row[i]), true));
     const rowData = [dependentVars.join(' vs '), grandMean, jStat.stdev(validData.flat(), true), ...conditionMeans, ...conditionStds, dfConditions, dfError, fValue, pValue, significance, etaSquaredPartial, omegaSquared];
-    
+
     let tableHtml = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
@@ -505,7 +539,7 @@ function runOneWayRepeatedANOVA(currentData) {
 
     // 3. Sample Size
     renderSampleSizeInfo(resultsContainer, N);
-    
+
     const conditionSEs = dependentVars.map((v, i) => jStat.stdev(validData.map(row => row[i]), true) / Math.sqrt(N));
     const sigPairs = performRepeatedPostHocTests(dependentVars, currentData);
     const { shapes, annotations, topMargin } = generateBracketsForPlot(sigPairs, dependentVars, conditionMeans, conditionSEs);
@@ -522,7 +556,7 @@ function runOneWayRepeatedANOVA(currentData) {
 
     // 4. Interpretation
     displayANOVAInterpretation(testResults, null, 'repeated');
-    
+
     // 5. Visualization
     displayANOVAVisualization(testResults, 'repeated');
 

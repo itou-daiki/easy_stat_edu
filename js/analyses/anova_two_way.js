@@ -8,6 +8,204 @@ function getLevels(data, varName) {
     return [...new Set(data.map(d => d[varName]))].filter(v => v != null).sort();
 }
 
+function performSimpleMainEffectTests(validData, factor1, factor2, depVar, designType, withinVars = []) {
+    // Tests differences in Factor 1 (Legend) at each level of Factor 2 (X-axis)
+    // If Independent: Factor 1 and Factor 2 are columns.
+    // If Mixed: Factor 1 is Between (col), Factor 2 is Within (col names).
+
+    // We assume Factor 1 is the grouping variable (Legend) and Factor 2 is the X-axis.
+    // We want to see if Factor 1 groups differ at specific Factor 2 levels.
+
+    const sigPairs = [];
+    let levels2;
+
+    if (designType === 'independent') {
+        levels2 = getLevels(validData, factor2);
+
+        levels2.forEach((l2, i) => {
+            const dataAtL2 = validData.filter(d => d[factor2] === l2);
+            const groups = getLevels(dataAtL2, factor1);
+            if (groups.length < 2) return;
+
+            const numComparisons = (groups.length * (groups.length - 1)) / 2; // Bonferroni per level
+
+            for (let gA = 0; gA < groups.length; gA++) {
+                for (let gB = gA + 1; gB < groups.length; gB++) {
+                    const groupA = groups[gA];
+                    const groupB = groups[gB];
+
+                    const valsA = dataAtL2.filter(d => d[factor1] === groupA).map(d => d[depVar]);
+                    const valsB = dataAtL2.filter(d => d[factor1] === groupB).map(d => d[depVar]);
+
+                    if (valsA.length < 2 || valsB.length < 2) continue;
+
+                    // Welch's t-test
+                    const tRes = runWelchTTest(valsA, valsB);
+                    const pAdj = Math.min(1, tRes.p * numComparisons);
+
+                    if (pAdj < 0.1) {
+                        sigPairs.push({
+                            xIndex: i, // Index of Factor 2 level (X-axis position)
+                            g1: groupA,
+                            g2: groupB,
+                            p: pAdj
+                        });
+                    }
+                }
+            }
+        });
+
+    } else if (designType === 'mixed') {
+        // Factor 1 is Between (Group), Factor 2 is Within (e.g., 'Condition') which corresponds to column names in withinVars
+        // validData contains all rows.
+        levels2 = withinVars; // These are the column names
+
+        levels2.forEach((l2, i) => {
+            // Compare Groups (Factor 1) at this specific condition (l2)
+            const groups = getLevels(validData, factor1);
+            if (groups.length < 2) return;
+
+            const numComparisons = (groups.length * (groups.length - 1)) / 2;
+
+            for (let gA = 0; gA < groups.length; gA++) {
+                for (let gB = gA + 1; gB < groups.length; gB++) {
+                    const groupA = groups[gA];
+                    const groupB = groups[gB];
+
+                    const valsA = validData.filter(d => d[factor1] === groupA).map(d => d[l2]); // l2 is column name
+                    const valsB = validData.filter(d => d[factor1] === groupB).map(d => d[l2]);
+
+                    if (valsA.length < 2 || valsB.length < 2) continue;
+
+                    // Welch's t-test (Between-subjects comparison at fixed within-level)
+                    const tRes = runWelchTTest(valsA, valsB);
+                    const pAdj = Math.min(1, tRes.p * numComparisons);
+
+                    if (pAdj < 0.1) {
+                        sigPairs.push({
+                            xIndex: i,
+                            g1: groupA,
+                            g2: groupB,
+                            p: pAdj
+                        });
+                    }
+                }
+            }
+        });
+    }
+
+    return sigPairs;
+}
+
+function runWelchTTest(vals1, vals2) {
+    const n1 = vals1.length;
+    const n2 = vals2.length;
+    const m1 = jStat.mean(vals1);
+    const m2 = jStat.mean(vals2);
+    const s1 = jStat.stdev(vals1, true);
+    const s2 = jStat.stdev(vals2, true);
+    const v1 = s1 * s1;
+    const v2 = s2 * s2;
+
+    const se = Math.sqrt(v1 / n1 + v2 / n2);
+    const t = (m1 - m2) / se;
+    const dfNum = Math.pow(v1 / n1 + v2 / n2, 2);
+    const dfDen = Math.pow(v1 / n1, 2) / (n1 - 1) + Math.pow(v2 / n2, 2) / (n2 - 1);
+    const df = dfNum / dfDen;
+    const p = jStat.studentt.cdf(-Math.abs(t), df) * 2;
+    return { t, df, p };
+}
+
+function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellStats) {
+    // levels1: Legend groups (e.g., Male, Female)
+    // levels2: X-axis groups (e.g., Year 1, Year 2)
+    // cellStats: { [l1]: { [l2]: { mean, std, n } } }
+
+    // Bars are grouped by X (levels2). Within each X, we have bars for levels1.
+    // X coordinates in Plotly for grouped bars are adjusted.
+    // However, we can approximate or use shape coordinates relative to the "category" on X.
+    // Since we are comparing levels1 (legend items) AT a specific levels2 (X category), logic is distinct.
+
+    const shapes = [];
+    const annotations = [];
+
+    // Determine max height for each X-category to clear bars
+    const maxValsAtX = levels2.map(l2 => {
+        const means = levels1.map(l1 => cellStats[l1][l2].mean);
+        const ses = levels1.map(l1 => {
+            const s = cellStats[l1][l2];
+            return s.n > 0 ? s.std / Math.sqrt(s.n) : 0;
+        });
+        return Math.max(...means.map((m, i) => m + ses[i]));
+    });
+
+    const stackHeight = []; // To track height of brackets at each X position
+
+    sigPairs.forEach(pair => {
+        // pair: { xIndex, g1, g2, p }
+        // xIndex correponds to levels2 index.
+
+        const xIdx = pair.xIndex;
+        const currentMaxY = maxValsAtX[xIdx];
+
+        // For Grouped bars, finding exact X position is tricky in layout.shapes without "xref: 'x'".
+        // But "x" is categorical. 
+        // Plotly places groups at integer indices 0, 1, 2...
+        // Within a group, bars are shifted.
+        // If we only compare Level A vs Level B at X=0, we can draw a bracket centered at X=0.
+        // Since we typically only have 2-3 subgroups, we can just center the bracket on the category.
+
+        if (!stackHeight[xIdx]) stackHeight[xIdx] = 0;
+        stackHeight[xIdx]++;
+
+        const yOffset = currentMaxY * 0.1 + (stackHeight[xIdx] * currentMaxY * 0.15);
+        const bracketY = currentMaxY + yOffset;
+        const legHeight = currentMaxY * 0.05;
+
+        let text;
+        if (pair.p < 0.01) text = 'p < 0.01 **';
+        else if (pair.p < 0.05) text = 'p < 0.05 *';
+        else text = 'p < 0.1 †';
+
+        // We draw the bracket covering the width of the group at X
+        // A safe width is +/- 0.2 around the integer xIdx
+        const xCenter = xIdx; // Because x-axis is categorical, mapped to 0, 1, 2...
+        const halfWidth = 0.2;
+
+        // Horizontal line
+        shapes.push({
+            type: 'line',
+            x0: xCenter - halfWidth, y0: bracketY,
+            x1: xCenter + halfWidth, y1: bracketY,
+            line: { color: 'black', width: 2 }
+        });
+
+        // Legs
+        shapes.push({
+            type: 'line',
+            x0: xCenter - halfWidth, y0: bracketY - legHeight,
+            x1: xCenter - halfWidth, y1: bracketY,
+            line: { color: 'black', width: 2 }
+        });
+        shapes.push({
+            type: 'line',
+            x0: xCenter + halfWidth, y0: bracketY - legHeight,
+            x1: xCenter + halfWidth, y1: bracketY,
+            line: { color: 'black', width: 2 }
+        });
+
+        annotations.push({
+            x: xCenter,
+            y: bracketY + legHeight,
+            text: text,
+            showarrow: false,
+            font: { size: 14, color: 'black', weight: 'bold' }
+        });
+    });
+
+    return { shapes, annotations };
+}
+
 // ======================================================================
 // Main Analysis Function
 // ======================================================================
@@ -104,6 +302,9 @@ function runTwoWayIndependentANOVA(currentData) {
         const fAxB = dfAxB > 0 ? msAxB / msError : 0; // Handle dfAxB = 0
         const pAxB = dfAxB > 0 ? 1 - jStat.centralF.cdf(fAxB, dfAxB, dfError) : 1;
 
+        // Perform Simple Main Effect Tests
+        const resultSigPairs = performSimpleMainEffectTests(validData, factor1, factor2, depVar, 'independent');
+
         testResults.push({
             depVar, factor1, factor2, levels1, levels2,
             cellStats, // M, SD, N for each cell
@@ -112,6 +313,7 @@ function runTwoWayIndependentANOVA(currentData) {
             ssB, dfB, msB, fB,
             ssAxB, dfAxB, msAxB, fAxB,
             ssError, dfError, msError,
+            sigPairs: resultSigPairs // Add simple main effects
         });
     });
 
@@ -305,12 +507,18 @@ function renderTwoWayANOVAVisualization(results) {
                         }
                     });
                 });
+
+                // Add brackets if any
+                const { shapes, annotations } = generateBracketsForGroupedPlot(res.sigPairs || [], res.levels1, res.levels2, res.cellStats);
+
                 Plotly.newPlot(plotDiv, traces, {
                     title: `平均値の棒グラフ: ${res.depVar}`,
                     xaxis: { title: res.factor2 },
                     yaxis: { title: res.depVar, rangemode: 'tozero' },
                     legend: { title: { text: res.factor1 } },
-                    barmode: 'group' // This creates clustered bars
+                    barmode: 'group', // This creates clustered bars
+                    shapes: shapes,
+                    annotations: annotations
                 }, createPlotlyConfig('二要因分散分析', res.depVar));
             }
         }, 100);
@@ -468,6 +676,10 @@ function runTwoWayMixedANOVA(currentData) {
     const etaWithin = ssWithin / (ssWithin + ssErrorWithin);
     const etaInteraction = ssInteraction / (ssInteraction + ssErrorWithin);
 
+    // Perform Simple Main Effect Tests
+    // For Mixed: Factor 1 is Between (betweenVar), Factor 2 is Within (conditions/columns)
+    const resultSigPairs = performSimpleMainEffectTests(validData, betweenVar, 'conditions', 'value', 'mixed', withinVars);
+
     const result = {
         factorBetween: betweenVar,
         factorWithin: '条件(Time)',
@@ -493,7 +705,8 @@ function runTwoWayMixedANOVA(currentData) {
         factor2: '条件',
         levels1: groups,
         levels2: withinVars,
-        cellStats: cellStats
+        cellStats: cellStats,
+        sigPairs: resultSigPairs
     };
     renderTwoWayANOVAVisualization([vizResult]);
 
