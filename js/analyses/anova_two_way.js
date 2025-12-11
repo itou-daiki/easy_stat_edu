@@ -88,7 +88,7 @@ function runTwoWayIndependentANOVA(currentData) {
         const fAxB = dfAxB > 0 ? msAxB / msError : 0; // Handle dfAxB = 0
         const pAxB = dfAxB > 0 ? 1 - jStat.centralF.cdf(fAxB, dfAxB, dfError) : 1;
         
-        results.push({
+        testResults.push({
             depVar, factor1, factor2, levels1, levels2,
             cellStats, // M, SD, N for each cell
             pA, pB, pAxB, // p-values
@@ -100,8 +100,8 @@ function runTwoWayIndependentANOVA(currentData) {
     });
 
     // Populate the sections
-    renderTwoWayANOVATable(results);
-    renderTwoWayANOVAVisualization(results);
+    renderTwoWayANOVATable(testResults);
+    renderTwoWayANOVAVisualization(testResults);
 
     document.getElementById('analysis-results').style.display = 'block';
 }
@@ -189,7 +189,10 @@ function renderTwoWayANOVAVisualization(results) {
                 // Group by factor1, bars are factor2 levels
                 res.levels1.forEach(l1 => {
                     const yData = res.levels2.map(l2 => res.cellStats[l1][l2].mean);
-                    const errorData = res.levels2.map(l2 => res.cellStats[l1][l2].std / Math.sqrt(res.cellStats[l1][l2].n));
+                    const errorData = res.levels2.map(l2 => {
+                        const n = res.cellStats[l1][l2].n;
+                        return n > 0 ? res.cellStats[l1][l2].std / Math.sqrt(n) : 0;
+                    });
                     traces.push({
                         x: res.levels2, // Factor 2 levels on X-axis
                         y: yData,
