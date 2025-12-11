@@ -116,10 +116,94 @@ function runTwoWayIndependentANOVA(currentData) {
     });
 
     // Populate the sections
+    // Populate the sections
     renderTwoWayANOVATable(testResults);
+    displayTwoWayANOVAInterpretation(testResults, 'independent');
     renderTwoWayANOVAVisualization(testResults);
 
     document.getElementById('analysis-results').style.display = 'block';
+}
+
+function displayTwoWayANOVAInterpretation(results, designType) {
+    const container = document.getElementById('interpretation-section');
+    container.innerHTML = `
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                <i class="fas fa-lightbulb"></i> 解釈の補助
+            </h4>
+            <div id="interpretation-content" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+        </div>`;
+
+    const contentContainer = document.getElementById('interpretation-content');
+    let html = '';
+
+    results.forEach(res => {
+        // Independent results structure: pA, pB, pAxB
+        // Mixed results structure needs to be adapted or accessed differently.
+        // For Mixed, 'results' passed here is likely an array of objects derived from the 'result' object in runTwoWayMixedANOVA
+        // But wait, the current runTwoWayMixedANOVA calls render... with a single object 'result'.
+        // We need to standardize how we pass data or handle both formats.
+
+        // Let's adapt based on input structure.
+        let factorA, factorB, pA, pB, pAxB, varName;
+
+        if (designType === 'independent') {
+            factorA = res.factor1;
+            factorB = res.factor2;
+            pA = res.pA;
+            pB = res.pB;
+            pAxB = res.pAxB;
+            varName = res.depVar;
+        } else {
+            // Mixed design result structure (passed as array of 1 for consistency or handled directly)
+            // It seems runTwoWayMixedANOVA constructed a single object 'result'.
+            // We should adjust runTwoWayMixedANOVA to pass an array or handle single object here.
+            // Let's assume we update runTwoWayMixedANOVA to call this with [result].
+            factorA = res.factorBetween;
+            factorB = res.factorWithin;
+            // Extract p-values from sources
+            const srcA = res.sources.find(s => s.name.includes(factorA));
+            const srcB = res.sources.find(s => s.name.includes(factorB) || s.name.includes('条件'));
+            const srcAxB = res.sources.find(s => s.name.includes('×'));
+
+            pA = srcA ? srcA.p : 1;
+            pB = srcB ? srcB.p : 1;
+            pAxB = srcAxB ? srcAxB.p : 1;
+            varName = '測定値'; // Or passed in constraint
+        }
+
+        const getSigText = (p) => p < 0.05 ? '有意な差（効果）が見られました。' : '有意な差（効果）は見られませんでした。';
+        const getStars = (p) => p < 0.01 ? '**' : p < 0.05 ? '*' : p < 0.1 ? '†' : 'n.s.';
+
+        html += `
+            <div style="margin-bottom: 1.5rem; border-left: 4px solid #1e90ff; padding-left: 1rem;">
+                <h5 style="font-weight: bold; color: #2d3748; margin-bottom: 0.5rem;">${varName} の分析結果:</h5>
+                
+                <p style="margin: 0.5rem 0;">
+                    <strong>1. 交互作用 (${factorA} × ${factorB}):</strong> <br>
+                    p = ${pAxB.toFixed(3)} (${getStars(pAxB)})。<br>
+                    ${getSigText(pAxB)}
+                    ${pAxB < 0.05 ? '<br><span style="color: #d97706; font-size: 0.9em;"><i class="fas fa-exclamation-triangle"></i> 交互作用が有意であるため、主効果の解釈には注意が必要です（単純主効果の検定を推奨）。要因の組み合わせによって結果が異なる可能性があります。</span>' : '<br><span style="color: #059669; font-size: 0.9em;">交互作用は有意ではないため、それぞれの主効果（要因単独の影響）に着目します。</span>'}
+                </p>
+
+                <p style="margin: 0.5rem 0;">
+                    <strong>2. ${factorA} の主効果:</strong> <br>
+                    p = ${pA.toFixed(3)} (${getStars(pA)})。<br>
+                    ${getSigText(pA)}
+                </p>
+
+                <p style="margin: 0.5rem 0;">
+                    <strong>3. ${factorB} の主効果:</strong> <br>
+                    p = ${pB.toFixed(3)} (${getStars(pB)})。<br>
+                    ${getSigText(pB)}
+                </p>
+            </div>
+        `;
+    });
+
+    contentContainer.innerHTML = html;
+}
+contentContainer.innerHTML = html;
 }
 
 function renderTwoWayANOVATable(results) {
@@ -402,6 +486,7 @@ function runTwoWayMixedANOVA(currentData) {
     };
 
     renderTwoWayMixedANOVATable(result);
+    displayTwoWayANOVAInterpretation([result], 'mixed');
     // Reuse visualization logic with slight adaptation
     const vizResult = {
         depVar: '測定値',
