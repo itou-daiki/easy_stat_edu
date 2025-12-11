@@ -22,11 +22,27 @@ function runTwoWayIndependentANOVA(currentData) {
         alert('異なる2つの要因と、1つ以上の従属変数を選択してください。');
         return;
     }
-    
+
     // Clear results and display the section
     const resultsContainer = document.getElementById('analysis-results');
-    // resultsContainer.innerHTML = ''; // This line caused the error by removing child elements like 'test-results-section'
-    
+
+    // Ensure the results structure exists
+    if (!document.getElementById('test-results-section')) {
+        resultsContainer.innerHTML = `
+            <div id="summary-stats-section"></div>
+            <div id="test-results-section"></div>
+            <div id="interpretation-section"></div>
+            <div id="visualization-section"></div>
+        `;
+    } else {
+        // Clear previous results content
+        const sections = ['summary-stats-section', 'test-results-section', 'interpretation-section', 'visualization-section'];
+        sections.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '';
+        });
+    }
+
     const testResults = [];
     dependentVars.forEach(depVar => {
         const validData = currentData.filter(d => d[factor1] != null && d[factor2] != null && d[depVar] != null && !isNaN(d[depVar]));
@@ -38,7 +54,7 @@ function runTwoWayIndependentANOVA(currentData) {
 
         const grandMean = jStat.mean(validData.map(d => d[depVar]));
         const ssTotal = jStat.sum(validData.map(d => Math.pow(d[depVar] - grandMean, 2)));
-        
+
         const cellStats = {}; // { '男性': { '1年次': {mean, std, n}, '2・3年次': {...} }, '女性': {...} }
         let ssCells = 0;
         levels1.forEach(l1 => {
@@ -51,12 +67,12 @@ function runTwoWayIndependentANOVA(currentData) {
                 ssCells += cellData.length * Math.pow(mean - grandMean, 2);
             });
         });
-        
+
         const ssA = levels1.reduce((sum, l1) => {
             const marginalData = validData.filter(d => d[factor1] === l1).map(d => d[depVar]);
             return sum + (marginalData.length * Math.pow(jStat.mean(marginalData) - grandMean, 2));
         }, 0);
-        
+
         const ssB = levels2.reduce((sum, l2) => {
             const marginalData = validData.filter(d => d[factor2] === l2).map(d => d[depVar]);
             return sum + (marginalData.length * Math.pow(jStat.mean(marginalData) - grandMean, 2));
@@ -87,7 +103,7 @@ function runTwoWayIndependentANOVA(currentData) {
 
         const fAxB = dfAxB > 0 ? msAxB / msError : 0; // Handle dfAxB = 0
         const pAxB = dfAxB > 0 ? 1 - jStat.centralF.cdf(fAxB, dfAxB, dfError) : 1;
-        
+
         testResults.push({
             depVar, factor1, factor2, levels1, levels2,
             cellStats, // M, SD, N for each cell
@@ -108,7 +124,7 @@ function runTwoWayIndependentANOVA(currentData) {
 
 function renderTwoWayANOVATable(results) {
     if (results.length === 0) return;
-    
+
     // Assume all results share the same factors and levels for header generation
     const { factor1, factor2, levels1, levels2 } = results[0];
     const container = document.getElementById('test-results-section'); // This is where the main table goes
@@ -134,11 +150,11 @@ function renderTwoWayANOVATable(results) {
                         </tr>
                     </thead>
                     <tbody>`;
-    
+
     results.forEach(res => {
         tableHtml += `<tr>
-            <td rowspan="`+(res.levels2.length * 1)+`" style="vertical-align: middle; font-weight: bold;">${res.depVar}</td>`; // Multiply by 1 to ensure it's treated as a number
-        
+            <td rowspan="`+ (res.levels2.length * 1) + `" style="vertical-align: middle; font-weight: bold;">${res.depVar}</td>`; // Multiply by 1 to ensure it's treated as a number
+
         res.levels2.forEach((l2, i) => {
             if (i > 0) tableHtml += '<tr>';
             tableHtml += `<td>${l2}</td>`;
@@ -148,13 +164,13 @@ function renderTwoWayANOVATable(results) {
             });
 
             if (i === 0) {
-                 const sigA = res.pA < 0.01 ? '**' : res.pA < 0.05 ? '*' : res.pA < 0.1 ? '†' : 'n.s.';
-                 const sigB = res.pB < 0.01 ? '**' : res.pB < 0.05 ? '*' : res.pB < 0.1 ? '†' : 'n.s.';
-                 const sigAxB = res.pAxB < 0.01 ? '**' : res.pAxB < 0.05 ? '*' : res.pAxB < 0.1 ? '†' : 'n.s.';
+                const sigA = res.pA < 0.01 ? '**' : res.pA < 0.05 ? '*' : res.pA < 0.1 ? '†' : 'n.s.';
+                const sigB = res.pB < 0.01 ? '**' : res.pB < 0.05 ? '*' : res.pB < 0.1 ? '†' : 'n.s.';
+                const sigAxB = res.pAxB < 0.01 ? '**' : res.pAxB < 0.05 ? '*' : res.pAxB < 0.1 ? '†' : 'n.s.';
                 tableHtml += `
-                    <td rowspan="`+(res.levels2.length * 1)+`" style="vertical-align: middle; text-align: center;">${sigA}</td>
-                    <td rowspan="`+(res.levels2.length * 1)+`" style="vertical-align: middle; text-align: center;">${sigB}</td>
-                    <td rowspan="`+(res.levels2.length * 1)+`" style="vertical-align: middle; text-align: center;">${sigAxB}</td>`;
+                    <td rowspan="`+ (res.levels2.length * 1) + `" style="vertical-align: middle; text-align: center;">${sigA}</td>
+                    <td rowspan="`+ (res.levels2.length * 1) + `" style="vertical-align: middle; text-align: center;">${sigB}</td>
+                    <td rowspan="`+ (res.levels2.length * 1) + `" style="vertical-align: middle; text-align: center;">${sigAxB}</td>`;
             }
             tableHtml += '</tr>';
         });
@@ -176,15 +192,15 @@ function renderTwoWayANOVAVisualization(results) {
             <div id="visualization-plots"></div>
         </div>`;
     const plotsContainer = document.getElementById('visualization-plots');
-    plotsContainer.innerHTML = ''; 
+    plotsContainer.innerHTML = '';
 
     results.forEach((res, index) => {
         const plotId = `anova-plot-${index}`;
         plotsContainer.innerHTML += `<div id="${plotId}" class="plot-container" style="margin-top: 1rem;"></div>`;
-        
+
         setTimeout(() => {
             const plotDiv = document.getElementById(plotId);
-            if(plotDiv) {
+            if (plotDiv) {
                 const traces = [];
                 // Group by factor1, bars are factor2 levels
                 res.levels1.forEach(l1 => {
@@ -231,7 +247,7 @@ function runTwoWayMixedANOVA(currentData) {
 function switchTestType(testType) {
     const indControls = document.getElementById('independent-controls');
     const mixedControls = document.getElementById('mixed-controls');
-    
+
     indControls.style.display = 'none';
     mixedControls.style.display = 'none';
 
