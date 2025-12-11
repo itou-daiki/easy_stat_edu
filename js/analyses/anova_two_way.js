@@ -203,8 +203,7 @@ function displayTwoWayANOVAInterpretation(results, designType) {
 
     contentContainer.innerHTML = html;
 }
-contentContainer.innerHTML = html;
-}
+
 
 function renderTwoWayANOVATable(results) {
     if (results.length === 0) return;
