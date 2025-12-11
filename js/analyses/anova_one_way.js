@@ -137,7 +137,6 @@ function runOneWayIndependentANOVA(currentData) {
             totalN += groupData[g].length;
         });
 
-        // ANOVA計算
         const allValues = currentData.map(r => r[depVar]).filter(v => v != null && !isNaN(v));
         const grandMean = jStat.mean(allValues);
 
@@ -162,10 +161,39 @@ function runOneWayIndependentANOVA(currentData) {
         const pValue = 1 - jStat.centralF.cdf(fValue, dfBetween, dfWithin);
         const etaSquared = ssBetween / (ssBetween + ssWithin);
 
+        const ssTotal = ssBetween + ssWithin;
+        const omegaSquared = (ssBetween - (dfBetween * msWithin)) / (ssTotal + msWithin);
+
+        const overallMean = jStat.mean(allValues);
+        const overallStd = jStat.stdev(allValues, true);
+        const groupMeans = groups.map(g => jStat.mean(groupData[g]));
+        const groupStds = groups.map(g => jStat.stdev(groupData[g], true));
+
+        let sign = 'n.s.';
+        if (pValue < 0.01) sign = '**';
+        else if (pValue < 0.05) sign = '*';
+        else if (pValue < 0.1) sign = '†';
+
         // UI Generation
         const sectionId = `anova-ind-${depVar}`;
         const varResultDiv = document.createElement('div');
         varResultDiv.className = 'anova-result-block';
+
+        const headers = ['全体M', '全体S.D', ...groups.map(g => `${g} M`), ...groups.map(g => `${g} S.D`), '群間自由度', '群内自由度', 'F', 'p', 'sign', 'η²', 'ω²'];
+        const values = [overallMean, overallStd, ...groupMeans, ...groupStds, dfBetween, dfWithin, fValue, pValue, sign, etaSquared, omegaSquared];
+        
+        let descriptiveTable = `<h5 style="color: #2d3748; margin-bottom: 1rem;">記述統計量: ${depVar}</h5><div class="table-container"><table class="table"><thead><tr>`;
+        headers.forEach(h => descriptiveTable += `<th>${h}</th>`);
+        descriptiveTable += '</tr></thead><tbody><tr>';
+        values.forEach(v => {
+            if (typeof v === 'number') {
+                descriptiveTable += `<td>${v.toFixed(2)}</td>`;
+            } else {
+                descriptiveTable += `<td>${v}</td>`;
+            }
+        });
+        descriptiveTable += '</tr></tbody></table></div>';
+
 
         let html = `
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -173,6 +201,9 @@ function runOneWayIndependentANOVA(currentData) {
                     変数: ${depVar}
                 </h4>
                 
+                ${descriptiveTable}
+
+                <h5 style="color: #2d3748; margin-bottom: 1rem; margin-top: 1.5rem;">分散分析表</h5>
                 <div class="table-container">
                     <table class="table">
                         <thead>
@@ -458,10 +489,39 @@ function runOneWayRepeatedANOVA(currentData) {
     const msError = ssError / dfError;
     const fValue = msConditions / msError;
     const pValue = 1 - jStat.centralF.cdf(fValue, dfConditions, dfError);
-    const etaSquared = ssConditions / (ssConditions + ssError);
+    const etaSquared = ssConditions / (ssConditions + ssError); // Partial Eta Squared
+    const omegaSquared = (ssConditions - (dfConditions * msError)) / (ssTotal + msError);
+
+    const overallMean = grandMean;
+    const overallStd = jStat.stdev(validData.flat(), true);
+    const conditionStds = [];
+    for (let i = 0; i < k; i++) {
+        const colVals = validData.map(row => row[i]);
+        conditionStds.push(jStat.stdev(colVals, true));
+    }
+
+    let sign = 'n.s.';
+    if (pValue < 0.01) sign = '**';
+    else if (pValue < 0.05) sign = '*';
+    else if (pValue < 0.1) sign = '†';
 
     const resultDiv = document.createElement('div');
     resultDiv.className = 'anova-result-block';
+
+    const headers = ['全体M', '全体S.D', ...dependentVars.map(v => `${v} M`), ...dependentVars.map(v => `${v} S.D`), '条件自由度', '誤差自由度', 'F', 'p', 'sign', 'ηp²', 'ω²'];
+    const values = [overallMean, overallStd, ...conditionMeans, ...conditionStds, dfConditions, dfError, fValue, pValue, sign, etaSquared, omegaSquared];
+    
+    let descriptiveTable = `<h5 style="color: #2d3748; margin-bottom: 1rem;">記述統計量</h5><div class="table-container"><table class="table"><thead><tr>`;
+    headers.forEach(h => descriptiveTable += `<th>${h}</th>`);
+    descriptiveTable += '</tr></thead><tbody><tr>';
+    values.forEach(v => {
+        if (typeof v === 'number') {
+            descriptiveTable += `<td>${v.toFixed(2)}</td>`;
+        } else {
+            descriptiveTable += `<td>${v}</td>`;
+        }
+    });
+    descriptiveTable += '</tr></tbody></table></div>';
 
     let html = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -469,6 +529,9 @@ function runOneWayRepeatedANOVA(currentData) {
                 要因: ${dependentVars.join(', ')}
             </h4>
             
+            ${descriptiveTable}
+
+            <h5 style="color: #2d3748; margin-bottom: 1rem; margin-top: 1.5rem;">分散分析表</h5>
             <div class="table-container">
                 <table class="table">
                     <thead>
