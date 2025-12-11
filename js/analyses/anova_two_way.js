@@ -8,116 +8,8 @@ function getLevels(data, varName) {
     return [...new Set(data.map(d => d[varName]))].filter(v => v != null).sort();
 }
 
-function displayTwoWayANOVASummaryStatistics(variables, currentData) {
-    const container = document.getElementById('summary-stats-section');
-    let tableHtml = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-table"></i> 選択した従属変数に関する要約統計量
-            </h4>
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr><th>変数名</th><th>有効N</th><th>平均値</th><th>中央値</th><th>標準偏差</th></tr>
-                    </thead>
-                    <tbody>`;
-    variables.forEach(varName => {
-        const values = currentData.map(row => row[varName]).filter(v => v != null && !isNaN(v));
-        if (values.length > 0) {
-            const jstat = jStat(values);
-            tableHtml += `
-                <tr>
-                    <td style="font-weight: bold;">${varName}</td>
-                    <td>${values.length}</td>
-                    <td>${jstat.mean().toFixed(2)}</td>
-                    <td>${jstat.median().toFixed(2)}</td>
-                    <td>${jstat.stdev(true).toFixed(2)}</td>
-                </tr>`;
-        }
-    });
-    tableHtml += `</tbody></table></div></div>`;
-    container.innerHTML = tableHtml;
-}
-
-function displayTwoWayANOVAInterpretation(results) {
-    const container = document.getElementById('interpretation-section');
-    container.innerHTML = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;"><i class="fas fa-lightbulb"></i> 解釈の補助</h4>
-            <div id="interpretation-content" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
-        </div>`;
-    const contentContainer = document.getElementById('interpretation-content');
-    let interpretationHtml = '';
-    results.forEach(res => {
-        interpretationHtml += `<div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #eee;">
-            <strong style="color: #1e90ff; font-size: 1.1em;">${res.depVar}</strong><br>
-            <ul style="margin: 0.5rem 0 0 1rem; padding: 0; list-style-type: none;">
-                <li style="margin-bottom: 0.25rem;"><strong>交互作用 (${res.factor1} × ${res.factor2}):</strong> ${res.pAxB < 0.05 ? `<span style="color: red; font-weight: bold;">有意な差が見られました (p=${res.pAxB.toFixed(3)})。</span>` : `有意な差は見られませんでした (p=${res.pAxB.toFixed(3)})。`}</li>
-                <li style="margin-bottom: 0.25rem;"><strong>主効果 (${res.factor1}):</strong> ${res.pA < 0.05 ? `有意な差が見られました (p=${res.pA.toFixed(3)})。` : `有意な差は見られませんでした (p=${res.pA.toFixed(3)})。`}</li>
-                <li style="margin-bottom: 0.25rem;"><strong>主効果 (${res.factor2}):</strong> ${res.pB < 0.05 ? `有意な差が見られました (p=${res.pB.toFixed(3)})。` : `有意な差は見られませんでした (p=${res.pB.toFixed(3)})。`}</li>
-            </ul>
-        </div>`;
-    });
-    contentContainer.innerHTML = interpretationHtml;
-}
-
-function displayTwoWayANOVAVisualization(results) {
-    const container = document.getElementById('visualization-section');
-    container.innerHTML = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;"><i class="fas fa-chart-bar"></i> 可視化</h4>
-            <div id="visualization-plots"></div>
-        </div>`;
-    const plotsContainer = document.getElementById('visualization-plots');
-    plotsContainer.innerHTML = ''; // Clear previous plots
-    results.forEach((res, index) => {
-        const plotId = `anova-plot-${index}`;
-        let plotHtml = `
-            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #eee;">
-                <h5 style="color: #2d3748;">${res.depVar}</h5>
-                <div class="table-container" style="margin-bottom: 1rem;">
-                    <table class="table">
-                        <thead><tr><th>要因</th><th>平方和(SS)</th><th>自由度(df)</th><th>平均平方(MS)</th><th>F値</th><th>p値</th><th>ηp²</th></tr></thead>
-                        <tbody>
-                            <tr><td>${res.factor1}</td><td>${res.ssA.toFixed(2)}</td><td>${res.dfA}</td><td>${res.msA.toFixed(2)}</td><td>${res.fA.toFixed(2)}</td><td ${res.pA < 0.05 ? 'style="color:red; font-weight:bold;"' : ''}>${res.pA.toFixed(3)}</td><td>${res.etaA.toFixed(3)}</td></tr>
-                            <tr><td>${res.factor2}</td><td>${res.ssB.toFixed(2)}</td><td>${res.dfB}</td><td>${res.msB.toFixed(2)}</td><td>${res.fB.toFixed(2)}</td><td ${res.pB < 0.05 ? 'style="color:red; font-weight:bold;"' : ''}>${res.pB.toFixed(3)}</td><td>${res.etaB.toFixed(3)}</td></tr>
-                            <tr><td>${res.factor1} × ${res.factor2}</td><td>${res.ssAxB.toFixed(2)}</td><td>${res.dfAxB}</td><td>${res.msAxB.toFixed(2)}</td><td>${res.fAxB.toFixed(2)}</td><td ${res.pAxB < 0.05 ? 'style="color:red; font-weight:bold;"' : ''}>${res.pAxB.toFixed(3)}</td><td>${res.etaAxB.toFixed(3)}</td></tr>
-                            <tr><td>誤差</td><td>${res.ssError.toFixed(2)}</td><td>${res.dfError}</td><td>${res.msError.toFixed(2)}</td><td>-</td><td>-</td><td>-</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div id="${plotId}" class="plot-container"></div>
-            </div>`;
-        plotsContainer.innerHTML += plotHtml;
-        
-        setTimeout(() => {
-            const plotDiv = document.getElementById(plotId);
-            if(plotDiv) {
-                const traces = [];
-                res.levels2.forEach((l2, i) => {
-                    const x = res.levels1;
-                    const y = x.map(l1 => res.cellMeans[l1][l2].mean);
-                    traces.push({
-                        x: x,
-                        y: y,
-                        mode: 'lines+markers',
-                        name: l2,
-                        type: 'scatter'
-                    });
-                });
-                Plotly.newPlot(plotDiv, traces, {
-                    title: `交互作用プロット: ${res.depVar}`,
-                    xaxis: { title: res.factor1 },
-                    yaxis: { title: res.depVar, rangemode: 'tozero' },
-                    legend: { title: { text: res.factor2 } }
-                }, createPlotlyConfig('二要因分散分析', res.depVar));
-            }
-        }, 100);
-    });
-}
-
 // ======================================================================
-// Main Analysis Functions
+// Main Analysis Function
 // ======================================================================
 
 function runTwoWayIndependentANOVA(currentData) {
@@ -131,30 +23,31 @@ function runTwoWayIndependentANOVA(currentData) {
         return;
     }
     
-    document.getElementById('analysis-results').style.display = 'none';
-    displayTwoWayANOVASummaryStatistics(dependentVars, currentData);
-
+    // Clear results and display the section
+    const resultsContainer = document.getElementById('analysis-results');
+    resultsContainer.innerHTML = ''; // Clear existing content
+    
     const testResults = [];
-    const mainResultsTable = [];
-
     dependentVars.forEach(depVar => {
         const validData = currentData.filter(d => d[factor1] != null && d[factor2] != null && d[depVar] != null && !isNaN(d[depVar]));
         const n = validData.length;
-        const levels1 = getLevels(validData, factor1);
-        const levels2 = getLevels(validData, factor2);
+        const levels1 = getLevels(validData, factor1); // e.g., ['男性', '女性']
+        const levels2 = getLevels(validData, factor2); // e.g., ['1年次', '2・3年次']
+
         if (levels1.length < 2 || levels2.length < 2) return;
 
         const grandMean = jStat.mean(validData.map(d => d[depVar]));
         const ssTotal = jStat.sum(validData.map(d => Math.pow(d[depVar] - grandMean, 2)));
         
-        const cellMeans = {};
+        const cellStats = {}; // { '男性': { '1年次': {mean, std, n}, '2・3年次': {...} }, '女性': {...} }
         let ssCells = 0;
         levels1.forEach(l1 => {
-            cellMeans[l1] = {};
+            cellStats[l1] = {};
             levels2.forEach(l2 => {
                 const cellData = validData.filter(d => d[factor1] === l1 && d[factor2] === l2).map(d => d[depVar]);
                 const mean = cellData.length > 0 ? jStat.mean(cellData) : 0;
-                cellMeans[l1][l2] = { mean, n: cellData.length };
+                const std = cellData.length > 1 ? jStat.stdev(cellData, true) : 0;
+                cellStats[l1][l2] = { mean, std, n: cellData.length };
                 ssCells += cellData.length * Math.pow(mean - grandMean, 2);
             });
         });
@@ -176,67 +69,154 @@ function runTwoWayIndependentANOVA(currentData) {
         const dfAxB = dfA * dfB;
         const dfError = n - (levels1.length * levels2.length);
 
-        if (dfA <= 0 || dfB <= 0 || dfAxB < 0 || dfError <= 0) return;
+        if (dfA <= 0 || dfB <= 0 || dfError <= 0) {
+            console.warn(`Insufficient degrees of freedom for ${depVar}. Skipping.`);
+            return;
+        }
 
         const msA = ssA / dfA;
         const msB = ssB / dfB;
-        const msAxB = ssAxB / dfAxB;
+        const msAxB = dfAxB > 0 ? ssAxB / dfAxB : 0; // Handle dfAxB = 0
         const msError = ssError / dfError;
 
         const fA = msA / msError;
         const pA = 1 - jStat.centralF.cdf(fA, dfA, dfError);
-        const etaA = ssA / (ssA + ssError);
 
         const fB = msB / msError;
         const pB = 1 - jStat.centralF.cdf(fB, dfB, dfError);
-        const etaB = ssB / (ssB + ssError);
 
-        const fAxB = msAxB / msError;
-        const pAxB = 1 - jStat.centralF.cdf(fAxB, dfAxB, dfError);
-        const etaAxB = ssAxB / (ssAxB + ssError);
+        const fAxB = dfAxB > 0 ? msAxB / msError : 0; // Handle dfAxB = 0
+        const pAxB = dfAxB > 0 ? 1 - jStat.centralF.cdf(fAxB, dfAxB, dfError) : 1;
         
-        const result = {
+        results.push({
             depVar, factor1, factor2, levels1, levels2,
-            pA, pB, pAxB, fA, fB, fAxB,
-            ssA, dfA, msA, etaA,
-            ssB, dfB, msB, etaB,
-            ssAxB, dfAxB, msAxB, etaAxB,
+            cellStats, // M, SD, N for each cell
+            pA, pB, pAxB, // p-values
+            ssA, dfA, msA, fA, // For potential ANOVA table
+            ssB, dfB, msB, fB,
+            ssAxB, dfAxB, msAxB, fAxB,
             ssError, dfError, msError,
-            cellMeans
-        };
-        testResults.push(result);
-        mainResultsTable.push(result);
+        });
     });
 
-    const resultsContainer = document.getElementById('test-results-section');
-    const headers = ['変数', `F(${factor1})`, `p(${factor1})`, `F(${factor2})`, `p(${factor2})`, `F(交互作用)`, `p(交互作用)`];
-    let tableHtml = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;"><i class="fas fa-calculator"></i> 検定結果の要約</h4>
-            <div class="table-container"><table class="table">
-                <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
-                <tbody>`;
-    mainResultsTable.forEach(res => {
-        tableHtml += `<tr>
-            <td style="font-weight: bold;">${res.depVar}</td>
-            <td>${res.fA.toFixed(2)}</td><td ${res.pA < 0.05 ? 'style="color:red; font-weight:bold;"' : ''}>${res.pA.toFixed(3)}</td>
-            <td>${res.fB.toFixed(2)}</td><td ${res.pB < 0.05 ? 'style="color:red; font-weight:bold;"' : ''}>${res.pB.toFixed(3)}</td>
-            <td>${res.fAxB.toFixed(2)}</td><td ${res.pAxB < 0.05 ? 'style="color:red; font-weight:bold;"' : ''}>${res.pAxB.toFixed(3)}</td>
-        </tr>`;
-    });
-    tableHtml += '</tbody></table></div></div>';
-    resultsContainer.innerHTML = tableHtml;
-
-    displayTwoWayANOVAInterpretation(testResults);
-    displayTwoWayANOVAVisualization(testResults);
+    // Populate the sections
+    renderTwoWayANOVATable(results);
+    renderTwoWayANOVAVisualization(results);
 
     document.getElementById('analysis-results').style.display = 'block';
 }
 
+function renderTwoWayANOVATable(results) {
+    if (results.length === 0) return;
+    
+    // Assume all results share the same factors and levels for header generation
+    const { factor1, factor2, levels1, levels2 } = results[0];
+    const container = document.getElementById('test-results-section'); // This is where the main table goes
+
+    let tableHtml = `
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                <i class="fas fa-table"></i> ${factor1}・${factor2}での分散分析による比較
+            </h4>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="vertical-align: middle; text-align: left;"></th>
+                            <th rowspan="2" style="vertical-align: middle; text-align: left;">${factor2}</th>
+                            ${levels1.map(l1 => `<th colspan="2" style="text-align: center;">${l1}</th>`).join('')}
+                            <th rowspan="2" style="vertical-align: middle; white-space: nowrap;">${factor1}の主効果</th>
+                            <th rowspan="2" style="vertical-align: middle; white-space: nowrap;">${factor2}の主効果</th>
+                            <th rowspan="2" style="vertical-align: middle; white-space: nowrap;">交互作用</th>
+                        </tr>
+                        <tr>
+                            ${levels1.map(() => `<th>M</th><th>S.D</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>`;
+    
+    results.forEach(res => {
+        tableHtml += `<tr>
+            <td rowspan="`+(res.levels2.length * 1)+`" style="vertical-align: middle; font-weight: bold;">${res.depVar}</td>`; // Multiply by 1 to ensure it's treated as a number
+        
+        res.levels2.forEach((l2, i) => {
+            if (i > 0) tableHtml += '<tr>';
+            tableHtml += `<td>${l2}</td>`;
+            res.levels1.forEach(l1 => {
+                const stats = res.cellStats[l1][l2];
+                tableHtml += `<td>${stats.mean.toFixed(2)}</td><td>${stats.std.toFixed(2)}</td>`;
+            });
+
+            if (i === 0) {
+                 const sigA = res.pA < 0.01 ? '**' : res.pA < 0.05 ? '*' : res.pA < 0.1 ? '†' : 'n.s.';
+                 const sigB = res.pB < 0.01 ? '**' : res.pB < 0.05 ? '*' : res.pB < 0.1 ? '†' : 'n.s.';
+                 const sigAxB = res.pAxB < 0.01 ? '**' : res.pAxB < 0.05 ? '*' : res.pAxB < 0.1 ? '†' : 'n.s.';
+                tableHtml += `
+                    <td rowspan="`+(res.levels2.length * 1)+`" style="vertical-align: middle; text-align: center;">${sigA}</td>
+                    <td rowspan="`+(res.levels2.length * 1)+`" style="vertical-align: middle; text-align: center;">${sigB}</td>
+                    <td rowspan="`+(res.levels2.length * 1)+`" style="vertical-align: middle; text-align: center;">${sigAxB}</td>`;
+            }
+            tableHtml += '</tr>';
+        });
+    });
+
+    const footerHtml = `</tbody></table>
+        <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">p&lt;0.1† p&lt;0.05* p&lt;0.01**</p>
+        </div></div>`;
+
+    container.innerHTML = tableHtml;
+}
+
+
+function renderTwoWayANOVAVisualization(results) {
+    const container = document.getElementById('visualization-section');
+    container.innerHTML = `
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;"><i class="fas fa-chart-bar"></i> 可視化</h4>
+            <div id="visualization-plots"></div>
+        </div>`;
+    const plotsContainer = document.getElementById('visualization-plots');
+    plotsContainer.innerHTML = ''; 
+
+    results.forEach((res, index) => {
+        const plotId = `anova-plot-${index}`;
+        plotsContainer.innerHTML += `<div id="${plotId}" class="plot-container" style="margin-top: 1rem;"></div>`;
+        
+        setTimeout(() => {
+            const plotDiv = document.getElementById(plotId);
+            if(plotDiv) {
+                const traces = [];
+                // Group by factor1, bars are factor2 levels
+                res.levels1.forEach(l1 => {
+                    const yData = res.levels2.map(l2 => res.cellStats[l1][l2].mean);
+                    const errorData = res.levels2.map(l2 => res.cellStats[l1][l2].std / Math.sqrt(res.cellStats[l1][l2].n));
+                    traces.push({
+                        x: res.levels2, // Factor 2 levels on X-axis
+                        y: yData,
+                        name: l1, // Factor 1 levels for legend/grouping
+                        type: 'bar',
+                        error_y: {
+                            type: 'data',
+                            array: errorData,
+                            visible: true,
+                            color: 'black'
+                        }
+                    });
+                });
+                Plotly.newPlot(plotDiv, traces, {
+                    title: `平均値の棒グラフ: ${res.depVar}`,
+                    xaxis: { title: res.factor2 },
+                    yaxis: { title: res.depVar, rangemode: 'tozero' },
+                    legend: { title: { text: res.factor1 } },
+                    barmode: 'group' // This creates clustered bars
+                }, createPlotlyConfig('二要因分散分析', res.depVar));
+            }
+        }, 100);
+    });
+}
+
 
 function runTwoWayMixedANOVA(currentData) {
-    // This is a placeholder for the more complex mixed ANOVA logic.
-    // For now, we will alert the user that it's not fully implemented.
     alert('二要因混合計画分散分析は現在開発中です。');
 }
 
@@ -264,10 +244,30 @@ export function render(container, currentData, characteristics) {
     container.innerHTML = `
         <div class="anova-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;"><i class="fas fa-th-large"></i> 二要因分散分析</h3>
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
+                    <i class="fas fa-th-large"></i> 二要因分散分析 (Two-way ANOVA)
+                </h3>
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つの要因とその交互作用を分析します</p>
             </div>
-            
+
+            <!-- 分析の概要・解釈 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> 二要因分散分析とは？</strong>
+                        <p>2つの要因（例：性別 × 条件）が結果に与える影響や、その相互作用（組み合わせによる特殊な効果）を調べます。</p>
+                        <ul>
+                            <li><strong>主効果:</strong> 各要因単独の影響</li>
+                            <li><strong>交互作用:</b> 要因の組み合わせによる影響（例：薬Aは男性には効くが女性には効かない、など）</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="anova2-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -276,11 +276,18 @@ export function render(container, currentData, characteristics) {
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                         <label style="flex: 1; min-width: 200px; padding: 1rem; background: #f0f8ff; border: 2px solid #1e90ff; border-radius: 8px; cursor: pointer;">
                             <input type="radio" name="anova2-type" value="independent" checked>
-                            <strong>対応なし (被験者間)</strong>
+                            <strong>対応なし (Independent)</strong>
+                            <p style="color: #666; font-size: 0.8rem;">2つの独立した被験者間因子</p>
+                        </label>
+                        <label style="flex: 1; min-width: 200px; padding: 1rem; background: #fafbfc; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" name="anova2-type" value="mixed">
+                            <strong>混合計画 (Mixed)</strong>
+                            <p style="color: #666; font-size: 0.8rem;">被験者間因子 × 被験者内因子</p>
                         </label>
                         <label style="flex: 1; min-width: 200px; padding: 1rem; background: #fafbfc; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; opacity: 0.6;">
-                            <input type="radio" name="anova2-type" value="mixed" disabled>
-                            <strong>混合計画 (Mixed)</strong>
+                            <input type="radio" name="anova2-type" value="within" disabled>
+                            <strong>対応あり (Within)</strong>
+                            <p style="color: #666; font-size: 0.8rem;">(実装中) 2つの被験者内因子</p>
                         </label>
                     </div>
                 </div>
@@ -297,8 +304,16 @@ export function render(container, currentData, characteristics) {
 
                 <!-- Mixed Controls -->
                 <div id="mixed-controls" style="display: none;">
+                    <div id="mixed-between-container" style="margin-bottom: 1rem;"></div>
+                    <div id="mixed-within-container" style="margin-bottom: 1.5rem;"></div>
+                    <div id="run-mixed-btn"></div>
+                </div>
+
+                <!-- Within Controls (Placeholder) -->
+                <div id="within-controls" style="display: none;">
                     <p>現在開発中です。</p>
                 </div>
+
             </div>
 
             <div id="analysis-results" style="display: none;">
@@ -312,11 +327,18 @@ export function render(container, currentData, characteristics) {
 
     renderDataOverview('#anova2-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
-    createVariableSelector('factor1-var-container', categoricalColumns, 'factor1-var', { label: '要因1（被験者間）:', multiple: false });
-    createVariableSelector('factor2-var-container', categoricalColumns, 'factor2-var', { label: '要因2（被験者間）:', multiple: false });
+    // Independent Selectors
+    createVariableSelector('factor1-var-container', categoricalColumns, 'factor1-var', { label: '要因1（間）:', multiple: false });
+    createVariableSelector('factor2-var-container', categoricalColumns, 'factor2-var', { label: '要因2（間）:', multiple: false });
     createVariableSelector('dependent-var-container', numericColumns, 'dependent-var', { label: '従属変数:', multiple: true });
-    createAnalysisButton('run-ind-btn', '実行（対応なし）', () => runTwoWayIndependentANOVA(currentData));
+    createAnalysisButton('run-ind-btn', '実行（対応なし）', () => runTwoWayIndependentANOVA(currentData), { id: 'run-ind-anova' });
 
+    // Mixed Selectors
+    createVariableSelector('mixed-between-container', categoricalColumns, 'mixed-between-var', { label: '被験者間因子（グループ）:', multiple: false });
+    createVariableSelector('mixed-within-container', numericColumns, 'mixed-within-vars', { label: '被験者内因子（測定値列・複数）:', multiple: true });
+    createAnalysisButton('run-mixed-btn', '実行（混合計画）', () => runTwoWayMixedANOVA(currentData), { id: 'run-mixed-anova' });
+
+    // Toggle Logic
     document.querySelectorAll('input[name="anova2-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             switchTestType(e.target.value);
