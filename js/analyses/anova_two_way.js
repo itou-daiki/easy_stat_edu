@@ -25,7 +25,7 @@ function runTwoWayIndependentANOVA(currentData) {
     
     // Clear results and display the section
     const resultsContainer = document.getElementById('analysis-results');
-    resultsContainer.innerHTML = ''; // Clear existing content
+    // resultsContainer.innerHTML = ''; // This line caused the error by removing child elements like 'test-results-section'
     
     const testResults = [];
     dependentVars.forEach(depVar => {
