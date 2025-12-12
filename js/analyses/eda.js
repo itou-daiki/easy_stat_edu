@@ -451,21 +451,21 @@ function visualizeTwoVariables(currentData) {
 
         if (isVar1Numeric && isVar2Numeric) {
             // 数値×数値：散布図と相関係数
-            plotNumericVsNumeric(var1, var2, resultContainer);
+            plotNumericVsNumeric(currentData, var1, var2, resultContainer);
         } else if (!isVar1Numeric && !isVar2Numeric) {
             // カテゴリ×カテゴリ：クロス集計のヒートマップ
-            plotCategoricalVsCategorical(var1, var2, resultContainer);
+            plotCategoricalVsCategorical(currentData, var1, var2, resultContainer);
         } else {
             // カテゴリ×数値：箱ひげ図
             const catVar = isVar1Numeric ? var2 : var1;
             const numVar = isVar1Numeric ? var1 : var2;
-            plotCategoricalVsNumeric(catVar, numVar, resultContainer);
+            plotCategoricalVsNumeric(currentData, catVar, numVar, resultContainer);
         }
     });
 }
 
 // 数値×数値の可視化
-function plotNumericVsNumeric(var1, var2, container) {
+function plotNumericVsNumeric(currentData, var1, var2, container) {
     const pairs = currentData
         .map(row => ({ x: row[var1], y: row[var2] }))
         .filter(pair => pair.x !== null && pair.x !== undefined && !isNaN(pair.x) &&
@@ -511,7 +511,7 @@ function plotNumericVsNumeric(var1, var2, container) {
 }
 
 // カテゴリ×カテゴリの可視化
-function plotCategoricalVsCategorical(var1, var2, container) {
+function plotCategoricalVsCategorical(currentData, var1, var2, container) {
     // クロス集計の作成
     const crossTab = {};
     const var1Values = new Set();
@@ -566,7 +566,7 @@ function plotCategoricalVsCategorical(var1, var2, container) {
 }
 
 // カテゴリ×数値の可視化
-function plotCategoricalVsNumeric(catVar, numVar, container) {
+function plotCategoricalVsNumeric(currentData, catVar, numVar, container) {
     // カテゴリごとのデータを集める
     const categoryData = {};
 
@@ -609,7 +609,7 @@ function plotCategoricalVsNumeric(catVar, numVar, container) {
 }
 
 // 2つのカテゴリ変数と1つの数値変数による棒グラフ
-function visualizeGroupedBarChart() {
+function visualizeGroupedBarChart(currentData) {
     const container = document.getElementById('grouped-bar-viz-section');
     const { numericColumns, categoricalColumns } = dataCharacteristics;
 
@@ -658,12 +658,12 @@ function visualizeGroupedBarChart() {
             return;
         }
 
-        plotGroupedBarChart(cat1, cat2, numVar);
+        plotGroupedBarChart(currentData, cat1, cat2, numVar);
     });
 }
 
 // グループ化された棒グラフの描画
-function plotGroupedBarChart(cat1, cat2, numVar) {
+function plotGroupedBarChart(currentData, cat1, cat2, numVar) {
     const resultContainer = document.getElementById('grouped-bar-result');
 
     // データの集計
