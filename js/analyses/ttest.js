@@ -446,7 +446,7 @@ function displayVisualization(testResults, testType) {
             testResults.forEach((result, index) => {
                 const plotId = `ttest-plot-${index}`;
                 const plotDiv = document.getElementById(plotId);
-                if (plotDiv) {
+                if (plotDiv && plotDiv.data) {
                     Plotly.relayout(plotDiv, {
                         'yaxis.title.text': show ? result.varName : ''
                     });

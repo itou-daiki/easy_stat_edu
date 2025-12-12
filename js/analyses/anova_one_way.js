@@ -268,7 +268,7 @@ function displayANOVAVisualization(results, testType) {
             results.forEach((res, index) => {
                 const plotId = `anova-plot-${index}`;
                 const plotDiv = document.getElementById(plotId);
-                if (plotDiv) {
+                if (plotDiv && plotDiv.data) {
                     Plotly.relayout(plotDiv, {
                         'xaxis.title.text': show ? 'Group' : '',
                         'yaxis.title.text': show ? res.varName : ''
