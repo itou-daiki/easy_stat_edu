@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createAxisLabelControl } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
 
 // ======================================================================
 // Helper Functions
@@ -474,16 +474,13 @@ function renderTwoWayANOVAVisualization(results) {
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;"><i class="fas fa-chart-bar"></i> 可視化</h4>
-            <div id="visualization-plots"></div>
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;"><i class="fas fa-chart-bar"></i> 可視化</h4>
             <!-- 軸ラベル表示オプション -->
-            <div id="axis-label-control-container"></div>
+            <div id="viz-controls-container"></div>
             <div id="visualization-plots"></div>
         </div>`;
 
-    // 軸ラベル表示オプションの追加
-    createAxisLabelControl('axis-label-control-container');
+    // コントロールの追加
+    const { axisControl, titleControl } = createVisualizationControls('viz-controls-container');
 
     const plotsContainer = document.getElementById('visualization-plots');
     plotsContainer.innerHTML = '';
@@ -520,45 +517,94 @@ function renderTwoWayANOVAVisualization(results) {
                 // Add brackets if any
                 const { shapes, annotations } = generateBracketsForGroupedPlot(res.sigPairs || [], res.levels1, res.levels2, res.cellStats);
 
+                // Vertical Axis Title using Annotation
+                const tategakiTitle = getTategakiAnnotation(res.depVar);
+                if (tategakiTitle) {
+                    annotations.push(tategakiTitle);
+                }
+
+                // Bottom Graph Title
+                const graphTitleText = `平均値の棒グラフ: ${res.depVar}`;
+                const bottomTitle = getBottomTitleAnnotation(graphTitleText);
+                if (bottomTitle) {
+                    annotations.push(bottomTitle);
+                }
+
                 const layout = {
-                    title: `平均値の棒グラフ: ${res.depVar}`,
+                    title: '', // Disable standard title
                     xaxis: { title: res.factor2 },
-                    yaxis: { title: res.depVar, rangemode: 'tozero' },
+                    yaxis: { title: '', rangemode: 'tozero' },
                     legend: { title: { text: res.factor1 } },
                     barmode: 'group', // This creates clustered bars
                     shapes: shapes,
-                    annotations: annotations
+                    annotations: annotations,
+                    margin: { l: 100, b: 100 } // Add left and bottom margin
                 };
 
-                // 軸ラベルの表示切り替え
-                const showAxisLabels = document.getElementById('show-axis-labels').checked;
+                // Initial toggle state
+                const showAxisLabels = axisControl.checked;
+                const showBottomTitle = titleControl.checked;
+
                 if (!showAxisLabels) {
                     layout.xaxis.title = '';
-                    layout.yaxis.title = '';
+                    layout.annotations = layout.annotations.filter(a => a !== tategakiTitle);
+                }
+                if (!showBottomTitle) {
+                    layout.annotations = layout.annotations.filter(a => a !== bottomTitle);
                 }
 
                 Plotly.newPlot(plotDiv, traces, layout, createPlotlyConfig('二要因分散分析', res.depVar));
+
+                // Helper to update plots
+                // Add listeners (ensure not adding duplicates if re-rendering but here we just re-create)
+                // Actually, since these are inside the loop and dependent on `res` and `plotDiv`, 
+                // we should add them once.
+
+                // However, axisControl/titleControl are shared across all plots if we have multiple results (rare but possible).
+                // It's better to add the listener OUTSIDE the loop if possible, OR
+                // make sure we don't leak listeners.
+
+                // Since this function destroys/re-creates HTML, listeners are attached to new DOM elements.
+                // But `axisControl` is created once per function call.
+                // Inside the loop? No, this loop creates closures.
+                // We should attach listener to `axisControl` once, and inside that listener loop through results.
             }
         }, 100);
     });
 
-    // 軸ラベルの動的切り替えイベントリスナー
-    const axisControl = document.getElementById('show-axis-labels');
-    if (axisControl) {
-        axisControl.addEventListener('change', (e) => {
-            const show = e.target.checked;
-            results.forEach((res, index) => {
-                const plotId = `anova-plot-${index}`;
-                const plotDiv = document.getElementById(plotId);
-                if (plotDiv && plotDiv.data) {
-                    Plotly.relayout(plotDiv, {
-                        'xaxis.title.text': show ? res.factor2 : '',
-                        'yaxis.title.text': show ? res.depVar : ''
-                    });
+    // Attach listeners once outside the loop
+    const updateAllPlots = () => {
+        const showAxis = axisControl.checked;
+        const showTitle = titleControl.checked;
+
+        results.forEach((res, index) => {
+            const plotId = `anova-plot-${index}`;
+            const plotDiv = document.getElementById(plotId);
+            if (plotDiv && plotDiv.data) { // Check plotDiv existence
+                const currentLayout = plotDiv.layout;
+                const graphTitleText = `平均値の棒グラフ: ${res.depVar}`;
+
+                let newAnnotations = (currentLayout.annotations || []).filter(a => a.x !== -0.15 && a.y !== -0.25);
+
+                if (showAxis) {
+                    const ann = getTategakiAnnotation(res.depVar);
+                    if (ann) newAnnotations.push(ann);
                 }
-            });
+                if (showTitle) {
+                    const titleAnn = getBottomTitleAnnotation(graphTitleText);
+                    if (titleAnn) newAnnotations.push(titleAnn);
+                }
+
+                Plotly.relayout(plotDiv, {
+                    'xaxis.title.text': showAxis ? res.factor2 : '',
+                    annotations: newAnnotations
+                });
+            }
         });
-    }
+    };
+
+    axisControl.addEventListener('change', updateAllPlots);
+    titleControl.addEventListener('change', updateAllPlots);
 }
 
 

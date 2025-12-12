@@ -575,12 +575,11 @@ export function createPlotlyConfig(analysisName, variables) {
 }
 
 /**
- * Creates a standard checkbox control for toggling axis labels.
- * @param {HTMLElement|string} container - The container element or ID to append the control to.
- * @param {string} id - The ID for the checkbox input (default: 'show-axis-labels').
- * @returns {HTMLInputElement} The created checkbox element.
+ * Creates visualization controls (Axis Labels and Graph Title toggles).
+ * @param {HTMLElement|string} container - The container element or ID.
+ * @returns {Object} An object containing the checkbox elements { axisControl, titleControl }.
  */
-export function createAxisLabelControl(container, id = 'show-axis-labels') {
+export function createVisualizationControls(container) {
     const target = typeof container === 'string' ? document.getElementById(container) : container;
     if (!target) return null;
 
@@ -591,27 +590,103 @@ export function createAxisLabelControl(container, id = 'show-axis-labels') {
     wrapper.style.border = '1px solid #bae6fd';
     wrapper.style.borderRadius = '8px';
     wrapper.style.display = 'flex';
+    wrapper.style.flexWrap = 'wrap';
+    wrapper.style.gap = '1rem';
     wrapper.style.alignItems = 'center';
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.id = id;
-    checkbox.checked = true; // Default to true
-    checkbox.style.marginRight = '0.5rem';
-    checkbox.style.transform = 'scale(1.2)';
-    checkbox.style.cursor = 'pointer';
+    // Axis Label Control
+    const axisWrapper = document.createElement('div');
+    axisWrapper.style.display = 'flex';
+    axisWrapper.style.alignItems = 'center';
 
-    const label = document.createElement('label');
-    label.htmlFor = id;
-    label.textContent = 'グラフの軸ラベルを表示する';
-    label.style.fontWeight = 'bold';
-    label.style.color = '#0c4a6e';
-    label.style.cursor = 'pointer';
-    label.style.userSelect = 'none';
+    const axisCheckbox = document.createElement('input');
+    axisCheckbox.type = 'checkbox';
+    axisCheckbox.id = 'show-axis-labels';
+    axisCheckbox.checked = true;
+    axisCheckbox.style.marginRight = '0.5rem';
+    axisCheckbox.style.transform = 'scale(1.2)';
+    axisCheckbox.style.cursor = 'pointer';
 
-    wrapper.appendChild(checkbox);
-    wrapper.appendChild(label);
+    const axisLabel = document.createElement('label');
+    axisLabel.htmlFor = 'show-axis-labels';
+    axisLabel.textContent = '軸ラベルを表示';
+    axisLabel.style.fontWeight = 'bold';
+    axisLabel.style.color = '#0c4a6e';
+    axisLabel.style.cursor = 'pointer';
+    axisLabel.style.userSelect = 'none';
+
+    axisWrapper.appendChild(axisCheckbox);
+    axisWrapper.appendChild(axisLabel);
+
+    // Graph Title Control
+    const titleWrapper = document.createElement('div');
+    titleWrapper.style.display = 'flex';
+    titleWrapper.style.alignItems = 'center';
+
+    const titleCheckbox = document.createElement('input');
+    titleCheckbox.type = 'checkbox';
+    titleCheckbox.id = 'show-graph-title';
+    titleCheckbox.checked = true;
+    titleCheckbox.style.marginRight = '0.5rem';
+    titleCheckbox.style.transform = 'scale(1.2)';
+    titleCheckbox.style.cursor = 'pointer';
+
+    const titleLabel = document.createElement('label');
+    titleLabel.htmlFor = 'show-graph-title';
+    titleLabel.textContent = 'グラフタイトルを表示';
+    titleLabel.style.fontWeight = 'bold';
+    titleLabel.style.color = '#0c4a6e';
+    titleLabel.style.cursor = 'pointer';
+    titleLabel.style.userSelect = 'none';
+
+    titleWrapper.appendChild(titleCheckbox);
+    titleWrapper.appendChild(titleLabel);
+
+    wrapper.appendChild(axisWrapper);
+    wrapper.appendChild(titleWrapper);
     target.appendChild(wrapper);
 
-    return checkbox;
+    return { axisControl: axisCheckbox, titleControl: titleCheckbox };
+}
+
+// Keep this for backward compatibility if needed, or remove if all usages are updated.
+// For now, I'll remove it as I plan to update all usages.
+// export function createAxisLabelControl... REMOVED
+
+// 縦書き（Tategaki）文字列への変換
+export function toTategaki(text) {
+    if (!text) return '';
+    return text.split('').join('<br>');
+}
+
+// 縦書きタイトルの注釈オブジェクト生成
+export function getTategakiAnnotation(text, x = -0.15, y = 0.5) {
+    if (!text) return null;
+    return {
+        text: toTategaki(text),
+        xref: 'paper',
+        yref: 'paper',
+        x: x,
+        y: y,
+        showarrow: false,
+        xanchor: 'right',
+        yanchor: 'middle',
+        font: { size: 14, color: '#444' }
+    };
+}
+
+// グラフ下部のタイトル注釈オブジェクト生成
+export function getBottomTitleAnnotation(text) {
+    if (!text) return null;
+    return {
+        text: text,
+        xref: 'paper',
+        yref: 'paper',
+        x: 0.5,
+        y: -0.25, // Bottom position
+        xanchor: 'center',
+        yanchor: 'top',
+        showarrow: false,
+        font: { size: 16, color: '#2c3e50', weight: 'bold' } // Slightly larger and bold
+    };
 }

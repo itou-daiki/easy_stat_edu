@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createAxisLabelControl } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
 
 // 要約統計量の計算と表示
 function displaySummaryStatistics(variables, currentData) {
@@ -421,39 +421,82 @@ function displayVisualization(testResults, testType) {
         shapes.push({ type: 'line', x0: 0, y0: yMax + yRange * 0.3, x1: 0, y1: bracketY, line: { color: 'black', width: 2 } });
         shapes.push({ type: 'line', x0: 1, y0: yMax + yRange * 0.3, x1: 1, y1: bracketY, line: { color: 'black', width: 2 } });
         annotations.push({ x: 0.5, y: annotationY, text: significanceText, showarrow: false, font: { size: 14, color: 'black', weight: 'bold' } });
+
+        // Vertical Axis Title using Annotation
+        const tategakiTitle = getTategakiAnnotation(result.varName);
+        if (tategakiTitle) {
+            annotations.push(tategakiTitle);
+        }
+
+        // Bottom Graph Title
+        const graphTitleText = testType === 'paired' ? `平均値の比較：${result.varName}` : `平均値の比較：${result.varName} by グループ`;
+        const bottomTitle = getBottomTitleAnnotation(graphTitleText);
+        if (bottomTitle) {
+            annotations.push(bottomTitle);
+        }
+
         const layout = {
-            title: testType === 'paired' ? `平均値の比較：${result.varName}` : `平均値の比較：${result.varName} by グループ`,
-            xaxis: { title: '' },
-            yaxis: { title: result.varName },
-            showlegend: false, annotations: annotations, shapes: shapes
+            title: '', // Disable standard title
+            xaxis: { title: 'Group' },
+            yaxis: { title: '' }, // Disable standard title
+            showlegend: false,
+            annotations: annotations,
+            shapes: shapes,
+            margin: { l: 100, b: 100 } // Add margin for vertical and bottom title
         };
 
-        // 軸ラベルの表示切り替え
-        const showAxisLabels = document.getElementById('show-axis-labels').checked;
+        // Initial state based on checkbox defaults
+        const showAxisLabels = axisControl.checked;
+        const showBottomTitle = titleControl.checked;
+
         if (!showAxisLabels) {
             layout.xaxis.title = '';
-            layout.yaxis.title = '';
+            layout.annotations = layout.annotations.filter(a => a !== tategakiTitle);
+        }
+        if (!showBottomTitle) {
+            layout.annotations = layout.annotations.filter(a => a !== bottomTitle);
         }
 
         Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig('t検定', result.varName));
     });
 
-    // 軸ラベルの動的切り替えイベントリスナー
-    const axisControl = document.getElementById('show-axis-labels');
-    if (axisControl) {
-        axisControl.addEventListener('change', (e) => {
-            const show = e.target.checked;
+    // Event Listeners for Toggles
+    if (axisControl && titleControl) {
+        const updatePlots = () => {
+            const showAxis = axisControl.checked;
+            const showTitle = titleControl.checked;
+
             testResults.forEach((result, index) => {
                 const plotId = `ttest-plot-${index}`;
                 const plotDiv = document.getElementById(plotId);
                 if (plotDiv && plotDiv.data) {
+                    const currentLayout = plotDiv.layout;
+                    // Filter out existing vertical title (x=-0.15) and bottom title (y=-0.25)
+                    let newAnnotations = (currentLayout.annotations || []).filter(a => a.x !== -0.15 && a.y !== -0.25);
+
+                    if (showAxis) {
+                        const tategakiTitle = getTategakiAnnotation(result.varName);
+                        if (tategakiTitle) newAnnotations.push(tategakiTitle);
+                    }
+
+                    if (showTitle) {
+                        const graphTitleText = testType === 'paired' ? `平均値の比較：${result.varName}` : `平均値の比較：${result.varName} by グループ`;
+                        const bottomTitle = getBottomTitleAnnotation(graphTitleText);
+                        if (bottomTitle) newAnnotations.push(bottomTitle);
+                    }
+
                     Plotly.relayout(plotDiv, {
-                        'yaxis.title.text': show ? result.varName : ''
+                        'xaxis.title.text': showAxis ? 'Group' : '',
+                        annotations: newAnnotations
                     });
                 }
             });
-        });
+        };
+
+        axisControl.addEventListener('change', updatePlots);
+        titleControl.addEventListener('change', updatePlots);
     }
+}, 100);
 }
 
 function switchTestType(testType) {

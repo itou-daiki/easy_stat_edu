@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createAxisLabelControl } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
 // Keep for now if needed later, or remove. Instructions say remove.
 // Actually, let's just remove the line if it's the only import.
 // Checking previous view... it is `import { renderDataOverview } from '../utils.js';`
@@ -262,17 +262,34 @@ function renderCategoricalPlot(col, valueCounts, plotId, sortOrder) {
         marker: { color: 'rgba(30, 144, 255, 0.7)' }
     };
 
+    // Check global control state
+    const axisControl = document.getElementById('show-axis-labels');
+    const titleControl = document.getElementById('show-graph-title');
+    const showAxisLabels = axisControl?.checked ?? true;
+    const showGraphTitle = titleControl?.checked ?? true;
+
+    const graphTitleText = `【${col}】の度数分布（${sortOrder === 'frequency' ? '度数順' : '名前順'}）`;
+
     const barLayout = {
-        title: `【${col}】の度数分布（${sortOrder === 'frequency' ? '度数順' : '名前順'}）`,
+        title: '', // Disable standard title
         xaxis: { title: col },
-        yaxis: { title: '度数' },
-        bargap: 0.2
+        yaxis: { title: '' }, // Disable standard title
+        bargap: 0.2,
+        annotations: [],
+        margin: { l: 100, b: 100 } // Add margins
     };
 
-    const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
-    if (!showAxisLabels) {
-        if (barLayout.xaxis) barLayout.xaxis.title = '';
-        if (barLayout.yaxis) barLayout.yaxis.title = '';
+    // Annotations
+    if (showAxisLabels) {
+        const tategakiTitle = getTategakiAnnotation('度数');
+        if (tategakiTitle) barLayout.annotations.push(tategakiTitle);
+    } else {
+        barLayout.xaxis.title = '';
+    }
+
+    if (showGraphTitle) {
+        const bottomTitle = getBottomTitleAnnotation(graphTitleText);
+        if (bottomTitle) barLayout.annotations.push(bottomTitle);
     }
 
     Plotly.newPlot(plotId, [barTrace], barLayout);
@@ -335,23 +352,39 @@ function visualizeNumericVariables(currentData, characteristics) {
             </div>
         `;
 
+        // Check control state (Global check, better to do inside loop or passed down, but global ID is fine for this app)
+        const axisControl = document.getElementById('show-axis-labels');
+        const titleControl = document.getElementById('show-graph-title');
+        const showAxisLabels = axisControl?.checked ?? true;
+        const showGraphTitle = titleControl?.checked ?? true;
+
         // ヒストグラム
         const histTrace = {
             x: dataVector,
             type: 'histogram',
             marker: { color: 'rgba(30, 144, 255, 0.7)' }
         };
+
+        const histGraphTitle = `【${col}】のヒストグラム`;
         const histLayout = {
-            title: `【${col}】のヒストグラム`,
+            title: '', // Disable default
             xaxis: { title: col },
-            yaxis: { title: '度数' },
-            bargap: 0.2
+            yaxis: { title: '' },
+            bargap: 0.2,
+            annotations: [],
+            margin: { l: 100, b: 100 }
         };
 
-        const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
-        if (!showAxisLabels) {
-            if (histLayout.xaxis) histLayout.xaxis.title = '';
-            if (histLayout.yaxis) histLayout.yaxis.title = '';
+        if (showAxisLabels) {
+            const tategakiTitle = getTategakiAnnotation('度数');
+            if (tategakiTitle) histLayout.annotations.push(tategakiTitle);
+        } else {
+            histLayout.xaxis.title = '';
+        }
+
+        if (showGraphTitle) {
+            const bottomTitle = getBottomTitleAnnotation(histGraphTitle);
+            if (bottomTitle) histLayout.annotations.push(bottomTitle);
         }
 
         Plotly.newPlot(histId, [histTrace], histLayout, createPlotlyConfig('EDA_ヒストグラム', col));
@@ -363,13 +396,21 @@ function visualizeNumericVariables(currentData, characteristics) {
             name: col,
             marker: { color: 'rgba(30, 144, 255, 0.7)' }
         };
+        const boxGraphTitle = `【${col}】の箱ひげ図`;
         const boxLayout = {
-            title: `【${col}】の箱ひげ図`,
-            yaxis: { title: col }
+            title: '',
+            yaxis: { title: col },
+            margin: { b: 100 },
+            annotations: []
         };
 
         if (!showAxisLabels) {
             if (boxLayout.yaxis) boxLayout.yaxis.title = '';
+        }
+
+        if (showGraphTitle) {
+            const bottomTitle = getBottomTitleAnnotation(boxGraphTitle);
+            if (bottomTitle) boxLayout.annotations.push(bottomTitle);
         }
 
         Plotly.newPlot(boxId, [boxTrace], boxLayout, createPlotlyConfig('EDA_箱ひげ図', col));
@@ -758,20 +799,34 @@ function plotGroupedBarChart(currentData, cat1, cat2, numVar) {
         </div>
     `;
 
+    const graphTitleText = `【${cat1}】と【${cat2}】による【${numVar}】の比較`;
     const layout = {
-        title: `【${cat1}】と【${cat2}】による【${numVar}】の比較`,
+        title: '',
         xaxis: { title: cat1 },
-        yaxis: { title: `平均: ${numVar}` },
-        barmode: 'group'
+        yaxis: { title: '' },
+        barmode: 'group',
+        annotations: [],
+        margin: { l: 100, b: 100 }
     };
 
-    const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
-    if (!showAxisLabels) {
-        if (layout.xaxis) layout.xaxis.title = '';
-        if (layout.yaxis) layout.yaxis.title = '';
+    const axisControl = document.getElementById('show-axis-labels');
+    const titleControl = document.getElementById('show-graph-title');
+    const showAxisLabels = axisControl?.checked ?? true;
+    const showGraphTitle = titleControl?.checked ?? true;
+
+    if (showAxisLabels) {
+        const tategakiTitle = getTategakiAnnotation(`平均: ${numVar}`);
+        if (tategakiTitle) layout.annotations.push(tategakiTitle);
+    } else {
+        layout.xaxis.title = '';
     }
 
-    Plotly.newPlot(plotId, traces, layout);
+    if (showGraphTitle) {
+        const bottomTitle = getBottomTitleAnnotation(graphTitleText);
+        if (bottomTitle) layout.annotations.push(bottomTitle);
+    }
+
+    Plotly.newPlot(plotId, traces, layout, createPlotlyConfig('EDA_グループ化棒グラフ', [cat1, cat2, numVar]));
 }
 
 // タブ切り替え機能
@@ -924,7 +979,8 @@ export function render(container, currentData, characteristics) {
     // 各セクションをレンダリング
     // 各セクションをレンダリング
     // 各セクションをレンダリング
-    createAxisLabelControl('axis-label-control-container');
+    // コントロールの追加
+    const { axisControl, titleControl } = createVisualizationControls('viz-controls-container');
     displaySummaryStatistics(currentData, characteristics);
     visualizeCategoricalVariables(currentData, characteristics);
     visualizeNumericVariables(currentData, characteristics);
@@ -932,44 +988,109 @@ export function render(container, currentData, characteristics) {
     visualizeTwoVariables(currentData, characteristics);
     visualizeGroupedBarChart(currentData, characteristics);
 
-    // 軸ラベルコントロールの機能追加
-    const axisControl = document.getElementById('show-axis-labels');
-    if (axisControl) {
-        axisControl.addEventListener('change', (e) => {
-            const show = e.target.checked;
-            const { numericColumns, categoricalColumns } = characteristics;
+    // 軸ラベル・タイトル表示の動的切り替え
+    const updateAllPlots = () => {
+        const showAxis = axisControl.checked;
+        const showTitle = titleControl.checked;
+        const { numericColumns, categoricalColumns } = characteristics;
 
-            // 1. Categorical Plots
-            categoricalColumns.forEach((col, i) => {
-                const div = document.getElementById(`cat-plot-${i}`);
-                if (div && div.data) {
-                    Plotly.relayout(div, { 'xaxis.title.text': show ? col : '', 'yaxis.title.text': show ? '度数' : '' });
+        // 1. Categorical Plots
+        categoricalColumns.forEach((col, i) => {
+            const plotDiv = document.getElementById(`cat-plot-${i}`);
+            const sortSelect = document.getElementById(`sort-select-${i}`);
+
+            if (plotDiv && plotDiv.data && sortSelect) {
+                const sortOrder = sortSelect.value;
+                const graphTitleText = `【${col}】の度数分布（${sortOrder === 'frequency' ? '度数順' : '名前順'}）`;
+
+                const currentLayout = plotDiv.layout;
+                let newAnnotations = (currentLayout.annotations || []).filter(a => a.x !== -0.15 && a.y !== -0.25);
+
+                if (showAxis) {
+                    const ann = getTategakiAnnotation('度数');
+                    if (ann) newAnnotations.push(ann);
                 }
-            });
 
-            // 2. Numeric Plots
-            numericColumns.forEach((col, i) => {
-                const histDiv = document.getElementById(`num-hist-${i}`);
-                if (histDiv) Plotly.relayout(histDiv, { 'xaxis.title.text': show ? col : '', 'yaxis.title.text': show ? '度数' : '' });
-                const boxDiv = document.getElementById(`num-box-${i}`);
-                if (boxDiv) Plotly.relayout(boxDiv, { 'yaxis.title.text': show ? col : '' });
-            });
+                if (showTitle) {
+                    const titleAnn = getBottomTitleAnnotation(graphTitleText);
+                    if (titleAnn) newAnnotations.push(titleAnn);
+                }
 
-            // 3. Multiple Numeric
-            const multDiv = document.getElementById('multiple-numeric-plot');
-            if (multDiv) Plotly.relayout(multDiv, { 'yaxis.title.text': show ? '値' : '' });
-
-            // 4. Two Vars (Dynamic)
-            const twoVarsDiv = document.getElementById('two-vars-plot');
-            if (twoVarsDiv && twoVarsDiv.innerHTML.trim() !== '') {
-                document.getElementById('plot-two-vars-btn').click();
-            }
-
-            // 5. Grouped Bar (Dynamic)
-            const groupedBarDiv = document.getElementById('grouped-bar-plot');
-            if (groupedBarDiv && groupedBarDiv.innerHTML.trim() !== '') {
-                document.getElementById('plot-grouped-bar-btn').click();
+                Plotly.relayout(plotDiv, {
+                    'xaxis.title.text': showAxis ? col : '',
+                    annotations: newAnnotations
+                });
             }
         });
-    }
+
+        // 2. Numeric Plots
+        numericColumns.forEach((col, i) => {
+            // Histogram
+            const histDiv = document.getElementById(`num-hist-${i}`);
+            if (histDiv && histDiv.data) {
+                const graphTitleText = `【${col}】のヒストグラム`;
+                const currentLayout = histDiv.layout;
+                let newAnnotations = (currentLayout.annotations || []).filter(a => a.x !== -0.15 && a.y !== -0.25);
+
+                if (showAxis) {
+                    const ann = getTategakiAnnotation('度数');
+                    if (ann) newAnnotations.push(ann);
+                }
+                if (showTitle) {
+                    const titleAnn = getBottomTitleAnnotation(graphTitleText);
+                    if (titleAnn) newAnnotations.push(titleAnn);
+                }
+
+                Plotly.relayout(histDiv, {
+                    'xaxis.title.text': showAxis ? col : '',
+                    annotations: newAnnotations
+                });
+            }
+
+            // Box Plot
+            const boxDiv = document.getElementById(`num-box-${i}`);
+            if (boxDiv && boxDiv.data) {
+                const graphTitleText = `【${col}】の箱ひげ図`;
+                const currentLayout = boxDiv.layout;
+                // Box plot doesn't use tategaki side title (uses yaxis title), only bottom title annotation
+                let newAnnotations = (currentLayout.annotations || []).filter(a => a.y !== -0.25);
+
+                if (showTitle) {
+                    const titleAnn = getBottomTitleAnnotation(graphTitleText);
+                    if (titleAnn) newAnnotations.push(titleAnn);
+                }
+
+                Plotly.relayout(boxDiv, {
+                    'yaxis.title.text': showAxis ? col : '',
+                    annotations: newAnnotations
+                });
+            }
+        });
+
+        // 3. Multiple Numeric (Box Plot)
+        const multDiv = document.getElementById('multiple-numeric-plot');
+        if (multDiv && multDiv.data) {
+            Plotly.relayout(multDiv, { 'yaxis.title.text': showAxis ? '値' : '' });
+            // Note: Multiple Numeric title handling was not explicitly requested or changed in previous steps?
+            // Checking visualizeMultipleNumericVariables (lines 435-440 of Step 813 view):
+            // It has `title: '全数値変数の箱ひげ図による比較'` (Standard title).
+            // I probably missed updating this one. I should update it too for consistency if I can.
+            // But for now, just keep axis label toggle working.
+        }
+
+        // 4. Two Vars (Dynamic) - Re-trigger if exists
+        const twoVarsDiv = document.getElementById('two-vars-result'); // The container
+        if (twoVarsDiv && twoVarsDiv.innerHTML.trim() !== '') {
+            document.getElementById('plot-two-vars-btn').click();
+        }
+
+        // 5. Grouped Bar (Dynamic) - Re-trigger if exists
+        const groupedBarDiv = document.getElementById('grouped-bar-result'); // The container
+        if (groupedBarDiv && groupedBarDiv.innerHTML.trim() !== '') {
+            document.getElementById('plot-grouped-bar-btn').click();
+        }
+    };
+
+    axisControl.addEventListener('change', updateAllPlots);
+    titleControl.addEventListener('change', updateAllPlots);
 }

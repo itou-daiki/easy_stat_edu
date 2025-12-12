@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, renderSampleSizeInfo, createAxisLabelControl } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
 
 // Pairwise t-test helper for Between-Subjects (Independent)
 function performPostHocTests(groups, groupData) {
@@ -178,12 +178,12 @@ function displayANOVAVisualization(results, testType) {
                 <i class="fas fa-chart-bar"></i> 可視化
             </h4>
             <!-- 軸ラベル表示オプション -->
-            <div id="axis-label-control-container"></div>
+            <div id="visualization-controls-container"></div>
             <div id="visualization-plots"></div>
         </div>`;
 
-    // 軸ラベル表示オプションの追加
-    createAxisLabelControl('axis-label-control-container');
+    // コントロールの追加
+    const { axisControl, titleControl } = createVisualizationControls('visualization-controls-container');
 
     const plotsContainer = document.getElementById('visualization-plots');
     let plotsHtml = '';
@@ -241,42 +241,68 @@ function displayANOVAVisualization(results, testType) {
             type: 'bar',
             marker: { color: 'rgba(30, 144, 255, 0.7)' }
         };
+
+        const plotAnnotations = [...res.plotAnnotations]; // Start with existing annotations (brackets)
+        const tategakiTitle = getTategakiAnnotation(res.varName);
+        const graphTitleText = `平均値の比較：${res.varName} by グループ`;
+        const bottomTitle = getBottomTitleAnnotation(graphTitleText);
+
+        if (tategakiTitle) plotAnnotations.push(tategakiTitle);
+        if (bottomTitle) plotAnnotations.push(bottomTitle);
+
         const layout = {
-            title: `${res.varName} のグループ別平均値 (Bar + SE)`,
-            yaxis: { title: res.varName },
+            title: '', // Disable default title
+            xaxis: { title: 'Group' },
+            yaxis: { title: '' }, // Disable standard title
             shapes: res.plotShapes,
-            annotations: res.plotAnnotations,
-            margin: { t: res.plotMarginTop }
+            annotations: plotAnnotations,
+            margin: { t: res.plotMarginTop, l: 100, b: 100 } // Add left and bottom margin
         };
 
-        // 軸ラベルの表示切り替え
-        const showAxisLabels = document.getElementById('show-axis-labels').checked;
+        // Initial toggle state
+        const showAxisLabels = axisControl.checked;
+        const showBottomTitle = titleControl.checked;
+
         if (!showAxisLabels) {
-            layout.yaxis.title = '';
-            // xaxis title is already undefined/empty by default but let's be explicit if needed
-            // layout.xaxis.title = ''; 
+            layout.xaxis.title = '';
+            layout.annotations = layout.annotations.filter(a => a !== tategakiTitle);
+        }
+        if (!showBottomTitle) {
+            layout.annotations = layout.annotations.filter(a => a !== bottomTitle);
         }
 
         Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig(`一要因分散分析: ${res.varName}`, res.varName));
-    });
 
-    // 軸ラベルの動的切り替えイベントリスナー
-    const axisControl = document.getElementById('show-axis-labels');
-    if (axisControl) {
-        axisControl.addEventListener('change', (e) => {
-            const show = e.target.checked;
-            results.forEach((res, index) => {
-                const plotId = `anova-plot-${index}`;
-                const plotDiv = document.getElementById(plotId);
-                if (plotDiv && plotDiv.data) {
-                    Plotly.relayout(plotDiv, {
-                        'xaxis.title.text': show ? 'Group' : '',
-                        'yaxis.title.text': show ? res.varName : ''
-                    });
+        // Helper to update plots
+        const updatePlots = () => {
+            const plotDiv = document.getElementById(plotId);
+            if (plotDiv && plotDiv.data) {
+                const showAxis = axisControl.checked;
+                const showTitle = titleControl.checked;
+
+                const currentLayout = plotDiv.layout;
+                // Filter out existing dynamic annotations (tategaki and bottom title)
+                let newAnnotations = (currentLayout.annotations || []).filter(a => a.x !== -0.15 && a.y !== -0.25);
+
+                if (showAxis) {
+                    const ann = getTategakiAnnotation(res.varName);
+                    if (ann) newAnnotations.push(ann);
                 }
-            });
-        });
-    }
+                if (showTitle) {
+                    const titleAnn = getBottomTitleAnnotation(graphTitleText);
+                    if (titleAnn) newAnnotations.push(titleAnn);
+                }
+
+                Plotly.relayout(plotDiv, {
+                    'xaxis.title.text': showAxis ? 'Group' : '',
+                    annotations: newAnnotations
+                });
+            }
+        };
+
+        axisControl.addEventListener('change', updatePlots);
+        titleControl.addEventListener('change', updatePlots);
+    });
 }
 
 function generateBracketsForPlot(sigPairs, groupNames, groupMeans, groupSEs) {
