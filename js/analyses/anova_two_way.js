@@ -475,7 +475,16 @@ function renderTwoWayANOVAVisualization(results) {
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;"><i class="fas fa-chart-bar"></i> 可視化</h4>
             <div id="visualization-plots"></div>
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;"><i class="fas fa-chart-bar"></i> 可視化</h4>
+            <!-- 軸ラベル表示オプション -->
+            <div id="axis-label-control-container"></div>
+            <div id="visualization-plots"></div>
         </div>`;
+
+    // 軸ラベル表示オプションの追加
+    createAxisLabelControl('axis-label-control-container');
+
     const plotsContainer = document.getElementById('visualization-plots');
     plotsContainer.innerHTML = '';
 
@@ -532,6 +541,21 @@ function renderTwoWayANOVAVisualization(results) {
             }
         }, 100);
     });
+
+    // 軸ラベルの動的切り替えイベントリスナー
+    const axisControl = document.getElementById('show-axis-labels');
+    if (axisControl) {
+        axisControl.addEventListener('change', (e) => {
+            const show = e.target.checked;
+            results.forEach((res, index) => {
+                const plotId = `anova-plot-${index}`;
+                Plotly.relayout(plotId, {
+                    'xaxis.title.text': show ? res.factor2 : '',
+                    'yaxis.title.text': show ? res.depVar : ''
+                });
+            });
+        });
+    }
 }
 
 
@@ -852,8 +876,8 @@ export function render(container, currentData, characteristics) {
 
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 
-                <!-- 軸ラベル表示オプション -->
-                <div id="axis-label-control-container"></div>
+                <!-- 軸ラベル表示オプション (Moved) -->
+                <!-- <div id="axis-label-control-container"></div> -->
                  <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
@@ -910,8 +934,8 @@ export function render(container, currentData, characteristics) {
 
     renderDataOverview('#anova-2way-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
-    // 軸ラベル表示オプションの追加
-    createAxisLabelControl('axis-label-control-container');
+    // 軸ラベル表示オプションの追加 (Moved)
+    // createAxisLabelControl('axis-label-control-container');
 
     // Independent Selectors
     createVariableSelector('factor1-var-container', categoricalColumns, 'factor1-var', { label: '要因1（間）:', multiple: false });

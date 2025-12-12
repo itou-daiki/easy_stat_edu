@@ -45,7 +45,19 @@ function runCorrelationAnalysis(currentData) {
     plotHeatmap(selectedVars, matrix);
     plotScatterMatrix(selectedVars, currentData);
 
+    plotScatterMatrix(selectedVars, currentData);
+
     document.getElementById('analysis-results').style.display = 'block';
+
+    // 軸ラベルの動的切り替え (再描画)
+    createAxisLabelControl('axis-label-control-container');
+    const axisControl = document.getElementById('show-axis-labels');
+    if (axisControl) {
+        axisControl.onchange = () => {
+            plotHeatmap(selectedVars, matrix);
+            plotScatterMatrix(selectedVars, currentData);
+        };
+    }
 }
 
 function displayResults(variables, matrix) {
@@ -313,8 +325,8 @@ export function render(container, currentData, characteristics) {
             <!-- 分析設定 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 
-                <!-- 軸ラベル表示オプション -->
-                <div id="axis-label-control-container"></div>
+                <!-- 軸ラベル表示オプション (Moved) -->
+                <!-- <div id="axis-label-control-container"></div> -->
 
                 <div id="corr-vars-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
 
@@ -328,6 +340,11 @@ export function render(container, currentData, characteristics) {
                         <i class="fas fa-table"></i> 相関行列
                     </h4>
                     <div id="correlation-table"></div>
+                </div>
+
+                <!-- 軸ラベル表示オプション -->
+                <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: flex-end;">
+                     <div id="axis-label-control-container"></div>
                 </div>
 
                 <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -349,8 +366,8 @@ export function render(container, currentData, characteristics) {
 
     renderDataOverview('#corr-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
-    // 軸ラベル表示オプションの追加
-    createAxisLabelControl('axis-label-control-container');
+    // 軸ラベル表示オプションの追加 (Moved logic to runCorrelationAnalysis)
+    // createAxisLabelControl('axis-label-control-container');
 
     // Multi select for correlation variables
     createVariableSelector('corr-vars-container', numericColumns, 'correlation-vars', {

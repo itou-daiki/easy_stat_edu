@@ -368,9 +368,15 @@ function displayVisualization(testResults, testType) {
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                 <i class="fas fa-chart-bar"></i> 可視化
             </h4>
+            <!-- 軸ラベル表示オプション -->
+            <div id="axis-label-control-container"></div>
             <div id="visualization-plots"></div>
         </div>
     `;
+
+    // 軸ラベル表示オプションの追加
+    createAxisLabelControl('axis-label-control-container');
+
     const plotsContainer = document.getElementById('visualization-plots');
     let plotsHtml = '';
     testResults.forEach((result, index) => {
@@ -431,6 +437,20 @@ function displayVisualization(testResults, testType) {
 
         Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig('t検定', result.varName));
     });
+
+    // 軸ラベルの動的切り替えイベントリスナー
+    const axisControl = document.getElementById('show-axis-labels');
+    if (axisControl) {
+        axisControl.addEventListener('change', (e) => {
+            const show = e.target.checked;
+            testResults.forEach((result, index) => {
+                const plotId = `ttest-plot-${index}`;
+                Plotly.relayout(plotId, {
+                    'yaxis.title.text': show ? result.varName : ''
+                });
+            });
+        });
+    }
 }
 
 function switchTestType(testType) {
@@ -488,8 +508,9 @@ export function render(container, currentData, characteristics) {
             <!-- 検定タイプ選択 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 
-                <!-- 軸ラベル表示オプション -->
-                <div id="axis-label-control-container"></div>
+                
+                <!-- 軸ラベル表示オプション (Moved to visualization section) -->
+                <!-- <div id="axis-label-control-container"></div> -->
 
                 <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
@@ -534,8 +555,8 @@ export function render(container, currentData, characteristics) {
 
     renderDataOverview('#ttest-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
-    // 軸ラベル表示オプションの追加
-    createAxisLabelControl('axis-label-control-container');
+    // 軸ラベル表示オプションの追加 (Moved)
+    // createAxisLabelControl('axis-label-control-container');
 
     const { numericColumns, categoricalColumns } = characteristics;
 

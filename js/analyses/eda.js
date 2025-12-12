@@ -31,7 +31,7 @@ function calculateKurtosis(data) {
 }
 
 // 要約統計量の計算と表示
-function displaySummaryStatistics(currentData) {
+function displaySummaryStatistics(currentData, characteristics) {
     const resultsContainer = document.getElementById('eda-summary-stats');
     resultsContainer.innerHTML = `
         <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -43,7 +43,7 @@ function displaySummaryStatistics(currentData) {
     `;
 
     const contentContainer = document.getElementById('eda-summary-content');
-    const { numericColumns, categoricalColumns } = dataCharacteristics;
+    const { numericColumns, categoricalColumns } = characteristics;
 
     // 数値変数の統計量
     if (numericColumns.length > 0) {
@@ -172,7 +172,7 @@ function displaySummaryStatistics(currentData) {
 }
 
 // カテゴリ変数の可視化（円グラフ・棒グラフ）
-function visualizeCategoricalVariables(currentData) {
+function visualizeCategoricalVariables(currentData, characteristics) {
     const container = document.getElementById('categorical-viz-section');
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -184,7 +184,7 @@ function visualizeCategoricalVariables(currentData) {
     `;
 
     const plotsContainer = document.getElementById('categorical-plots-container');
-    const { categoricalColumns } = dataCharacteristics;
+    const { categoricalColumns } = characteristics;
 
     categoricalColumns.forEach((col, index) => {
         const dataVector = currentData.map(row => row[col]).filter(v => v !== null && v !== undefined);
@@ -279,7 +279,7 @@ function renderCategoricalPlot(col, valueCounts, plotId, sortOrder) {
 }
 
 // 数値変数の可視化（ヒストグラム・箱ひげ図）
-function visualizeNumericVariables(currentData) {
+function visualizeNumericVariables(currentData, characteristics) {
     const container = document.getElementById('numeric-viz-section');
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -291,7 +291,7 @@ function visualizeNumericVariables(currentData) {
     `;
 
     const plotsContainer = document.getElementById('numeric-plots-container');
-    const { numericColumns } = dataCharacteristics;
+    const { numericColumns } = characteristics;
 
     numericColumns.forEach((col, index) => {
         const dataVector = currentData.map(row => row[col]).filter(v => v !== null && v !== undefined && !isNaN(v));
@@ -377,9 +377,9 @@ function visualizeNumericVariables(currentData) {
 }
 
 // 複数数値変数の比較（箱ひげ図）
-function visualizeMultipleNumericVariables(currentData) {
+function visualizeMultipleNumericVariables(currentData, characteristics) {
     const container = document.getElementById('multiple-numeric-viz-section');
-    const { numericColumns } = dataCharacteristics;
+    const { numericColumns } = characteristics;
 
     if (numericColumns.length === 0) {
         container.innerHTML = '';
@@ -424,9 +424,9 @@ function visualizeMultipleNumericVariables(currentData) {
 }
 
 // 2変数間の関係（散布図）
-function visualizeTwoVariables(currentData) {
+function visualizeTwoVariables(currentData, characteristics) {
     const container = document.getElementById('two-variables-viz-section');
-    const { numericColumns, categoricalColumns } = dataCharacteristics;
+    const { numericColumns, categoricalColumns } = characteristics;
     const allColumns = [...numericColumns, ...categoricalColumns];
 
     if (allColumns.length < 2) {
@@ -650,9 +650,9 @@ function plotCategoricalVsNumeric(currentData, catVar, numVar, container) {
 }
 
 // 2つのカテゴリ変数と1つの数値変数による棒グラフ
-function visualizeGroupedBarChart(currentData) {
+function visualizeGroupedBarChart(currentData, characteristics) {
     const container = document.getElementById('grouped-bar-viz-section');
-    const { numericColumns, categoricalColumns } = dataCharacteristics;
+    const { numericColumns, categoricalColumns } = characteristics;
 
     if (categoricalColumns.length < 2 || numericColumns.length < 1) {
         container.innerHTML = '<p style="color: #718096; font-style: italic;">2つ以上のカテゴリ変数と1つ以上の数値変数が必要です。</p>';
@@ -925,10 +925,51 @@ export function render(container, currentData, characteristics) {
     // 各セクションをレンダリング
     // 各セクションをレンダリング
     createAxisLabelControl('axis-label-control-container');
-    displaySummaryStatistics(currentData);
-    visualizeCategoricalVariables(currentData);
-    visualizeNumericVariables(currentData);
-    visualizeMultipleNumericVariables(currentData);
-    visualizeTwoVariables(currentData);
-    visualizeGroupedBarChart(currentData);
+    displaySummaryStatistics(currentData, characteristics);
+    visualizeCategoricalVariables(currentData, characteristics);
+    visualizeNumericVariables(currentData, characteristics);
+    visualizeMultipleNumericVariables(currentData, characteristics);
+    visualizeTwoVariables(currentData, characteristics);
+    visualizeGroupedBarChart(currentData, characteristics);
+
+    // 軸ラベルコントロールの機能追加
+    const axisControl = document.getElementById('show-axis-labels');
+    if (axisControl) {
+        axisControl.addEventListener('change', (e) => {
+            const show = e.target.checked;
+            const { numericColumns, categoricalColumns } = characteristics;
+
+            // 1. Categorical Plots
+            categoricalColumns.forEach((col, i) => {
+                const div = document.getElementById(`cat-plot-${i}`);
+                if (div && div.data) {
+                    Plotly.relayout(div, { 'xaxis.title.text': show ? col : '', 'yaxis.title.text': show ? '度数' : '' });
+                }
+            });
+
+            // 2. Numeric Plots
+            numericColumns.forEach((col, i) => {
+                const histDiv = document.getElementById(`num-hist-${i}`);
+                if (histDiv) Plotly.relayout(histDiv, { 'xaxis.title.text': show ? col : '', 'yaxis.title.text': show ? '度数' : '' });
+                const boxDiv = document.getElementById(`num-box-${i}`);
+                if (boxDiv) Plotly.relayout(boxDiv, { 'yaxis.title.text': show ? col : '' });
+            });
+
+            // 3. Multiple Numeric
+            const multDiv = document.getElementById('multiple-numeric-plot');
+            if (multDiv) Plotly.relayout(multDiv, { 'yaxis.title.text': show ? '値' : '' });
+
+            // 4. Two Vars (Dynamic)
+            const twoVarsDiv = document.getElementById('two-vars-plot');
+            if (twoVarsDiv && twoVarsDiv.innerHTML.trim() !== '') {
+                document.getElementById('plot-two-vars-btn').click();
+            }
+
+            // 5. Grouped Bar (Dynamic)
+            const groupedBarDiv = document.getElementById('grouped-bar-plot');
+            if (groupedBarDiv && groupedBarDiv.innerHTML.trim() !== '') {
+                document.getElementById('plot-grouped-bar-btn').click();
+            }
+        });
+    }
 }

@@ -208,6 +208,17 @@ function runMultipleRegression(currentData) {
     }
 
     document.getElementById('analysis-results').style.display = 'block';
+
+    // 軸ラベルの動的切り替え (再描画)
+    createAxisLabelControl('axis-label-control-container');
+    const axisControl = document.getElementById('show-axis-labels');
+    if (axisControl) {
+        axisControl.onchange = () => {
+            if (allResults.length > 0 && !hasError) {
+                plotCombinedPathDiagram(independentVars, allResults);
+            }
+        };
+    }
 }
 
 // Combined Path Diagram (Plotly)
@@ -388,8 +399,8 @@ export function render(container, currentData, characteristics) {
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 <div class="settings-form">
                 
-                    <!-- 軸ラベル表示オプション -->
-                    <div id="axis-label-control-container"></div>
+                    <!-- 軸ラベル表示オプション (Moved) -->
+                    <!-- <div id="axis-label-control-container"></div> -->
 
                     <div id="dependent-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                     <div id="independent-vars-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
@@ -399,6 +410,11 @@ export function render(container, currentData, characteristics) {
 
             <!-- 結果エリア -->
             <div id="analysis-results" style="display: none;">
+                <!-- 軸ラベル表示オプション -->
+                <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: flex-end;">
+                     <div id="axis-label-control-container"></div>
+                </div>
+
                 <div id="regression-results"></div>
                 <!-- Combined Plot Area -->
                 <div id="plot-area" style="width: 100%; height: 600px; margin-top: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); background: white;"></div>
@@ -408,8 +424,8 @@ export function render(container, currentData, characteristics) {
 
     renderDataOverview('#regression-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
-    // 軸ラベル表示オプションの追加
-    createAxisLabelControl('axis-label-control-container');
+    // 軸ラベル表示オプションの追加 (Moved logic to runMultipleRegression)
+    // createAxisLabelControl('axis-label-control-container');
 
     // 目的変数 (Multiple Select)
     createVariableSelector('dependent-var-container', numericColumns, 'dependent-var', {
