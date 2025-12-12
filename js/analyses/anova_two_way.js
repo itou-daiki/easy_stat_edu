@@ -549,10 +549,13 @@ function renderTwoWayANOVAVisualization(results) {
             const show = e.target.checked;
             results.forEach((res, index) => {
                 const plotId = `anova-plot-${index}`;
-                Plotly.relayout(plotId, {
-                    'xaxis.title.text': show ? res.factor2 : '',
-                    'yaxis.title.text': show ? res.depVar : ''
-                });
+                const plotDiv = document.getElementById(plotId);
+                if (plotDiv) {
+                    Plotly.relayout(plotDiv, {
+                        'xaxis.title.text': show ? res.factor2 : '',
+                        'yaxis.title.text': show ? res.depVar : ''
+                    });
+                }
             });
         });
     }

@@ -267,9 +267,13 @@ function displayANOVAVisualization(results, testType) {
             const show = e.target.checked;
             results.forEach((res, index) => {
                 const plotId = `anova-plot-${index}`;
-                Plotly.relayout(plotId, {
-                    'yaxis.title.text': show ? res.varName : ''
-                });
+                const plotDiv = document.getElementById(plotId);
+                if (plotDiv) {
+                    Plotly.relayout(plotDiv, {
+                        'xaxis.title.text': show ? 'Group' : '',
+                        'yaxis.title.text': show ? res.varName : ''
+                    });
+                }
             });
         });
     }

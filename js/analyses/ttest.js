@@ -445,9 +445,12 @@ function displayVisualization(testResults, testType) {
             const show = e.target.checked;
             testResults.forEach((result, index) => {
                 const plotId = `ttest-plot-${index}`;
-                Plotly.relayout(plotId, {
-                    'yaxis.title.text': show ? result.varName : ''
-                });
+                const plotDiv = document.getElementById(plotId);
+                if (plotDiv) {
+                    Plotly.relayout(plotDiv, {
+                        'yaxis.title.text': show ? result.varName : ''
+                    });
+                }
             });
         });
     }
