@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createAxisLabelControl } from '../utils.js';
 
 // 相関マトリックスの計算
 function calculateCorrelationMatrix(variables, currentData) {
@@ -116,6 +116,22 @@ function plotHeatmap(variables, matrix) {
         margin: { b: 100 }
     };
 
+    // 軸ラベルの表示切り替え
+    const showAxisLabels = document.getElementById('show-axis-labels').checked;
+
+    if (!showAxisLabels) {
+        layout.xaxis = {
+            ...layout.xaxis,
+            title: '',
+            showticklabels: false
+        };
+        layout.yaxis = {
+            ...layout.yaxis,
+            title: '',
+            showticklabels: false
+        };
+    }
+
     Plotly.newPlot('correlation-heatmap', data, layout, createPlotlyConfig('相関ヒートマップ', variables));
 }
 
@@ -141,10 +157,7 @@ function plotScatterMatrix(variables, currentData) {
     for (let i = 0; i < n; i++) { // 行 (Y軸に対応)
         for (let j = 0; j < n; j++) { // 列 (X軸に対応)
 
-            // 軸のID生成 (Plotlyは1始まり、最初だけ番号なしだが、統一のため全部番号つきで管理し、layout設定で紐付ける)
-            // ここでは domain を使って配置する手法をとる
-            // i=0 (Top row), j=0 (Left col)
-
+            // 軸のID生成
             const xaxis = `x${i * n + j + 1}`;
             const yaxis = `y${i * n + j + 1}`;
 
@@ -183,13 +196,12 @@ function plotScatterMatrix(variables, currentData) {
                     type: 'histogram',
                     xaxis: xaxis,
                     yaxis: yaxis,
-                    marker: { color: '#87CEEB' }, // lightblue
+                    marker: { color: '#87CEEB' }, // light blue
                     showlegend: false
                 });
             } else if (i < j) {
                 // 右上：相関係数テキスト
                 const corr = matrix[i][j];
-                // 相関係数の強さを判定
                 const absCorr = Math.abs(corr);
                 let textColor = 'black';
                 let weight = 'normal';
@@ -239,8 +251,16 @@ function plotScatterMatrix(variables, currentData) {
         }
     }
 
-    // レイアウトの微調整（全体のタイトルなど）
-    // layout.grid を使わず manual domain 設定で実装したため、これ以上特別な設定は不要
+    // 軸ラベルの表示切り替え
+    const showAxisLabels = document.getElementById('show-axis-labels').checked;
+
+    if (!showAxisLabels) {
+        Object.keys(layout).forEach(key => {
+            if (key.startsWith('xaxis') || key.startsWith('yaxis')) {
+                if (layout[key].title) layout[key].title = '';
+            }
+        });
+    }
 
     Plotly.newPlot('scatter-matrix', traces, layout, createPlotlyConfig('散布図行列', variables));
 }
@@ -292,6 +312,9 @@ export function render(container, currentData, characteristics) {
 
             <!-- 分析設定 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                
+                <!-- 軸ラベル表示オプション -->
+                <div id="axis-label-control-container"></div>
 
                 <div id="corr-vars-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
 
@@ -325,6 +348,9 @@ export function render(container, currentData, characteristics) {
     `;
 
     renderDataOverview('#corr-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+
+    // 軸ラベル表示オプションの追加
+    createAxisLabelControl('axis-label-control-container');
 
     // Multi select for correlation variables
     createVariableSelector('corr-vars-container', numericColumns, 'correlation-vars', {

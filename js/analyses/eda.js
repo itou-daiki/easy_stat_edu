@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createAxisLabelControl } from '../utils.js';
 // Keep for now if needed later, or remove. Instructions say remove.
 // Actually, let's just remove the line if it's the only import.
 // Checking previous view... it is `import { renderDataOverview } from '../utils.js';`
@@ -269,6 +269,12 @@ function renderCategoricalPlot(col, valueCounts, plotId, sortOrder) {
         bargap: 0.2
     };
 
+    const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
+    if (!showAxisLabels) {
+        if (barLayout.xaxis) barLayout.xaxis.title = '';
+        if (barLayout.yaxis) barLayout.yaxis.title = '';
+    }
+
     Plotly.newPlot(plotId, [barTrace], barLayout);
 }
 
@@ -341,6 +347,13 @@ function visualizeNumericVariables(currentData) {
             yaxis: { title: '度数' },
             bargap: 0.2
         };
+
+        const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
+        if (!showAxisLabels) {
+            if (histLayout.xaxis) histLayout.xaxis.title = '';
+            if (histLayout.yaxis) histLayout.yaxis.title = '';
+        }
+
         Plotly.newPlot(histId, [histTrace], histLayout, createPlotlyConfig('EDA_ヒストグラム', col));
 
         // 箱ひげ図
@@ -354,6 +367,11 @@ function visualizeNumericVariables(currentData) {
             title: `【${col}】の箱ひげ図`,
             yaxis: { title: col }
         };
+
+        if (!showAxisLabels) {
+            if (boxLayout.yaxis) boxLayout.yaxis.title = '';
+        }
+
         Plotly.newPlot(boxId, [boxTrace], boxLayout, createPlotlyConfig('EDA_箱ひげ図', col));
     });
 }
@@ -396,6 +414,11 @@ function visualizeMultipleNumericVariables(currentData) {
         showlegend: true,
         height: 500
     };
+
+    const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
+    if (!showAxisLabels) {
+        if (layout.yaxis) layout.yaxis.title = '';
+    }
 
     Plotly.newPlot('multiple-numeric-plot', traces, layout, createPlotlyConfig('EDA_数値変数一括', numericColumns));
 }
@@ -507,6 +530,12 @@ function plotNumericVsNumeric(currentData, var1, var2, container) {
         yaxis: { title: var2 }
     };
 
+    const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
+    if (!showAxisLabels) {
+        if (layout.xaxis) layout.xaxis.title = '';
+        if (layout.yaxis) layout.yaxis.title = '';
+    }
+
     Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig('EDA_散布図', [var1, var2]));
 }
 
@@ -562,6 +591,12 @@ function plotCategoricalVsCategorical(currentData, var1, var2, container) {
         yaxis: { title: var1 }
     };
 
+    const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
+    if (!showAxisLabels) {
+        if (layout.xaxis) layout.xaxis.title = '';
+        if (layout.yaxis) layout.yaxis.title = '';
+    }
+
     Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig('EDA_クロス集計', [var1, var2]));
 }
 
@@ -604,6 +639,12 @@ function plotCategoricalVsNumeric(currentData, catVar, numVar, container) {
         xaxis: { title: catVar },
         yaxis: { title: numVar }
     };
+
+    const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
+    if (!showAxisLabels) {
+        if (layout.xaxis) layout.xaxis.title = '';
+        if (layout.yaxis) layout.yaxis.title = '';
+    }
 
     Plotly.newPlot(plotId, traces, layout, createPlotlyConfig('EDA_箱ひげ図_層別', [catVar, numVar]));
 }
@@ -723,6 +764,12 @@ function plotGroupedBarChart(currentData, cat1, cat2, numVar) {
         barmode: 'group'
     };
 
+    const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
+    if (!showAxisLabels) {
+        if (layout.xaxis) layout.xaxis.title = '';
+        if (layout.yaxis) layout.yaxis.title = '';
+    }
+
     Plotly.newPlot(plotId, traces, layout);
 }
 
@@ -778,6 +825,10 @@ export function render(container, currentData, characteristics) {
             </div>
 
 
+
+
+            <!-- 軸ラベル表示オプション -->
+            <div id="axis-label-control-container" style="margin-bottom: 2rem;"></div>
 
             <!-- 要約統計量セクション -->
             <div id="eda-summary-stats" class="eda-section" style="margin-bottom: 2rem;"></div>
@@ -871,6 +922,8 @@ export function render(container, currentData, characteristics) {
 
     // 各セクションをレンダリング
     // 各セクションをレンダリング
+    // 各セクションをレンダリング
+    createAxisLabelControl('axis-label-control-container');
     displaySummaryStatistics(currentData);
     visualizeCategoricalVariables(currentData);
     visualizeNumericVariables(currentData);

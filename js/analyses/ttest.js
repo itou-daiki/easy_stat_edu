@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createAxisLabelControl } from '../utils.js';
 
 // 要約統計量の計算と表示
 function displaySummaryStatistics(variables, currentData) {
@@ -418,14 +418,17 @@ function displayVisualization(testResults, testType) {
         const layout = {
             title: testType === 'paired' ? `平均値の比較：${result.varName}` : `平均値の比較：${result.varName} by グループ`,
             xaxis: { title: '' },
-            // Paired t-test varName is "Pre -> Post", which is long but accurate? 
-            // Actually for paired, we might want "Value". But for independent it MUST be varName.
-            // result.varName is safe for independent. 
-            // For paired, result.varName is "A → B". 
-            // Let's use it.
             yaxis: { title: result.varName },
             showlegend: false, annotations: annotations, shapes: shapes
         };
+
+        // 軸ラベルの表示切り替え
+        const showAxisLabels = document.getElementById('show-axis-labels').checked;
+        if (!showAxisLabels) {
+            layout.xaxis.title = '';
+            layout.yaxis.title = '';
+        }
+
         Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig('t検定', result.varName));
     });
 }
@@ -484,6 +487,9 @@ export function render(container, currentData, characteristics) {
 
             <!-- 検定タイプ選択 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                
+                <!-- 軸ラベル表示オプション -->
+                <div id="axis-label-control-container"></div>
 
                 <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
@@ -527,6 +533,9 @@ export function render(container, currentData, characteristics) {
     `;
 
     renderDataOverview('#ttest-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+
+    // 軸ラベル表示オプションの追加
+    createAxisLabelControl('axis-label-control-container');
 
     const { numericColumns, categoricalColumns } = characteristics;
 

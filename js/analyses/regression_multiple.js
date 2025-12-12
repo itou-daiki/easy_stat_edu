@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createAxisLabelControl } from '../utils.js';
 
 // 重回帰分析の実行
 function runMultipleRegression(currentData) {
@@ -343,6 +343,14 @@ function plotCombinedPathDiagram(independentVars, allResults) {
         paper_bgcolor: 'white'
     };
 
+    // 軸ラベルの表示切り替え（パス図では元々ラベル非表示だが、一貫性のためにトグル状態をチェック）
+    const showAxisLabels = document.getElementById('show-axis-labels').checked;
+    if (!showAxisLabels) {
+        // もしタイトルが設定されていたらクリアする（この図では設定されていないが）
+        if (layout.xaxis.title) layout.xaxis.title = '';
+        if (layout.yaxis.title) layout.yaxis.title = '';
+    }
+
     Plotly.newPlot('plot-area', data, layout, createPlotlyConfig('重回帰分析_パス図', independentVars.concat(dependentVars)));
 }
 
@@ -379,6 +387,10 @@ export function render(container, currentData, characteristics) {
             <!-- 分析設定 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 <div class="settings-form">
+                
+                    <!-- 軸ラベル表示オプション -->
+                    <div id="axis-label-control-container"></div>
+
                     <div id="dependent-var-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                     <div id="independent-vars-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                     <div id="run-regression-btn-container"></div>
@@ -395,6 +407,9 @@ export function render(container, currentData, characteristics) {
     `;
 
     renderDataOverview('#regression-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+
+    // 軸ラベル表示オプションの追加
+    createAxisLabelControl('axis-label-control-container');
 
     // 目的変数 (Multiple Select)
     createVariableSelector('dependent-var-container', numericColumns, 'dependent-var', {

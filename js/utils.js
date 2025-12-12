@@ -573,3 +573,45 @@ export function createPlotlyConfig(analysisName, variables) {
         modeBarButtonsToRemove: ['lasso2d', 'select2d'] // Optional
     };
 }
+
+/**
+ * Creates a standard checkbox control for toggling axis labels.
+ * @param {HTMLElement|string} container - The container element or ID to append the control to.
+ * @param {string} id - The ID for the checkbox input (default: 'show-axis-labels').
+ * @returns {HTMLInputElement} The created checkbox element.
+ */
+export function createAxisLabelControl(container, id = 'show-axis-labels') {
+    const target = typeof container === 'string' ? document.getElementById(container) : container;
+    if (!target) return null;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.marginBottom = '1rem';
+    wrapper.style.padding = '0.75rem';
+    wrapper.style.background = '#f0f9ff';
+    wrapper.style.border = '1px solid #bae6fd';
+    wrapper.style.borderRadius = '8px';
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'center';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = id;
+    checkbox.checked = true; // Default to true
+    checkbox.style.marginRight = '0.5rem';
+    checkbox.style.transform = 'scale(1.2)';
+    checkbox.style.cursor = 'pointer';
+
+    const label = document.createElement('label');
+    label.htmlFor = id;
+    label.textContent = 'グラフの軸ラベルを表示する';
+    label.style.fontWeight = 'bold';
+    label.style.color = '#0c4a6e';
+    label.style.cursor = 'pointer';
+    label.style.userSelect = 'none';
+
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(label);
+    target.appendChild(wrapper);
+
+    return checkbox;
+}

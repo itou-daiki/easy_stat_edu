@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createAxisLabelControl } from '../utils.js';
 
 // ======================================================================
 // Helper Functions
@@ -511,7 +511,7 @@ function renderTwoWayANOVAVisualization(results) {
                 // Add brackets if any
                 const { shapes, annotations } = generateBracketsForGroupedPlot(res.sigPairs || [], res.levels1, res.levels2, res.cellStats);
 
-                Plotly.newPlot(plotDiv, traces, {
+                const layout = {
                     title: `平均値の棒グラフ: ${res.depVar}`,
                     xaxis: { title: res.factor2 },
                     yaxis: { title: res.depVar, rangemode: 'tozero' },
@@ -519,7 +519,16 @@ function renderTwoWayANOVAVisualization(results) {
                     barmode: 'group', // This creates clustered bars
                     shapes: shapes,
                     annotations: annotations
-                }, createPlotlyConfig('二要因分散分析', res.depVar));
+                };
+
+                // 軸ラベルの表示切り替え
+                const showAxisLabels = document.getElementById('show-axis-labels').checked;
+                if (!showAxisLabels) {
+                    layout.xaxis.title = '';
+                    layout.yaxis.title = '';
+                }
+
+                Plotly.newPlot(plotDiv, traces, layout, createPlotlyConfig('二要因分散分析', res.depVar));
             }
         }, 100);
     });
@@ -842,6 +851,9 @@ export function render(container, currentData, characteristics) {
             <div id="anova2-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                
+                <!-- 軸ラベル表示オプション -->
+                <div id="axis-label-control-container"></div>
                  <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
@@ -896,7 +908,10 @@ export function render(container, currentData, characteristics) {
         </div>
     `;
 
-    renderDataOverview('#anova2-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+    renderDataOverview('#anova-2way-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+
+    // 軸ラベル表示オプションの追加
+    createAxisLabelControl('axis-label-control-container');
 
     // Independent Selectors
     createVariableSelector('factor1-var-container', categoricalColumns, 'factor1-var', { label: '要因1（間）:', multiple: false });

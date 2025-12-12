@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, renderSampleSizeInfo } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, renderSampleSizeInfo, createAxisLabelControl } from '../utils.js';
 
 // Pairwise t-test helper for Between-Subjects (Independent)
 function performPostHocTests(groups, groupData) {
@@ -235,13 +235,23 @@ function displayANOVAVisualization(results, testType) {
             type: 'bar',
             marker: { color: 'rgba(30, 144, 255, 0.7)' }
         };
-        Plotly.newPlot(plotId, [trace], {
+        const layout = {
             title: `${res.varName} のグループ別平均値 (Bar + SE)`,
             yaxis: { title: res.varName },
             shapes: res.plotShapes,
             annotations: res.plotAnnotations,
             margin: { t: res.plotMarginTop }
-        }, createPlotlyConfig(`一要因分散分析: ${res.varName}`, res.varName));
+        };
+
+        // 軸ラベルの表示切り替え
+        const showAxisLabels = document.getElementById('show-axis-labels').checked;
+        if (!showAxisLabels) {
+            layout.yaxis.title = '';
+            // xaxis title is already undefined/empty by default but let's be explicit if needed
+            // layout.xaxis.title = ''; 
+        }
+
+        Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig(`一要因分散分析: ${res.varName}`, res.varName));
     });
 }
 
@@ -610,7 +620,12 @@ export function render(container, currentData, characteristics) {
 
             <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
+            <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
+            
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                
+                <!-- 軸ラベル表示オプション -->
+                <div id="axis-label-control-container"></div>
                 
                 <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
@@ -650,6 +665,9 @@ export function render(container, currentData, characteristics) {
     `;
 
     renderDataOverview('#anova-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+
+    // 軸ラベル表示オプションの追加
+    createAxisLabelControl('axis-label-control-container');
 
     createVariableSelector('factor-var-container', categoricalColumns, 'factor-var', {
         label: '<i class="fas fa-layer-group"></i> 要因（グループ変数・3群以上）:',
