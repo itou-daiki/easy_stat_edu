@@ -659,7 +659,8 @@ function visualizeGroupedBarChart(currentData) {
         return;
     }
 
-    const catOptions = categoricalColumns.map(col => `<option value="${col}">${col}</option>`).join('');
+    const catOptions1 = categoricalColumns.map((col, i) => `<option value="${col}" ${i === 0 ? 'selected' : ''}>${col}</option>`).join('');
+    const catOptions2 = categoricalColumns.map((col, i) => `<option value="${col}" ${i === 1 ? 'selected' : ''}>${col}</option>`).join('');
     const numOptions = numericColumns.map(col => `<option value="${col}">${col}</option>`).join('');
 
     container.innerHTML = `
@@ -668,13 +669,13 @@ function visualizeGroupedBarChart(currentData) {
                 <label for="grouped-cat-1" style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
                     <i class="fas fa-tag" style="color: #1e90ff;"></i> カテゴリ変数1を選択:
                 </label>
-                <select id="grouped-cat-1" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; font-weight: 500;">${catOptions}</select>
+                <select id="grouped-cat-1" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; font-weight: 500;">${catOptions1}</select>
             </div>
             <div class="control-group" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
                 <label for="grouped-cat-2" style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
                     <i class="fas fa-tag" style="color: #1e90ff;"></i> カテゴリ変数2を選択:
                 </label>
-                <select id="grouped-cat-2" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; font-weight: 500;">${catOptions.replace(`value="${categoricalColumns[0]}"`, `value="${categoricalColumns[Math.min(1, categoricalColumns.length - 1)]}" selected`)}</select>
+                <select id="grouped-cat-2" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; font-weight: 500;">${catOptions2}</select>
             </div>
             <div class="control-group" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
                 <label for="grouped-num" style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
