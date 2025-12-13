@@ -375,7 +375,7 @@ function displayVisualization(testResults, testType) {
     `;
 
     // 軸ラベル表示オプションの追加
-    createAxisLabelControl('axis-label-control-container');
+    const { axisControl, titleControl } = createVisualizationControls('axis-label-control-container');
 
     const plotsContainer = document.getElementById('visualization-plots');
     let plotsHtml = '';
@@ -496,7 +496,6 @@ function displayVisualization(testResults, testType) {
         axisControl.addEventListener('change', updatePlots);
         titleControl.addEventListener('change', updatePlots);
     }
-}, 100);
 }
 
 function switchTestType(testType) {

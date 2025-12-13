@@ -884,7 +884,7 @@ export function render(container, currentData, characteristics) {
 
 
             <!-- 軸ラベル表示オプション -->
-            <div id="axis-label-control-container" style="margin-bottom: 2rem;"></div>
+            <div id="viz-controls-container" style="margin-bottom: 2rem;"></div>
 
             <!-- 要約統計量セクション -->
             <div id="eda-summary-stats" class="eda-section" style="margin-bottom: 2rem;"></div>
