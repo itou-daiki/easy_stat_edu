@@ -542,8 +542,8 @@ function renderTwoWayANOVAVisualization(results) {
                 };
 
                 // Initial toggle state
-                const showAxisLabels = axisControl.checked;
-                const showBottomTitle = titleControl.checked;
+                const showAxisLabels = axisControl?.checked ?? true;
+                const showBottomTitle = titleControl?.checked ?? true;
 
                 if (!showAxisLabels) {
                     layout.xaxis.title = '';
@@ -574,8 +574,8 @@ function renderTwoWayANOVAVisualization(results) {
 
     // Attach listeners once outside the loop
     const updateAllPlots = () => {
-        const showAxis = axisControl.checked;
-        const showTitle = titleControl.checked;
+        const showAxis = axisControl?.checked ?? true;
+        const showTitle = titleControl?.checked ?? true;
 
         results.forEach((res, index) => {
             const plotId = `anova-plot-${index}`;

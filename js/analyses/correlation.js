@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
 
 // 相関マトリックスの計算
 function calculateCorrelationMatrix(variables, currentData) {
@@ -45,18 +45,18 @@ function runCorrelationAnalysis(currentData) {
     plotHeatmap(selectedVars, matrix);
     plotScatterMatrix(selectedVars, currentData);
 
-    plotScatterMatrix(selectedVars, currentData);
-
     document.getElementById('analysis-results').style.display = 'block';
 
     // 軸ラベルの動的切り替え (再描画)
-    createVisualizationControls('axis-label-control-container');
-    const axisControl = document.getElementById('show-axis-labels');
-    if (axisControl) {
-        axisControl.onchange = () => {
+    const { axisControl, titleControl } = createVisualizationControls('visualization-controls-container');
+
+    if (axisControl && titleControl) {
+        const updatePlots = () => {
             plotHeatmap(selectedVars, matrix);
             plotScatterMatrix(selectedVars, currentData);
         };
+        axisControl.addEventListener('change', updatePlots);
+        titleControl.addEventListener('change', updatePlots);
     }
 }
 
@@ -123,13 +123,17 @@ function plotHeatmap(variables, matrix) {
     }];
 
     const layout = {
-        title: '相関ヒートマップ',
+        title: '',
         height: 600,
-        margin: { b: 100 }
+        margin: { b: 150 }, // Increased bottom margin for bottom title
+        annotations: []
     };
 
-    // 軸ラベルの表示切り替え
-    const showAxisLabels = document.getElementById('show-axis-labels').checked;
+    // 軸ラベルとタイトルの表示切り替え
+    const axisControl = document.getElementById('show-axis-labels');
+    const titleControl = document.getElementById('show-graph-title');
+    const showAxisLabels = axisControl?.checked ?? true;
+    const showGraphTitle = titleControl?.checked ?? true;
 
     if (!showAxisLabels) {
         layout.xaxis = {
@@ -142,6 +146,11 @@ function plotHeatmap(variables, matrix) {
             title: '',
             showticklabels: false
         };
+    }
+
+    if (showGraphTitle) {
+        const bottomTitle = getBottomTitleAnnotation('相関ヒートマップ');
+        if (bottomTitle) layout.annotations.push(bottomTitle);
     }
 
     Plotly.newPlot('correlation-heatmap', data, layout, createPlotlyConfig('相関ヒートマップ', variables));
@@ -157,12 +166,13 @@ function plotScatterMatrix(variables, currentData) {
 
     const traces = [];
     const layout = {
-        title: '散布図行列（対角:ヒストグラム, 右上:相関係数, 左下:散布図）',
+        title: '',
         height: 150 * n, // 変数が増えると高さを自動調整
         width: 150 * n,  // 幅も自動調整
         showlegend: false,
         plot_bgcolor: '#f8fafc',
-        margin: { l: 60, r: 60, t: 80, b: 60 } // マージン調整
+        margin: { l: 60, r: 60, t: 80, b: 150 }, // Increased bottom margin for bottom title
+        annotations: []
     };
 
     // グリッド作成用のループ
@@ -263,8 +273,11 @@ function plotScatterMatrix(variables, currentData) {
         }
     }
 
-    // 軸ラベルの表示切り替え
-    const showAxisLabels = document.getElementById('show-axis-labels').checked;
+    // 軸ラベルとタイトルの表示切り替え
+    const axisControl = document.getElementById('show-axis-labels');
+    const titleControl = document.getElementById('show-graph-title');
+    const showAxisLabels = axisControl?.checked ?? true;
+    const showGraphTitle = titleControl?.checked ?? true;
 
     if (!showAxisLabels) {
         Object.keys(layout).forEach(key => {
@@ -272,6 +285,11 @@ function plotScatterMatrix(variables, currentData) {
                 if (layout[key].title) layout[key].title = '';
             }
         });
+    }
+
+    if (showGraphTitle) {
+        const bottomTitle = getBottomTitleAnnotation('散布図行列（対角:ヒストグラム, 右上:相関係数, 左下:散布図）');
+        if (bottomTitle) layout.annotations.push(bottomTitle);
     }
 
     Plotly.newPlot('scatter-matrix', traces, layout, createPlotlyConfig('散布図行列', variables));
@@ -344,7 +362,7 @@ export function render(container, currentData, characteristics) {
 
                 <!-- 軸ラベル表示オプション -->
                 <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: flex-end;">
-                     <div id="axis-label-control-container"></div>
+                     <div id="visualization-controls-container"></div>
                 </div>
 
                 <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">

@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
 
 // 重回帰分析の実行
 function runMultipleRegression(currentData) {
@@ -210,14 +210,16 @@ function runMultipleRegression(currentData) {
     document.getElementById('analysis-results').style.display = 'block';
 
     // 軸ラベルの動的切り替え (再描画)
-    createVisualizationControls('axis-label-control-container');
-    const axisControl = document.getElementById('show-axis-labels');
-    if (axisControl) {
-        axisControl.onchange = () => {
+    const { axisControl, titleControl } = createVisualizationControls('visualization-controls-container');
+
+    if (axisControl && titleControl) {
+        const updatePlot = () => {
             if (allResults.length > 0 && !hasError) {
                 plotCombinedPathDiagram(independentVars, allResults);
             }
         };
+        axisControl.addEventListener('change', updatePlot);
+        titleControl.addEventListener('change', updatePlot);
     }
 }
 
@@ -343,23 +345,32 @@ function plotCombinedPathDiagram(independentVars, allResults) {
     }];
 
     const layout = {
-        title: 'パス図（標準化偏回帰係数: |β| >= 0.1 のみ表示）',
+        title: '',
         showlegend: false,
         xaxis: { showgrid: false, zeroline: false, showticklabels: false, range: [0, 1.2] },
         yaxis: { showgrid: false, zeroline: false, showticklabels: false, range: [0, 1] },
         annotations: annotations,
         height: height,
-        margin: { l: 20, r: 20, t: 50, b: 20 },
+        margin: { l: 20, r: 20, t: 50, b: 150 }, // Increased bottom margin for bottom title
         plot_bgcolor: 'white',
         paper_bgcolor: 'white'
     };
 
-    // 軸ラベルの表示切り替え（パス図では元々ラベル非表示だが、一貫性のためにトグル状態をチェック）
-    const showAxisLabels = document.getElementById('show-axis-labels').checked;
+    // 軸ラベルとタイトルの表示切り替え
+    const axisControl = document.getElementById('show-axis-labels');
+    const titleControl = document.getElementById('show-graph-title');
+    const showAxisLabels = axisControl?.checked ?? true;
+    const showGraphTitle = titleControl?.checked ?? true;
+
     if (!showAxisLabels) {
         // もしタイトルが設定されていたらクリアする（この図では設定されていないが）
         if (layout.xaxis.title) layout.xaxis.title = '';
         if (layout.yaxis.title) layout.yaxis.title = '';
+    }
+
+    if (showGraphTitle) {
+        const bottomTitle = getBottomTitleAnnotation('パス図（標準化偏回帰係数: |β| >= 0.1 のみ表示）');
+        if (bottomTitle) layout.annotations.push(bottomTitle);
     }
 
     Plotly.newPlot('plot-area', data, layout, createPlotlyConfig('重回帰分析_パス図', independentVars.concat(dependentVars)));
@@ -412,7 +423,7 @@ export function render(container, currentData, characteristics) {
             <div id="analysis-results" style="display: none;">
                 <!-- 軸ラベル表示オプション -->
                 <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: flex-end;">
-                     <div id="axis-label-control-container"></div>
+                     <div id="visualization-controls-container"></div>
                 </div>
 
                 <div id="regression-results"></div>
