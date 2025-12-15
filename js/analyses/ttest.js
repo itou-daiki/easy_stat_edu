@@ -369,13 +369,13 @@ function displayVisualization(testResults, testType) {
                 <i class="fas fa-chart-bar"></i> 可視化
             </h4>
             <!-- 軸ラベル表示オプション -->
-            <div id="axis-label-control-container"></div>
+            <div id="visualization-controls-container"></div>
             <div id="visualization-plots"></div>
         </div>
     `;
 
     // 軸ラベル表示オプションの追加
-    const { axisControl, titleControl } = createVisualizationControls('axis-label-control-container');
+    const { axisControl, titleControl } = createVisualizationControls('visualization-controls-container');
 
     const plotsContainer = document.getElementById('visualization-plots');
     let plotsHtml = '';
@@ -446,8 +446,8 @@ function displayVisualization(testResults, testType) {
         };
 
         // Initial state based on checkbox defaults
-        const showAxisLabels = axisControl.checked;
-        const showBottomTitle = titleControl.checked;
+        const showAxisLabels = axisControl?.checked ?? true;
+        const showBottomTitle = titleControl?.checked ?? true;
 
         if (!showAxisLabels) {
             layout.xaxis.title = '';

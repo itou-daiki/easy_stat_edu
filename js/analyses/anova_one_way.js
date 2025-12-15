@@ -260,8 +260,8 @@ function displayANOVAVisualization(results, testType) {
         };
 
         // Initial toggle state
-        const showAxisLabels = axisControl.checked;
-        const showBottomTitle = titleControl.checked;
+        const showAxisLabels = axisControl?.checked ?? true;
+        const showBottomTitle = titleControl?.checked ?? true;
 
         if (!showAxisLabels) {
             layout.xaxis.title = '';
@@ -277,8 +277,8 @@ function displayANOVAVisualization(results, testType) {
         const updatePlots = () => {
             const plotDiv = document.getElementById(plotId);
             if (plotDiv && plotDiv.data) {
-                const showAxis = axisControl.checked;
-                const showTitle = titleControl.checked;
+                const showAxis = axisControl?.checked ?? true;
+                const showTitle = titleControl?.checked ?? true;
 
                 const currentLayout = plotDiv.layout;
                 // Filter out existing dynamic annotations (tategaki and bottom title)
