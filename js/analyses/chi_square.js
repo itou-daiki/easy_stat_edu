@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
 
 function runChiSquare(currentData) {
     const rowVar = document.getElementById('row-var').value;
@@ -165,6 +165,23 @@ function displayResults(rowVar, colVar, rowKeys, colKeys, observed, expected, ad
     container.innerHTML = html;
 
     // ヒートマップ
+    plotHeatmap(observed, colKeys, rowKeys, rowVar, colVar);
+
+    document.getElementById('analysis-results').style.display = 'block';
+
+    // 可視化コントロールの追加
+    const { axisControl, titleControl } = createVisualizationControls('visualization-controls-container');
+
+    if (axisControl && titleControl) {
+        const updatePlot = () => {
+            plotHeatmap(observed, colKeys, rowKeys, rowVar, colVar);
+        };
+        axisControl.addEventListener('change', updatePlot);
+        titleControl.addEventListener('change', updatePlot);
+    }
+}
+
+function plotHeatmap(observed, colKeys, rowKeys, rowVar, colVar) {
     const data = [{
         z: observed,
         x: colKeys,
@@ -172,9 +189,34 @@ function displayResults(rowVar, colVar, rowKeys, colKeys, observed, expected, ad
         type: 'heatmap',
         colorscale: 'Blues'
     }];
-    Plotly.newPlot('heatmap-plot', data, { title: '観測度数のヒートマップ' }, createPlotlyConfig('カイ二乗検定_ヒートマップ', [rowVar, colVar]));
 
-    document.getElementById('analysis-results').style.display = 'block';
+    const layout = {
+        title: '',
+        xaxis: { title: colVar },
+        yaxis: { title: '' },
+        margin: { l: 100, b: 150 },
+        annotations: []
+    };
+
+    // 軸ラベルとタイトルの表示切り替え
+    const axisControl = document.getElementById('show-axis-labels');
+    const titleControl = document.getElementById('show-graph-title');
+    const showAxisLabels = axisControl?.checked ?? true;
+    const showGraphTitle = titleControl?.checked ?? true;
+
+    if (showAxisLabels) {
+        const tategakiTitle = getTategakiAnnotation(rowVar);
+        if (tategakiTitle) layout.annotations.push(tategakiTitle);
+    } else {
+        layout.xaxis.title = '';
+    }
+
+    if (showGraphTitle) {
+        const bottomTitle = getBottomTitleAnnotation('観測度数のヒートマップ');
+        if (bottomTitle) layout.annotations.push(bottomTitle);
+    }
+
+    Plotly.newPlot('heatmap-plot', data, layout, createPlotlyConfig('カイ二乗検定_ヒートマップ', [rowVar, colVar]));
 }
 
 export function render(container, currentData, characteristics) {
@@ -233,6 +275,10 @@ export function render(container, currentData, characteristics) {
 
             <!-- 結果エリア -->
             <div id="analysis-results" style="display: none;">
+                <!-- 可視化コントロール -->
+                <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: flex-end;">
+                     <div id="visualization-controls-container"></div>
+                </div>
                 <div id="chi-results"></div>
             </div>
         </div>
