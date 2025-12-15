@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
 
 function runSimpleRegression(currentData) {
     const xVar = document.getElementById('independent-var').value;
@@ -115,6 +115,23 @@ function runSimpleRegression(currentData) {
     `;
 
     // Plot
+    plotRegression(x, y, b0, b1, xVar, yVar);
+
+    document.getElementById('analysis-results').style.display = 'block';
+
+    // 可視化コントロールの追加
+    const { axisControl, titleControl } = createVisualizationControls('visualization-controls-container');
+
+    if (axisControl && titleControl) {
+        const updatePlot = () => {
+            plotRegression(x, y, b0, b1, xVar, yVar);
+        };
+        axisControl.addEventListener('change', updatePlot);
+        titleControl.addEventListener('change', updatePlot);
+    }
+}
+
+function plotRegression(x, y, b0, b1, xVar, yVar) {
     const tracePoints = {
         x: x,
         y: y,
@@ -136,14 +153,34 @@ function runSimpleRegression(currentData) {
         line: { color: '#ef4444', width: 2 }
     };
 
-    Plotly.newPlot('regression-plot', [tracePoints, traceLine], {
-        title: `単回帰分析: ${yVar} vs ${xVar}`,
+    const layout = {
+        title: '',
         xaxis: { title: xVar },
-        yaxis: { title: yVar },
-        showlegend: true
-    }, createPlotlyConfig('単回帰分析', [yVar, xVar]));
+        yaxis: { title: '' },
+        showlegend: true,
+        margin: { l: 100, b: 150 },
+        annotations: []
+    };
 
-    document.getElementById('analysis-results').style.display = 'block';
+    // 軸ラベルとタイトルの表示切り替え
+    const axisControl = document.getElementById('show-axis-labels');
+    const titleControl = document.getElementById('show-graph-title');
+    const showAxisLabels = axisControl?.checked ?? true;
+    const showGraphTitle = titleControl?.checked ?? true;
+
+    if (showAxisLabels) {
+        const tategakiTitle = getTategakiAnnotation(yVar);
+        if (tategakiTitle) layout.annotations.push(tategakiTitle);
+    } else {
+        layout.xaxis.title = '';
+    }
+
+    if (showGraphTitle) {
+        const bottomTitle = getBottomTitleAnnotation(`単回帰分析: ${yVar} vs ${xVar}`);
+        if (bottomTitle) layout.annotations.push(bottomTitle);
+    }
+
+    Plotly.newPlot('regression-plot', [tracePoints, traceLine], layout, createPlotlyConfig('単回帰分析', [yVar, xVar]));
 }
 
 export function render(container, currentData, characteristics) {
@@ -198,6 +235,10 @@ export function render(container, currentData, characteristics) {
 
             <!-- 結果エリア -->
             <div id="analysis-results" style="display: none;">
+                <!-- 可視化コントロール -->
+                <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: flex-end;">
+                     <div id="visualization-controls-container"></div>
+                </div>
                 <div id="regression-results"></div>
             </div>
         </div>
