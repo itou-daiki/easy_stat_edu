@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createAxisLabelControl } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls } from '../utils.js';
 
 // 相関マトリックスの計算
 function calculateCorrelationMatrix(variables, currentData) {
@@ -50,7 +50,7 @@ function runCorrelationAnalysis(currentData) {
     document.getElementById('analysis-results').style.display = 'block';
 
     // 軸ラベルの動的切り替え (再描画)
-    createAxisLabelControl('axis-label-control-container');
+    createVisualizationControls('axis-label-control-container');
     const axisControl = document.getElementById('show-axis-labels');
     if (axisControl) {
         axisControl.onchange = () => {
