@@ -50,13 +50,15 @@ function runCorrelationAnalysis(currentData) {
     document.getElementById('analysis-results').style.display = 'block';
 
     // 軸ラベルの動的切り替え (再描画)
-    createVisualizationControls('axis-label-control-container');
-    const axisControl = document.getElementById('show-axis-labels');
-    if (axisControl) {
-        axisControl.onchange = () => {
+    const { axisControl, titleControl } = createVisualizationControls('axis-label-control-container');
+
+    if (axisControl && titleControl) {
+        const updatePlots = () => {
             plotHeatmap(selectedVars, matrix);
             plotScatterMatrix(selectedVars, currentData);
         };
+        axisControl.addEventListener('change', updatePlots);
+        titleControl.addEventListener('change', updatePlots);
     }
 }
 
@@ -123,13 +125,16 @@ function plotHeatmap(variables, matrix) {
     }];
 
     const layout = {
-        title: '相関ヒートマップ',
+        title: '',
         height: 600,
         margin: { b: 100 }
     };
 
-    // 軸ラベルの表示切り替え
-    const showAxisLabels = document.getElementById('show-axis-labels').checked;
+    // 軸ラベルとタイトルの表示切り替え
+    const axisControl = document.getElementById('show-axis-labels');
+    const titleControl = document.getElementById('show-graph-title');
+    const showAxisLabels = axisControl?.checked ?? true;
+    const showGraphTitle = titleControl?.checked ?? true;
 
     if (!showAxisLabels) {
         layout.xaxis = {
@@ -142,6 +147,10 @@ function plotHeatmap(variables, matrix) {
             title: '',
             showticklabels: false
         };
+    }
+
+    if (showGraphTitle) {
+        layout.title = '相関ヒートマップ';
     }
 
     Plotly.newPlot('correlation-heatmap', data, layout, createPlotlyConfig('相関ヒートマップ', variables));
@@ -157,7 +166,7 @@ function plotScatterMatrix(variables, currentData) {
 
     const traces = [];
     const layout = {
-        title: '散布図行列（対角:ヒストグラム, 右上:相関係数, 左下:散布図）',
+        title: '',
         height: 150 * n, // 変数が増えると高さを自動調整
         width: 150 * n,  // 幅も自動調整
         showlegend: false,
@@ -263,8 +272,11 @@ function plotScatterMatrix(variables, currentData) {
         }
     }
 
-    // 軸ラベルの表示切り替え
-    const showAxisLabels = document.getElementById('show-axis-labels').checked;
+    // 軸ラベルとタイトルの表示切り替え
+    const axisControl = document.getElementById('show-axis-labels');
+    const titleControl = document.getElementById('show-graph-title');
+    const showAxisLabels = axisControl?.checked ?? true;
+    const showGraphTitle = titleControl?.checked ?? true;
 
     if (!showAxisLabels) {
         Object.keys(layout).forEach(key => {
@@ -272,6 +284,10 @@ function plotScatterMatrix(variables, currentData) {
                 if (layout[key].title) layout[key].title = '';
             }
         });
+    }
+
+    if (showGraphTitle) {
+        layout.title = '散布図行列（対角:ヒストグラム, 右上:相関係数, 左下:散布図）';
     }
 
     Plotly.newPlot('scatter-matrix', traces, layout, createPlotlyConfig('散布図行列', variables));
