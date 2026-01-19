@@ -1,4 +1,5 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
+import { calculateCorrelationMatrix } from './correlation.js';
 
 // 因子抽出（主因子法）
 function exactFactors(variables, numFactors, currentData) {
@@ -7,17 +8,8 @@ function exactFactors(variables, numFactors, currentData) {
     // ここではPCAをベースにした簡易的なエミュレーションを行う
     // 本来の因子分析は共通性の推定などが必要
 
-    // 1. 相関行列の計算
-    const corrMatrix = [];
-    for (let i = 0; i < variables.length; i++) {
-        const row = [];
-        for (let j = 0; j < variables.length; j++) {
-            const x = currentData.map(r => r[variables[i]]);
-            const y = currentData.map(r => r[variables[j]]);
-            row.push(jStat.corrcoeff(x, y));
-        }
-        corrMatrix.push(row);
-    }
+    // 1. 相関行列の計算 (共通化された関数を利用)
+    const corrMatrix = calculateCorrelationMatrix(variables, currentData);
 
     // 2. 固有値分解 (math.eigs)
     const { values, vectors } = math.eigs(corrMatrix);
@@ -43,23 +35,6 @@ function exactFactors(variables, numFactors, currentData) {
     return { loadings, eigenvalues: sortedValues };
 }
 
-// バリマックス回転（簡易実装）
-function varimaxRotation(loadings, iter = 20) {
-    const nVars = loadings.length;
-    const nFactors = loadings[0].length;
-    let rotatedLoadings = math.clone(loadings);
-
-    // 回転行列の初期化（単位行列）
-    let rotationMatrix = math.identity(nFactors)._data;
-
-    // 簡易的な実装（厳密なバリマックスではないが、直交回転を試みる）
-    // 本格的な実装は複雑なため、ここではそのまま返すか、簡単な正規化のみ行う
-    // Note: JSでの完全なバリマックス実装は長くなるため省略し、主因子解をそのまま使用しつつ
-    // "回転後の解"として表示する（教育用として、本来はライブラリ推奨）
-
-    return { rotatedLoadings, rotationMatrix };
-}
-
 function runFactorAnalysis(currentData) {
     const varsSelect = document.getElementById('factor-vars');
     const variables = Array.from(varsSelect.selectedOptions).map(o => o.value);
@@ -76,19 +51,17 @@ function runFactorAnalysis(currentData) {
 
     try {
         const { loadings, eigenvalues } = exactFactors(variables, numFactors, currentData);
-        // 回転（今回はPlaceholder）
-        const { rotatedLoadings } = varimaxRotation(loadings);
 
         displayEigenvalues(eigenvalues);
-        displayLoadings(variables, rotatedLoadings);
+        displayLoadings(variables, loadings);
         plotScree(eigenvalues);
-        plotLoadingsHeatmap(variables, rotatedLoadings);
+        plotLoadingsHeatmap(variables, loadings);
 
         // 因子ごとの平均値（簡易的な因子スコアの代用として、因子に関連する変数の平均を表示）
         // 因子ごとに寄与の高い変数（絶対値 > 0.4）を抽出
         const factorDefinitions = [];
         for (let f = 0; f < numFactors; f++) {
-            const highLoadings = variables.filter((v, i) => Math.abs(rotatedLoadings[i][f]) > 0.4);
+            const highLoadings = variables.filter((v, i) => Math.abs(loadings[i][f]) > 0.4);
             factorDefinitions.push(highLoadings);
         }
         displayFactorMeans(factorDefinitions, numFactors, currentData);
@@ -326,9 +299,9 @@ export function render(container, currentData, characteristics) {
         <div class="factor-analysis-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
-                    <i class="fas fa-search-dollar"></i> 因子分析
+                    <i class="fas fa-search-dollar"></i> 因子分析 (主成分分析ベース)
                 </h3>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">多数の変数の背後にある共通因子を抽出します</p>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">主成分分析を用いて、多数の変数の背後にある共通の構成概念を探索します</p>
             </div>
 
             <!-- 分析の概要・解釈 -->
@@ -339,8 +312,8 @@ export function render(container, currentData, characteristics) {
                 </div>
                 <div class="collapsible-content collapsed">
                     <div class="note">
-                        <strong><i class="fas fa-lightbulb"></i> 因子分析 (Factor Analysis) とは？</strong>
-                        <p>多数の変数（アンケート項目など）の背後にある、直接は測定できない共通の要因（因子）を見つけ出す手法です。「数学」「物理」の点数から「理数系能力」という因子を見つけるなどが例です。</p>
+                        <strong><i class="fas fa-lightbulb"></i> 因子分析 (主成分分析ベース) とは？</strong>
+                        <p>多数の変数（アンケート項目など）の背後にある、直接は測定できない共通の要因（因子）を見つけ出す手法です。このツールでは、探索的因子分析の手法の一つとして、主成分分析を用いて因子を抽出します。</p>
                         <img src="image/factor_analysis.png" alt="因子分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
@@ -350,7 +323,7 @@ export function render(container, currentData, characteristics) {
                     </ul>
                     <h4>主な用語</h4>
                     <ul>
-                        <li><strong>因子負荷量:</strong> 各変数がその因子とどれくらい強く関係しているか（相関係数のようなもの）。</li>
+                        <li><strong>因子負荷量:</strong> 各変数がその因子とどれくらい強く関係しているか（相関係数のようなもの）。ここでは回転を行わない主成分負荷量を示します。</li>
                         <li><strong>スクリープロット:</strong> 抽出する因子の数を決めるためのグラフ。</li>
                     </ul>
                 </div>
@@ -371,9 +344,6 @@ export function render(container, currentData, characteristics) {
                      <input type="number" id="num-factors" value="2" min="1" max="10" style="padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; width: 100px;">
                 </div>
 
-                     <input type="number" id="num-factors" value="2" min="1" max="10" style="padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; width: 100px;">
-                </div>
-
                 <div id="run-factor-btn-container"></div>
             </div>
 
@@ -386,7 +356,7 @@ export function render(container, currentData, characteristics) {
                 </div>
 
                 <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                    <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-th"></i> 因子負荷量</h4>
+                    <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-th"></i> 因子負荷量 (回転前)</h4>
                     <div id="loadings-table"></div>
                     <div id="loadings-heatmap" style="margin-top: 1.5rem;"></div>
                 </div>

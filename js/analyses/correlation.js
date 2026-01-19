@@ -1,7 +1,7 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
 
 // 相関マトリックスの計算
-function calculateCorrelationMatrix(variables, currentData) {
+export function calculateCorrelationMatrix(variables, currentData) {
     const matrix = [];
     for (let i = 0; i < variables.length; i++) {
         const row = [];
@@ -199,7 +199,7 @@ function plotScatterMatrix(variables, currentData) {
                 showgrid: false,
                 zeroline: false,
                 showticklabels: i === n - 1, // 一番下の行だけラベル表示
-                title: i === n - 1 ? varCol : undefined // 一番下の行だけタイトル表示
+                title: i === n - 1 ? { text: varCol, font: { size: 12 } } : undefined
             };
 
             layout[`yaxis${i * n + j + 1}`] = {
@@ -207,7 +207,7 @@ function plotScatterMatrix(variables, currentData) {
                 showgrid: false,
                 zeroline: false,
                 showticklabels: j === 0, // 一番左の列だけラベル表示
-                title: j === 0 ? varRow : undefined // 一番左の列だけタイトル表示
+                title: j === 0 ? { text: varRow, font: { size: 12 } } : undefined
             };
 
             // トレース追加
@@ -282,7 +282,9 @@ function plotScatterMatrix(variables, currentData) {
     if (!showAxisLabels) {
         Object.keys(layout).forEach(key => {
             if (key.startsWith('xaxis') || key.startsWith('yaxis')) {
-                if (layout[key].title) layout[key].title = '';
+                if (layout[key].title) {
+                    layout[key].title.text = '';
+                }
             }
         });
     }
