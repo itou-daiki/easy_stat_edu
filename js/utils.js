@@ -500,30 +500,13 @@ export function createAnalysisButton(container, text, onClick, options = {}) {
 
     const button = document.createElement('button');
     button.id = btnId;
-    button.className = 'btn-analysis';
-    button.style.cssText = `
-        margin-top: 1.5rem; 
-        width: 100%; 
-        padding: 1rem; 
-        font-size: 1.1rem; 
-        font-weight: bold; 
-        background-color: ${btnColor};
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 0.5rem;
-        transition: opacity 0.2s;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    `;
+    button.className = 'btn-analysis'; // Use the CSS class
+
+    // Only set the dynamic background color with inline style
+    button.style.backgroundColor = btnColor;
 
     button.innerHTML = `<i class="${iconClass}"></i> ${text}`;
 
-    button.addEventListener('mouseenter', () => button.style.opacity = '0.9');
-    button.addEventListener('mouseleave', () => button.style.opacity = '1');
     button.addEventListener('click', onClick);
 
     target.appendChild(button);

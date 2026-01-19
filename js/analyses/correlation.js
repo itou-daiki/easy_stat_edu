@@ -1,4 +1,7 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
+import { renderDataOverview, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
+import { MultiSelect } from '../components/MultiSelect.js';
+
+let multiSelectInstance = null;
 
 // 相関マトリックスの計算
 export function calculateCorrelationMatrix(variables, currentData) {
@@ -52,8 +55,7 @@ export function calculateCorrelationMatrix(variables, currentData) {
 }
 
 function runCorrelationAnalysis(currentData) {
-    const selector = document.getElementById('correlation-vars');
-    const selectedVars = Array.from(selector.selectedOptions).map(opt => opt.value);
+    const selectedVars = multiSelectInstance.getValue();
 
     if (selectedVars.length < 2) {
         alert('少なくとも2つの変数を選択してください');
@@ -69,8 +71,9 @@ function runCorrelationAnalysis(currentData) {
 
     document.getElementById('analysis-results').style.display = 'block';
 
-    // 軸ラベルの動的切り替え (再描画)
-    const { axisControl, titleControl } = createVisualizationControls('visualization-controls-container');
+    const controlsContainer = document.getElementById('visualization-controls-container');
+    controlsContainer.innerHTML = ''; 
+    const { axisControl, titleControl } = createVisualizationControls(controlsContainer);
 
     if (axisControl && titleControl) {
         const updatePlots = () => {
@@ -121,7 +124,6 @@ function displayResults(variables, matrix, pValues) {
         <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">p&lt;0.1† p&lt;0.05* p&lt;0.01**</p>
     `;
 
-    // 解釈の追加
     html += `
         <div style="margin-top: 2rem; background: #f8fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
             <h5 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">
@@ -162,7 +164,14 @@ function plotHeatmap(variables, matrix) {
     const layout = {
         title: '',
         height: 600,
-        margin: { b: 150 }, // Increased bottom margin for bottom title
+        // Adjust margins to prevent long labels from being cut off
+        margin: { l: 150, r: 50, b: 150, t: 50 }, 
+        xaxis: {
+            tickangle: -45 // Rotate x-axis labels to prevent overlap
+        },
+        yaxis: {
+            automargin: true // Automatically adjust margin for y-axis labels
+        },
         annotations: []
     };
 
@@ -173,16 +182,10 @@ function plotHeatmap(variables, matrix) {
     const showGraphTitle = titleControl?.checked ?? true;
 
     if (!showAxisLabels) {
-        layout.xaxis = {
-            ...layout.xaxis,
-            title: '',
-            showticklabels: false
-        };
-        layout.yaxis = {
-            ...layout.yaxis,
-            title: '',
-            showticklabels: false
-        };
+        layout.xaxis.title = '';
+        layout.xaxis.showticklabels = false;
+        layout.yaxis.title = '';
+        layout.yaxis.showticklabels = false;
     }
 
     if (showGraphTitle) {
@@ -352,7 +355,6 @@ export function render(container, currentData, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">変数間の関係の強さを分析します</p>
             </div>
 
-            <!-- 分析の概要・解釈 -->
             <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
                 <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
                     <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
@@ -373,8 +375,8 @@ export function render(container, currentData, characteristics) {
                     <ul>
                         <li><strong>相関係数 (r):</strong> -1から+1の範囲の値をとります。
                             <ul>
-                                <li><strong>0.7 〜 1.0:</strong> 強い正の相関（一方が増ともう一方も強く増える）</li>
-                                <li><strong>-0.7 〜 -1.0:</strong> 強い負の相関（一方が増えるともう一方は強く減る）</li>
+                                <li><strong>0.7 〜 1.0</strong>: 強い正の相関（一方が増ともう一方も強く増える）</li>
+                                <li><strong>-0.7 〜 -1.0</strong>: 強い負の相関（一方が増えるともう一方は強く減る）</li>
                                 <li><strong>0付近:</strong> 相関なし（関係性が見られない）</li>
                             </ul>
                         </li>
@@ -382,21 +384,20 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
-            <!-- データプレビュー -->
             <div id="corr-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
-            <!-- 分析設定 -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 
-                <!-- 軸ラベル表示オプション (Moved) -->
-                <!-- <div id="axis-label-control-container"></div> -->
-
-                <div id="corr-vars-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+                <div style="padding: 1rem; background: #fafbfc; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
+                        <i class="fas fa-check-square"></i> 分析する数値変数を選択（複数選択可、2つ以上）:
+                    </label>
+                    <div id="corr-vars-container"></div>
+                </div>
 
                 <div id="run-correlation-btn-container"></div>
             </div>
 
-            <!-- 結果エリア -->
             <div id="analysis-results" style="display: none;">
                 <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                     <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
@@ -405,7 +406,6 @@ export function render(container, currentData, characteristics) {
                     <div id="correlation-table"></div>
                 </div>
 
-                <!-- 軸ラベル表示オプション -->
                 <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: flex-end;">
                      <div id="visualization-controls-container"></div>
                 </div>
@@ -429,13 +429,8 @@ export function render(container, currentData, characteristics) {
 
     renderDataOverview('#corr-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
-    // 軸ラベル表示オプションの追加 (Moved logic to runCorrelationAnalysis)
-    // createAxisLabelControl('axis-label-control-container');
-
-    // Multi select for correlation variables
-    createVariableSelector('corr-vars-container', numericColumns, 'correlation-vars', {
-        label: '<i class="fas fa-check-square"></i> 分析する数値変数を選択（複数選択可、2つ以上）:',
-        multiple: true
+    multiSelectInstance = new MultiSelect('corr-vars-container', numericColumns, {
+        placeholder: 'ここをクリックして変数を選択...'
     });
 
     createAnalysisButton('run-correlation-btn-container', '相関分析を実行', () => runCorrelationAnalysis(currentData), { id: 'run-correlation-btn' });

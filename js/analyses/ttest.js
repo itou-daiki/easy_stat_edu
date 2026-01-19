@@ -1,4 +1,7 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
+import { MultiSelect } from '../components/MultiSelect.js';
+
+let depVarMultiSelect = null;
 
 // 要約統計量の計算と表示
 function displaySummaryStatistics(variables, currentData) {
@@ -68,8 +71,7 @@ function displaySummaryStatistics(variables, currentData) {
 // 対応なしt検定の実行
 function runIndependentTTest(currentData) {
     const groupVar = document.getElementById('group-var').value;
-    const depVarSelect = document.getElementById('dep-var');
-    const selectedVars = Array.from(depVarSelect.selectedOptions).map(opt => opt.value);
+    const selectedVars = depVarMultiSelect.getValue();
 
     if (!groupVar) {
         alert('グループ変数を選択してください');
@@ -124,13 +126,17 @@ function runIndependentTTest(currentData) {
     `;
 
     const testResults = [];
+    const skippedVars = [];
 
     selectedVars.forEach(varName => {
         const allValues = currentData.map(row => row[varName]).filter(v => v != null && !isNaN(v));
         const group0Values = group0Data.map(row => row[varName]).filter(v => v != null && !isNaN(v));
         const group1Values = group1Data.map(row => row[varName]).filter(v => v != null && !isNaN(v));
 
-        if (group0Values.length < 2 || group1Values.length < 2) return;
+        if (group0Values.length < 2 || group1Values.length < 2) {
+            skippedVars.push(varName);
+            return;
+        }
         
         const n1 = group0Values.length;
         const n2 = group1Values.length;
@@ -176,6 +182,13 @@ function runIndependentTTest(currentData) {
     });
 
     resultsTableHtml += `</tbody></table></div><p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;"><strong>sign</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†</p>`;
+    
+    if (skippedVars.length > 0) {
+        resultsTableHtml += `<div class="warning-message" style="margin-top: 1rem; padding: 1rem; background-color: #fffbe6; border: 1px solid #fde68a; border-radius: 4px; color: #92400e;">
+            <strong>注意:</strong> 次の変数は、片方または両方のグループのサンプルサイズが2未満だったため、分析から除外されました: ${skippedVars.join(', ')}
+        </div>`;
+    }
+    
     document.getElementById('test-results-table').innerHTML = resultsTableHtml;
 
     renderSampleSizeInfo(resultsContainer, currentData.length, [
@@ -232,15 +245,20 @@ function runPairedTTest(currentData, pairs) {
 
     const testResults = [];
     let totalN = 0;
+    const skippedPairs = [];
 
     pairs.forEach((pair, i) => {
         const { pre: preVar, post: postVar } = pair;
+        const pairName = `${preVar} → ${postVar}`;
 
         const pairedData = currentData
             .map(row => ({ pre: row[preVar], post: row[postVar] }))
             .filter(p => p.pre != null && !isNaN(p.pre) && p.post != null && !isNaN(p.post));
 
-        if (pairedData.length < 2) return;
+        if (pairedData.length < 2) {
+            skippedPairs.push(pairName);
+            return;
+        }
 
         const preValues = pairedData.map(p => p.pre);
         const postValues = pairedData.map(p => p.post);
@@ -277,7 +295,7 @@ function runPairedTTest(currentData, pairs) {
         `;
 
         testResults.push({
-            varName: `${preVar} → ${postVar}`,
+            varName: pairName,
             groups: [preVar, postVar],
             mean1, mean2, std1, std2, n1: n, n2: n, t_stat, p_value, cohens_d, significance,
             group0Values: preValues,
@@ -286,6 +304,13 @@ function runPairedTTest(currentData, pairs) {
     });
 
     resultsTableHtml += `</tbody></table></div><p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;"><strong>sign</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†</p>`;
+    
+    if (skippedPairs.length > 0) {
+        resultsTableHtml += `<div class="warning-message" style="margin-top: 1rem; padding: 1rem; background-color: #fffbe6; border: 1px solid #fde68a; border-radius: 4px; color: #92400e;">
+            <strong>注意:</strong> 次の変数ペアは、有効なデータが2件未満だったため、分析から除外されました: ${skippedPairs.join(', ')}
+        </div>`;
+    }
+    
     document.getElementById('test-results-table').innerHTML = resultsTableHtml;
 
     renderSampleSizeInfo(resultsContainer, totalN);
@@ -567,17 +592,17 @@ export function render(container, currentData, characteristics) {
                 <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <label class="ttest-radio-label" style="flex: 1; min-width: 200px; padding: 1rem; background: #f0f8ff; border: 2px solid #1e90ff; border-radius: 8px; cursor: pointer;">
+                        <label class="ttest-radio-label selected">
                             <input type="radio" name="test-type" value="independent" checked style="margin-right: 0.5rem;">
                             <strong>対応なしt検定</strong>
                             <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">2つの独立したグループ間の平均値を比較</p>
                         </label>
-                        <label class="ttest-radio-label" style="flex: 1; min-width: 200px; padding: 1rem; background: #fafbfc; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                        <label class="ttest-radio-label">
                             <input type="radio" name="test-type" value="paired" style="margin-right: 0.5rem;">
                             <strong>対応ありt検定</strong>
                             <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">同じ対象の2つの測定値を比較（前後比較など）</p>
                         </label>
-                        <label class="ttest-radio-label" style="flex: 1; min-width: 200px; padding: 1rem; background: #fafbfc; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                        <label class="ttest-radio-label">
                             <input type="radio" name="test-type" value="one-sample" style="margin-right: 0.5rem;">
                             <strong>1サンプルのt検定</strong>
                             <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">標本の平均値を特定の値と比較</p>
@@ -587,7 +612,10 @@ export function render(container, currentData, characteristics) {
 
                 <div id="independent-controls" style="display: block;">
                     <div id="group-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
-                    <div id="dep-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+                    <div id="dep-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
+                         <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;"><i class="fas fa-check-square"></i> 従属変数を選択（複数選択可）:</label>
+                         <div id="dep-var-multiselect"></div>
+                    </div>
                     <div id="independent-btn-container"></div>
                 </div>
                 <div id="paired-controls" style="display: none;">
@@ -638,10 +666,11 @@ export function render(container, currentData, characteristics) {
         label: '<i class="fas fa-layer-group"></i> グループ変数（カテゴリ変数、2群）を選択:',
         multiple: false, placeholder: '選択してください...'
     });
-    createVariableSelector('dep-var-container', numericColumns, 'dep-var', {
-        label: '<i class="fas fa-check-square"></i> 従属変数を選択（複数選択可）:',
-        multiple: true
+    
+    depVarMultiSelect = new MultiSelect('dep-var-multiselect', numericColumns, {
+        placeholder: 'ここをクリックして変数を選択...'
     });
+
     createAnalysisButton('independent-btn-container', '対応なしt検定を実行', () => runIndependentTTest(currentData), { id: 'run-independent-btn' });
 
     // Paired t-test UI and logic
@@ -746,11 +775,9 @@ export function render(container, currentData, characteristics) {
         radio.addEventListener('change', (e) => {
             switchTestType(e.target.value);
             document.querySelectorAll('.ttest-radio-label').forEach(label => {
-                label.style.background = '#fafbfc';
-                label.style.borderColor = '#e2e8f0';
+                label.classList.remove('selected');
             });
-            e.target.closest('label').style.background = '#f0f8ff';
-            e.target.closest('label').style.borderColor = '#1e90ff';
+            e.target.closest('label').classList.add('selected');
         });
     });
 

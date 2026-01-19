@@ -1132,3 +1132,47 @@ table tr:hover {
     text-align: center;
     font-size: 0.9rem;
 }
+
+/* Analysis Button */
+.btn-analysis {
+    margin-top: 1.5rem;
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    transition: filter 0.2s; /* Use filter for hover effect */
+    box-shadow: var(--shadow-md);
+}
+
+.btn-analysis:hover {
+    filter: brightness(90%);
+}
+
+/* t-test Radio-like Labels */
+.ttest-radio-label {
+    flex: 1;
+    min-width: 200px;
+    padding: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    border: 2px solid var(--border-color);
+    background: #fafbfc;
+}
+
+.ttest-radio-label:hover {
+    border-color: var(--primary-light);
+}
+
+.ttest-radio-label.selected {
+    background: #f0f8ff;
+    border-color: var(--primary-color);
+}
