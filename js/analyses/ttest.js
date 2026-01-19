@@ -736,6 +736,24 @@ export function render(container, currentData, characteristics) {
     
     createAnalysisButton('paired-btn-container', '対応ありt検定を実行', () => runPairedTTest(currentData, selectedPairs), { id: 'run-paired-btn' });
     
+    createVariableSelector('one-sample-var-container', numericColumns, 'one-sample-var', {
+        label: '<i class="fas fa-vial"></i> 検定する変数を選択:',
+        multiple: false
+    });
+    createAnalysisButton('one-sample-btn-container', '1サンプルのt検定を実行', () => runOneSampleTTest(currentData), { id: 'run-one-sample-btn' });
+
+    document.querySelectorAll('input[name="test-type"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            switchTestType(e.target.value);
+            document.querySelectorAll('.ttest-radio-label').forEach(label => {
+                label.style.background = '#fafbfc';
+                label.style.borderColor = '#e2e8f0';
+            });
+            e.target.closest('label').style.background = '#f0f8ff';
+            e.target.closest('label').style.borderColor = '#1e90ff';
+        });
+    });
+
     renderSelectedPairs(); // Initial render
     updatePairedSelectors(); // Initial setup of selectors
 }

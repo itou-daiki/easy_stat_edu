@@ -57,18 +57,6 @@ function runFactorAnalysis(currentData) {
         plotScree(eigenvalues);
         plotLoadingsHeatmap(variables, loadings);
 
-        // 因子ごとの平均値（簡易的な因子スコアの代用として、因子に関連する変数の平均を表示）
-        // 因子ごとに寄与の高い変数（絶対値 > 0.4）を抽出
-        const factorDefinitions = [];
-        for (let f = 0; f < numFactors; f++) {
-            const highLoadings = variables.filter((v, i) => Math.abs(loadings[i][f]) > 0.4);
-            factorDefinitions.push(highLoadings);
-        }
-        displayFactorMeans(factorDefinitions, numFactors, currentData);
-
-        // クロンバックのアルファ（信頼性係数）
-        displayCronbachAlpha(variables, currentData);
-
         document.getElementById('analysis-results').style.display = 'block';
 
     } catch (e) {
@@ -84,7 +72,7 @@ function displayEigenvalues(eigenvalues) {
             <table class="table">
                 <thead>
                     <tr>
-                        <th>因子番号</th>
+                        <th>主成分</th>
                         <th>固有値</th>
                         <th>寄与率 (%)</th>
                         <th>累積寄与率 (%)</th>
@@ -93,19 +81,19 @@ function displayEigenvalues(eigenvalues) {
                 <tbody>
     `;
 
-    const total = eigenvalues.reduce((a, b) => a + b, 0);
+    const total = eigenvalues.length; // In PCA of a correlation matrix, total variance is number of variables
     let cumulative = 0;
 
     eigenvalues.forEach((val, i) => {
         const contribution = (val / total) * 100;
         cumulative += contribution;
 
-        // 1以上を強調
+        // 1以上を強調 (カイザー基準)
         const style = val >= 1.0 ? 'font-weight: bold; color: #1e90ff;' : '';
 
         html += `
             <tr style="${style}">
-                <td>${i + 1}</td>
+                <td>第${i + 1}主成分</td>
                 <td>${val.toFixed(3)}</td>
                 <td>${contribution.toFixed(2)}</td>
                 <td>${cumulative.toFixed(2)}</td>
@@ -127,7 +115,7 @@ function displayLoadings(variables, loadings) {
                 <thead>
                     <tr>
                         <th>変数</th>
-                        ${Array.from({ length: numFactors }, (_, i) => `<th>第${i + 1}因子</th>`).join('')}
+                        ${Array.from({ length: numFactors }, (_, i) => `<th>第${i + 1}主成分</th>`).join('')}
                     </tr>
                 </thead>
                 <tbody>
@@ -144,99 +132,6 @@ function displayLoadings(variables, loadings) {
 
     html += '</tbody></table></div>';
     container.innerHTML = html;
-}
-
-function displayFactorMeans(factorDefinitions, numFactors, currentData) {
-    const container = document.getElementById('factor-means-section');
-    if (!container) return; // セーフティ
-
-    container.innerHTML = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-layer-group"></i> 因子ごとの代表変数と平均値</h4>
-            <div id="factor-means-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;"></div>
-        </div>
-    `;
-
-    const grid = document.getElementById('factor-means-grid');
-
-    for (let f = 0; f < numFactors; f++) {
-        const vars = factorDefinitions[f];
-        if (vars.length === 0) continue;
-
-        // 変数群の平均値を計算
-        let totalSum = 0;
-        let count = 0;
-
-        vars.forEach(v => {
-            const values = currentData.map(r => r[v]).filter(val => val != null && !isNaN(val));
-            const mean = jStat.mean(values);
-            totalSum += mean;
-            count++;
-        });
-
-        const groupMean = count > 0 ? totalSum / count : 0;
-
-        grid.innerHTML += `
-            <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; background: #f8fafc;">
-                <h5 style="color: #2d3748; font-weight: bold; margin-bottom: 0.5rem;">第${f + 1}因子</h5>
-                <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 0.5rem;">
-                    関連変数: ${vars.join(', ')}
-                </p>
-                <div style="font-size: 1.2rem; color: #1e90ff; font-weight: bold;">
-                    平均スコア: ${groupMean.toFixed(2)}
-                </div>
-            </div>
-        `;
-    }
-}
-
-function displayCronbachAlpha(variables, currentData) {
-    // クロンバックのアルファ係数の計算
-    // α = (k / (k-1)) * (1 - (Σσ_i^2 / σ_X^2))
-    const k = variables.length;
-    if (k < 2) return;
-
-    // 各変数の分散
-    const vars = variables.map(v => {
-        return currentData.map(r => r[v]).filter(val => val != null && !isNaN(val));
-    });
-    const variances = vars.map(vals => jStat.variance(vals, true));
-    const sumVariances = variances.reduce((a, b) => a + b, 0);
-
-    // 合計得点の分散
-    // 行ごとの合計
-    const rowSums = [];
-    for (let i = 0; i < currentData.length; i++) {
-        let sum = 0;
-        let valid = true;
-        for (let j = 0; j < variables.length; j++) {
-            const val = currentData[i][variables[j]];
-            if (val == null || isNaN(val)) { valid = false; break; }
-            sum += val;
-        }
-        if (valid) rowSums.push(sum);
-    }
-    const totalVariance = jStat.variance(rowSums, true);
-
-    const alpha = (k / (k - 1)) * (1 - (sumVariances / totalVariance));
-
-    const container = document.getElementById('cronbach-alpha-section');
-    if (container) {
-        container.innerHTML = `
-             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
-                <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-check-double"></i> 信頼性係数</h4>
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <div style="font-size: 1.1rem;">クロンバックのα係数:</div>
-                    <div style="font-size: 1.5rem; font-weight: bold; color: ${alpha >= 0.7 ? '#1e90ff' : '#f59e0b'};">
-                        ${alpha.toFixed(3)}
-                    </div>
-                </div>
-                <p style="color: #64748b; font-size: 0.9rem; margin-top: 0.5rem;">
-                    目安: 0.7以上で十分な信頼性、0.8以上で高い信頼性
-                </p>
-            </div>
-        `;
-    }
 }
 
 function plotScree(eigenvalues) {
@@ -259,23 +154,23 @@ function plotScree(eigenvalues) {
 
     const layout = {
         title: 'スクリープロット',
-        xaxis: { title: '成分番号' },
+        xaxis: { title: '主成分番号' },
         yaxis: { title: '固有値' },
         shapes: [shape]
     };
 
-    Plotly.newPlot('scree-plot', [trace], layout, createPlotlyConfig('因子分析_スクリープロット', []));
+    Plotly.newPlot('scree-plot', [trace], layout, createPlotlyConfig('主成分分析_スクリープロット', []));
 }
 
 function plotLoadingsHeatmap(variables, loadings) {
-    // 転置して (Factor x Variable) にする
+    // 転置して (Component x Variable) にする
     const z = loadings[0].map((_, colIndex) => loadings.map(row => row[colIndex]));
-    const factors = Array.from({ length: loadings[0].length }, (_, i) => `Factor ${i + 1}`);
+    const components = Array.from({ length: loadings[0].length }, (_, i) => `第${i + 1}主成分`);
 
     const data = [{
         z: z,
         x: variables,
-        y: factors,
+        y: components,
         type: 'heatmap',
         colorscale: 'RdBu',
         zmin: -1,
@@ -283,12 +178,12 @@ function plotLoadingsHeatmap(variables, loadings) {
     }];
 
     const layout = {
-        title: '因子負荷量ヒートマップ',
-        height: 400 + (factors.length * 30),
+        title: '主成分負荷量ヒートマップ',
+        height: 300 + (components.length * 30),
         xaxis: { side: 'bottom' }
     };
 
-    Plotly.newPlot('loadings-heatmap', data, layout, createPlotlyConfig('因子分析_負荷量', variables));
+    Plotly.newPlot('loadings-heatmap', data, layout, createPlotlyConfig('主成分分析_負荷量', variables));
 }
 
 
@@ -299,9 +194,9 @@ export function render(container, currentData, characteristics) {
         <div class="factor-analysis-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
-                    <i class="fas fa-search-dollar"></i> 因子分析 (主成分分析ベース)
+                    <i class="fas fa-sitemap"></i> 主成分分析 (PCA)
                 </h3>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">主成分分析を用いて、多数の変数の背後にある共通の構成概念を探索します</p>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">多数の変数を、より少数の合成変数（主成分）に要約します</p>
             </div>
 
             <!-- 分析の概要・解釈 -->
@@ -312,19 +207,20 @@ export function render(container, currentData, characteristics) {
                 </div>
                 <div class="collapsible-content collapsed">
                     <div class="note">
-                        <strong><i class="fas fa-lightbulb"></i> 因子分析 (主成分分析ベース) とは？</strong>
-                        <p>多数の変数（アンケート項目など）の背後にある、直接は測定できない共通の要因（因子）を見つけ出す手法です。このツールでは、探索的因子分析の手法の一つとして、主成分分析を用いて因子を抽出します。</p>
-                        <img src="image/factor_analysis.png" alt="因子分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <strong><i class="fas fa-lightbulb"></i> 主成分分析 (Principal Component Analysis) とは？</strong>
+                        <p>多数の変数間の相関関係を利用して、情報をできるだけ失わずに変数をより少数の「主成分」に要約する手法です。データの次元削減や、変数群の構造を大まかに把握するために用いられます。</p>
+                        <img src="image/pca.png" alt="主成分分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
-                        <li>「国語」「数学」「理科」...など多数のテスト結果から、「文系能力」「理系能力」という因子を見つけたい</li>
-                        <li>アンケートの多くの質問項目から、「ブランド志向」「価格志向」などの潜在的な消費者心理を特定したい</li>
+                        <li>多数のアンケート項目を、少数の指標（例：「顧客満足度」「デザイン評価」）にまとめたい</li>
+                        <li>多変量データの情報を二次元に圧縮して可視化したい</li>
                     </ul>
                     <h4>主な用語</h4>
                     <ul>
-                        <li><strong>因子負荷量:</strong> 各変数がその因子とどれくらい強く関係しているか（相関係数のようなもの）。ここでは回転を行わない主成分負荷量を示します。</li>
-                        <li><strong>スクリープロット:</strong> 抽出する因子の数を決めるためのグラフ。</li>
+                        <li><strong>主成分負荷量:</strong> 各変数がその主成分とどれくらい強く関係しているかを示す値。主成分の解釈に用います。</li>
+                        <li><strong>固有値:</strong> 各主成分がどれだけの情報（分散）を説明しているかを示す値。</li>
+                        <li><strong>スクリープロット:</strong> 採用する主成分の数を決めるためのグラフ（固有値が1以上、または「肘」のように急に落ち込む前までを採用することが多い）。</li>
                     </ul>
                 </div>
             </div>
@@ -339,7 +235,7 @@ export function render(container, currentData, characteristics) {
                 
                 <div style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
                      <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                         <i class="fas fa-sort-numeric-up"></i> 抽出する因子数:
+                         <i class="fas fa-sort-numeric-up"></i> 抽出する主成分の数:
                      </label>
                      <input type="number" id="num-factors" value="2" min="1" max="10" style="padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; width: 100px;">
                 </div>
@@ -356,13 +252,10 @@ export function render(container, currentData, characteristics) {
                 </div>
 
                 <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                    <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-th"></i> 因子負荷量 (回転前)</h4>
+                    <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-th"></i> 主成分負荷量</h4>
                     <div id="loadings-table"></div>
                     <div id="loadings-heatmap" style="margin-top: 1.5rem;"></div>
                 </div>
-
-                <div id="factor-means-section"></div>
-                <div id="cronbach-alpha-section"></div>
             </div>
         </div>
     `;
@@ -375,5 +268,5 @@ export function render(container, currentData, characteristics) {
         multiple: true
     });
 
-    createAnalysisButton('run-factor-btn-container', '因子分析を実行', () => runFactorAnalysis(currentData), { id: 'run-factor-btn' });
+    createAnalysisButton('run-factor-btn-container', '主成分分析を実行', () => runFactorAnalysis(currentData), { id: 'run-factor-btn' });
 }

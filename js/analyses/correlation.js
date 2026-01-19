@@ -2,35 +2,55 @@ import { renderDataOverview, createVariableSelector, createAnalysisButton, rende
 
 // 相関マトリックスの計算
 export function calculateCorrelationMatrix(variables, currentData) {
-    const matrix = [];
-    for (let i = 0; i < variables.length; i++) {
-        const row = [];
-        for (let j = 0; j < variables.length; j++) {
+    const n = variables.length;
+    const matrix = Array(n).fill(0).map(() => Array(n).fill(0));
+    const pValues = Array(n).fill(0).map(() => Array(n).fill(0));
+    const nValues = Array(n).fill(0).map(() => Array(n).fill(0));
+
+    for (let i = 0; i < n; i++) {
+        for (let j = i; j < n; j++) {
+            if (i === j) {
+                matrix[i][j] = 1;
+                pValues[i][j] = 0;
+                const validData = currentData.map(r => r[variables[i]]).filter(v => v != null && !isNaN(v));
+                nValues[i][j] = validData.length;
+                continue;
+            }
+
             const var1 = variables[i];
             const var2 = variables[j];
 
-            // ペアごとの欠損除去
             const pairs = currentData
                 .map(r => ({ x: r[var1], y: r[var2] }))
-                .filter(p =>
-                    p.x != null && !isNaN(p.x) &&
-                    p.y != null && !isNaN(p.y)
-                );
+                .filter(p => p.x != null && !isNaN(p.x) && p.y != null && !isNaN(p.y));
+            
+            const numPairs = pairs.length;
+            nValues[i][j] = nValues[j][i] = numPairs;
 
-            if (pairs.length < 2) {
-                row.push(NaN);
+            if (numPairs < 3) {
+                matrix[i][j] = matrix[j][i] = NaN;
+                pValues[i][j] = pValues[j][i] = NaN;
             } else {
                 const x = pairs.map(p => p.x);
                 const y = pairs.map(p => p.y);
-                row.push(jStat.corrcoeff(x, y));
+                const r = jStat.corrcoeff(x, y);
+                matrix[i][j] = matrix[j][i] = r;
+
+                // p-value calculation
+                if (Math.abs(r) === 1) {
+                    pValues[i][j] = pValues[j][i] = 0;
+                } else {
+                    const t = r * Math.sqrt((numPairs - 2) / (1 - r * r));
+                    const df = numPairs - 2;
+                    const p = jStat.studentt.cdf(-Math.abs(t), df) * 2;
+                    pValues[i][j] = pValues[j][i] = p;
+                }
             }
         }
-        matrix.push(row);
     }
-    return matrix;
+    return { matrix, pValues, nValues };
 }
 
-// 相関分析の実行
 function runCorrelationAnalysis(currentData) {
     const selector = document.getElementById('correlation-vars');
     const selectedVars = Array.from(selector.selectedOptions).map(opt => opt.value);
@@ -40,10 +60,12 @@ function runCorrelationAnalysis(currentData) {
         return;
     }
 
-    const matrix = calculateCorrelationMatrix(selectedVars, currentData);
-    displayResults(selectedVars, matrix);
+    const { matrix, pValues, nValues } = calculateCorrelationMatrix(selectedVars, currentData);
+    const matrixData = { matrix, pValues, nValues };
+
+    displayResults(selectedVars, matrix, pValues);
     plotHeatmap(selectedVars, matrix);
-    plotScatterMatrix(selectedVars, currentData);
+    plotScatterMatrix(selectedVars, currentData, matrixData);
 
     document.getElementById('analysis-results').style.display = 'block';
 
@@ -53,14 +75,14 @@ function runCorrelationAnalysis(currentData) {
     if (axisControl && titleControl) {
         const updatePlots = () => {
             plotHeatmap(selectedVars, matrix);
-            plotScatterMatrix(selectedVars, currentData);
+            plotScatterMatrix(selectedVars, currentData, matrixData);
         };
         axisControl.addEventListener('change', updatePlots);
         titleControl.addEventListener('change', updatePlots);
     }
 }
 
-function displayResults(variables, matrix) {
+function displayResults(variables, matrix, pValues) {
     const container = document.getElementById('correlation-table');
     let html = `
         <div class="table-container">
@@ -77,18 +99,27 @@ function displayResults(variables, matrix) {
     variables.forEach((rowVar, i) => {
         html += `<tr><td><strong>${rowVar}</strong></td>`;
         variables.forEach((colVar, j) => {
-            const val = matrix[i][j];
+            const r = matrix[i][j];
+            const p = pValues[i][j];
             let style = '';
-            if (!isNaN(val)) {
-                if (Math.abs(val) > 0.7) style = 'background: rgba(30, 144, 255, 0.2); font-weight: bold;';
-                else if (Math.abs(val) > 0.4) style = 'background: rgba(30, 144, 255, 0.1);';
+            if (!isNaN(r)) {
+                if (Math.abs(r) > 0.7) style = 'background: rgba(30, 144, 255, 0.2); font-weight: bold;';
+                else if (Math.abs(r) > 0.4) style = 'background: rgba(30, 144, 255, 0.1);';
             }
-            html += `<td style="${style}">${isNaN(val) ? '-' : val.toFixed(3)}</td>`;
+
+            let sig = '';
+            if (p < 0.01) sig = '**';
+            else if (p < 0.05) sig = '*';
+            else if (p < 0.1) sig = '†';
+            
+            html += `<td style="${style}">${isNaN(r) ? '-' : r.toFixed(3)}${sig}</td>`;
         });
         html += '</tr>';
     });
 
-    html += '</tbody></table></div>';
+    html += `</tbody></table></div>
+        <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">p&lt;0.1† p&lt;0.05* p&lt;0.01**</p>
+    `;
 
     // 解釈の追加
     html += `
@@ -97,13 +128,19 @@ function displayResults(variables, matrix) {
                 <i class="fas fa-info-circle"></i> 相関係数の解釈
             </h5>
             <ul style="list-style: none; padding: 0;">
-                <li style="margin-bottom: 0.5rem;"><strong>0.7 〜 1.0</strong>: 強い正の相関（片方が増えるともう片方も強く増える）</li>
+                <li style="margin-bottom: 0.5rem;"><strong>0.7 〜 1.0</strong>: 強い正の相関</li>
                 <li style="margin-bottom: 0.5rem;"><strong>0.4 〜 0.7</strong>: 中程度の正の相関</li>
                 <li style="margin-bottom: 0.5rem;"><strong>0.2 〜 0.4</strong>: 弱い正の相関</li>
                 <li style="margin-bottom: 0.5rem;"><strong>-0.2 〜 0.2</strong>: ほとんど相関なし</li>
                 <li style="margin-bottom: 0.5rem;"><strong>-0.4 〜 -0.2</strong>: 弱い負の相関</li>
                 <li style="margin-bottom: 0.5rem;"><strong>-0.7 〜 -0.4</strong>: 中程度の負の相関</li>
-                <li style="margin-bottom: 0.5rem;"><strong>-1.0 〜 -0.7</strong>: 強い負の相関（片方が増えるともう片方は強く減る）</li>
+                <li style="margin-bottom: 0.5rem;"><strong>-1.0 〜 -0.7</strong>: 強い負の相関</li>
+                <li style="margin-top: 1rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+                    「*」「**」などの記号は統計的有意性を示します。<br>
+                    <strong>**</strong>: 1%水準で有意 (p < 0.01)<br>
+                    <strong>*</strong>: 5%水準で有意 (p < 0.05)<br>
+                    <strong>†</strong>: 10%水準で有意傾向 (p < 0.1)
+                </li>
             </ul>
         </div>
     `;
@@ -156,13 +193,13 @@ function plotHeatmap(variables, matrix) {
     Plotly.newPlot('correlation-heatmap', data, layout, createPlotlyConfig('相関ヒートマップ', variables));
 }
 
-function plotScatterMatrix(variables, currentData) {
+function plotScatterMatrix(variables, currentData, matrixData) {
     // データの準備（最大1000件に制限）
     const plotData = currentData.slice(0, 1000);
     const n = variables.length;
 
     // 相関行列の計算（テキスト表示用）
-    const matrix = calculateCorrelationMatrix(variables, currentData);
+    const { matrix, pValues } = matrixData;
 
     const traces = [];
     const layout = {
@@ -223,17 +260,23 @@ function plotScatterMatrix(variables, currentData) {
                 });
             } else if (i < j) {
                 // 右上：相関係数テキスト
-                const corr = matrix[i][j];
-                const absCorr = Math.abs(corr);
+                const r = matrix[i][j];
+                const p = pValues[i][j];
+                let sig = '';
+                if (p < 0.01) sig = '**';
+                else if (p < 0.05) sig = '*';
+                else if (p < 0.1) sig = '†';
+
+                const absCorr = Math.abs(r);
                 let textColor = 'black';
                 let weight = 'normal';
-                if (absCorr >= 0.7) { textColor = '#dc2626'; weight = 'bold'; } // strong red
-                else if (absCorr >= 0.4) { textColor = '#ea580c'; } // medium orange
+                if (absCorr >= 0.7) { textColor = '#dc2626'; weight = 'bold'; }
+                else if (absCorr >= 0.4) { textColor = '#ea580c'; }
 
                 traces.push({
                     x: [0.5],
                     y: [0.5],
-                    text: [isNaN(corr) ? '-' : corr.toFixed(3)],
+                    text: [isNaN(r) ? '-' : `${r.toFixed(3)}${sig}`],
                     mode: 'text',
                     xaxis: xaxis,
                     yaxis: yaxis,

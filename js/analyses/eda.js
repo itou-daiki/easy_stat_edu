@@ -449,17 +449,28 @@ function visualizeMultipleNumericVariables(currentData, characteristics) {
         };
     });
 
+    const graphTitleText = '全数値変数の箱ひげ図による比較';
     const layout = {
-        title: '全数値変数の箱ひげ図による比較',
+        title: '',
         yaxis: { title: '値' },
         showlegend: true,
-        height: 500
+        height: 500,
+        annotations: [],
+        margin: { b: 100 }
     };
 
     const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
+    const showGraphTitle = document.getElementById('show-graph-title')?.checked ?? true;
+
     if (!showAxisLabels) {
         if (layout.yaxis) layout.yaxis.title = '';
     }
+
+    if (showGraphTitle) {
+        const bottomTitle = getBottomTitleAnnotation(graphTitleText);
+        if (bottomTitle) layout.annotations.push(bottomTitle);
+    }
+
 
     Plotly.newPlot('multiple-numeric-plot', traces, layout, createPlotlyConfig('EDA_数値変数一括', numericColumns));
 }

@@ -302,22 +302,26 @@ function runTwoWayIndependentANOVA(currentData) {
         const fAxB = dfAxB > 0 ? msAxB / msError : 0; // Handle dfAxB = 0
         const pAxB = dfAxB > 0 ? 1 - jStat.centralF.cdf(fAxB, dfAxB, dfError) : 1;
 
+        const etaA = ssA / (ssA + ssError);
+        const etaB = ssB / (ssB + ssError);
+        const etaAxB = dfAxB > 0 ? ssAxB / (ssAxB + ssError) : 0;
+
         // Perform Simple Main Effect Tests
         const resultSigPairs = performSimpleMainEffectTests(validData, factor1, factor2, depVar, 'independent');
 
         testResults.push({
             depVar, factor1, factor2, levels1, levels2,
-            cellStats, // M, SD, N for each cell
-            pA, pB, pAxB, // p-values
-            ssA, dfA, msA, fA, // For potential ANOVA table
+            cellStats,
+            pA, pB, pAxB,
+            etaA, etaB, etaAxB,
+            ssA, dfA, msA, fA,
             ssB, dfB, msB, fB,
             ssAxB, dfAxB, msAxB, fAxB,
             ssError, dfError, msError,
-            sigPairs: resultSigPairs // Add simple main effects
+            sigPairs: resultSigPairs
         });
     });
 
-    // Populate the sections
     // Populate the sections
     renderTwoWayANOVATable(testResults);
     displayTwoWayANOVAInterpretation(testResults, 'independent');
@@ -340,14 +344,7 @@ function displayTwoWayANOVAInterpretation(results, designType) {
     let html = '';
 
     results.forEach(res => {
-        // Independent results structure: pA, pB, pAxB
-        // Mixed results structure needs to be adapted or accessed differently.
-        // For Mixed, 'results' passed here is likely an array of objects derived from the 'result' object in runTwoWayMixedANOVA
-        // But wait, the current runTwoWayMixedANOVA calls render... with a single object 'result'.
-        // We need to standardize how we pass data or handle both formats.
-
-        // Let's adapt based on input structure.
-        let factorA, factorB, pA, pB, pAxB, varName;
+        let factorA, factorB, pA, pB, pAxB, etaA, etaB, etaAxB, varName;
 
         if (designType === 'independent') {
             factorA = res.factor1;
@@ -355,23 +352,23 @@ function displayTwoWayANOVAInterpretation(results, designType) {
             pA = res.pA;
             pB = res.pB;
             pAxB = res.pAxB;
+            etaA = res.etaA;
+            etaB = res.etaB;
+            etaAxB = res.etaAxB;
             varName = res.depVar;
         } else {
-            // Mixed design result structure (passed as array of 1 for consistency or handled directly)
-            // It seems runTwoWayMixedANOVA constructed a single object 'result'.
-            // We should adjust runTwoWayMixedANOVA to pass an array or handle single object here.
-            // Let's assume we update runTwoWayMixedANOVA to call this with [result].
             factorA = res.factorBetween;
             factorB = res.factorWithin;
-            // Extract p-values from sources
             const srcA = res.sources.find(s => s.name.includes(factorA));
             const srcB = res.sources.find(s => s.name.includes(factorB) || s.name.includes('条件'));
             const srcAxB = res.sources.find(s => s.name.includes('×'));
-
             pA = srcA ? srcA.p : 1;
             pB = srcB ? srcB.p : 1;
             pAxB = srcAxB ? srcAxB.p : 1;
-            varName = '測定値'; // Or passed in constraint
+            etaA = srcA ? srcA.eta : 0;
+            etaB = srcB ? srcB.eta : 0;
+            etaAxB = srcAxB ? srcAxB.eta : 0;
+            varName = '測定値';
         }
 
         const getSigText = (p) => p < 0.05 ? '有意な差（効果）が見られました。' : '有意な差（効果）は見られませんでした。';
@@ -383,20 +380,20 @@ function displayTwoWayANOVAInterpretation(results, designType) {
                 
                 <p style="margin: 0.5rem 0;">
                     <strong>1. 交互作用 (${factorA} × ${factorB}):</strong> <br>
-                    p = ${pAxB.toFixed(3)} (${getStars(pAxB)})。<br>
+                    p = ${pAxB.toFixed(3)} (${getStars(pAxB)}), 偏η² = ${etaAxB.toFixed(2)}。<br>
                     ${getSigText(pAxB)}
                     ${pAxB < 0.05 ? '<br><span style="color: #d97706; font-size: 0.9em;"><i class="fas fa-exclamation-triangle"></i> 交互作用が有意であるため、主効果の解釈には注意が必要です（単純主効果の検定を推奨）。要因の組み合わせによって結果が異なる可能性があります。</span>' : '<br><span style="color: #059669; font-size: 0.9em;">交互作用は有意ではないため、それぞれの主効果（要因単独の影響）に着目します。</span>'}
                 </p>
 
                 <p style="margin: 0.5rem 0;">
                     <strong>2. ${factorA} の主効果:</strong> <br>
-                    p = ${pA.toFixed(3)} (${getStars(pA)})。<br>
+                    p = ${pA.toFixed(3)} (${getStars(pA)}), 偏η² = ${etaA.toFixed(2)}。<br>
                     ${getSigText(pA)}
                 </p>
 
                 <p style="margin: 0.5rem 0;">
                     <strong>3. ${factorB} の主効果:</strong> <br>
-                    p = ${pB.toFixed(3)} (${getStars(pB)})。<br>
+                    p = ${pB.toFixed(3)} (${getStars(pB)}), 偏η² = ${etaB.toFixed(2)}。<br>
                     ${getSigText(pB)}
                 </p>
             </div>
@@ -410,62 +407,98 @@ function displayTwoWayANOVAInterpretation(results, designType) {
 function renderTwoWayANOVATable(results) {
     if (results.length === 0) return;
 
-    // Assume all results share the same factors and levels for header generation
-    const { factor1, factor2, levels1, levels2 } = results[0];
-    const container = document.getElementById('test-results-section'); // This is where the main table goes
+    const container = document.getElementById('test-results-section');
+    let finalHtml = '';
 
-    let tableHtml = `
+    results.forEach(res => {
+        const sources = [
+            { name: res.factor1, ss: res.ssA, df: res.dfA, ms: res.msA, f: res.fA, p: res.pA, eta: res.etaA },
+            { name: res.factor2, ss: res.ssB, df: res.dfB, ms: res.msB, f: res.fB, p: res.pB, eta: res.etaB },
+            { name: `${res.factor1} × ${res.factor2}`, ss: res.ssAxB, df: res.dfAxB, ms: res.msAxB, f: res.fAxB, p: res.pAxB, eta: res.etaAxB },
+            { name: '誤差 (Error)', ss: res.ssError, df: res.dfError, ms: res.msError, f: null, p: null, eta: null }
+        ];
+
+        finalHtml += `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-table"></i> ${factor1}・${factor2}での分散分析による比較
+                <i class="fas fa-table"></i> 分散分析表: ${res.depVar}
             </h4>
             <div class="table-container">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th rowspan="2" style="vertical-align: middle; text-align: left;"></th>
-                            <th rowspan="2" style="vertical-align: middle; text-align: left;">${factor2}</th>
-                            ${levels1.map(l1 => `<th colspan="2" style="text-align: center;">${l1}</th>`).join('')}
-                            <th rowspan="2" style="vertical-align: middle; white-space: nowrap;">${factor1}の主効果</th>
-                            <th rowspan="2" style="vertical-align: middle; white-space: nowrap;">${factor2}の主効果</th>
-                            <th rowspan="2" style="vertical-align: middle; white-space: nowrap;">交互作用</th>
-                        </tr>
-                        <tr>
-                            ${levels1.map(() => `<th>M</th><th>S.D</th>`).join('')}
+                            <th>変動要因 (Source)</th>
+                            <th>平方和 (SS)</th>
+                            <th>自由度 (df)</th>
+                            <th>平均平方 (MS)</th>
+                            <th>F値</th>
+                            <th>p値</th>
+                            <th>偏η²</th>
                         </tr>
                     </thead>
                     <tbody>`;
+        
+        sources.forEach(src => {
+            const sig = src.p !== null ? (src.p < 0.01 ? '**' : src.p < 0.05 ? '*' : src.p < 0.1 ? '†' : '') : '';
+            const pStr = src.p !== null ? `${src.p.toFixed(3)} ${sig}` : '-';
+            const fStr = src.f !== null ? src.f.toFixed(2) : '-';
+            const etaStr = src.eta !== null ? src.eta.toFixed(2) : '-';
 
-    results.forEach(res => {
-        tableHtml += `<tr>
-            <td rowspan="`+ (res.levels2.length * 1) + `" style="vertical-align: middle; font-weight: bold;">${res.depVar}</td>`; // Multiply by 1 to ensure it's treated as a number
-
-        res.levels2.forEach((l2, i) => {
-            if (i > 0) tableHtml += '<tr>';
-            tableHtml += `<td>${l2}</td>`;
-            res.levels1.forEach(l1 => {
-                const stats = res.cellStats[l1][l2];
-                tableHtml += `<td>${stats.mean.toFixed(2)}</td><td>${stats.std.toFixed(2)}</td>`;
-            });
-
-            if (i === 0) {
-                const sigA = res.pA < 0.01 ? '**' : res.pA < 0.05 ? '*' : res.pA < 0.1 ? '†' : 'n.s.';
-                const sigB = res.pB < 0.01 ? '**' : res.pB < 0.05 ? '*' : res.pB < 0.1 ? '†' : 'n.s.';
-                const sigAxB = res.pAxB < 0.01 ? '**' : res.pAxB < 0.05 ? '*' : res.pAxB < 0.1 ? '†' : 'n.s.';
-                tableHtml += `
-                    <td rowspan="`+ (res.levels2.length * 1) + `" style="vertical-align: middle; text-align: center;">${sigA}</td>
-                    <td rowspan="`+ (res.levels2.length * 1) + `" style="vertical-align: middle; text-align: center;">${sigB}</td>
-                    <td rowspan="`+ (res.levels2.length * 1) + `" style="vertical-align: middle; text-align: center;">${sigAxB}</td>`;
-            }
-            tableHtml += '</tr>';
+            finalHtml += `
+                <tr>
+                    <td style="text-align: left; font-weight: 500;">${src.name}</td>
+                    <td>${src.ss.toFixed(2)}</td>
+                    <td>${src.df}</td>
+                    <td>${src.ms.toFixed(2)}</td>
+                    <td>${fStr}</td>
+                    <td style="${src.p < 0.05 ? 'color: #e11d48; font-weight: bold;' : ''}">${pStr}</td>
+                    <td>${etaStr}</td>
+                </tr>
+            `;
         });
+
+        finalHtml += `</tbody></table>
+            <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">p&lt;0.1† p&lt;0.05* p&lt;0.01**</p>
+            </div></div>`;
+
+        // Descriptive Stats Table (Means and SDs)
+        finalHtml += `
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <h4 style="color: #475569; margin-bottom: 1rem; font-size: 1.1rem; font-weight: bold;">
+                記述統計量: ${res.depVar}
+            </h4>
+            <div class="table-container">
+                <table class="table">
+                     <thead>
+                        <tr>
+                            <th>${res.factor1}</th>
+                            <th>${res.factor2}</th>
+                            <th>平均値 (M)</th>
+                            <th>標準偏差 (SD)</th>
+                            <th>サンプル数 (N)</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+        
+        res.levels1.forEach(l1 => {
+            res.levels2.forEach(l2 => {
+                const stat = res.cellStats[l1][l2];
+                finalHtml += `
+                    <tr>
+                        <td>${l1}</td>
+                        <td>${l2}</td>
+                        <td>${stat.mean.toFixed(2)}</td>
+                        <td>${stat.std.toFixed(2)}</td>
+                        <td>${stat.n}</td>
+                    </tr>
+                `;
+            });
+        });
+
+        finalHtml += `</tbody></table></div></div>`;
     });
 
-    const footerHtml = `</tbody></table>
-        <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">p&lt;0.1† p&lt;0.05* p&lt;0.01**</p>
-        </div></div>`;
-
-    container.innerHTML = tableHtml;
+    container.innerHTML = finalHtml;
 }
 
 
