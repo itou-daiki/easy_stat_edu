@@ -2,13 +2,19 @@ import { renderDataOverview, createVariableSelector, createAnalysisButton, rende
 
 let tokenizer = null;
 
-async function initTokenizer() {
+async function initTokenizer(statusCallback) {
     return new Promise((resolve, reject) => {
-        // Use a more reliable dictionary path (official demo path or local if available)
-        // Here we use the github io demo path which is generally reliable for demos
-        kuromoji.builder({ dicPath: "https://takuyaa.github.io/kuromoji.js/demo/dict/" }).build((err, _tokenizer) => {
-            if (err) reject(err);
+        if (statusCallback) statusCallback('辞書データをダウンロード中...（初回のみ数秒かかります）');
+        
+        // Use jsDelivr CDN for reliable dictionary loading
+        kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict" }).build((err, _tokenizer) => {
+            if (err) {
+                console.error('Kuromoji initialization failed:', err);
+                reject(new Error('形態素解析エンジンの初期化に失敗しました。ネットワーク接続を確認してください。'));
+                return;
+            }
             tokenizer = _tokenizer;
+            if (statusCallback) statusCallback('解析中...');
             resolve();
         });
     });
@@ -26,8 +32,13 @@ async function runTextMining(currentData) {
     // UI Loading state
     const btn = document.getElementById('run-text-btn');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 解析中...';
     btn.disabled = true;
+    
+    // Status callback for loading UI
+    const updateStatus = (message) => {
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${message}`;
+    };
+    updateStatus('解析エンジンを準備中...');
 
     // Clear previous results
     document.getElementById('analysis-results').style.display = 'block';
@@ -39,7 +50,8 @@ async function runTextMining(currentData) {
 
 
     try {
-        if (!tokenizer) await initTokenizer();
+        if (!tokenizer) await initTokenizer(updateStatus);
+        updateStatus('テキストを解析中...');
 
         // 1. Overall Analysis
         const allTexts = currentData.map(d => d[textVar]).filter(v => v != null && v !== '');
@@ -279,6 +291,30 @@ export function render(container, currentData, characteristics) {
                     <i class="fas fa-comment-dots"></i> テキストマイニング
                 </h3>
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">テキストデータの構造を可視化します（日本語対応）</p>
+            </div>
+
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> テキストマイニングとは？</strong>
+                        <p>大量のテキストデータから有用な情報やパターンを抽出する分析手法です。自然言語処理技術を用いて、テキストに含まれる単語の頻度や関係性を可視化します。</p>
+                    </div>
+                    <h4>分析結果の見方</h4>
+                    <ul>
+                        <li><strong>ワードクラウド:</strong> 頻出する単語を大きく表示します。大きい単語ほど多く出現しています。</li>
+                        <li><strong>共起ネットワーク:</strong> 同じ文の中で一緒に出現しやすい単語をネットワーク図で表示します。線で繋がった単語は関連性が高いことを示します。</li>
+                    </ul>
+                    <h4>対象となる品詞</h4>
+                    <p>分析では<strong>名詞・動詞・形容詞</strong>を抽出します。助詞や記号などは自動的に除外されます。</p>
+                    <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                        <strong><i class="fas fa-exclamation-triangle" style="color: #856404;"></i> 注意事項</strong>
+                        <p style="margin: 0.5rem 0 0 0; color: #856404;">初回実行時は辞書データ（約15MB）のダウンロードが必要なため、数秒から数十秒お待ちいただく場合があります。</p>
+                    </div>
+                </div>
             </div>
 
             <!-- 分析設定 -->
