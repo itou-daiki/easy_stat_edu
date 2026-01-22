@@ -92,4 +92,4 @@ easyStatに実装されている全機能の詳細と、JavaScript版での仕�
 
 ---
 
-© 2022-2025 Dit-Lab.(Daiki Ito).
+© 2022-2026 Dit-Lab.(Daiki Ito).

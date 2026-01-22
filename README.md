@@ -73,7 +73,7 @@ GitHub Pagesなどの静的ホスティングサービスにそのままデプ�
 
 ## ライセンス
 
-© 2022-2025 Dit-Lab.(Daiki Ito). All Rights Reserved.
+© 2022-2026 Dit-Lab.(Daiki Ito). All Rights Reserved.
 easyStat: Open Source for Ubiquitous Statistics
  Democratizing data, everywhere.
 
