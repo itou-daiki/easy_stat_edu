@@ -26,7 +26,7 @@ export function calculateCorrelationMatrix(variables, currentData) {
             const pairs = currentData
                 .map(r => ({ x: r[var1], y: r[var2] }))
                 .filter(p => p.x != null && !isNaN(p.x) && p.y != null && !isNaN(p.y));
-            
+
             const numPairs = pairs.length;
             nValues[i][j] = nValues[j][i] = numPairs;
 
@@ -72,7 +72,7 @@ function runCorrelationAnalysis(currentData) {
     document.getElementById('analysis-results').style.display = 'block';
 
     const controlsContainer = document.getElementById('visualization-controls-container');
-    controlsContainer.innerHTML = ''; 
+    controlsContainer.innerHTML = '';
     const { axisControl, titleControl } = createVisualizationControls(controlsContainer);
 
     if (axisControl && titleControl) {
@@ -114,7 +114,7 @@ function displayResults(variables, matrix, pValues) {
             if (p < 0.01) sig = '**';
             else if (p < 0.05) sig = '*';
             else if (p < 0.1) sig = '†';
-            
+
             html += `<td style="${style}">${isNaN(r) ? '-' : r.toFixed(3)}${sig}</td>`;
         });
         html += '</tr>';
@@ -158,22 +158,68 @@ function plotHeatmap(variables, matrix) {
         type: 'heatmap',
         colorscale: 'RdBu',
         zmin: -1,
-        zmax: 1
+        zmax: 1,
+        showscale: true,
+        colorbar: {
+            title: '相関係数',
+            titleside: 'right',
+            thickness: 15,
+            len: 0.8
+        }
     }];
+
+    // 変数の数に応じてサイズを動的に調整
+    const n = variables.length;
+    const baseCellSize = 80; // 基本セルサイズ
+    const minSize = 450;
+    const maxSize = 900;
+    const calculatedSize = Math.max(minSize, Math.min(maxSize, n * baseCellSize + 200));
+
+    // フォントサイズも変数の数に応じて調整
+    const fontSize = Math.max(10, Math.min(16, 18 - n));
 
     const layout = {
         title: '',
-        height: 600,
+        height: calculatedSize,
+        width: calculatedSize + 100, // カラーバー分の余白
         // Adjust margins to prevent long labels from being cut off
-        margin: { l: 150, r: 50, b: 150, t: 50 }, 
+        margin: { l: 150, r: 80, b: 150, t: 50 },
         xaxis: {
-            tickangle: -45 // Rotate x-axis labels to prevent overlap
+            tickangle: -45, // Rotate x-axis labels to prevent overlap
+            tickfont: { size: Math.max(10, 14 - Math.floor(n / 3)) }
         },
         yaxis: {
-            automargin: true // Automatically adjust margin for y-axis labels
+            automargin: true, // Automatically adjust margin for y-axis labels
+            tickfont: { size: Math.max(10, 14 - Math.floor(n / 3)) }
         },
         annotations: []
     };
+
+    // セル内に相関係数の値をアノテーションとして追加
+    for (let i = 0; i < variables.length; i++) {
+        for (let j = 0; j < variables.length; j++) {
+            const value = matrix[i][j];
+            // 背景色が暗い（強い相関）場合は白文字、明るい場合は黒文字
+            // RdBuスケール: -1は赤(暗)、0は白(明)、1は青(暗)
+            const absValue = Math.abs(value);
+            const textColor = absValue > 0.5 ? 'white' : 'black';
+
+            layout.annotations.push({
+                xref: 'x',
+                yref: 'y',
+                x: variables[j],
+                y: variables[i],
+                text: isNaN(value) ? '-' : value.toFixed(2),
+                font: {
+                    family: 'Arial',
+                    size: fontSize,
+                    color: textColor,
+                    weight: absValue >= 0.7 ? 'bold' : 'normal'
+                },
+                showarrow: false
+            });
+        }
+    }
 
     // 軸ラベルとタイトルの表示切り替え
     const axisControl = document.getElementById('show-axis-labels');
