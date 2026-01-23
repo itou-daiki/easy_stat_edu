@@ -1300,3 +1300,55 @@ table tr:hover {
 .kwic-overlay.open {
     display: block;
 }
+
+/* =========================================
+   Mobile Optimization (Responsive)
+   ========================================= */
+@media (max-width: 768px) {
+    /* Touch Target Size: Min 48px for accessibility */
+    button, 
+    select, 
+    input[type="text"], 
+    input[type="number"], 
+    input[type="file"],
+    .tab-btn {
+        min-height: 48px;
+        font-size: 16px; /* Prevent iOS zoom */
+        margin-bottom: 0.5rem; /* Ensure spacing */
+    }
+
+    /* Adjust padding for touch */
+    input, select {
+        padding: 0.75rem 1rem;
+    }
+
+    button {
+        padding: 0.75rem 1.5rem;
+    }
+
+    /* Container Spacing */
+    #main-app {
+        padding: 1rem;
+    }
+
+    .hero-section {
+        padding: 2rem 1.5rem;
+        border-radius: 16px;
+    }
+
+    /* Stacking Grids */
+    .grid-2-cols,
+    .upload-section .grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem;
+    }
+
+    /* KWIC Panel - Full screen on mobile */
+    .kwic-panel {
+        width: 100%;
+        right: -100%;
+    }
+    .kwic-panel.open {
+        right: 0;
+    }
+}
