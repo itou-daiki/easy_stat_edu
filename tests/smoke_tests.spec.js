@@ -16,8 +16,8 @@ async function selectCustomMultiSelect(page, containerId, count = 1) {
     // Open dropdown
     await multiSelectInput.click();
 
-    const options = page.locator(`${containerSelector} .multiselect-options li`);
-    const optionsContainer = page.locator(`${containerSelector} .multiselect-options`);
+    const options = page.locator(`${containerSelector} .multiselect-dropdown .multiselect-option`);
+    const optionsContainer = page.locator(`${containerSelector} .multiselect-dropdown`);
 
     for (let i = 0; i < count; i++) {
         // Ensure dropdown is visible
@@ -96,6 +96,7 @@ const analyses = [
             // Group variable (Standard Select)
             await selectStandardOption(page, 'group-var', 1);
             // Target variable (Custom MultiSelect)
+            // Target variable (Custom MultiSelect)
             await selectCustomMultiSelect(page, 'dep-var-multiselect', 1);
         },
         runBtn: '#run-independent-btn',
@@ -107,7 +108,7 @@ const analyses = [
         cardSelector: '.feature-card[data-analysis="anova_one_way"]',
         setup: async (page) => {
             await selectStandardOption(page, 'factor-var', 1);
-            await selectStandardOption(page, 'dependent-var', 2); // Numeric variable
+            await selectCustomMultiSelect(page, 'dependent-var-container', 1); // Numeric variable (Multi-select)
         },
         runBtn: '#run-ind-anova-btn',
         resultSelector: '#analysis-results'
@@ -117,8 +118,23 @@ const analyses = [
         file: 'multiple_regression_demo.xlsx',
         cardSelector: '.feature-card[data-analysis="regression_multiple"]',
         setup: async (page) => {
-            await selectStandardOption(page, 'dependent-var', 3); // Target variable (Indices: 0, 1, 2, 3)
-            await selectStandardOption(page, 'independent-vars', 1); // Explanatory variable
+            await selectCustomMultiSelect(page, 'dependent-var-container', 1); // Target variable (Index 0)
+            // Need to ensure we pick a different one for independent var.
+            // selectCustomMultiSelect picks first visible options by default.
+            // To pick different ones, we need a way to skip or pick specifically.
+            // Simplified fix: Just let it pick, but then deselect/reselect? No, that's hard.
+            // Better: update selectCustomMultiSelect to accept an offset or index.
+            // Or just manually select in the test block here without helper if needed.
+            // Actually, helper uses `nth(i)`. So if I call it on index 0, it picks first.
+            // I need to update the helper or just manually pick the second one here.
+
+            // Manual selection for independent variable (Index 1) to avoid overlap
+            const containerId = 'independent-vars-container';
+            const multiSelectInput = page.locator(`#${containerId} .multiselect-input`);
+            await multiSelectInput.click();
+            const options = page.locator(`#${containerId} .multiselect-dropdown .multiselect-option`);
+            await options.nth(1).click(); // Pick the SECOND option
+            await page.locator('body').click({ position: { x: 0, y: 0 } });
         },
         runBtn: '#run-regression-btn',
         resultSelector: '#regression-results'
@@ -128,10 +144,7 @@ const analyses = [
         file: 'factor_analysis_demo.xlsx',
         cardSelector: '.feature-card[data-analysis="pca"]',
         setup: async (page) => {
-            const select = page.locator('#pca-vars');
-            await expect(select).toBeVisible();
-            // Select at least 2 variables
-            await select.selectOption([{ index: 1 }, { index: 2 }]);
+            await selectCustomMultiSelect(page, 'pca-vars-container', 2); // Multi-select, pick 2 vars
         },
         runBtn: '#run-pca-btn',
         resultSelector: '#analysis-results'

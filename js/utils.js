@@ -379,6 +379,11 @@ export function createVariableSelector(container, columns, id, options = {}) {
         }
     }
 
+    // If it's a multi-select, use the custom component
+    if (multiple) {
+        return createCustomMultiSelect(targetContainer, columns, id, placeholder, disabled);
+    }
+
     const select = document.createElement('select');
     select.id = id;
     select.style.width = '100%';
@@ -386,11 +391,6 @@ export function createVariableSelector(container, columns, id, options = {}) {
     select.style.border = '2px solid #cbd5e0';
     select.style.borderRadius = '8px';
     select.style.fontSize = '1rem';
-
-    if (multiple) {
-        select.multiple = true;
-        select.style.minHeight = '150px';
-    }
 
     if (disabled || !columns || columns.length === 0) {
         select.disabled = true;
@@ -402,27 +402,154 @@ export function createVariableSelector(container, columns, id, options = {}) {
         }
         html += columns.map(col => `<option value="${col}">${col}</option>`).join('');
         select.innerHTML = html;
-
-        // Click-to-toggle logic for multiple select
-        if (multiple) {
-            select.addEventListener('mousedown', function (e) {
-                if (e.target.tagName === 'OPTION') {
-                    e.preventDefault();
-                    const originalScrollTop = this.scrollTop;
-                    e.target.selected = !e.target.selected;
-                    setTimeout(() => {
-                        this.scrollTop = originalScrollTop;
-                    }, 0);
-                    this.focus();
-                }
-            });
-        }
     }
 
     if (targetContainer) {
         targetContainer.appendChild(select);
     }
     return select;
+}
+
+/**
+ * Helper to create a custom multi-select component.
+ */
+function createCustomMultiSelect(container, options, id, placeholder, disabled) {
+    // Hidden native select for compatibility (value holding)
+    const hiddenSelect = document.createElement('select');
+    hiddenSelect.id = id;
+    hiddenSelect.multiple = true;
+    hiddenSelect.style.display = 'none'; // Hide it
+
+    // Add options to hidden select
+    options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt;
+        option.text = opt;
+        hiddenSelect.appendChild(option);
+    });
+    container.appendChild(hiddenSelect);
+
+    if (disabled || !options || options.length === 0) {
+        const msg = document.createElement('div');
+        msg.className = 'multiselect-input disabled';
+        msg.style.background = '#f1f5f9';
+        msg.style.cursor = 'not-allowed';
+        msg.innerHTML = '<span class="multiselect-placeholder">選択可能な項目がありません</span>';
+        container.appendChild(msg);
+        return hiddenSelect;
+    }
+
+    // Wrapper
+    const wrapper = document.createElement('div');
+    wrapper.className = 'multiselect-wrapper';
+
+    // Input Area (Display tags)
+    const inputArea = document.createElement('div');
+    inputArea.className = 'multiselect-input';
+
+    const placeholderEl = document.createElement('span');
+    placeholderEl.className = 'multiselect-placeholder';
+    placeholderEl.textContent = placeholder;
+    inputArea.appendChild(placeholderEl);
+
+    // Dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'multiselect-dropdown';
+
+    // State
+    const selectedValues = new Set();
+
+    // Render Dropdown Options
+    options.forEach(opt => {
+        const item = document.createElement('div');
+        item.className = 'multiselect-option';
+        item.innerHTML = `
+            <input type="checkbox" class="multiselect-checkbox" value="${opt}">
+            <span class="multiselect-label">${opt}</span>
+        `;
+
+        // Handle Click using toggle function
+        const toggleSelection = (e) => {
+            e.stopPropagation();
+
+            const checkbox = item.querySelector('input');
+            const target = e.target;
+
+            // Toggle check if click was not on checkbox itself
+            if (target !== checkbox && !target.classList.contains('multiselect-checkbox')) {
+                checkbox.checked = !checkbox.checked;
+            }
+
+            if (checkbox.checked) {
+                selectedValues.add(opt);
+                item.classList.add('selected');
+            } else {
+                selectedValues.delete(opt);
+                item.classList.remove('selected');
+            }
+
+            updateDisplay();
+            updateHiddenSelect();
+        };
+
+        item.addEventListener('click', toggleSelection);
+        dropdown.appendChild(item);
+    });
+
+    // Update Input Display (Tags)
+    const updateDisplay = () => {
+        inputArea.innerHTML = '';
+        if (selectedValues.size === 0) {
+            inputArea.appendChild(placeholderEl);
+        } else {
+            selectedValues.forEach(val => {
+                const tag = document.createElement('div');
+                tag.className = 'multiselect-tag';
+                tag.innerHTML = `
+                    ${val}
+                    <span class="multiselect-tag-remove" data-val="${val}">&times;</span>
+                `;
+                tag.querySelector('.multiselect-tag-remove').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectedValues.delete(val);
+                    const checkbox = dropdown.querySelector(`input[value="${val}"]`);
+                    if (checkbox) checkbox.checked = false;
+                    const optDiv = Array.from(dropdown.children).find(c => c.querySelector(`input[value="${val}"]`));
+                    if (optDiv) optDiv.classList.remove('selected');
+                    updateDisplay();
+                    updateHiddenSelect();
+                });
+                inputArea.appendChild(tag);
+            });
+        }
+    };
+
+    // Update Hidden Select
+    const updateHiddenSelect = () => {
+        Array.from(hiddenSelect.options).forEach(opt => {
+            opt.selected = selectedValues.has(opt.value);
+        });
+        hiddenSelect.dispatchEvent(new Event('change'));
+    };
+
+    // Toggle Dropdown
+    inputArea.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) {
+            dropdown.classList.remove('open');
+        }
+    });
+
+    wrapper.appendChild(inputArea);
+    wrapper.appendChild(dropdown);
+    container.appendChild(wrapper);
+
+    return hiddenSelect;
 }
 
 /**

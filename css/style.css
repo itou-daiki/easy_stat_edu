@@ -1148,7 +1148,8 @@ table tr:hover {
     justify-content: center;
     align-items: center;
     gap: 0.5rem;
-    transition: filter 0.2s; /* Use filter for hover effect */
+    transition: filter 0.2s;
+    /* Use filter for hover effect */
     box-shadow: var(--shadow-md);
 }
 
@@ -1176,6 +1177,7 @@ table tr:hover {
     background: #f0f8ff;
     border-color: var(--primary-color);
 }
+
 /* --- Text Mining Tab & KWIC Extensions --- */
 
 /* Tabs */
@@ -1217,8 +1219,15 @@ table tr:hover {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* KWIC (Key Word In Context) Panel */
@@ -1229,7 +1238,7 @@ table tr:hover {
     width: 400px;
     height: 100vh;
     background: white;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
     z-index: 10000;
     transition: right 0.3s ease;
     padding: 1.5rem;
@@ -1291,7 +1300,7 @@ table tr:hover {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0, 0, 0, 0.3);
     z-index: 9999;
     display: none;
     backdrop-filter: blur(2px);
@@ -1301,24 +1310,130 @@ table tr:hover {
     display: block;
 }
 
+/* MultiSelect Component Styles */
+.multiselect-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.multiselect-input {
+    min-height: 48px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    background: white;
+}
+
+.multiselect-input:hover {
+    border-color: var(--primary-light);
+}
+
+.multiselect-tag {
+    background: rgba(30, 144, 255, 0.1);
+    color: var(--primary-color);
+    border: 1px solid rgba(30, 144, 255, 0.2);
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.multiselect-tag-remove {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.multiselect-placeholder {
+    color: var(--text-secondary);
+    padding-left: 0.5rem;
+}
+
+.multiselect-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    margin-top: 0.5rem;
+    display: none;
+}
+
+.multiselect-dropdown.open {
+    display: block;
+}
+
+.multiselect-option {
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.multiselect-option:last-child {
+    border-bottom: none;
+}
+
+.multiselect-option:hover {
+    background: #f8fafc;
+}
+
+.multiselect-option.selected {
+    background: rgba(30, 144, 255, 0.05);
+}
+
+.multiselect-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.multiselect-label {
+    flex: 1;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
 /* =========================================
    Mobile Optimization (Responsive)
    ========================================= */
 @media (max-width: 768px) {
+
     /* Touch Target Size: Min 48px for accessibility */
-    button, 
-    select, 
-    input[type="text"], 
-    input[type="number"], 
+    button,
+    select,
+    input[type="text"],
+    input[type="number"],
     input[type="file"],
     .tab-btn {
         min-height: 48px;
-        font-size: 16px; /* Prevent iOS zoom */
-        margin-bottom: 0.5rem; /* Ensure spacing */
+        font-size: 16px;
+        /* Prevent iOS zoom */
+        margin-bottom: 0.5rem;
+        /* Ensure spacing */
     }
 
     /* Adjust padding for touch */
-    input, select {
+    input,
+    select {
         padding: 0.75rem 1rem;
     }
 
@@ -1348,6 +1463,7 @@ table tr:hover {
         width: 100%;
         right: -100%;
     }
+
     .kwic-panel.open {
         right: 0;
     }
