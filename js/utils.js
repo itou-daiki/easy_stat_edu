@@ -800,3 +800,186 @@ export function getBottomTitleAnnotation(text) {
         font: { size: 16, color: '#2c3e50', weight: 'bold' } // Slightly larger and bold
     };
 }
+
+// ==========================================
+// Interpretation Helpers
+// ==========================================
+
+export const InterpretationHelper = {
+    /**
+     * P値の判定とフォーマット
+     * @param {number} p - P値
+     * @returns {object} { text, isSignificant, stars }
+     */
+    evaluatePValue(p) {
+        if (p < 0.001) return { text: "p < .001", isSignificant: true, stars: "***" };
+        if (p < 0.01) return { text: "p < .01", isSignificant: true, stars: "**" };
+        if (p < 0.05) return { text: "p < .05", isSignificant: true, stars: "*" };
+        if (p < 0.1) return { text: "p < .10", isSignificant: false, stars: "†" }; // 傾向
+        return { text: "n.s.", isSignificant: false, stars: "" };
+    },
+
+    /**
+     * 相関係数の解釈
+     * @param {number} r - 相関係数
+     * @param {number} p - P値
+     * @param {string} var1 - 変数1の名前
+     * @param {string} var2 - 変数2の名前
+     * @returns {string} 解釈文
+     */
+    interpretCorrelation(r, p, var1, var2) {
+        const absR = Math.abs(r);
+        const pEval = this.evaluatePValue(p);
+
+        let strength = "";
+        if (absR < 0.2) strength = "ほとんど相関がない";
+        else if (absR < 0.4) strength = "弱い";
+        else if (absR < 0.7) strength = "中程度の";
+        else strength = "強い";
+
+        let direction = r > 0 ? "正" : "負";
+        if (absR < 0.1) direction = ""; // ほぼ無相関なら方向言及しない
+
+        let text = `「<strong>${var1}</strong>」と「<strong>${var2}</strong>」の間には、`;
+
+        if (pEval.isSignificant) {
+            text += `統計的に有意な<strong>${strength}${direction}の相関</strong>が見られました (<em>r</em> = ${r.toFixed(2)}, ${pEval.text})。`;
+            if (r > 0) text += `<br>つまり、<strong>${var1}が高いほど、${var2}も高い</strong>傾向があります。`;
+            else text += `<br>つまり、<strong>${var1}が高いほど、${var2}は低い</strong>傾向があります。`;
+        } else {
+            text += `統計的に有意な相関は見られませんでした (<em>r</em> = ${r.toFixed(2)}, <em>p</em> = ${p.toFixed(2)})。`;
+            text += `<br>2つの変数の間に関連性があるとは言えません。`;
+        }
+        return text;
+    },
+
+    /**
+     * T検定（平均値の差）の解釈
+     * @param {number} p - P値
+     * @param {number} mean1 - 群1の平均
+     * @param {number} mean2 - 群2の平均
+     * @param {string[]} groupNames - [群1名, 群2名] Or 変数名ペア
+     * @param {number} d - 効果量 (Cohen's d)
+     * @returns {string} 解釈文
+     */
+    interpretTTest(p, mean1, mean2, groupNames, d) {
+        const pEval = this.evaluatePValue(p);
+        const g1 = groupNames[0];
+        const g2 = groupNames[1];
+
+        let dText = "";
+        if (d !== undefined && d !== null) {
+            const absD = Math.abs(d);
+            let dSize = "";
+            if (absD < 0.2) dSize = "ごくわずか";
+            else if (absD < 0.5) dSize = "小";
+            else if (absD < 0.8) dSize = "中程度";
+            else dSize = "大";
+            dText = `, <em>d</em> = ${d.toFixed(2)} [${dSize}]`;
+        }
+
+        if (pEval.isSignificant) {
+            const high = mean1 > mean2 ? g1 : g2;
+            const low = mean1 > mean2 ? g2 : g1;
+            return `<strong>${high}は${low}よりも有意に高い</strong>値を示しました (${pEval.text}${dText})。<br>` +
+                `平均値の差は統計的に意味があると言えます。`;
+        } else {
+            return `「<strong>${g1}</strong>」と「<strong>${g2}</strong>」の間に、統計的に有意な差は見られませんでした (<em>p</em> = ${p.toFixed(2)}${dText})。<br>` +
+                `平均値の違いは偶然の範囲内である可能性があります。`;
+        }
+    },
+
+    /**
+     * 分散分析 (ANOVA) の解釈
+     * @param {number} p - P値
+     * @param {number} eta2 - 効果量 (Eta-squared)
+     * @param {string} factorName - 要因名
+     * @returns {string} 解釈文
+     */
+    interpretANOVA(p, eta2, factorName) {
+        const pEval = this.evaluatePValue(p);
+
+        let etaText = "";
+        if (eta2 !== undefined && eta2 !== null) {
+            let size = "";
+            if (eta2 < 0.01) size = "ごくわずか";
+            else if (eta2 < 0.06) size = "小";
+            else if (eta2 < 0.14) size = "中程度";
+            else size = "大";
+            etaText = `, <em>η²</em> = ${eta2.toFixed(2)} [${size}]`;
+        }
+
+        if (pEval.isSignificant) {
+            return `要因「<strong>${factorName}</strong>」による<strong>主効果は有意</strong>でした (${pEval.text}${etaText})。<br>` +
+                `つまり、グループ間で平均値に統計的な差があると言えます。<br>` +
+                `どのグループ間に差があるか確認するには、多重比較の結果を参照してください。`;
+        } else {
+            return `要因「<strong>${factorName}</strong>」による有意な主効果は見られませんでした (<em>p</em> = ${p.toFixed(2)}${etaText})。<br>` +
+                `グループ間の平均値に統計的な違いがあるとは言えません。`;
+        }
+    },
+
+    /**
+     * カイ二乗検定の解釈
+     * @param {number} p - P値
+     * @param {number} cramerV - クラメールのV
+     * @returns {string} 解釈文
+     */
+    interpretChiSquare(p, cramerV) {
+        const pEval = this.evaluatePValue(p);
+
+        let vText = "";
+        if (cramerV !== undefined && cramerV !== null) {
+            let size = "";
+            if (cramerV < 0.1) size = "ごくわずか";
+            else if (cramerV < 0.3) size = "小";
+            else if (cramerV < 0.5) size = "中程度";
+            else size = "大";
+            vText = `, <em>V</em> = ${cramerV.toFixed(2)} [${size}]`;
+        }
+
+        if (pEval.isSignificant) {
+            return `2つの変数の間には<strong>有意な関連（連関）</strong>があります (${pEval.text}${vText})。<br>` +
+                `変数の組み合わせによって偏りがある（独立ではない）と言えます。<br>` +
+                `具体的な偏りについては、調整済み残差の表を確認してください。`;
+        } else {
+            return `2つの変数の間に有意な関連は見られませんでした (<em>p</em> = ${p.toFixed(2)}${vText})。<br>` +
+                `変数は互いに独立である（偏りがない）と考えられます。`;
+        }
+    },
+
+    /**
+     * 回帰分析の解釈
+     * @param {number} r2 - 決定係数
+     * @param {number} p - モデルのP値
+     * @param {string} depVar - 目的変数名
+     * @param {Array} coeffs - 係数情報の配列 [{name, beta, p, stdBeta}]
+     * @returns {string} 解釈文
+     */
+    interpretRegression(r2, p, depVar, coeffs) {
+        const pEval = this.evaluatePValue(p);
+        let text = "";
+
+        if (pEval.isSignificant) {
+            text += `回帰モデルは<strong>統計的に有意</strong>であり (${pEval.text})、`;
+            text += `説明変数は「<strong>${depVar}</strong>」の変動の約<strong>${(r2 * 100).toFixed(1)}%</strong>を説明しています (R²=${r2.toFixed(2)})。<br>`;
+
+            const sigCoeffs = coeffs.filter(c => c.p < 0.05);
+            if (sigCoeffs.length > 0) {
+                text += `特に、以下の変数が有意な影響を与えています：<ul style='margin-top:0.5rem; margin-bottom: 0;'>`;
+                sigCoeffs.forEach(c => {
+                    const dir = c.beta > 0 ? "正（増加させる）" : "負（減少させる）";
+                    const standardizedInfo = c.stdBeta !== undefined ? `標準化係数 β=${c.stdBeta.toFixed(2)}` : `係数 B=${c.beta.toFixed(2)}`;
+                    text += `<li><strong>${c.name}</strong>：${dir}影響 (${standardizedInfo})</li>`;
+                });
+                text += `</ul>`;
+            } else {
+                text += `ただし、個々の説明変数で単独で有意な影響を示したものはありませんでした（多重共線性などの可能性があります）。`;
+            }
+        } else {
+            text += `回帰モデルは統計的に有意ではありませんでした (${pEval.text})。<br>`;
+            text += `選択された説明変数では、「<strong>${depVar}</strong>」を十分に予測できない可能性があります。`;
+        }
+        return text;
+    }
+};

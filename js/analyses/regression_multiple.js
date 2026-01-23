@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
 
 // 重回帰分析の実行
 function runMultipleRegression(currentData) {
@@ -164,6 +164,8 @@ function runMultipleRegression(currentData) {
                 </tr>
             `;
 
+            const interpretationCoeffs = []; // Collect coeffs for interpretation
+
             // Vars Rows
             independentVars.forEach((v, i) => {
                 const b = beta[i + 1];
@@ -172,6 +174,8 @@ function runMultipleRegression(currentData) {
                 const t = b / se;
                 const p = (1 - jStat.studentt.cdf(Math.abs(t), n - k - 1)) * 2;
                 const sig = p < 0.01 ? '**' : (p < 0.05 ? '*' : (p < 0.1 ? '†' : ''));
+
+                interpretationCoeffs.push({ name: v, beta: b, stdBeta: betaStd, p: p });
 
                 sectionHtml += `
                     <tr>
@@ -189,6 +193,15 @@ function runMultipleRegression(currentData) {
             sectionHtml += `
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
+                        <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                            <i class="fas fa-comment-dots"></i> 結果の解釈
+                        </h4>
+                        <div style="line-height: 1.6;">
+                            ${InterpretationHelper.interpretRegression(r2, pValueModel, dependentVar, interpretationCoeffs)}
+                        </div>
                     </div>
                 </div>
             `;

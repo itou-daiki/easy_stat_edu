@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
 
 function runChiSquare(currentData) {
     const rowVar = document.getElementById('row-var').value;
@@ -103,9 +103,15 @@ function displayResults(rowVar, colVar, rowKeys, colKeys, observed, expected, ad
                     <div class="stat-value">${v.toFixed(3)}</div>
                 </div>
             </div>
-            <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
-                有意差がある場合、2つの変数には関連（独立ではない関係）があると言えます。
-            </p>
+            
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 1rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 0.5rem; font-weight: bold;">
+                    <i class="fas fa-comment-dots"></i> 結果の解釈
+                </h4>
+                <p style="line-height: 1.6;">
+                    ${(() => { try { return InterpretationHelper.interpretChiSquare(p, v); } catch (e) { console.error('Interpretation Error:', e); return '結果の解釈中にエラーが発生しました。'; } })()}
+                </p>
+            </div>
         </div>
 
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">

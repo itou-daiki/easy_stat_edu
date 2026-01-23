@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
 
 // Pairwise t-test helper for Between-Subjects (Independent)
 function performPostHocTests(groups, groupData) {
@@ -152,21 +152,25 @@ function displayANOVAInterpretation(results, factorVar, testType) {
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-lightbulb"></i> 解釈の補助
+                <i class="fas fa-comment-dots"></i> 結果の解釈
             </h4>
-            <div id="interpretation-content" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
+            <div id="interpretation-content"></div>
         </div>`;
     const contentContainer = document.getElementById('interpretation-content');
-    let interpretationHtml = '';
+
+    let interpretationHtml = '<ul style="list-style-type: disc; padding-left: 1.5rem; line-height: 1.6;">';
+
     results.forEach(res => {
-        let sigText = res.significance === 'n.s.' ? '有意な差が見られませんでした。' : '有意な差が見られました。';
-        let factor = testType === 'independent' ? factorVar : '条件';
-        interpretationHtml += `
-            <p style="margin: 0.5rem 0; padding: 0.75rem; background: white; border-left: 4px solid #1e90ff; border-radius: 4px;">
-                <strong style="color: #1e90ff;">${res.varName}</strong>について、<strong>${factor}</strong>によって${sigText}
-                <span style="color: #6b7280;">(F(${res.df1}, ${res.df2}) = ${res.fValue.toFixed(2)}, p = ${res.pValue.toFixed(3)}, η² = ${res.etaSquared.toFixed(2)})</span>
-            </p>`;
+        let factor = testType === 'independent' ? factorVar : '条件（試行）';
+        // Check if etaSquared or partialEtaSquared exists
+        let effectSize = res.etaSquared !== undefined ? res.etaSquared : res.partialEtaSquared;
+
+        let text = InterpretationHelper.interpretANOVA(res.pValue, effectSize, factor);
+
+        interpretationHtml += `<li style="margin-bottom: 0.5rem;"><strong>${res.varName}:</strong> ${text}</li>`;
     });
+    interpretationHtml += '</ul>';
+
     contentContainer.innerHTML = interpretationHtml;
 }
 

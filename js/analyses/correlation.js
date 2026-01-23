@@ -1,7 +1,7 @@
-import { renderDataOverview, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
-import { MultiSelect } from '../components/MultiSelect.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
+// import { MultiSelect } from '../components/MultiSelect.js'; // REMOVED
 
-let multiSelectInstance = null;
+// let multiSelectInstance = null; // REMOVED
 
 // 相関マトリックスの計算
 export function calculateCorrelationMatrix(variables, currentData) {
@@ -54,22 +54,74 @@ export function calculateCorrelationMatrix(variables, currentData) {
     return { matrix, pValues, nValues };
 }
 
+// 相関分析の実行
 function runCorrelationAnalysis(currentData) {
-    const selectedVars = multiSelectInstance.getValue();
+    const varsSelect = document.getElementById('corr-vars-select');
+    const selectedVars = varsSelect ? Array.from(varsSelect.selectedOptions).map(o => o.value) : [];
 
     if (selectedVars.length < 2) {
-        alert('少なくとも2つの変数を選択してください');
+        alert('少なくとも2つの変数を選択してください。');
         return;
     }
 
     const { matrix, pValues, nValues } = calculateCorrelationMatrix(selectedVars, currentData);
-    const matrixData = { matrix, pValues, nValues };
 
-    displayResults(selectedVars, matrix, pValues);
-    plotHeatmap(selectedVars, matrix);
-    plotScatterMatrix(selectedVars, currentData, matrixData);
+    const corrTableHtml = createCorrelationTable(selectedVars, matrix, pValues, nValues);
+    document.getElementById('correlation-table').innerHTML = corrTableHtml;
+
+    // Interpretation Section
+    let interpretationHtml = '<ul style="list-style-type: disc; padding-left: 1.5rem; line-height: 1.6;">';
+    let significantCount = 0;
+
+    for (let i = 0; i < selectedVars.length; i++) {
+        for (let j = i + 1; j < selectedVars.length; j++) {
+            const r = matrix[i][j];
+            const p = pValues[i][j];
+            const var1 = selectedVars[i];
+            const var2 = selectedVars[j];
+
+            if (!isNaN(r) && !isNaN(p)) {
+                // Determine if we should show interpretation (e.g. only significant ones or strong trends)
+                if (p < 0.05) {
+                    significantCount++;
+                    interpretationHtml += `<li style="margin-bottom: 0.5rem;">${InterpretationHelper.interpretCorrelation(r, p, var1, var2)}</li>`;
+                }
+            }
+        }
+    }
+    interpretationHtml += '</ul>';
+    if (significantCount === 0) {
+        interpretationHtml = '<p>統計的に有意な相関は見られませんでした。</p>';
+    }
+
+    // Add Interpretation Area
+    const resultsContainer = document.getElementById('analysis-results');
+    let interpSection = document.getElementById('correlation-interpretation');
+    if (!interpSection) {
+        interpSection = document.createElement('div');
+        interpSection.id = 'correlation-interpretation';
+        interpSection.style.background = 'white';
+        interpSection.style.padding = '1.5rem';
+        interpSection.style.borderRadius = '8px';
+        interpSection.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+        interpSection.style.marginBottom = '2rem';
+        interpSection.innerHTML = `
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                <i class="fas fa-comment-dots"></i> 結果の解釈
+            </h4>
+            <div id="interpretation-content"></div>
+        `;
+        // Insert after table container (first element in resultsContainer)
+        const firstChild = resultsContainer.firstElementChild;
+        if (firstChild) resultsContainer.insertBefore(interpSection, firstChild.nextElementSibling);
+        else resultsContainer.appendChild(interpSection);
+    }
+    document.getElementById('interpretation-content').innerHTML = interpretationHtml;
 
     document.getElementById('analysis-results').style.display = 'block';
+
+    renderCorrelationHeatmap(selectedVars, matrix);
+    renderScatterMatrix(selectedVars, currentData);
 
     const controlsContainer = document.getElementById('visualization-controls-container');
     controlsContainer.innerHTML = '';
@@ -515,8 +567,12 @@ export function render(container, currentData, characteristics) {
 
     renderDataOverview('#corr-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
-    multiSelectInstance = new MultiSelect('corr-vars-container', numericColumns, {
-        placeholder: 'ここをクリックして変数を選択...'
+    renderDataOverview('#corr-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+
+    createVariableSelector('corr-vars-container', numericColumns, 'corr-vars-select', {
+        label: '<i class="fas fa-check-square"></i> 分析する変数を選択（複数選択可）:',
+        multiple: true,
+        placeholder: '変数を選択...'
     });
 
     createAnalysisButton('run-correlation-btn-container', '相関分析を実行', () => runCorrelationAnalysis(currentData), { id: 'run-correlation-btn' });

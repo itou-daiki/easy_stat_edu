@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
 
 function runSimpleRegression(currentData) {
     const xVar = document.getElementById('independent-var').value;
@@ -108,6 +108,15 @@ function runSimpleRegression(currentData) {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-comment-dots"></i> 結果の解釈
+                </h4>
+                <div style="line-height: 1.6;">
+                    ${InterpretationHelper.interpretRegression(r2, pValue, yVar, [{ name: xVar, beta: b1, p: pValue, stdBeta: correlation }])}
+                </div>
             </div>
             
             <div id="regression-plot" style="margin-top: 1.5rem;"></div>

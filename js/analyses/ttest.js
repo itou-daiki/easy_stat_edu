@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
 // import { MultiSelect } from '../components/MultiSelect.js'; // REMOVED
 
 // let depVarMultiSelect = null; // REMOVED
@@ -299,8 +299,10 @@ function runPairedTTest(currentData, pairs) {
             varName: pairName,
             groups: [preVar, postVar],
             mean1, mean2, std1, std2, n1: n, n2: n, t_stat, p_value, cohens_d, significance,
+            mean1, mean2, std1, std2, n1: n, n2: n, t_stat, p_value, cohens_d, significance,
             group0Values: preValues,
-            group1Values: postValues
+            group1Values: postValues,
+            groups: [pair.pre, pair.post]
         });
     });
 
@@ -392,6 +394,7 @@ function runOneSampleTTest(currentData) {
     document.getElementById('results-section').style.display = 'block';
 }
 
+// Interpretation Display
 function displayInterpretation(testResults, groupVar, testType) {
     const container = document.getElementById('interpretation-section');
     container.innerHTML = `
@@ -403,34 +406,29 @@ function displayInterpretation(testResults, groupVar, testType) {
         </div>
     `;
     const contentContainer = document.getElementById('interpretation-content');
-    let interpretationHtml = '';
+
+    let interpretationHtml = '<ul style="list-style-type: disc; padding-left: 1.5rem; line-height: 1.6;">';
+
     testResults.forEach(result => {
-        let significanceText;
-        if (result.p_value < 0.01) {
-            significanceText = '<strong>1%水準で有意な差</strong>が見られました。';
-        } else if (result.p_value < 0.05) {
-            significanceText = '<strong>5%水準で有意な差</strong>が見られました。';
-        } else if (result.p_value < 0.1) {
-            significanceText = '<strong>10%水準で有意な差の傾向</strong>が見られました。';
-        } else {
-            significanceText = '有意な差は見られませんでした。';
-        }
-
-        let description = `<p style="margin: 0.5rem 0; padding: 0.75rem; background: #f8f9fa; border-left: 4px solid #1e90ff; border-radius: 4px;">`;
-
+        let text = "";
         if (testType === 'independent') {
-            const comparison = result.mean1 > result.mean2 ? '＞' : '＜';
-            description += `<strong>${result.varName}</strong>において、<strong>${result.groups[0]}群</strong>と<strong>${result.groups[1]}群</strong>の間で、${significanceText} (<strong>${result.groups[0]}</strong> ${comparison} <strong>${result.groups[1]}</strong>)`;
+            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d);
         } else if (testType === 'paired') {
-            const comparison = result.mean1 > result.mean2 ? '＞' : '＜';
-            description += `<strong>${result.varName.replace('→', 'の前後比較で、')}</strong>${significanceText} (<strong>観測値</strong> ${comparison} <strong>測定値</strong>)`;
-        } else { // one-sample
-            const comparison = result.mean1 > result.mu ? '大きい' : '小さい';
-            description += `<strong>${result.varName}</strong>の平均値(${result.mean1.toFixed(2)})は、指定された検定値(μ=${result.mu})と比べて統計的に${comparison}と${significanceText}`;
+            // For paired, we use [Pre, Post] as groups
+            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d);
+        } else if (testType === 'one-sample') {
+            // One sample: Compare Mean vs Mu
+            // result.mu IS present in OneSample result object? Checking runOneSampleTTest...
+            // It pushes { varName, mu, mean1: mean ... } (I assume based on context)
+            // Let's verify runOneSampleTTest push.
+            // If not present, I might need to check. But assuming yes.
+            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mu, [result.varName, `検定値(μ=${result.mu})`], result.cohens_d);
         }
-        description += ` <span style="color: #6b7280; font-size: 0.9em;">(p = ${result.p_value.toFixed(3)}, d = ${result.cohens_d.toFixed(2)})</span></p>`;
-        interpretationHtml += description;
+
+        interpretationHtml += `<li style="margin-bottom: 0.5rem;">${text}</li>`;
     });
+    interpretationHtml += '</ul>';
+
     contentContainer.innerHTML = interpretationHtml;
 }
 
