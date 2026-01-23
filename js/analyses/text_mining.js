@@ -7,7 +7,9 @@ async function initTokenizer(statusCallback) {
         if (statusCallback) statusCallback('辞書データをダウンロード中...（初回のみ数秒かかります）');
 
         // Use jsDelivr CDN for reliable dictionary loading
-        kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict" }).build((err, _tokenizer) => {
+        // Use CDN for dictionary to avoid local path issues on GitHub Pages
+        // Ensure trailing slash is present
+        kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" }).build((err, _tokenizer) => {
             if (err) {
                 console.error('Kuromoji initialization failed:', err);
                 reject(new Error('形態素解析エンジンの初期化に失敗しました。ネットワーク接続を確認してください。'));
@@ -23,7 +25,7 @@ async function initTokenizer(statusCallback) {
 async function runTextMining(currentData) {
     const textVar = document.getElementById('text-var').value;
     const catVar = document.getElementById('category-var').value;
-    alert('DEBUG: catVar=' + catVar);
+    // alert('DEBUG: catVar=' + catVar); // Removed debug alert
     console.log('DEBUG runTextMining: textVar=', textVar, 'catVar=', catVar);
 
     if (!textVar) {

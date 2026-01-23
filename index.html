@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,10 +17,11 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
-    
+
     <!-- vis.js for network graphs -->
     <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body>
     <!-- ローディング画面 -->
     <div id="loading-screen" class="loading-screen">
@@ -30,9 +32,25 @@
             <p style="font-size: 0.875rem; color: #64748b; margin-top: 0.5rem;">
                 数秒で起動します
             </p>
+            <div id="loading-error" style="color: red; margin-top: 1rem; display: none;"></div>
             <div class="loading-spinner"></div>
         </div>
     </div>
+
+    <script>
+        // Global Error Handler for Loading Issues
+        window.addEventListener('error', function (event) {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
+                const errorDiv = document.getElementById('loading-error');
+                if (errorDiv) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = `<strong>起動エラー:</strong><br>${event.message}`;
+                    // console.error('Startup Error:', event.error);
+                }
+            }
+        });
+    </script>
 
     <!-- メインコンテナ -->
     <div id="main-app" style="display: none;">
@@ -45,7 +63,8 @@
 
         <!-- データアップロードセクション -->
         <div class="upload-section-main" id="upload-section-main">
-            <div class="upload-area" id="main-upload-area" style="opacity: 0.5; pointer-events: none; position: relative;">
+            <div class="upload-area" id="main-upload-area"
+                style="opacity: 0.5; pointer-events: none; position: relative;">
                 <div class="upload-info">
                     <div class="upload-icon">
                         <i class="fas fa-cloud-upload-alt"></i>
@@ -67,7 +86,8 @@
             <div id="main-file-info" class="file-info" style="display: none;"></div>
 
             <!-- Data Preview Section -->
-            <div id="data-preview-section" class="info-sections" style="display: none; margin-top: -1rem; margin-bottom: 2rem;">
+            <div id="data-preview-section" class="info-sections"
+                style="display: none; margin-top: -1rem; margin-bottom: 2rem;">
                 <div class="collapsible-section">
                     <div class="collapsible-header collapsed">
                         <h3><i class="fas fa-table"></i> データプレビュー</h3>
@@ -476,18 +496,20 @@
             </div>
         </footer>
     </div>
-    
+
     <!-- JavaScript Libraries -->
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
+    <!-- WordCloud2.js Production Build -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <!-- Custom JavaScript -->
-    <script type="module" src="js/utils.js"></script>
+    <!-- utils.js is imported by main.js, no need to include separately -->
     <script type="module" src="js/main.js"></script>
-    </body>
+</body>
+
 </html>
