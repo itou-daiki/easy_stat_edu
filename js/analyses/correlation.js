@@ -253,8 +253,8 @@ function plotScatterMatrix(variables, currentData, matrixData) {
     const traces = [];
     const layout = {
         title: '',
-        height: 150 * n, // 変数が増えると高さを自動調整
-        width: 150 * n,  // 幅も自動調整
+        height: Math.max(600, 250 * n), // 最小サイズ600px、変数ごと250px確保
+        width: Math.max(600, 250 * n),
         showlegend: false,
         plot_bgcolor: '#f8fafc',
         margin: { l: 60, r: 60, t: 80, b: 150 }, // Increased bottom margin for bottom title

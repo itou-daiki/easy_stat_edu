@@ -402,8 +402,8 @@ function runOneWayIndependentANOVA(currentData) {
     }
 
     const groups = [...new Set(currentData.map(row => row[factorVar]))].filter(v => v != null).sort();
-    if (groups.length < 3) {
-        alert(`一要因分散分析（対応なし）には3群以上必要です（現在: ${groups.length} 群）`);
+    if (groups.length < 2) {
+        alert(`一要因分散分析（対応なし）には2群以上必要です（現在: ${groups.length} 群）`);
         return;
     }
 

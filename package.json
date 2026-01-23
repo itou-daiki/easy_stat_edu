@@ -1,0 +1,26 @@
+{
+  "name": "easy_stat_edu",
+  "version": "1.0.0",
+  "description": "**完全なクライアントサイド実行・インストール不要・高速動作**",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itou-daiki/easy_stat_edu.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/itou-daiki/easy_stat_edu/issues"
+  },
+  "homepage": "https://github.com/itou-daiki/easy_stat_edu#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}
