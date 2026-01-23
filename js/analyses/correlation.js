@@ -261,6 +261,10 @@ function plotScatterMatrix(variables, currentData, matrixData) {
         annotations: []
     };
 
+    // ドメイン計算 (余白 gap を考慮)
+    const gap = 0.05;
+    const size = (1 - (n - 1) * gap) / n;
+
     // グリッド作成用のループ
     for (let i = 0; i < n; i++) { // 行 (Y軸に対応)
         for (let j = 0; j < n; j++) { // 列 (X軸に対応)
@@ -272,9 +276,6 @@ function plotScatterMatrix(variables, currentData, matrixData) {
             const varRow = variables[i]; // Y variable
             const varCol = variables[j]; // X variable
 
-            // ドメイン計算 (余白 gap を考慮)
-            const gap = 0.05;
-            const size = (1 - (n - 1) * gap) / n;
             const xDomainStart = j * (size + gap);
             const xDomainEnd = xDomainStart + size;
             const yDomainStart = 1 - (i + 1) * (size + gap) + gap; // 上から配置
@@ -285,7 +286,9 @@ function plotScatterMatrix(variables, currentData, matrixData) {
                 showgrid: false,
                 zeroline: false,
                 showticklabels: i === n - 1, // 一番下の行だけラベル表示
-                title: i === n - 1 ? { text: varCol, font: { size: 12 } } : undefined
+                automargin: true,
+                side: 'bottom',
+                title: { text: '' }
             };
 
             layout[`yaxis${i * n + j + 1}`] = {
@@ -293,7 +296,9 @@ function plotScatterMatrix(variables, currentData, matrixData) {
                 showgrid: false,
                 zeroline: false,
                 showticklabels: j === 0, // 一番左の列だけラベル表示
-                title: j === 0 ? { text: varRow, font: { size: 12 } } : undefined
+                automargin: true,
+                side: 'left',
+                title: { text: '' }
             };
 
             // トレース追加
@@ -346,6 +351,7 @@ function plotScatterMatrix(variables, currentData, matrixData) {
 
             } else {
                 // 左下：散布図
+
                 traces.push({
                     x: plotData.map(row => row[varCol]),
                     y: plotData.map(row => row[varRow]),
@@ -363,6 +369,40 @@ function plotScatterMatrix(variables, currentData, matrixData) {
                 });
             }
         }
+    }
+
+
+
+
+    // アノテーションによる軸ラベルの追加
+    for (let k = 0; k < n; k++) {
+        // X col labels (variable[k])
+        const xStart = k * (size + gap);
+        const xCenter = xStart + size / 2;
+
+        // Y row labels (variable[k])
+        const yStart = 1 - (k + 1) * (size + gap) + gap;
+        const yCenter = yStart + size / 2;
+
+        // X-axis Label (Bottom)
+        layout.annotations.push({
+            text: variables[k],
+            xref: 'paper', yref: 'paper',
+            x: xCenter, y: -0.06,
+            xanchor: 'center', yanchor: 'top',
+            showarrow: false,
+            font: { size: 14, weight: 'bold' }
+        });
+
+        // Y-axis Label (Left)
+        layout.annotations.push({
+            text: variables[k],
+            xref: 'paper', yref: 'paper',
+            x: -0.07, y: yCenter,
+            xanchor: 'right', yanchor: 'middle',
+            showarrow: false,
+            font: { size: 14, weight: 'bold' }
+        });
     }
 
     // 軸ラベルとタイトルの表示切り替え

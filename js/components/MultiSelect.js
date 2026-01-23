@@ -96,6 +96,7 @@ export class MultiSelect {
             this.updateTags();
             this.updateOptions();
             this.onChange(this.selectedValues);
+            e.stopPropagation();
 
             // Keep dropdown open for multiple selection or close? Streamlit usually keeps it or requires reopen.
             // Let's keep it open for convenience but clear search if we implemented it.
