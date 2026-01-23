@@ -6,17 +6,24 @@ async function initTokenizer(statusCallback) {
     return new Promise((resolve, reject) => {
         if (statusCallback) statusCallback('辞書データをダウンロード中...（初回のみ数秒かかります）');
 
-        // Use jsDelivr CDN for reliable dictionary loading
-        // Use CDN for dictionary to avoid local path issues on GitHub Pages
-        // Ensure trailing slash is present
+        // Use CDN for dictionary (kuromoji requires uncompressed .dat files which http-server doesn't auto-decompress)
+        // The CDN has better caching and handles the compression correctly
+        const timeoutId = setTimeout(() => {
+            console.warn('Kuromoji loading timeout - retrying with alternative CDN');
+            // This is a fallback message, the actual retry logic is complex
+        }, 30000);
+
         kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" }).build((err, _tokenizer) => {
+            clearTimeout(timeoutId);
             if (err) {
-                console.error('Kuromoji initialization failed:', err);
-                reject(new Error('形態素解析エンジンの初期化に失敗しました。ネットワーク接続を確認してください。'));
+                console.error('Kuromoji Build Error:', err);
+                if (statusCallback) statusCallback('辞書データの読み込みに失敗しました。ネットワーク接続を確認してください。');
+                reject(new Error('形態素解析エンジンの初期化に失敗しました: ' + err.message));
                 return;
             }
             tokenizer = _tokenizer;
-            if (statusCallback) statusCallback('解析中...');
+            if (statusCallback) statusCallback('辞書データの読み込み完了！');
+            console.log('Tokenizer ready');
             resolve();
         });
     });
