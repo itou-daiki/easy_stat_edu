@@ -160,7 +160,7 @@ function analyzeDataCharacteristics(data) {
         if (values.length === 0) return;
 
         const isNumeric = values.every(val => typeof val === 'number' || (typeof val === 'string' && val.trim() !== '' && !isNaN(Number(val))));
-        
+
         if (isNumeric) {
             characteristics.numericColumns.push(col);
             data.forEach(row => {
@@ -170,7 +170,7 @@ function analyzeDataCharacteristics(data) {
             // Use the now-numeric values to check for uniqueness
             const numericValues = data.map(row => row[col]).filter(val => val != null);
             const uniqueValues = new Set(numericValues);
-            
+
             // If a numeric column has a small number of unique values (e.g., <= 10),
             // it's likely a categorical variable coded with numbers. Treat it as categorical as well.
             if (uniqueValues.size <= 10) {
@@ -285,7 +285,8 @@ async function showAnalysisView(analysisType) {
     analysisArea.style.display = 'block';
 
     try {
-        const modulePath = `./analyses/${analysisType}.js`;
+        const cacheBuster = Date.now();
+        const modulePath = `./analyses/${analysisType}.js?v=${cacheBuster}`;
         const analysisModule = await import(modulePath);
         analysisModule.render(analysisContent, currentData, dataCharacteristics);
     } catch (error) {

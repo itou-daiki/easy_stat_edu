@@ -2,30 +2,77 @@ import { renderDataOverview, createVariableSelector, createAnalysisButton, rende
 
 let tokenizer = null;
 
+// ストップワードリスト（日本語の助詞・助動詞・記号など除外用）
+const STOP_WORDS = new Set([
+    // 助詞
+    'の', 'に', 'は', 'を', 'た', 'が', 'で', 'て', 'と', 'し', 'れ', 'さ',
+    'ある', 'いる', 'も', 'な', 'する', 'から', 'こと', 'として', 'い', 'や',
+    'ない', 'この', 'ため', 'その', 'あと', 'よう', 'また', 'もの', 'という',
+    'あり', 'まで', 'られ', 'なる', 'へ', 'か', 'だ', 'これ', 'によって',
+    'により', 'おり', 'ね', 'よ', 'けど', 'でも', 'って', 'ので', 'なら',
+    'でした', 'ます', 'です', 'ました', 'ません', 'ですが', 'ですね', 'ですよ',
+    // ひらがな1文字（ほとんど助詞）
+    'あ', 'い', 'う', 'え', 'お', 'ん',
+    // 数字・記号
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    // その他一般的すぎる語
+    'それ', 'これ', 'あれ', 'どれ', 'なに', 'どう', 'そう', 'ああ',
+    'とき', 'ところ', 'ほう', 'ほど', 'まま', 'よる', 'なか', 'うち'
+]);
+
+// 画像ダウンロード機能
+function downloadCanvasAsImage(targetId) {
+    // ワードクラウドの場合はcanvas要素、共起ネットワークの場合はvis-network内のcanvas
+    let canvas = document.getElementById(targetId);
+
+    // vis-networkの場合、内部のcanvasを取得
+    if (!canvas || canvas.tagName !== 'CANVAS') {
+        const container = document.getElementById(targetId);
+        if (container) {
+            canvas = container.querySelector('canvas');
+        }
+    }
+
+    if (!canvas) {
+        alert('画像の取得に失敗しました。');
+        return;
+    }
+
+    try {
+        // canvasを画像としてダウンロード
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+        const filename = targetId.includes('wordcloud') ? `wordcloud_${timestamp}.png` : `network_${timestamp}.png`;
+
+        link.download = filename;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    } catch (error) {
+        console.error('ダウンロードエラー:', error);
+        alert('画像のダウンロードに失敗しました。');
+    }
+}
+
 async function initTokenizer(statusCallback) {
     return new Promise((resolve, reject) => {
-        if (statusCallback) statusCallback('辞書データをダウンロード中...（初回のみ数秒かかります）');
+        try {
+            if (statusCallback) statusCallback('解析エンジンを初期化中...');
 
-        // Use CDN for dictionary (kuromoji requires uncompressed .dat files which http-server doesn't auto-decompress)
-        // The CDN has better caching and handles the compression correctly
-        const timeoutId = setTimeout(() => {
-            console.warn('Kuromoji loading timeout - retrying with alternative CDN');
-            // This is a fallback message, the actual retry logic is complex
-        }, 30000);
-
-        kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" }).build((err, _tokenizer) => {
-            clearTimeout(timeoutId);
-            if (err) {
-                console.error('Kuromoji Build Error:', err);
-                if (statusCallback) statusCallback('辞書データの読み込みに失敗しました。ネットワーク接続を確認してください。');
-                reject(new Error('形態素解析エンジンの初期化に失敗しました: ' + err.message));
+            // TinySegmenter は辞書不要で即座に初期化可能
+            if (typeof TinySegmenter === 'undefined') {
+                reject(new Error('TinySegmenter ライブラリが読み込まれていません'));
                 return;
             }
-            tokenizer = _tokenizer;
-            if (statusCallback) statusCallback('辞書データの読み込み完了！');
-            console.log('Tokenizer ready');
+
+            tokenizer = new TinySegmenter();
+            if (statusCallback) statusCallback('解析エンジンの準備完了！');
+            console.log('TinySegmenter tokenizer ready');
             resolve();
-        });
+        } catch (err) {
+            console.error('TinySegmenter Init Error:', err);
+            if (statusCallback) statusCallback('解析エンジンの初期化に失敗しました。');
+            reject(new Error('形態素解析エンジンの初期化に失敗しました: ' + err.message));
+        }
     });
 }
 
@@ -188,11 +235,16 @@ async function analyzeAndRender(dataItems, container, prefix) {
                 const rawSentences = text.split(/[。！？\n]+/).filter(s => s.trim().length > 0);
 
                 rawSentences.forEach(sent => {
-                    const tokens = tokenizer.tokenize(sent);
+                    // TinySegmenter.segment() returns an array of strings
+                    const tokens = tokenizer.segment(sent);
                     const wordsInSentence = [];
-                    tokens.forEach(token => {
-                        if (['名詞', '動詞', '形容詞'].includes(token.pos) && token.surface_form.length > 1) {
-                            const word = token.basic_form === '*' ? token.surface_form : token.basic_form;
+                    tokens.forEach(word => {
+                        // フィルタリング: 2文字以上、ストップワードでない、ひらがなのみでない
+                        const isStopWord = STOP_WORDS.has(word);
+                        const isOnlyHiragana = /^[ぁ-ん]+$/.test(word) && word.length <= 2;
+                        const isOnlySymbols = /^[、。！？「」『』（）・\s]+$/.test(word);
+
+                        if (word.length > 1 && !isStopWord && !isOnlyHiragana && !isOnlySymbols) {
                             allWords.push(word);
                             wordsInSentence.push(word);
                         }
@@ -214,35 +266,59 @@ async function analyzeAndRender(dataItems, container, prefix) {
             allWords.forEach(w => { counts[w] = (counts[w] || 0) + 1; });
             const sortedWords = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
-            // Layout
+            // Layout - 1列表示に変更
             const wrapper = document.createElement('div');
-            wrapper.className = 'grid-2-cols';
-            wrapper.style.display = 'grid';
-            wrapper.style.gridTemplateColumns = '1fr 1fr';
+            wrapper.style.display = 'flex';
+            wrapper.style.flexDirection = 'column';
             wrapper.style.gap = '1.5rem';
             wrapper.style.marginBottom = '1.5rem';
 
-            // WordCloud
+            // WordCloud Section
             const wcId = `${prefix}-wordcloud`;
             const wcContainer = document.createElement('div');
             wcContainer.style.background = 'white';
             wcContainer.style.padding = '1rem';
             wcContainer.style.borderRadius = '8px';
             wcContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            wcContainer.innerHTML = `<h6 style="color: #4a5568; margin-bottom: 0.5rem; font-weight: bold;">ワードクラウド <small style="font-weight: normal; color: #718096;">(クリックで文脈表示)</small></h6><div style="position: relative;"><canvas id="${wcId}" style="width: 100%; height: 350px; cursor: pointer;"></canvas></div>`;
+            wcContainer.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h6 style="color: #4a5568; margin: 0; font-weight: bold;">ワードクラウド <small style="font-weight: normal; color: #718096;">(クリックで文脈表示)</small></h6>
+                    <button class="download-btn" data-target="${wcId}" style="background: #4299e1; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <i class="fas fa-download"></i> 画像保存
+                    </button>
+                </div>
+                <div style="position: relative;">
+                    <canvas id="${wcId}" style="width: 100%; height: 400px; cursor: pointer;"></canvas>
+                </div>`;
 
-            // Network
+            // Network Section
             const netId = `${prefix}-network`;
             const netContainer = document.createElement('div');
             netContainer.style.background = 'white';
             netContainer.style.padding = '1rem';
             netContainer.style.borderRadius = '8px';
             netContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            netContainer.innerHTML = `<h6 style="color: #4a5568; margin-bottom: 0.5rem; font-weight: bold;">共起ネットワーク <small style="font-weight: normal; color: #718096;">(グループ別色分け)</small></h6><div id="${netId}" style="width: 100%; height: 350px; border: 1px solid #f0f0f0; border-radius: 4px;"></div>`;
+            netContainer.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h6 style="color: #4a5568; margin: 0; font-weight: bold;">共起ネットワーク <small style="font-weight: normal; color: #718096;">(グループ別色分け)</small></h6>
+                    <button class="download-btn" data-target="${netId}" style="background: #4299e1; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <i class="fas fa-download"></i> 画像保存
+                    </button>
+                </div>
+                <div id="${netId}" style="width: 100%; height: 450px; border: 1px solid #f0f0f0; border-radius: 4px;"></div>`;
 
             wrapper.appendChild(wcContainer);
             wrapper.appendChild(netContainer);
             container.appendChild(wrapper);
+
+            // ダウンロードボタンのイベントハンドラ
+            wrapper.querySelectorAll('.download-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = btn.dataset.target;
+                    downloadCanvasAsImage(targetId);
+                });
+            });
 
             // KWIC Handler
             const showKwic = (word) => {
@@ -292,18 +368,20 @@ function displayWordCloud(canvasId, wordCounts, onClick) {
     WordCloud(canvas, {
         list: list,
         gridSize: 8,
-        weightFactor: size => Math.pow(size, 0.7) * 12,
+        weightFactor: size => Math.pow(size, 0.7) * 18, // フォントサイズ拡大 (x1.5)
+        minSize: 10,
         fontFamily: 'sans-serif',
         color: 'random-dark',
         backgroundColor: '#fafbfc',
         rotateRatio: 0,
-        shuffle: false,
         click: (item) => {
             if (item && item[0]) onClick(item[0]);
         },
-        hover: window.drawBox ? window.drawBox : undefined // Optional hover effect
+        hover: window.drawBox ? window.drawBox : undefined
     });
 }
+
+
 
 function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
     // 1. Jaccard & Edge Construction
@@ -384,7 +462,7 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
             border: '#ffffff',
             highlight: { background: colors[groupMap[nodeGroups[id]]], border: '#1e90ff' }
         },
-        font: { size: 16, color: '#333', strokeWidth: 2, strokeColor: '#fff' }
+        font: { size: 24, color: '#333', strokeWidth: 4, strokeColor: '#fff' }
     }));
 
     // Render
@@ -401,7 +479,7 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
     };
 
     const options = {
-        nodes: { shape: 'dot', scaling: { min: 10, max: 40 } },
+        nodes: { shape: 'dot', scaling: { min: 15, max: 60 } },
         edges: { smooth: { type: 'continuous' } },
         physics: {
             forceAtlas2Based: { gravitationalConstant: -100, centralGravity: 0.01, springConstant: 0.08, springLength: 100, damping: 0.4 },
@@ -424,6 +502,7 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
 
 export function render(container, currentData, characteristics) {
     const { textColumns, categoricalColumns } = characteristics;
+
 
     container.innerHTML = `
         <div class="text-mining-container">
