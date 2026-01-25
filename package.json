@@ -6,7 +6,8 @@
   "scripts": {
     "test": "npx playwright test",
     "test:u-test": "npx playwright test tests/mann_whitney.spec.ts --headed",
-    "test:time-series": "npx playwright test tests/time_series.spec.ts --headed"
+    "test:time-series": "npx playwright test tests/time_series.spec.ts --headed",
+    "test:support": "npx playwright test tests/analysis_support.spec.ts --headed"
   },
   "repository": {
     "type": "git",

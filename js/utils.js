@@ -801,6 +801,79 @@ export function getBottomTitleAnnotation(text) {
     };
 }
 
+/**
+ * Generates an APA-style HTML table string.
+ * @param {string} tableId - The ID for the table container (used for copy function if needed, though this returns HTML).
+ * @param {string} title - The table caption/title (e.g., "Table 1. Results...").
+ * @param {string[]} headerRow - Array of strings for the header columns.
+ * @param {Array<Array<string|number>>} dataRows - 2D array of cell data.
+ * @param {string} note - text for the "Note." section below the table.
+ * @returns {string} The complete HTML string for the table container.
+ */
+export function generateAPATableHtml(tableId, title, headerRow, dataRows, note) {
+    const tableStyle = "border-collapse: collapse; width: 100%; font-family: 'Times New Roman', Times, serif; color: #000; margin-bottom: 1rem;";
+    const captionStyle = "text-align: left; font-style: italic; margin-bottom: 0.5em; font-weight: normal; font-size: 1.1em;";
+    const theadStyle = "border-top: 2px solid #000; border-bottom: 1px solid #000;";
+    const thStyle = "padding: 0.5em; text-align: center; font-weight: normal;"; // APA headers are often not bold, but can be. standard is normal.
+    const tbodyStyle = "border-bottom: 2px solid #000;";
+    const tdStyle = "padding: 0.5em; text-align: center;";
+    const firstColStyle = "padding: 0.5em; text-align: left;"; // First column often left-aligned
+
+    let html = `<div id="${tableId}_container" class="apa-table-wrapper" style="background:white; padding:1rem; border: 1px solid #e2e8f0; border-radius: 4px;">
+        <table id="${tableId}" style="${tableStyle}">
+            <caption style="${captionStyle}">${title}</caption>
+            <thead style="${theadStyle}">
+                <tr>`;
+
+    headerRow.forEach((h, i) => {
+        html += `<th style="${i === 0 ? firstColStyle : thStyle}">${h}</th>`;
+    });
+
+    html += `   </tr>
+            </thead>
+            <tbody style="${tbodyStyle}">`;
+
+    dataRows.forEach(row => {
+        html += '<tr>';
+        row.forEach((cell, i) => {
+            html += `<td style="${i === 0 ? firstColStyle : tdStyle}">${cell}</td>`;
+        });
+        html += '</tr>';
+    });
+
+    html += `   </tbody>
+        </table>`;
+
+    if (note) {
+        html += `<div style="font-size: 0.9em; margin-top: 0.5em; font-style: italic;">Note. ${note}</div>`;
+    }
+
+    // Add Copy Button
+    html += `
+        <button onclick="copyAPATable('${tableId}')" class="btn btn-sm btn-outline-secondary" style="margin-top: 0.5rem; font-family: sans-serif;">
+            <i class="fas fa-copy"></i> 表をコピー
+        </button>
+    </div>
+    <script>
+        if (typeof copyAPATable === 'undefined') {
+            window.copyAPATable = function(id) {
+                const table = document.getElementById(id);
+                const container = table.closest('.apa-table-wrapper');
+                const range = document.createRange();
+                range.selectNode(container); 
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges();
+                alert('表をクリップボードにコピーしました (Word/Excelに貼り付けてください)');
+            }
+        }
+    </script>
+    `;
+
+    return html;
+}
+
 // ==========================================
 // Interpretation Helpers
 // ==========================================

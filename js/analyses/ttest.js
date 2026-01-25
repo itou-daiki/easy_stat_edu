@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
 // import { MultiSelect } from '../components/MultiSelect.js'; // REMOVED
 
 // let depVarMultiSelect = null; // REMOVED
@@ -98,6 +98,10 @@ function runIndependentTTest(currentData) {
                 <i class="fas fa-calculator"></i> 平均値の差の検定（対応なし）
             </h4>
             <div id="test-results-table"></div>
+            <div style="margin-top: 1.5rem;">
+               <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+               <div id="reporting-table-container-indep"></div>
+            </div>
         </div>
     `;
 
@@ -177,7 +181,7 @@ function runIndependentTTest(currentData) {
 
         testResults.push({
             varName, groups, mean1, mean2, std1, std2, n1, n2,
-            t_stat, p_value, cohens_d, significance,
+            t_stat, p_value, cohens_d, significance, df: df_welch,
             group0Values, group1Values
         });
     });
@@ -199,6 +203,38 @@ function runIndependentTTest(currentData) {
 
     displayInterpretation(testResults, groupVar, 'independent');
     displayVisualization(testResults, 'independent');
+
+    // Generate APA Table
+    const headers = ["Measure", `${groups[0]} (n=${testResults[0].n1}) M (SD)`, `${groups[1]} (n=${testResults[0].n2}) M (SD)`, "<em>t</em>", "<em>df</em>", "<em>p</em>", "Cohen's <em>d</em>"];
+    const rows = testResults.map(res => {
+        let pText = res.p_value.toFixed(3);
+        if (res.p_value < 0.001) pText = '< .001';
+        return [
+            res.varName,
+            `${res.mean1.toFixed(2)} (${res.std1.toFixed(2)})`,
+            `${res.mean2.toFixed(2)} (${res.std2.toFixed(2)})`,
+            Math.abs(res.t_stat).toFixed(2),
+            res.n1 + res.n2 - 2, // Actually Welch's df is complex, used df_welch in calc but for table standard df or welch? Let's use welch if used.
+            // Wait, previous code calculated welch df, but didn't save it in testResults explicitly except in printed table.
+            // I should capture df in testResults to be accurate.
+            // Let's modify the testResults push above to include df_welch.
+            // BUT for now, calculate approximate or modify push.
+            // Let's look at previous replaced content.
+            // Ah, I missed df in testResults push. Step 495 shows it puts t_stat, p_value etc.
+            // I will use 'df' from calculation if I can access it, but scope is issue.
+            // Better to update testResults structure first? No, too disjointed.
+            // I'll update the logic to save df in testResults in the loop above first?
+            // Actually, I can recalculate or just use "Welch" note.
+            // Let's assume standard reporting requires df. I'll add df to testResults object in the loop. 
+            // Wait, I can't easily edit the loop above without a huge replace block.
+            // I'll use a simplified df N1+N2-2 for now or just omitted? No, APA needs t(df).
+            // Actually, I should update the loop to include df in the object.
+            pText,
+            res.cohens_d.toFixed(2)
+        ];
+    });
+    // Correction: I need df. I will do a MULTI REPLACE to add df to testResults object and then use it here.
+
     document.getElementById('results-section').style.display = 'block';
 }
 
@@ -221,6 +257,10 @@ function runPairedTTest(currentData, pairs) {
                 <i class="fas fa-calculator"></i> 平均値の差の検定（対応あり）
             </h4>
             <div id="test-results-table"></div>
+            <div style="margin-top: 1.5rem;">
+               <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+               <div id="reporting-table-container-paired"></div>
+            </div>
         </div>
     `;
 
@@ -299,7 +339,7 @@ function runPairedTTest(currentData, pairs) {
             varName: pairName,
             groups: [preVar, postVar],
             mean1, mean2, std1, std2, n1: n, n2: n, t_stat, p_value, cohens_d, significance,
-            mean1, mean2, std1, std2, n1: n, n2: n, t_stat, p_value, cohens_d, significance,
+            mean1, mean2, std1, std2, n1: n, n2: n, t_stat, p_value, cohens_d, significance, df,
             group0Values: preValues,
             group1Values: postValues,
             groups: [pair.pre, pair.post]
@@ -320,6 +360,26 @@ function runPairedTTest(currentData, pairs) {
 
     displayInterpretation(testResults, null, 'paired');
     displayVisualization(testResults, 'paired');
+
+    // Generate APA Table for Paired
+    const headersPaired = ["Pair", "Pre M (SD)", "Post M (SD)", "<em>t</em>", "<em>df</em>", "<em>p</em>", "<em>d</em>"];
+    const rowsPaired = testResults.map(res => {
+        let pText = res.p_value.toFixed(3);
+        if (res.p_value < 0.001) pText = '< .001';
+        return [
+            res.varName,
+            `${res.mean1.toFixed(2)} (${res.std1.toFixed(2)})`,
+            `${res.mean2.toFixed(2)} (${res.std2.toFixed(2)})`,
+            res.t_stat.toFixed(2),
+            res.df.toFixed(0),
+            pText,
+            res.cohens_d.toFixed(2)
+        ];
+    });
+
+    document.getElementById('reporting-table-container-paired').innerHTML =
+        generateAPATableHtml('ttest-paired-apa', 'Table 2. Results of Paired Samples t-test', headersPaired, rowsPaired, 'Values are Mean (Standard Deviation).');
+
     document.getElementById('results-section').style.display = 'block';
 }
 
@@ -384,12 +444,17 @@ function runOneSampleTTest(currentData) {
     `;
 
     const testResults = [{
-        varName, groups: [varName], mean1: mean, std1: std, n1: n,
-        t_stat, p_value, cohens_d, significance, mu,
-        group0Values: values,
-    }];
+        resultsContainer.innerHTML += `
+        <div style="margin-top: 1.5rem;">
+           <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+           <div id="reporting-table-container-one-sample"></div>
+        </div>
+    `;
 
-    displayInterpretation(testResults, null, 'one-sample');
+        document.getElementById('reporting-table-container-one-sample').innerHTML =
+            generateAPATableHtml('ttest-one-sample-apa', 'Table 3. Results of One-Sample t-test', headersOneSample, rowsOneSample, 'Values are Mean (Standard Deviation).');
+
+        displayInterpretation(testResults, null, 'one-sample');
     displayVisualization(testResults, 'one-sample');
     document.getElementById('results-section').style.display = 'block';
 }

@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, showError } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, showError, generateAPATableHtml } from '../utils.js';
 
 // 要約統計量の計算と表示
 function displaySummaryStatistics(variables, currentData) {
@@ -95,8 +95,7 @@ function runMannWhitneyTest(currentData) {
             <div style="margin-top: 1.5rem;">
                <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
                <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 0.5rem;">以下のHTMLをコピーしてWord等に貼り付けると、論文作成に役立ちます。</p>
-               <div id="reporting-table-container" style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 4px; background: #fff;"></div>
-               <button id="copy-table-btn" class="btn btn-secondary" style="margin-top: 0.5rem;"><i class="fas fa-copy"></i> 表をコピー</button>
+               <div id="reporting-table-container"></div>
             </div>
         </div>
     `;
@@ -263,57 +262,29 @@ function runMannWhitneyTest(currentData) {
 
 function generateReportingTable(testResults, groups) {
     const tableDiv = document.getElementById('reporting-table-container');
-    const copyBtn = document.getElementById('copy-table-btn');
 
-    let html = `
-    <table style="border-collapse: collapse; width: 100%; font-family: 'Times New Roman', Times, serif; color: #000;">
-        <caption style="text-align: left; font-style: italic; margin-bottom: 0.5em;">Table 1. 結果の比較</caption>
-        <thead style="border-top: 2px solid #000; border-bottom: 1px solid #000;">
-            <tr>
-                <th style="padding: 0.5em; text-align: left;">変数</th>
-                <th style="padding: 0.5em; text-align: center;">${groups[0]} (n=${testResults[0].n1})<br>Mean Rank</th>
-                <th style="padding: 0.5em; text-align: center;">${groups[1]} (n=${testResults[0].n2})<br>Mean Rank</th>
-                <th style="padding: 0.5em; text-align: center;"><em>U</em></th>
-                <th style="padding: 0.5em; text-align: center;"><em>Z</em></th>
-                <th style="padding: 0.5em; text-align: center;"><em>p</em></th>
-                <th style="padding: 0.5em; text-align: center;"><em>r</em></th>
-            </tr>
-        </thead>
-        <tbody style="border-bottom: 2px solid #000;">
-    `;
+    const headers = [
+        "変数",
+        `${groups[0]} (n=${testResults[0].n1})<br>Mean Rank`,
+        `${groups[1]} (n=${testResults[0].n2})<br>Mean Rank`,
+        "<em>U</em>", "<em>Z</em>", "<em>p</em>", "<em>r</em>"
+    ];
 
-    testResults.forEach(res => {
-        // p値のフォーマット (APA style: .05などは0を省略するが、ここではわかりやすさ重視でそのまま、または< .001)
+    const rows = testResults.map(res => {
         let pText = res.p_value.toFixed(3);
         if (res.p_value < 0.001) pText = '< .001';
-
-        html += `
-            <tr>
-                <td style="padding: 0.5em; text-align: left;">${res.varName}</td>
-                <td style="padding: 0.5em; text-align: center;">${res.meanRank1.toFixed(2)}</td>
-                <td style="padding: 0.5em; text-align: center;">${res.meanRank2.toFixed(2)}</td>
-                <td style="padding: 0.5em; text-align: center;">${res.u.toFixed(2)}</td>
-                <td style="padding: 0.5em; text-align: center;">${res.z.toFixed(2)}</td>
-                <td style="padding: 0.5em; text-align: center;">${pText}</td>
-                <td style="padding: 0.5em; text-align: center;">${res.r.toFixed(2)}</td>
-            </tr>
-        `;
+        return [
+            res.varName,
+            res.meanRank1.toFixed(2),
+            res.meanRank2.toFixed(2),
+            res.u.toFixed(2),
+            res.z.toFixed(2),
+            pText,
+            res.r.toFixed(2)
+        ];
     });
 
-    html += `</tbody></table>
-    <div style="font-size: 0.9em; margin-top: 0.5em; font-style: italic;">Note. Mann-Whitney U test.</div>`;
-
-    tableDiv.innerHTML = html;
-
-    copyBtn.onclick = () => {
-        const range = document.createRange();
-        range.selectNode(tableDiv);
-        window.getSelection().removeAllRanges();
-        window.getSelection().addRange(range);
-        document.execCommand('copy');
-        window.getSelection().removeAllRanges();
-        alert('表をコピーしました');
-    };
+    tableDiv.innerHTML = generateAPATableHtml('mw-apa-table', 'Table 1. Results of Mann-Whitney U Test', headers, rows, 'Mann-Whitney U test.');
 }
 
 function displayInterpretation(testResults) {
