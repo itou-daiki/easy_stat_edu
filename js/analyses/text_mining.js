@@ -39,13 +39,26 @@ function downloadCanvasAsImage(targetId) {
     }
 
     try {
-        // canvasを画像としてダウンロード
+        // 白背景のCanvasを作成して合成
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const ctx = tempCanvas.getContext('2d');
+
+        // 白背景で塗りつぶし
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+        // 元の画像を重ねる
+        ctx.drawImage(canvas, 0, 0);
+
+        // ダウンロード処理
         const link = document.createElement('a');
         const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
         const filename = targetId.includes('wordcloud') ? `wordcloud_${timestamp}.png` : `network_${timestamp}.png`;
 
         link.download = filename;
-        link.href = canvas.toDataURL('image/png');
+        link.href = tempCanvas.toDataURL('image/png');
         link.click();
     } catch (error) {
         console.error('ダウンロードエラー:', error);
@@ -360,16 +373,25 @@ function displayWordCloud(canvasId, wordCounts, onClick) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
 
-    canvas.width = canvas.parentElement.offsetWidth || 500;
-    canvas.height = 350;
+    const SCALE = 3; // 高画質化のためのスケール倍率
+    const width = canvas.parentElement.offsetWidth || 500;
+    const height = 400;
+
+    // 内部解像度を上げる
+    canvas.width = width * SCALE;
+    canvas.height = height * SCALE;
+
+    // 表示サイズはCSSで制御
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
 
     const list = wordCounts.slice(0, 70).map(([w, c]) => [w, c]);
 
     WordCloud(canvas, {
         list: list,
-        gridSize: 8,
-        weightFactor: size => Math.pow(size, 0.7) * 18, // フォントサイズ拡大 (x1.5)
-        minSize: 10,
+        gridSize: 8 * SCALE, // グリッドサイズもスケール
+        weightFactor: size => Math.pow(size, 0.7) * 18 * SCALE, // 文字サイズもスケール
+        minSize: 10 * SCALE, // 最小サイズもスケール
         fontFamily: 'sans-serif',
         color: 'random-dark',
         backgroundColor: '#fafbfc',
@@ -497,6 +519,150 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
             onClick(params.nodes[0]);
         }
     });
+
+    // 高画質ダウンロードの実装（隠しコンテナでの再レンダリング）
+    const downloadBtn = document.querySelector(`.download-btn[data-target="${containerId}"]`);
+    if (downloadBtn) {
+        const newBtn = downloadBtn.cloneNode(true);
+        downloadBtn.parentNode.replaceChild(newBtn, downloadBtn);
+
+        newBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+            const filename = `network_${timestamp}.png`;
+
+            // 隠しコンテナ作成 (3倍サイズ)
+            const hiddenContainer = document.createElement('div');
+            hiddenContainer.style.position = 'fixed';
+            hiddenContainer.style.left = '-9999px';
+            hiddenContainer.style.top = '-9999px';
+            hiddenContainer.style.width = '2400px';
+            hiddenContainer.style.height = '1350px';
+            document.body.appendChild(hiddenContainer);
+
+            // オプションのスケーリング (x3)
+            const SCALE = 3;
+            const highResOptions = JSON.parse(JSON.stringify(options));
+            // デフォルトラベルを非表示（カスタム描画するため）
+            if (!highResOptions.nodes.font) highResOptions.nodes.font = {};
+            highResOptions.nodes.font.size = 0;
+            highResOptions.nodes.font.color = 'rgba(0,0,0,0)';
+
+            if (highResOptions.nodes.font) {
+                highResOptions.nodes.font.size = (highResOptions.nodes.font.size || 14) * SCALE;
+                highResOptions.nodes.font.strokeWidth = (highResOptions.nodes.font.strokeWidth || 0) * SCALE;
+            }
+            if (highResOptions.nodes.scaling) {
+                highResOptions.nodes.scaling.min *= SCALE;
+                highResOptions.nodes.scaling.max *= SCALE;
+            }
+
+            // 物理演算パラメータのスケーリング (重要: ノード間の距離を広げる)
+            if (highResOptions.physics && highResOptions.physics.forceAtlas2Based) {
+                const fa = highResOptions.physics.forceAtlas2Based;
+
+                // バネの長さを広げる
+                fa.springLength = (fa.springLength || 300) * SCALE;
+
+                // 反発力(gravitationalConstant)も強めて、より広がりやすくする
+                fa.gravitationalConstant = (fa.gravitationalConstant || -2500) * SCALE;
+                
+                highResOptions.physics.stabilization = { enabled: true, iterations: 2000, fit: true };
+            }
+            // ラベル重複描画を防ぐため、描画用データセットのラベルを空にする
+            // (vis-networkのデフォルト描画を完全に無効化)
+            const hdNavData = {
+                nodes: new vis.DataSet(navData.nodes.map(n => ({ ...n, label: " " }))), // 空文字だとIDが出る場合があるのでスペース
+                edges: new vis.DataSet(navData.edges.get())
+            };
+
+            // 高画質ネットワーク生成
+            const hdNetwork = new vis.Network(hiddenContainer, hdNavData, highResOptions);
+
+            // 安定化計算（物理演算）完了を待つ
+            hdNetwork.once("stabilizationIterationsDone", () => {
+                hdNetwork.fit({ animation: false });
+                
+                hdNetwork.once("afterDrawing", (ctx) => {
+                    // 1. 白背景合成
+                    const tempCanvas = document.createElement('canvas');
+                    const width = ctx.canvas.width;
+                    const height = ctx.canvas.height;
+                    
+                    tempCanvas.width = width;
+                    tempCanvas.height = height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    tempCtx.fillStyle = '#ffffff';
+                    tempCtx.fillRect(0, 0, width, height);
+                    
+                    // ネットワーク描画 (等倍コピー)
+                    tempCtx.drawImage(ctx.canvas, 0, 0);
+
+                    // 2. ラベルをノード中央にカスタム描画
+                    // 元のデータ(navData)からラベル情報を取得して描画する
+
+                    // Retina Display 対応 (pixelRatioによるスケーリング補正)
+                    // hiddenContainerの論理サイズを取得し、Canvasの物理サイズとの比率を計算
+                    const domWidth = parseFloat(hiddenContainer.style.width) || 2400; // 2400px指定済み
+                    const pixelRatio = width / domWidth;
+                    
+                    tempCtx.save();
+                    // 座標系を論理ピクセルに合わせる (getPositions()の戻り値は論理座標)
+                    tempCtx.scale(pixelRatio, pixelRatio);
+                    
+                    const positions = hdNetwork.getPositions();
+                    tempCtx.textAlign = 'center';
+                    tempCtx.textBaseline = 'middle';
+                    tempCtx.lineJoin = 'round';
+                    
+                    navData.nodes.forEach(node => {
+                        const pos = positions[node.id];
+                        if (!pos) return;
+                        
+                        // 重要: シミュレーション座標(pos)をDOM座標(画面上のピクセル位置)に変換する
+                        // fit()によるズームやパンを反映させるために必須
+                        const domPos = hdNetwork.canvasToDOM(pos);
+
+                        // ノードのサイズからフォントサイズを決定
+                        const box = hdNetwork.getBoundingBox(node.id);
+                        const width = box.right - box.left;
+                        
+                        // 直径の40%程度を基本とするが、最低サイズを大きく確保
+                        const minSize = 16 * SCALE; 
+                        let fontSize = Math.max(minSize, width * 0.25);
+                        
+                        // フォント設定
+                        tempCtx.font = `bold ${fontSize}px "Helvetica Neue", Arial, sans-serif`;
+                        tempCtx.lineWidth = fontSize * 0.15; // 縁取りの太さ
+
+                        // 白縁取り + 黒文字
+                        tempCtx.strokeStyle = '#ffffff';
+                        tempCtx.fillStyle = '#333333';
+                        
+                        tempCtx.strokeText(node.label, domPos.x, domPos.y);
+                        tempCtx.fillText(node.label, domPos.x, domPos.y);
+                    });
+                    
+                    tempCtx.restore(); // スケーリング解除
+                    
+                    const dataUrl = tempCanvas.toDataURL("image/png");
+                    
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = dataUrl;
+                    link.click();
+
+                    setTimeout(() => {
+                        hdNetwork.destroy();
+                        if (document.body.contains(hiddenContainer)) {
+                            document.body.removeChild(hiddenContainer);
+                        }
+                    }, 1000);
+                });
+            });
+        });
+    }
 }
 
 
