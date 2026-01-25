@@ -429,6 +429,11 @@ function runOneSampleTTest(currentData) {
                     </tbody>
                 </table>
             </div>
+
+            <div style="margin-top: 1.5rem;">
+               <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+               <div id="reporting-table-container-one-sample"></div>
+            </div>
         </div>
     `;
 
@@ -437,14 +442,6 @@ function runOneSampleTTest(currentData) {
         t_stat, p_value, cohens_d, significance, mu, df,
         group0Values: values,
     }];
-
-    // Generate APA Table for One-Sample
-    resultsContainer.innerHTML += `
-        <div style="margin-top: 1.5rem;">
-           <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
-           <div id="reporting-table-container-one-sample"></div>
-        </div>
-    `;
 
     const headersOneSample = ["Measure", "M (SD)", `Test Value (μ)`, "<em>t</em>", "<em>df</em>", "<em>p</em>", "<em>d</em>"];
     const rowsOneSample = testResults.map(res => {

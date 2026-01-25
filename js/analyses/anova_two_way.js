@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml } from '../utils.js';
 
 // ======================================================================
 // Helper Functions
@@ -437,7 +437,7 @@ function renderTwoWayANOVATable(results) {
                         </tr>
                     </thead>
                     <tbody>`;
-        
+
         sources.forEach(src => {
             const sig = src.p !== null ? (src.p < 0.01 ? '**' : src.p < 0.05 ? '*' : src.p < 0.1 ? '†' : '') : '';
             const pStr = src.p !== null ? `${src.p.toFixed(3)} ${sig}` : '-';
@@ -479,7 +479,7 @@ function renderTwoWayANOVATable(results) {
                         </tr>
                     </thead>
                     <tbody>`;
-        
+
         res.levels1.forEach(l1 => {
             res.levels2.forEach(l2 => {
                 const stat = res.cellStats[l1][l2];
@@ -496,6 +496,29 @@ function renderTwoWayANOVATable(results) {
         });
 
         finalHtml += `</tbody></table></div></div>`;
+
+        // Generate APA Source Table
+        const headersAPA = ["Source", "<em>SS</em>", "<em>df</em>", "<em>MS</em>", "<em>F</em>", "<em>p</em>", "&eta;<sub>p</sub><sup>2</sup>"];
+        const rowsAPA = sources.map(src => {
+            const sig = src.p !== null ? (src.p < 0.001 ? '< .001' : src.p.toFixed(3)) : '-';
+            return [
+                src.name,
+                src.ss.toFixed(2),
+                src.df,
+                src.ms.toFixed(2),
+                src.f !== null ? src.f.toFixed(2) : '-',
+                sig,
+                src.eta !== null ? src.eta.toFixed(2) : '-'
+            ];
+        });
+        // Remove Null/Error rows if strict APA? No, Error is needed.
+
+        finalHtml += `
+            <div style="margin-bottom: 2rem;">
+                 <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+                 <div>${generateAPATableHtml(`anova-ind-apa-${index || 0}`, `Table 1. Two-Way ANOVA Source Table for ${res.depVar}`, headersAPA, rowsAPA, `<em>Note</em>. Effect size is partial eta-squared.`)}</div>
+            </div>
+        `;
     });
 
     container.innerHTML = finalHtml;
@@ -902,6 +925,28 @@ function renderTwoWayMixedANOVATable(res) {
     });
 
     tableHtml += `</tbody></table></div></div>`;
+
+    // Generate APA Source Table
+    const headersAPA = ["Source", "<em>SS</em>", "<em>df</em>", "<em>MS</em>", "<em>F</em>", "<em>p</em>", "&eta;<sub>p</sub><sup>2</sup>"];
+    const rowsAPA = res.sources.map(src => {
+        const sig = src.p !== null ? (src.p < 0.001 ? '< .001' : src.p.toFixed(3)) : '-';
+        return [
+            src.name,
+            src.ss.toFixed(2),
+            src.df,
+            src.ms.toFixed(2),
+            src.f !== null ? src.f.toFixed(2) : '-',
+            sig,
+            src.eta !== null ? src.eta.toFixed(2) : '-'
+        ];
+    });
+
+    tableHtml += `
+        <div style="margin-bottom: 2rem;">
+                <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+                <div>${generateAPATableHtml('anova-mixed-apa', `Table 1. Mixed Design ANOVA Source Table`, headersAPA, rowsAPA, `<em>Note</em>. Effect size is partial eta-squared.`)}</div>
+        </div>
+    `;
 
     container.innerHTML = tableHtml;
 }

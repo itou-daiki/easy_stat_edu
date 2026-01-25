@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
 // import { MultiSelect } from '../components/MultiSelect.js'; // REMOVED
 
 // let multiSelectInstance = null; // REMOVED
@@ -120,8 +120,39 @@ function runCorrelationAnalysis(currentData) {
 
     document.getElementById('analysis-results').style.display = 'block';
 
+    // ヒートマップの描画
     renderCorrelationHeatmap(selectedVars, matrix);
+
+    // 散布図行列の描画
     renderScatterMatrix(selectedVars, currentData);
+
+    // APA Table Generation
+    const headersAPA = ["Variable", ...selectedVars.map((_, i) => `${i + 1}`)];
+    const rowsAPA = selectedVars.map((varName, i) => {
+        const row = [`${i + 1}. ${varName}`];
+        for (let j = 0; j < selectedVars.length; j++) {
+            if (j === i) {
+                row.push('-');
+            } else {
+                let r = matrix[i][j];
+                if (isNaN(r)) {
+                    row.push('NaN');
+                } else {
+                    let rText = r.toFixed(2);
+                    // Add significance asterisk
+                    const p = pValues[i][j];
+                    if (p < 0.01) rText += '**';
+                    else if (p < 0.05) rText += '*';
+                    row.push(rText);
+                }
+            }
+        }
+        return row;
+    });
+
+    const noteAPA = `*<em>p</em> < .05. **<em>p</em> < .01.`;
+    document.getElementById('reporting-table-container-corr').innerHTML =
+        generateAPATableHtml('corr-apa-table', 'Table 1. Pearson Correlation Matrix', headersAPA, rowsAPA, noteAPA);
 
     const controlsContainer = document.getElementById('visualization-controls-container');
     controlsContainer.innerHTML = '';
@@ -542,6 +573,10 @@ export function render(container, currentData, characteristics) {
                         <i class="fas fa-table"></i> 相関行列
                     </h4>
                     <div id="correlation-table"></div>
+                    <div style="margin-top: 1.5rem;">
+                       <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+                       <div id="reporting-table-container-corr"></div>
+                    </div>
                 </div>
 
                 <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: flex-end;">

@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
 
 // Pairwise t-test helper for Between-Subjects (Independent)
 function performPostHocTests(groups, groupData) {
@@ -598,8 +598,27 @@ function runOneWayRepeatedANOVA(currentData) {
                 </table>
             </div>
             <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p<0.01** p<0.05* p<0.1†</p>
+            
+            <div style="margin-top: 2rem;">
+                 <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+                 <div id="reporting-table-container-anova-rep"></div>
+            </div>
         </div>`;
     resultsContainer.innerHTML = tableHtml;
+
+    // Generate APA Source Table for Repeated Measures
+    const headersAPA = ["Source", "<em>SS</em>", "<em>df</em>", "<em>MS</em>", "<em>F</em>", "<em>p</em>", "&eta;<sub>p</sub><sup>2</sup>"];
+    const rowsAPA = [
+        ["Conditions", ssConditions.toFixed(2), dfConditions, msConditions.toFixed(2), fValue.toFixed(2), (pValue < 0.001 ? '< .001' : pValue.toFixed(3)), etaSquaredPartial.toFixed(2)],
+        ["Error", ssError.toFixed(2), dfError, msError.toFixed(2), "-", "-", "-"],
+        ["Total (excl. subj)", (ssConditions + ssError).toFixed(2), dfConditions + dfError, "-", "-", "-", "-"]
+    ];
+
+    setTimeout(() => {
+        const container = document.getElementById('reporting-table-container-anova-rep');
+        if (container)
+            container.innerHTML = generateAPATableHtml('anova-rep-apa', 'Table 1. One-Way Repeated Measures ANOVA', headersAPA, rowsAPA, `<em>Note</em>. Sphericity assumed.`);
+    }, 0);
 
     // 3. Sample Size
     renderSampleSizeInfo(resultsContainer, N);

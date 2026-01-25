@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
 
 function runChiSquare(currentData) {
     const rowVar = document.getElementById('row-var').value;
@@ -51,32 +51,50 @@ function runChiSquare(currentData) {
     const minDim = Math.min(rowKeys.length, colKeys.length);
     const cramersV = Math.sqrt(chiSquare / (total * (minDim - 1)));
 
-    // 残差分析 (調整済み標準化残差)
+    // 残差分析（調整済み残差）
     const adjResiduals = [];
-    if (total > 0) {
-        for (let i = 0; i < rowKeys.length; i++) {
-            const rowRes = [];
-            for (let j = 0; j < colKeys.length; j++) {
-                const obs = observed[i][j];
-                const exp = expected[i][j];
-                const rowProp = rowTotals[i] / total;
-                const colProp = colTotals[j] / total;
-                const stdErr = Math.sqrt(total * rowProp * (1 - rowProp) * colProp * (1 - colProp));
-                const res = (obs - exp) / stdErr; // Simplified approximation or formula
-                // Better formula: (Obs - Exp) / sqrt(Exp * (1 - rowProp) * (1 - colProp)) 
-                // Actually Adjusted Standardized Residual = (O - E) / sqrt( E * (1-Ri/N) * (1-Cj/N) ) ? 
-                // Standard formula: z = (O - E) / sqrt(E * (1 - rowMarginal/N) * (1 - colMarginal/N))
-                const z = (obs - exp) / Math.sqrt(exp * (1 - rowTotals[i] / total) * (1 - colTotals[j] / total));
-                rowRes.push(z);
-            }
-            adjResiduals.push(rowRes);
-        }
-    }
+    expected.forEach((row, i) => {
+        const rowRes = [];
+        row.forEach((exp, j) => {
+            const obs = observed[i][j];
+            // Simple approximation for adjusted residual if not needing exact formula with marginal probabilities here
+            // Using: (O - E) / sqrt(E * (1 - rowProp) * (1 - colProp))
+            const rowProp = rowTotals[i] / total;
+            const colProp = colTotals[j] / total;
+            const resid = (obs - exp) / Math.sqrt(exp * (1 - rowProp) * (1 - colProp));
+            rowRes.push(resid);
+        });
+        adjResiduals.push(rowRes);
+    });
 
-    displayResults(rowVar, colVar, rowKeys, colKeys, observed, expected, adjResiduals, chiSquare, df, pValue, cramersV);
+    displayChiSquareResult(chiSquare, df, pValue, cramersV, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar);
+
+    // Generate APA Table (Crosstab with Counts and %)
+    // Header: [RowVar, ...ColKeys, Total]
+    const headersAPA = [rowVar, ...colKeys.map(c => String(c)), "Total"];
+    const rowsAPA = rowKeys.map((r, i) => {
+        const row = [String(r)];
+        colKeys.forEach((c, j) => {
+            const count = observed[i][j];
+            const pct = ((count / rowTotals[i]) * 100).toFixed(1);
+            row.push(`${count} (${pct}%)`);
+        });
+        row.push(`${rowTotals[i]} (100.0%)`);
+        return row;
+    });
+
+    const pText = pValue < 0.001 ? '< .001' : `= ${pValue.toFixed(3)}`;
+    const noteAPA = `<em>Note</em>. Values are N (Row %). &chi;<sup>2</sup>(${df}, <em>N</em> = ${total}) = ${chiSquare.toFixed(2)}, <em>p</em> ${pText}, Cramer's <em>V</em> = ${cramersV.toFixed(2)}.`;
+
+    setTimeout(() => {
+        const container = document.getElementById('reporting-table-container-chi');
+        if (container) {
+            container.innerHTML = generateAPATableHtml('chi-apa-table', `Table 1. Crosstabulation of ${rowVar} by ${colVar}`, headersAPA, rowsAPA, noteAPA);
+        }
+    }, 0);
 }
 
-function displayResults(rowVar, colVar, rowKeys, colKeys, observed, expected, adjResiduals, chi2, df, p, v) {
+function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar) {
     const container = document.getElementById('chi-results');
 
     // 検定結果
@@ -104,13 +122,18 @@ function displayResults(rowVar, colVar, rowKeys, colKeys, observed, expected, ad
                 </div>
             </div>
             
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 1rem;">
-                <h4 style="color: #1e90ff; margin-bottom: 0.5rem; font-weight: bold;">
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                     <i class="fas fa-comment-dots"></i> 結果の解釈
                 </h4>
-                <p style="line-height: 1.6;">
+                <div style="line-height: 1.6;">
                     ${(() => { try { return InterpretationHelper.interpretChiSquare(p, v); } catch (e) { console.error('Interpretation Error:', e); return '結果の解釈中にエラーが発生しました。'; } })()}
-                </p>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+               <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+               <div id="reporting-table-container-chi"></div>
             </div>
         </div>
 
@@ -120,7 +143,6 @@ function displayResults(rowVar, colVar, rowKeys, colKeys, observed, expected, ad
             </h4>
             <div class="table-container">
                 <table class="table">
-                    <thead>
                         <tr>
                             <th>${rowVar} \\ ${colVar}</th>
                             ${colKeys.map(c => `<th>${c}</th>`).join('')}
