@@ -46,7 +46,7 @@
                 if (errorDiv) {
                     errorDiv.style.display = 'block';
                     errorDiv.innerHTML = `<strong>起動エラー:</strong><br>${event.message}`;
-                    // console.error('Startup Error:', event.error);
+                    console.error('Startup Error:', event.error);
                 }
             }
         });
@@ -218,6 +218,15 @@
                     </h3>
                     <p class="feature-card-description">データの次元削減と可視化</p>
                     <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
+                </div>
+
+                <div class="feature-card" data-analysis="time_series" data-requires="numeric:1">
+                    <h3 class="feature-card-title">
+                        <i class="fas fa-chart-line feature-card-icon"></i>
+                        時系列データ分析
+                    </h3>
+                    <p class="feature-card-description">時間の経過に伴う推移と周期性を分析</p>
+                    <p class="feature-card-requirement" style="display: none;">数値変数が1つ以上必要です</p>
                 </div>
 
                 <div class="feature-card" data-analysis="text_mining" data-requires="text:1">
