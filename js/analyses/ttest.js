@@ -205,6 +205,7 @@ function runIndependentTTest(currentData) {
     displayVisualization(testResults, 'independent');
 
     // Generate APA Table
+    // Generate APA Table
     const headers = ["Measure", `${groups[0]} (n=${testResults[0].n1}) M (SD)`, `${groups[1]} (n=${testResults[0].n2}) M (SD)`, "<em>t</em>", "<em>df</em>", "<em>p</em>", "Cohen's <em>d</em>"];
     const rows = testResults.map(res => {
         let pText = res.p_value.toFixed(3);
@@ -214,26 +215,14 @@ function runIndependentTTest(currentData) {
             `${res.mean1.toFixed(2)} (${res.std1.toFixed(2)})`,
             `${res.mean2.toFixed(2)} (${res.std2.toFixed(2)})`,
             Math.abs(res.t_stat).toFixed(2),
-            res.n1 + res.n2 - 2, // Actually Welch's df is complex, used df_welch in calc but for table standard df or welch? Let's use welch if used.
-            // Wait, previous code calculated welch df, but didn't save it in testResults explicitly except in printed table.
-            // I should capture df in testResults to be accurate.
-            // Let's modify the testResults push above to include df_welch.
-            // BUT for now, calculate approximate or modify push.
-            // Let's look at previous replaced content.
-            // Ah, I missed df in testResults push. Step 495 shows it puts t_stat, p_value etc.
-            // I will use 'df' from calculation if I can access it, but scope is issue.
-            // Better to update testResults structure first? No, too disjointed.
-            // I'll update the logic to save df in testResults in the loop above first?
-            // Actually, I can recalculate or just use "Welch" note.
-            // Let's assume standard reporting requires df. I'll add df to testResults object in the loop. 
-            // Wait, I can't easily edit the loop above without a huge replace block.
-            // I'll use a simplified df N1+N2-2 for now or just omitted? No, APA needs t(df).
-            // Actually, I should update the loop to include df in the object.
+            res.df.toFixed(2),
             pText,
             res.cohens_d.toFixed(2)
         ];
     });
-    // Correction: I need df. I will do a MULTI REPLACE to add df to testResults object and then use it here.
+
+    document.getElementById('reporting-table-container-indep').innerHTML =
+        generateAPATableHtml('ttest-indep-apa', 'Table 1. Results of Independent Samples t-test', headers, rows, 'Values are Mean (Standard Deviation).');
 
     document.getElementById('results-section').style.display = 'block';
 }
@@ -444,17 +433,55 @@ function runOneSampleTTest(currentData) {
     `;
 
     const testResults = [{
-        resultsContainer.innerHTML += `
+        varName, groups: [varName], mean1: mean, std1: std, n1: n,
+        t_stat, p_value, cohens_d, significance, mu, df,
+        group0Values: values,
+    }];
+
+    // Generate APA Table for One-Sample
+    resultsContainer.innerHTML += `
         <div style="margin-top: 1.5rem;">
            <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
            <div id="reporting-table-container-one-sample"></div>
         </div>
     `;
 
+    const headersOneSample = ["Measure", "M (SD)", `Test Value (μ)`, "<em>t</em>", "<em>df</em>", "<em>p</em>", "<em>d</em>"];
+    const rowsOneSample = testResults.map(res => {
+        let pText = res.p_value.toFixed(3);
+        if (res.p_value < 0.001) pText = '< .001';
+        return [
+            res.varName,
+            `${res.mean1.toFixed(2)} (${res.std1.toFixed(2)})`,
+            res.mu.toFixed(2),
+            res.t_stat.toFixed(2),
+            res.df.toFixed(0),
+            pText,
+            res.cohens_d.toFixed(2)
+        ];
+    });
+
+    // Wait, resultsContainer.innerHTML += ... might destroy existing event listeners if any were attached to elements inside summary-stats-section?
+    // Fortunately, most other sections are ID based and populated later or before.
+    // Ideally, append childhood, but innerHTML += string is seemingly safe here as listeners are mostly on the controls which are outside results-section?
+    // No, summary stats are inside.
+    // However, displaySummaryStatistics is called before.
+    // BETTER: Create a div and append it.
+
+    // Actually, summary stats is in 'summary-stats-section'.
+    // resultsContainer IS 'test-results-section'.
+    // 'test-results-section' content is set via innerHTML = `...`.
+    // So modifying it now is fine.
+
+    // But wait, I should set the content first then append to innerHTML?
+    // No, I can just execute the logic.
+
+    setTimeout(() => {
         document.getElementById('reporting-table-container-one-sample').innerHTML =
             generateAPATableHtml('ttest-one-sample-apa', 'Table 3. Results of One-Sample t-test', headersOneSample, rowsOneSample, 'Values are Mean (Standard Deviation).');
+    }, 0);
 
-        displayInterpretation(testResults, null, 'one-sample');
+    displayInterpretation(testResults, null, 'one-sample');
     displayVisualization(testResults, 'one-sample');
     document.getElementById('results-section').style.display = 'block';
 }

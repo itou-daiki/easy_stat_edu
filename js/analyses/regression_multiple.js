@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
 
 // 重回帰分析の実行
 function runMultipleRegression(currentData) {
@@ -203,10 +203,58 @@ function runMultipleRegression(currentData) {
                             ${InterpretationHelper.interpretRegression(r2, pValueModel, dependentVar, interpretationCoeffs)}
                         </div>
                     </div>
+
+                    <div style="margin-top: 1.5rem;">
+                       <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+                       <div id="reporting-table-container-multi-reg-${idx}"></div>
+                    </div>
                 </div>
             `;
 
             resultsContainer.innerHTML += sectionHtml;
+
+            // Generate APA Table
+            // We need to execute this after the HTML is added.
+            // But we are in a loop, and `sectionHtml` is appended.
+            // Immediately after appending we can find the element.
+
+            const headersReg = ["Variable", "<em>B</em>", "<em>SE B</em>", "<em>β</em>", "<em>t</em>", "<em>p</em>"];
+            const rowsReg = [
+                ["Intercept", beta[0].toFixed(3), seBeta[0].toFixed(3), "-", tValConst.toFixed(3), (pValConst < 0.001 ? '< .001' : pValConst.toFixed(3))]
+            ];
+
+            independentVars.forEach((v, i) => {
+                const b = beta[i + 1];
+                const se = seBeta[i + 1];
+                const betaStd = standardizedBeta[i];
+                const t = b / se; // Recalculating or reuse variables from loop?
+                // Wait, in previous loop (lines 170+), we calculated these. But scope is inside loop.
+                // We should reuse.
+                // Let's iterate independentVars again or capture data in interpretationCoeffs?
+                // interpretationCoeffs has {name, beta, stdBeta, p}. Missing SE and t.
+                // Let's re-calculate or better, just grab from arrays.
+
+                const t_val = beta[i + 1] / seBeta[i + 1];
+                const p_val = (1 - jStat.studentt.cdf(Math.abs(t_val), n - k - 1)) * 2;
+
+                rowsReg.push([
+                    v,
+                    beta[i + 1].toFixed(3),
+                    seBeta[i + 1].toFixed(3),
+                    standardizedBeta[i].toFixed(3),
+                    t_val.toFixed(3),
+                    (p_val < 0.001 ? '< .001' : p_val.toFixed(3))
+                ]);
+            });
+
+            const noteReg = `<em>R</em><sup>2</sup> = ${r2.toFixed(3)}, <em>Adj. R</em><sup>2</sup> = ${adjR2.toFixed(3)}, <em>F</em>(${k}, ${n - k - 1}) = ${fValue.toFixed(2)}, <em>p</em> ${pValueModel < 0.001 ? '< .001' : '= ' + pValueModel.toFixed(3)}.`;
+
+            setTimeout(() => {
+                const container = document.getElementById(`reporting-table-container-multi-reg-${idx}`);
+                if (container) {
+                    container.innerHTML = generateAPATableHtml(`reg-multi-apa-${idx}`, `Table ${idx + 1}. Results of Multiple Regression for ${dependentVar}`, headersReg, rowsReg, noteReg);
+                }
+            }, 0);
 
         } catch (e) {
             console.error(e);

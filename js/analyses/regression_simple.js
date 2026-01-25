@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
 
 function runSimpleRegression(currentData) {
     const xVar = document.getElementById('independent-var').value;
@@ -118,10 +118,37 @@ function runSimpleRegression(currentData) {
                     ${InterpretationHelper.interpretRegression(r2, pValue, yVar, [{ name: xVar, beta: b1, p: pValue, stdBeta: correlation }])}
                 </div>
             </div>
+
+            <div style="margin-top: 1.5rem;">
+               <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+               <div id="reporting-table-container-simple-reg"></div>
+            </div>
             
             <div id="regression-plot" style="margin-top: 1.5rem;"></div>
         </div>
     `;
+
+    // Generate APA Table
+    const headersReg = ["Variable", "<em>B</em>", "<em>SE B</em>", "<em>t</em>", "<em>p</em>"];
+    const rowsReg = [
+        ["Intercept", b0.toFixed(3), "-", "-", "-"],
+        [xVar, b1.toFixed(3), seB1.toFixed(3), tStat.toFixed(3), (pValue < 0.001 ? '< .001' : pValue.toFixed(3))]
+    ];
+
+    // Using setTimeout to ensure DOM is updated? No, innerHTML is synchronous.
+    // Wait, check variable access. b0, b1, seB1, tStat, pValue, xVar are available in scope.
+    // R2, F, df also typically reported. APA table for regression often includes these in Note or separate lines.
+    // Standard format: Table with Coeffs, and Note: R^2 = .xx, F(df1, df2) = xx, p = .xx.
+
+    const noteReg = `<em>R</em><sup>2</sup> = ${r2.toFixed(3)}, <em>F</em>(1, ${df}) = ${(Math.pow(tStat, 2)).toFixed(2)}, <em>p</em> ${pValue < 0.001 ? '< .001' : '= ' + pValue.toFixed(3)}.`;
+
+    // We need to inject this AFTER innerHTML update.
+    // But innerHTML update happens right above.
+
+    setTimeout(() => {
+        document.getElementById('reporting-table-container-simple-reg').innerHTML =
+            generateAPATableHtml('reg-simple-apa', 'Table 1. Results of Simple Linear Regression', headersReg, rowsReg, noteReg);
+    }, 0);
 
     // Plot
     plotRegression(x, y, b0, b1, xVar, yVar);
