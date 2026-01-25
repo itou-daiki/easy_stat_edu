@@ -981,5 +981,39 @@ export const InterpretationHelper = {
             text += `選択された説明変数では、「<strong>${depVar}</strong>」を十分に予測できない可能性があります。`;
         }
         return text;
+    },
+
+    /**
+     * マン・ホイットニーのU検定の解釈
+     * @param {number} p - P値
+     * @param {number} meanRank1 - 群1の平均順位
+     * @param {number} meanRank2 - 群2の平均順位
+     * @param {Array} groups - グループ名の配列
+     * @param {number} r - 効果量 r
+     * @returns {string} 解釈文
+     */
+    interpretMannWhitney(p, meanRank1, meanRank2, groups, r) {
+        const pEval = this.evaluatePValue(p);
+        let text = "";
+
+        // 効果量の判定 (Cohen's criteria for r)
+        let effectSizeText = "";
+        if (Math.abs(r) < 0.1) effectSizeText = "ほとんどない";
+        else if (Math.abs(r) < 0.3) effectSizeText = "小さい";
+        else if (Math.abs(r) < 0.5) effectSizeText = "中程度";
+        else effectSizeText = "大きい";
+
+        const higherGroup = meanRank1 > meanRank2 ? groups[0] : groups[1];
+
+        if (pEval.isSignificant) {
+            text += `2つのグループ間（${groups[0]} vs ${groups[1]}）には、統計的に<strong>有意な差が認められました</strong> (${pEval.text})。<br>`;
+            text += `平均順位を見ると、<strong>${higherGroup}</strong>の方が順位が高くなっており、値が大きい傾向にあります。<br>`;
+            text += `効果量 r = ${r.toFixed(2)} であり、グループ間の差は「<strong>${effectSizeText}</strong>」水準です。`;
+        } else {
+            text += `2つのグループ間には、統計的に有意な差は認められませんでした (${pEval.text})。<br>`;
+            text += `平均順位は ${groups[0]}: ${meanRank1.toFixed(2)}, ${groups[1]}: ${meanRank2.toFixed(2)} です。<br>`;
+            text += `効果量 r = ${r.toFixed(2)} (${effectSizeText}) です。`;
+        }
+        return text;
     }
 };

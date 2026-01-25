@@ -4,7 +4,8 @@
   "description": "**完全なクライアントサイド実行・インストール不要・高速動作**",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx playwright test",
+    "test:u-test": "npx playwright test tests/mann_whitney.spec.ts --headed"
   },
   "repository": {
     "type": "git",
