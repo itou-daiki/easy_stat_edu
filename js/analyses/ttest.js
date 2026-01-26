@@ -750,10 +750,9 @@ export function render(container, currentData, characteristics) {
 
                 <div id="independent-controls" style="display: block;">
                     <div id="group-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
-                    <div id="dep-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
-                         <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;"><i class="fas fa-check-square"></i> 従属変数を選択（複数選択可）:</label>
-                         <div id="dep-var-multiselect"></div>
-                    </div>
+                     <div id="dep-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
+                          <div id="dep-var-multiselect"></div>
+                     </div>
                     <div id="independent-btn-container"></div>
                 </div>
                 <div id="paired-controls" style="display: none;">
@@ -806,7 +805,7 @@ export function render(container, currentData, characteristics) {
     });
 
     createVariableSelector('dep-var-multiselect', numericColumns, 'dep-var-multiselect-hidden', {
-        label: '<i class="fas fa-check-square"></i> 検定変数を複数選択:',
+        label: '<i class="fas fa-check-square"></i> 従属変数を選択（複数選択可）:',
         multiple: true,
         placeholder: '変数を選択...'
     });

@@ -453,7 +453,6 @@ export function render(container, currentData, characteristics) {
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 <div id="group-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
                 <div id="dep-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
-                        <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;"><i class="fas fa-check-square"></i> 検定変数を複数選択:</label>
                         <div id="dep-var-multiselect"></div>
                 </div>
                 <div id="run-btn-container" style="margin-top: 1.5rem;"></div>
