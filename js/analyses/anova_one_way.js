@@ -684,10 +684,20 @@ export function render(container, currentData, characteristics) {
                 <!-- ... existing content ... -->
                 <div class="collapsible-content collapsed">
                     <div class="note">
-                        <strong><i class="fas fa-lightbulb"></i> 一要因分散分析とは？</strong>
-                        <p>3つ以上のグループ（群）または条件間で平均値に差があるかを調べます。</p>
-                        <p>例：クラスA、B、Cでテストの平均点に差があるか？</p>
+                        <strong><i class="fas fa-lightbulb"></i> 一元配置分散分析 (One-way ANOVA) とは？</strong>
+                        <p>3つ以上のグループがあるときに、その平均値に違いがあるかを一度に調べる方法です。「t検定の3グループ以上版」と考えると分かりやすいです。</p>
+                        <img src="image/anova_one.png" alt="分散分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li><i class="fas fa-check"></i> 「1組、2組、3組」のテストの点数を比較したいとき（3グループ）</li>
+                        <li><i class="fas fa-check"></i> 「薬A、薬B、薬C、偽薬」の効果を比較したいとき（4グループ）</li>
+                    </ul>
+                    <h4>結果の読み方</h4>
+                    <ul>
+                        <li><strong>p値 < 0.05:</strong> 「少なくともどれか1つのペアの間には差がある」ことを意味します。</li>
+                        <li><strong>多重比較:</strong> 具体的に「どのグループとどのグループが違うのか」は、その後の分析（多重比較）で確認します。</li>
+                    </ul>
                 </div>
             </div>
 

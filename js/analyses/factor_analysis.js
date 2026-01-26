@@ -207,20 +207,19 @@ export function render(container, currentData, characteristics) {
                 </div>
                 <div class="collapsible-content collapsed">
                     <div class="note">
-                        <strong><i class="fas fa-lightbulb"></i> 主成分分析 (Principal Component Analysis) とは？</strong>
-                        <p>多数の変数間の相関関係を利用して、情報をできるだけ失わずに変数をより少数の「主成分」に要約する手法です。データの次元削減や、変数群の構造を大まかに把握するために用いられます。</p>
+                        <strong><i class="fas fa-lightbulb"></i> 因子分析 (Factor Analysis) とは？</strong>
+                        <p>たくさんのデータの背後にある「隠れた共通の原因（因子）」を見つける手法です。</p>
                         <img src="image/pca.png" alt="主成分分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <p><strong>主成分分析との違い:</strong> 「データを要約する（PCA）」か「背後の原因を探る（因子分析）」かの違いです。心理学などでは因子分析がよく使われます。</p>
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
-                        <li>多数のアンケート項目を、少数の指標（例：「顧客満足度」「デザイン評価」）にまとめたい</li>
-                        <li>多変量データの情報を二次元に圧縮して可視化したい</li>
+                        <li><i class="fas fa-check"></i> 数学・理科・社会・国語の点数から、背後にある「理数系能力」「文系能力」という能力（因子）を推定したいとき</li>
+                        <li><i class="fas fa-check"></i> アンケート結果から「ブランド志向」「価格志向」といった潜在的な意識を見つけたいとき</li>
                     </ul>
                     <h4>主な用語</h4>
                     <ul>
-                        <li><strong>主成分負荷量:</strong> 各変数がその主成分とどれくらい強く関係しているかを示す値。主成分の解釈に用います。</li>
-                        <li><strong>固有値:</strong> 各主成分がどれだけの情報（分散）を説明しているかを示す値。</li>
-                        <li><strong>スクリープロット:</strong> 採用する主成分の数を決めるためのグラフ（固有値が1以上、または「肘」のように急に落ち込む前までを採用することが多い）。</li>
+                        <li><strong>因子負荷量:</strong> その変数が、因子とどれくらい関係が強いかを表します（相関係数のようなもの）。</li>
                     </ul>
                 </div>
             </div>

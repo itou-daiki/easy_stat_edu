@@ -268,19 +268,18 @@ export function render(container, currentData, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> カイ二乗検定 (Chi-Square Test) とは？</strong>
-                        <p>２つのカテゴリ変数（性別：男/女 と 喫煙：する/しない など）の間に関連があるかどうかを調べる手法です。クロス集計表を用いて独立性を検定します。</p>
+                        <p>「性別（男女）」や「好みの色（赤・青・黄）」のようなカテゴリーデータ同士に関係があるかを調べる分析です。「クロス集計表」を使って分析します。</p>
                         <img src="image/chi_square.png" alt="カイ二乗分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
-                        <p>「観測された度数」と「期待される度数」のズレを評価します。</p>
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
-                        <li>「性別（男女）」と「好きなジャンル（A・B）」に関連があるか調べたい</li>
-                        <li>「喫煙習慣（あり・なし）」と「肺がん（あり・なし）」に関連があるか調べたい</li>
+                        <li><i class="fas fa-check"></i> 「男女（性別）」によって「理系・文系（コース選択）」に偏りがあるか調べたいとき</li>
+                        <li><i class="fas fa-check"></i> 「喫煙（する・しない）」と「病気（あり・なし）」に関連があるか調べたいとき</li>
                     </ul>
                     <h4>結果の読み方</h4>
                     <ul>
-                        <li><strong>p値 < 0.05:</strong> 2つの変数は独立ではない（関連がある）と判断します。</li>
-                        <li><strong>残差分析:</strong> どの組み合わせが特に多かった（または少なかった）かを確認します。調整済み残差が1.96以上だと「有意に多い」と判断されます。</li>
+                        <li><strong>p値 < 0.05:</strong> 2つのデータには「関連がある（独立ではない）」と言えます。</li>
+                        <li><strong>残差分析:</strong> 「思ったより多かった（または少なかった）」組み合わせが分かります。調整済み残差が1.96以上だと「有意に多い」です。</li>
                     </ul>
                 </div>
             </div>

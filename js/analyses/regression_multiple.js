@@ -457,9 +457,9 @@ export function render(container, currentData, characteristics) {
                 </div>
                 <div class="collapsible-content collapsed">
                     <div class="note">
-                        <strong><i class="fas fa-lightbulb"></i> 重回帰分析とパス図</strong>
-                        <p>複数の説明変数を使って、1つまたは複数の目的変数を予測します。パス図では、変動への影響度（標準化係数）を矢印の太さや数値で可視化します。</p>
-                        <p>※ パス図には、影響がある程度強い関係（|β| ≥ 0.1）のみが表示されます。</p>
+                        <strong><i class="fas fa-lightbulb"></i> 重回帰分析 (Multiple Regression Analysis) とは？</strong>
+                        <p>「複数の要因（説明変数）」が「1つの結果（目的変数）」にどう影響するかを調べる分析です。「美味しいカレーの味（結果）」は「スパイスの量」と「煮込み時間」（要因）で決まる、というようなイメージです。</p>
+                        <p><strong>パス図について:</strong> どの要因の影響が強いかを矢印の太さで図示します（影響が弱いものは表示されません）。</p>
                     </div>
                 </div>
             </div>

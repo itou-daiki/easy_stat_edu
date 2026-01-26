@@ -989,13 +989,16 @@ export function render(container, currentData, characteristics) {
                 </div>
                 <div class="collapsible-content collapsed">
                     <div class="note">
-                        <strong><i class="fas fa-lightbulb"></i> 二要因分散分析とは？</strong>
-                        <p>2つの要因（例：性別 × 条件）が結果に与える影響や、その相互作用（組み合わせによる特殊な効果）を調べます。</p>
-                        <ul>
-                            <li><strong>主効果:</strong> 各要因単独の影響</li>
-                            <li><strong>交互作用:</b> 要因の組み合わせによる影響（例：薬Aは男性には効くが女性には効かない、など）</li>
-                        </ul>
+                        <strong><i class="fas fa-lightbulb"></i> 二元配置分散分析 (Two-way ANOVA) とは？</strong>
+                        <p>2つの要因（原因）が結果にどう影響するか、またその組み合わせに特別な効果（交互作用）があるかを調べる分析です。</p>
                     </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li><i class="fas fa-check"></i> 「性別（男・女）」と「指導法（A・B）」の違いによって、テストの点数がどう変わるか調べたいとき</li>
+                        <li><i class="fas fa-check"></i> 「薬の種類」と「投与量」の組み合わせで効果が変わるか知りたいとき</li>
+                    </ul>
+                    <h4>交互作用（こうごさよう）とは？</h4>
+                    <p>「組み合わせによる効果」のことです。例えば「指導法Aは、男性には効果があるが、女性には効果が薄い」といった場合、性別と指導法の間に「交互作用がある」といいます。</p>
                 </div>
             </div>
 

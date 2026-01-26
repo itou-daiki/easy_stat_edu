@@ -412,9 +412,19 @@ export function render(container, currentData, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> マン・ホイットニーのU検定とは？</strong>
-                        <p>対応のないt検定のノンパラメトリック版です。データが正規分布に従わない場合や、順序尺度の場合に使用します。平均値ではなく「平均順位」を比較します。</p>
-                        <p><strong>報告用の表（Hyoun）</strong>: 分析結果セクションの下に、論文やレポートで使用できる形式の表が生成されます。</p>
+                        <p>2つのグループの間に差があるかを調べる方法ですが、t検定と違って「平均値」ではなく「順位（ランキング）」を使って比較します。データが極端な値を含んでいたり、人数が少ない場合に適しています。</p>
+                        <img src="image/mann_whitney.png" alt="U検定のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li><i class="fas fa-check"></i> <strong>順位データ:</strong> 「徒競走の順位」や「5段階評価」など、明確な数値ではないデータを比較したいとき</li>
+                        <li><i class="fas fa-check"></i> <strong>外れ値がある:</strong> 一人だけ極端に点数が高い人がいて、平均値が信用できないとき</li>
+                    </ul>
+                    <h4>結果の読み方</h4>
+                    <ul>
+                        <li><strong>p値:</strong> 0.05より小さければ、2つのグループに「差がある」といえます。</li>
+                        <li><strong>Z値・U値:</strong> 検定のための統計量です。報告するときに使います。</li>
+                    </ul>
                 </div>
             </div>
 

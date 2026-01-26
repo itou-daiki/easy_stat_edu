@@ -8,7 +8,8 @@ export function render(container, data, characteristics) {
                 時系列データ分析
             </h3>
             <p style="color: #4a5568; margin-bottom: 1.5rem;">
-                データの時間的な推移や傾向を分析します。移動平均によるトレンドの把握や、自己相関による周期性の確認が可能です。
+                時間の経過とともに変化するデータを分析します。「売上の推移」や「株価の変動」など、流れを見るのに適しています。<br>
+                <strong>移動平均</strong>を使ってギザギザしたグラフを滑らかにしたり、<strong>自己相関</strong>を使って「周期性（季節性）」を見つけることができます。
             </p>
 
             <div class="row">

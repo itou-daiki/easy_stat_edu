@@ -241,13 +241,13 @@ export function render(container, currentData, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 主成分分析 (PCA) とは？</strong>
-                        <p>たくさんの変数（データ）の情報をできるだけ損なわずに、少数の新しい指標（主成分）に要約する手法です。多次元のデータを2次元や3次元に圧縮して可視化する際によく使われます。</p>
+                        <p>たくさんのデータを、特徴を損なわずに「ギュッと要約」する手法です。例えば「5教科の点数」を「総合的な学力」という1つの指標にまとめるイメージです。</p>
                         <img src="image/pca.png" alt="主成分分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
-                        <li>5教科の点数を「総合学力」という1つの指標にまとめたい</li>
-                        <li>10個の体力測定の結果を「パワー」「スピード」のような少ない指標に要約してマップ化したい</li>
+                        <li><i class="fas fa-check"></i> 5教科（国数英理社）の点数を、「文系能力」と「理系能力」のように要約したいとき</li>
+                        <li><i class="fas fa-check"></i> 多数のアンケート結果をまとめて、傾向マップを作りたいとき</li>
                     </ul>
                     <h4>因子分析との違い</h4>
                     <ul>

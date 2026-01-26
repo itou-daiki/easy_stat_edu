@@ -240,13 +240,18 @@ export function render(container, currentData, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 単回帰分析 (Simple Linear Regression) とは？</strong>
-                        <p>1つの変数（説明変数）から、もう1つの変数（目的変数）を予測する式（直線）を作る手法です。「身長から体重を予測する」などが代表例です。</p>
+                        <p>「あるデータ（説明変数）から、別のデータ（目的変数）を予測する式」を作る分析です。「予測」や「要因の影響度」を知りたいときに使います。</p>
                         <img src="image/regression_simple.png" alt="単回帰分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
-                        <li>「広告費」から「売上」を予測したい</li>
-                        <li>「気温」から「アイスクリームの販売数」を予測したい</li>
+                        <li><i class="fas fa-check"></i> 「広告費」から、来月の「売上」を予測したいとき</li>
+                        <li><i class="fas fa-check"></i> 「駅からの距離」が「家賃」にどれくらい影響するか知りたいとき</li>
+                    </ul>
+                    <h4>主な指標</h4>
+                    <ul>
+                        <li><strong>決定係数 (R²):</strong> 予測の「精度」を表します（0から1）。目安として0.5以上あると予測精度が良いとされます。</li>
+                        <li><strong>回帰係数:</strong> 「Xが1増えるとYがこれだけ増える」という影響の大きさを表します。</li>
                     </ul>
                     <h4>主な指標</h4>
                     <ul>

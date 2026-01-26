@@ -660,15 +660,20 @@ export function render(container, currentData, characteristics) {
                 </div>
                 <div class="collapsible-content collapsed">
                     <div class="note">
-                        <strong><i class="fas fa-lightbulb"></i> t検定とは？</strong>
-                        <p>2つのグループ（群）の平均値に「統計的に意味のある差（有意差）」があるかどうかを調べる手法です。</p>
+                        <strong><i class="fas fa-lightbulb"></i> t検定 (t-Test) とは？</strong>
+                        <p>「A組とB組のテストの平均点に違いがあるか？」のように、2つのグループの平均値を比較して、その差が偶然かどうかを調べる統計手法です。</p>
+                        <img src="image/t_test.png" alt="t検定のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
-                        <li>新薬を投与したグループと投与していないグループで治癒期間に差があるか知りたい</li>
-                        <li>新しい教育メソッドを実施したクラスと従来のクラスでテストの点数に差があるか知りたい</li>
-                        <li>同じ人がダイエット前後で体重が変わったか知りたい（対応あり）</li>
-                        <li>あるクラスの平均点が全国平均と差があるか知りたい（1サンプル）</li>
+                        <li><i class="fas fa-check"></i> <strong>独立な2群:</strong> 「薬を飲んだグループ」と「飲まなかったグループ」で効果を比較したいとき</li>
+                        <li><i class="fas fa-check"></i> <strong>対応あり:</strong> 同じ人で「ダイエット前」と「ダイエット後」の体重を比較したいとき</li>
+                        <li><i class="fas fa-check"></i> <strong>1サンプル:</strong> 「このクラスの平均点」が「全国平均（50点）」と違うか調べたいとき</li>
+                    </ul>
+                    <h4>結果の読み方</h4>
+                    <ul>
+                        <li><strong>p値 (有意確率):</strong> 「0.05 (5%)」より小さければ、「統計的に意味のある差がある（有意差あり）」と判断します。</li>
+                        <li><strong>効果量 (d):</strong> 差の「大きさ」を表します（データの数に関係ない指標）。0.2=小、0.5=中、0.8=大 が目安です。</li>
                     </ul>
                 </div>
             </div>

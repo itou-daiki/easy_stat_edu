@@ -532,13 +532,23 @@ export function render(container, currentData, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 相関分析 (Correlation Analysis) とは？</strong>
-                        <p>2つの変数の間に「一方が増えればもう一方も増える（または減る）」という直線的な関係があるかを調べる手法です。「身長と体重」「気温とビール販売量」などの関係を見ます。</p>
+                        <p>「身長が高いほど体重も重いか？」のように、2つの数値データの間に直線的な関係（一方が増えればもう一方も増える/減る）があるかを調べる分析です。</p>
                         <img src="image/correlation.png" alt="相関分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
-                        <li>「身長」と「体重」に関係があるか知りたい</li>
-                        <li>「勉強時間」と「テストの点数」に関係があるか調べたい</li>
+                        <li><i class="fas fa-check"></i> 「勉強時間」と「テストの点数」に関係があるか調べたいとき</li>
+                        <li><i class="fas fa-check"></i> 「最高気温」と「アイスクリームの売上」に関係があるか調べたいとき</li>
+                    </ul>
+                    <h4>結果の読み方</h4>
+                    <ul>
+                        <li><strong>相関係数 (r):</strong> 関係の「強さ」と「向き」を表します（-1から+1）。
+                            <ul>
+                                <li>0.7以上: 強い正の相関（かなり関係がある）</li>
+                                <li>0付近: 関係がない</li>
+                                <li>-0.7以下: 強い負の相関（逆の関係がある）</li>
+                            </ul>
+                        </li>
                     </ul>
                     <h4>結果の読み方</h4>
                     <ul>
