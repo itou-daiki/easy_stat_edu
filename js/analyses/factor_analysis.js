@@ -224,6 +224,25 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>抽出法:</strong> 最尤法 (Maximum Likelihood) または 主因子法 (Principal Factors) などを想定（※現在の実装はPCAの結果を回転させる簡易版か要確認）</li>
+                            <li><strong>回転:</strong> プロマックス回転 (Promax Rotation) - 斜交回転</li>
+                            <li><strong>因子負荷量が0.4未満</strong>の変数は非表示にするフィルタリングを行っています。</li>
+                            <li>※ 因子得点の算出は回帰法を用いています。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <!-- データ概要 -->
             <div id="fa-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 

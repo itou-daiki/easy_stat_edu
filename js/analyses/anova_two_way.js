@@ -1002,6 +1002,24 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>検定手法:</strong> 二元配置分散分析 (Two-way ANOVA) - Type II または Type III 平方和 (※現在はType I/Sequentialの挙動に近い実装のため、各群のサンプルサイズが等しい(Balanced design)ことを推奨)</li>
+                            <li><strong>モデル:</strong> \( Y_{ijk} = \mu + \alpha_i + \beta_j + (\alpha\beta)_{ij} + \epsilon_{ijk} \)</li>
+                            <li><strong>交互作用:</strong> 有意な場合、単純主効果の検定を行うことが一般的です（本ツールでは交互作用プロットで視覚的に確認）。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="anova2-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
