@@ -482,6 +482,15 @@ export function render(container, currentData, dataCharacteristics) {
     // イベントリスナーを追加
     document.getElementById('process-data-btn').addEventListener('click', processData);
 
+    document.getElementById('download-btn').addEventListener('click', () => {
+        const format = document.getElementById('file-format-select').value;
+        if (format === 'csv') {
+            downloadCSV();
+        } else {
+            downloadExcel();
+        }
+    });
+
     // ... (既存のイベントリスナー) ...
 }
 
