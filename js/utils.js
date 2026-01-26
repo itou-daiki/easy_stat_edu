@@ -811,6 +811,134 @@ export function createVisualizationControls(container) {
     return { axisControl: axisCheckbox, titleControl: titleCheckbox };
 }
 
+/**
+ * Adds significance brackets and annotations to a Plotly layout.
+ * Automatically handles vertical stacking to prevent overlaps.
+ * 
+ * @param {Object} layout - The Plotly layout object to modify (in-place).
+ * @param {Array} pairs - Array of comparison objects: { g1: string, g2: string, significance: string, p: number }
+ * @param {Object|Array} xMap - Mapping of group names to x-coordinates (or array of group names in order).
+ * @param {number} yMax - The maximum y-value of the data (baseline for brackets).
+ * @param {number} yRange - The total range of the y-axis (used for scaling offsets).
+ */
+export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange) {
+    if (!pairs || pairs.length === 0) return;
+
+    // Filter significant pairs
+    const significantPairs = pairs.filter(p => p.significance && p.significance !== 'n.s.');
+    if (significantPairs.length === 0) return;
+
+    // x-coordinate helper
+    const getX = (groupName) => {
+        if (Array.isArray(xMap)) {
+            return xMap.indexOf(groupName);
+        }
+        return xMap[groupName];
+    };
+
+    // Sort pairs by span (distance between groups) ascending
+    // This ensures smaller brackets are drawn first (lower), and larger ones stack above.
+    significantPairs.sort((a, b) => {
+        const spanA = Math.abs(getX(a.g1) - getX(a.g2));
+        const spanB = Math.abs(getX(b.g1) - getX(b.g2));
+        return spanA - spanB;
+    });
+
+    // Initialize shapes and annotations if not present
+    if (!layout.shapes) layout.shapes = [];
+    if (!layout.annotations) layout.annotations = [];
+
+    // Configuration for spacing
+    const bracketHeight = yRange * 0.03; // Height of the bracket "legs"
+    const textOffset = yRange * 0.02;   // Distance text is above the bracket
+    const stackStep = yRange * 0.08;    // Vertical space reserved for each level of brackets
+
+    // Track the "skyline" (current max height) for each x-position
+    // Assuming x-coordinates are integers 0, 1, 2... for groups
+    const numGroups = Array.isArray(xMap) ? xMap.length : Object.keys(xMap).length;
+    const columnHeights = new Array(numGroups).fill(yMax);
+
+    // Track max occupied height for layout range update
+    let maxOccupiedY = yMax;
+
+    significantPairs.forEach(pair => {
+        const x1 = getX(pair.g1);
+        const x2 = getX(pair.g2);
+        const start = Math.min(x1, x2);
+        const end = Math.max(x1, x2);
+
+        // Find the current max height in the span [start, end]
+        let currentLevelHeight = 0;
+        for (let i = start; i <= end; i++) {
+            if (columnHeights[i] > currentLevelHeight) {
+                currentLevelHeight = columnHeights[i];
+            }
+        }
+
+        // Determine drawing position (add step)
+        const drawY = currentLevelHeight + stackStep;
+        const textY = drawY + textOffset;
+
+        // Draw bracket line (path)
+        // M x1,y L x1,y+h L x2,y+h L x2,y
+        const path = `M ${x1},${drawY - bracketHeight} L ${x1},${drawY} L ${x2},${drawY} L ${x2},${drawY - bracketHeight}`;
+
+        layout.shapes.push({
+            type: 'path',
+            path: path,
+            line: { color: 'black', width: 1.5 },
+            xref: 'x',
+            yref: 'y'
+        });
+
+        // Add annotation
+        // Use <sup> to simulate superscript for dagger if needed, though simple text usually works better in Plotly
+        // Converting special dagger to HTML entity or unicode usually standardizes display
+        const text = pair.significance.replace('†', '†'); // Keep unicode or use HTML if supported by config
+
+        layout.annotations.push({
+            x: (x1 + x2) / 2,
+            y: textY,
+            text: text,
+            showarrow: false,
+            font: { size: 14, color: 'black' },
+            xanchor: 'center',
+            yanchor: 'bottom'
+        });
+
+        // Update column heights for the spanned range
+        // The text occupies some space, so we reserve up to textY + limits
+        const nextBaseline = textY + (yRange * 0.02); // Small buffer above text
+        for (let i = start; i <= end; i++) {
+            columnHeights[i] = nextBaseline;
+        }
+
+        if (nextBaseline > maxOccupiedY) {
+            maxOccupiedY = nextBaseline;
+        }
+    });
+
+    // Update layout yaxis range to accommodate brackets
+    // If range was already set, extend it. If not, Plotly auto-scales, but often cuts off text.
+    // It is safer to explicitely check and set range if we added things.
+    // However, existing range might be null (auto).
+    // Better strategy: Return the recommended max Y, let caller decide or set it here if 'range' exists.
+
+    // We will set typical auto-range buffer
+    if (!layout.yaxis.range) {
+        // If no range exists, we can't easily modify 'auto' without knowing min. 
+        // But we can set the top limit if we knew the bottom.
+        // Since we don't know min, we might leave it to Plotly unless we want to force distinct top space.
+        // A common trick is to add an invisible scatter point at maxOccupiedY, or just return maxOccupiedY.
+    } else {
+        layout.yaxis.range[1] = Math.max(layout.yaxis.range[1], maxOccupiedY + (yRange * 0.05));
+    }
+
+    // Attach recommended max y to layout for caller usage if needed
+    layout._recommendedMaxY = maxOccupiedY + (yRange * 0.05);
+}
+
+
 // Keep this for backward compatibility if needed, or remove if all usages are updated.
 // For now, I'll remove it as I plan to update all usages.
 // export function createAxisLabelControl... REMOVED

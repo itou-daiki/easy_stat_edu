@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, showError, generateAPATableHtml } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, showError, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 
 // 要約統計量の計算と表示
 function displaySummaryStatistics(variables, currentData) {
@@ -367,9 +367,32 @@ function displayVisualization(testResults) {
                 zeroline: false
             },
             showlegend: false,
-            margin: { t: 40, b: 80, l: 60, r: 20 },
-            boxmode: 'group'
+            margin: { t: 60, b: 80, l: 60, r: 20 },
+            boxmode: 'group',
+            shapes: [],
+            annotations: []
         };
+
+        // Add significance brackets
+        // For box plots, yMax is the max of the data (plus some whiskers, outliers)
+        const yMax = Math.max(
+            ...result.group0Values,
+            ...result.group1Values
+        );
+        const yMin = Math.min(
+            ...result.group0Values,
+            ...result.group1Values
+        );
+        const yRange = yMax - yMin;
+
+        const pairs = [{
+            g1: result.groups[0],
+            g2: result.groups[1],
+            significance: result.significance,
+            p: result.p_value
+        }];
+
+        addSignificanceBrackets(layout, pairs, result.groups, yMax, yRange);
 
         const config = createPlotlyConfig('Mann-Whitney_U', result.varName);
 

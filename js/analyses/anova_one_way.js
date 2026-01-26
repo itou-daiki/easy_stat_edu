@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
 
 // Pairwise t-test helper for Between-Subjects (Independent)
 function performPostHocTests(groups, groupData) {
@@ -258,10 +258,20 @@ function displayANOVAVisualization(results, testType) {
             title: '', // Disable default title
             xaxis: { title: 'Group' },
             yaxis: { title: '' }, // Disable standard title
-            shapes: res.plotShapes,
+            shapes: [],
             annotations: plotAnnotations,
-            margin: { t: res.plotMarginTop, l: 100, b: 100 } // Add left and bottom margin
+            margin: { t: 60, l: 100, b: 100 } // Add left and bottom margin, initial top margin
         };
+
+        // Add significance brackets using the standardized helper
+        // We need to calculate yMax and yRange for the helper
+        const yMax = Math.max(...res.groupMeans.map((m, i) => m + res.groupSEs[i]));
+        const yMin = 0; // Bar plots usually start at 0
+        const yRange = yMax - yMin; // Simplified for bar chart
+
+        // Group name to index map (or just pass array if helper supports it)
+        // Helper supports array of names for index lookup
+        addSignificanceBrackets(layout, res.sigPairs, res.groups, yMax, yRange);
 
         // Initial toggle state
         const showAxisLabels = axisControl?.checked ?? true;
@@ -309,87 +319,7 @@ function displayANOVAVisualization(results, testType) {
     });
 }
 
-function generateBracketsForPlot(sigPairs, groupNames, groupMeans, groupSEs) {
-    const shapes = [];
-    const annotations = [];
-    if (sigPairs.length === 0) return { shapes, annotations, topMargin: 60 };
 
-    const maxVal = Math.max(...groupMeans.map((m, i) => m + groupSEs[i]));
-    const yOffset = maxVal * 0.15; // Initial gap above bars
-    const step = maxVal * 0.15; // Step size between bracket levels
-    let currentLevelY = maxVal + yOffset;
-
-    const levels = [];
-
-    // Sort by distance (shorter brackets first) for better stacking visuals
-    sigPairs.sort((a, b) => {
-        const distA = Math.abs(groupNames.indexOf(a.g1) - groupNames.indexOf(a.g2));
-        const distB = Math.abs(groupNames.indexOf(b.g1) - groupNames.indexOf(b.g2));
-        return distA - distB;
-    });
-
-    sigPairs.forEach(pair => {
-        if (pair.p >= 0.1) return;
-
-        const idx1 = groupNames.indexOf(pair.g1);
-        const idx2 = groupNames.indexOf(pair.g2);
-        const start = Math.min(idx1, idx2);
-        const end = Math.max(idx1, idx2);
-
-        // Find available level
-        let levelIndex = 0;
-        while (true) {
-            if (!levels[levelIndex]) levels[levelIndex] = [];
-            const overlap = levels[levelIndex].some(interval => (start < interval.end + 0.5) && (end > interval.start - 0.5));
-            if (!overlap) break;
-            levelIndex++;
-        }
-        levels[levelIndex].push({ start, end });
-
-        const bracketY = currentLevelY + (levelIndex * step);
-        const legHeight = step * 0.3; // Length of the vertical legs
-
-        let text;
-        if (pair.p < 0.01) text = 'p < 0.01 **';
-        else if (pair.p < 0.05) text = 'p < 0.05 *';
-        else text = 'p < 0.1 †';
-
-        // Draw Bracket
-        // Horizontal line
-        shapes.push({
-            type: 'line',
-            x0: idx1, y0: bracketY,
-            x1: idx2, y1: bracketY,
-            line: { color: 'black', width: 2 }
-        });
-        // Left leg
-        shapes.push({
-            type: 'line',
-            x0: idx1, y0: bracketY - legHeight,
-            x1: idx1, y1: bracketY,
-            line: { color: 'black', width: 2 }
-        });
-        // Right leg
-        shapes.push({
-            type: 'line',
-            x0: idx2, y0: bracketY - legHeight,
-            x1: idx2, y1: bracketY,
-            line: { color: 'black', width: 2 }
-        });
-
-        // Annotation
-        annotations.push({
-            x: (idx1 + idx2) / 2,
-            y: bracketY + step * 0.2, // Slightly above the bracket
-            text: text,
-            showarrow: false,
-            font: { size: 14, color: 'black', weight: 'bold' }
-        });
-    });
-
-    const topMargin = 60 + (levels.length * 50); // Increase margin for taller stack
-    return { shapes, annotations, topMargin };
-}
 
 // ----------------------------------------------------------------------
 // Main Analysis Functions
@@ -469,7 +399,6 @@ function runOneWayIndependentANOVA(currentData) {
 
         // Post-hoc for plot
         const sigPairs = performPostHocTests(groups, groupData);
-        const { shapes, annotations, topMargin } = generateBracketsForPlot(sigPairs, groups, groupMeans, groupSEs);
 
         const levenes = calculateLeveneTest(Object.values(groupData));
 
@@ -497,9 +426,10 @@ function runOneWayIndependentANOVA(currentData) {
             ssBetween, df1: dfBetween, msBetween,
             ssWithin, df2: dfWithin, msWithin,
             ssTotal, fValue, pValue, significance, etaSquared,
-            plotShapes: shapes,
-            plotAnnotations: annotations,
-            plotMarginTop: topMargin
+            sigPairs: sigPairs.map(p => ({
+                ...p,
+                significance: p.p < 0.01 ? '**' : p.p < 0.05 ? '*' : p.p < 0.1 ? '†' : 'n.s.'
+            }))
         });
     });
 
@@ -659,7 +589,6 @@ function runOneWayRepeatedANOVA(currentData) {
 
     const conditionSEs = dependentVars.map((v, i) => jStat.stdev(validData.map(row => row[i]), true) / Math.sqrt(N));
     const sigPairs = performRepeatedPostHocTests(dependentVars, currentData);
-    const { shapes, annotations, topMargin } = generateBracketsForPlot(sigPairs, dependentVars, conditionMeans, conditionSEs);
 
     const testResults = [{
         varName: `条件 (${dependentVars.join(', ')})`,
@@ -668,7 +597,10 @@ function runOneWayRepeatedANOVA(currentData) {
         ssWithin: ssError, df2: dfError, msWithin: msError,
         ssTotal: ssConditions + ssError, // Note: This is not the grand total SS
         fValue, pValue, significance, etaSquared: etaSquaredPartial,
-        plotShapes: shapes, plotAnnotations: annotations, plotMarginTop: topMargin
+        sigPairs: sigPairs.map(p => ({
+            ...p,
+            significance: p.p < 0.01 ? '**' : p.p < 0.05 ? '*' : p.p < 0.1 ? '†' : 'n.s.'
+        }))
     }];
 
     // 4. Interpretation

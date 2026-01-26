@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
 // import { MultiSelect } from '../components/MultiSelect.js'; // REMOVED
 
 // let depVarMultiSelect = null; // REMOVED
@@ -584,44 +584,32 @@ function displayVisualization(testResults, testType) {
             const annotations = [];
             const shapes = [];
 
-            // Add significance bracket
-            if (result.significance !== 'n.s.') {
-                const y_max_error = Math.max(meanValues[0] + errorValues[0], meanValues[1] + errorValues[1]);
-                const y_range = y_max_error * 1.1; // Ensure range is not zero
-                const y_offset = Math.max(y_range * 0.05, 0.1); // Add a minimum offset
-                const bracket_y = y_max_error + y_offset;
-                const annotation_y = bracket_y + y_offset * 0.5;
+            // Add significance brackets using the standardized helper
+            // Create a temporary 'pairs' object for the helper
+            const pairs = [{
+                g1: groupNames[0],
+                g2: groupNames[1],
+                significance: result.significance,
+                p: result.p_value
+            }];
 
-                shapes.push({
-                    type: 'path',
-                    path: `M 0,${bracket_y} L 1,${bracket_y}`,
-                    line: { color: 'black', width: 1.5 }
-                });
-                annotations.push({
-                    x: 0.5,
-                    y: annotation_y,
-                    text: result.significance.replace('†', '<sup>†</sup>'),
-                    showarrow: false,
-                    font: { size: 14, color: 'black' },
-                    xanchor: 'center',
-                    yanchor: 'bottom'
-                });
-                layout_yaxis_range = [0, annotation_y + y_offset];
-            } else {
-                layout_yaxis_range = null;
-            }
+            const yMax = Math.max(...meanValues.map((m, i) => m + errorValues[i]));
+            const yMin = 0;
+            const yRange = yMax - yMin;
 
             layout = {
                 title: getBottomTitleAnnotation(title),
-                xaxis: { title: 'グループ' },
-                yaxis: { title: '平均値', range: layout_yaxis_range },
-                showlegend: false,
-                margin: { t: 20, b: 80, l: 60, r: 20 },
-                annotations,
-                shapes,
+                xaxis: { title: result.varName }, // Or group?
+                yaxis: { title: 'Mean' },
+                shapes: shapes,
+                annotations: annotations,
+                margin: { t: 60, b: 80, l: 60, r: 20 }
             };
 
-            config = createPlotlyConfig('t検定', result.varName);
+            // Apply brackets
+            addSignificanceBrackets(layout, pairs, groupNames, yMax, yRange);
+
+            config = createPlotlyConfig('t-test_bar', result.varName);
 
         } else if (testType === 'one-sample') {
             // ... (one-sample t-test visualization)
