@@ -43,8 +43,12 @@ function runSimpleRegression(currentData) {
     // Statistics
     let rss = 0;
     let tss = 0;
+    const residuals = [];
+    const fittedValues = [];
     for (let i = 0; i < n; i++) {
         const yPred = b0 + b1 * x[i];
+        residuals.push(y[i] - yPred);
+        fittedValues.push(yPred);
         rss += (y[i] - yPred) ** 2;
         tss += (y[i] - yMean) ** 2;
     }
@@ -124,7 +128,10 @@ function runSimpleRegression(currentData) {
                <div id="reporting-table-container-simple-reg"></div>
             </div>
             
-            <div id="regression-plot" style="margin-top: 1.5rem;"></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;">
+                <div id="regression-plot"></div>
+                <div id="regression-diagnostic-plot"></div>
+            </div>
         </div>
     `;
 
@@ -150,8 +157,9 @@ function runSimpleRegression(currentData) {
             generateAPATableHtml('reg-simple-apa', 'Table 1. Results of Simple Linear Regression', headersReg, rowsReg, noteReg);
     }, 0);
 
-    // Plot
+    // Plots
     plotRegression(x, y, b0, b1, xVar, yVar);
+    plotResidualsVsFitted(fittedValues, residuals);
 
     document.getElementById('analysis-results').style.display = 'block';
 
@@ -161,6 +169,7 @@ function runSimpleRegression(currentData) {
     if (axisControl && titleControl) {
         const updatePlot = () => {
             plotRegression(x, y, b0, b1, xVar, yVar);
+            plotResidualsVsFitted(fittedValues, residuals);
         };
         axisControl.addEventListener('change', updatePlot);
         titleControl.addEventListener('change', updatePlot);
@@ -217,6 +226,57 @@ function plotRegression(x, y, b0, b1, xVar, yVar) {
     }
 
     Plotly.newPlot('regression-plot', [tracePoints, traceLine], layout, createPlotlyConfig('単回帰分析', [yVar, xVar]));
+}
+
+function plotResidualsVsFitted(fitted, residuals) {
+    const trace = {
+        x: fitted,
+        y: residuals,
+        mode: 'markers',
+        type: 'scatter',
+        marker: { color: '#ef4444', size: 8, opacity: 0.7 },
+        name: '残差'
+    };
+
+    const layout = {
+        title: '',
+        xaxis: { title: '予測値 (Fitted values)', zeroline: false },
+        yaxis: { title: '残差 (Residuals)', zeroline: true, zerolinecolor: '#9ca3af', zerolinewidth: 2 },
+        margin: { l: 80, r: 20, b: 60, t: 40 },
+        hovermode: 'closest',
+        shapes: [
+            {
+                type: 'line',
+                x0: Math.min(...fitted),
+                y0: 0,
+                x1: Math.max(...fitted),
+                y1: 0,
+                line: {
+                    color: 'gray',
+                    width: 2,
+                    dash: 'dashdot'
+                }
+            }
+        ],
+        annotations: []
+    };
+
+    // Visualization Controls
+    const axisControl = document.getElementById('show-axis-labels');
+    const titleControl = document.getElementById('show-graph-title');
+    const showAxisLabels = axisControl?.checked ?? true;
+    const showGraphTitle = titleControl?.checked ?? true;
+
+    if (!showAxisLabels) {
+        layout.xaxis.title = '';
+        layout.yaxis.title = '';
+    }
+
+    if (showGraphTitle) {
+        layout.title = { text: '残差プロット (Residuals vs Fitted)', font: { size: 14 } };
+    }
+
+    Plotly.newPlot('regression-diagnostic-plot', [trace], layout, createPlotlyConfig('残差プロット', ['Residuals', 'Fitted']));
 }
 
 export function render(container, currentData, characteristics) {

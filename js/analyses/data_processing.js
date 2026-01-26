@@ -322,21 +322,21 @@ export function render(container, currentData, dataCharacteristics) {
                         <span style="background: #1e90ff; color: white; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 1.25rem;">
                             <i class="fas fa-broom"></i>
                         </span>
-                        データクレンジングについて
+                        データ加工・整形について
                     </h3>
                     <i class="fas fa-chevron-down toggle-icon" style="color: #1e90ff; transition: transform 0.3s ease;"></i>
                 </div>
                 <div class="collapsible-content" style="background: white; border-radius: 0 0 12px 12px; padding: 2rem; border: 1px solid #e2e8f0; border-top: none; margin-top: -5px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
                     <div class="note">
-                        <strong><i class="fas fa-lightbulb"></i> データクレンジング (Data Cleansing) とは？</strong>
-                        <p>分析を行う前にデータのエラーや不整合を修正・削除するプロセスのことです。欠損値（データがない箇所）や外れ値（極端な値）を処理することで、分析の精度を高めます。</p>
-                        <img src="image/data_cleansing.png" alt="データクレンジングのイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <strong><i class="fas fa-lightbulb"></i> データ加工・整形 (Data Processing) とは？</strong>
+                        <p>分析を行う前にデータを整える重要なステップです。「値の変換」や「変数の作成」などのエンジニアリング機能と、「欠損値・外れ値処理」などのクレンジング機能を含みます。</p>
+                        <img src="image/data_cleansing.png" alt="データ加工のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>何ができるの？</h4>
                     <ul>
-                        <li><strong>欠損値処理:</strong> 空白データの削除</li>
-                        <li><strong>外れ値処理:</strong> IQR法を用いた極端な値の自動除去</li>
-                        <li><strong>データ型確認:</strong> 各列が数値か文字列かの確認</li>
+                        <li><strong>変数作成 (Engineering):</strong> リッカート尺度の数値化や、合計・平均変数の作成</li>
+                        <li><strong>欠損値処理 (Cleansing):</strong> 空白データの削除</li>
+                        <li><strong>外れ値処理 (Cleansing):</strong> IQR法を用いた極端な値の自動除去</li>
                     </ul>
                 </div>
             </div>
@@ -351,6 +351,73 @@ export function render(container, currentData, dataCharacteristics) {
 
             <!--元のデータプレビューと要約統計量（トップページと同じ仕様） -->
             <div id="original-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
+
+            <!--処理済みデータプレビューと要約統計量（トップページと同じ仕様） -->
+            <div id="original-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
+
+            <!-- データエンジニアリング（変数変換・作成） -->
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem; border-left: 5px solid #805ad5;">
+                <h4 style="color: #6b46c1; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-magic"></i> データ加工・変数作成 (Engineering)
+                </h4>
+                
+                <div class="tabs" style="display: flex; gap: 1rem; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0;">
+                    <button class="tab-btn active" onclick="showEngineeringTab('recode')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid #6b46c1; font-weight: bold; color: #6b46c1; cursor: pointer;">
+                        値の変換 (リッカート尺度など)
+                    </button>
+                    <button class="tab-btn" onclick="showEngineeringTab('compute')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer;">
+                        変数の計算 (合計・平均)
+                    </button>
+                </div>
+
+                <!-- Tab 1: Recoding -->
+                <div id="eng-tab-recode" style="display: block;">
+                    <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
+                        <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
+                            <i class="fas fa-info-circle"></i> テキストデータを数値に変換したり（例：「とてもそう思う」→ 5）、逆転項目の処理を行います。
+                        </p>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">変換する変数を選択:</label>
+                            <select id="recode-col-select" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;"></select>
+                        </div>
+                        <div id="recode-mapping-area" style="margin-bottom: 1rem;"></div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">新しい変数名 (空欄の場合は上書き):</label>
+                            <input type="text" id="recode-new-col-name" class="form-control" placeholder="例: Q1_score" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        </div>
+                        <button id="apply-recode-btn" class="btn-analysis" style="background: #805ad5; width: 100%;">
+                            <i class="fas fa-exchange-alt"></i> 変換を実行
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Compute -->
+                <div id="eng-tab-compute" style="display: none;">
+                    <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
+                        <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
+                            <i class="fas fa-calculator"></i> 複数の変数をまとめて、新しい変数（合計点や平均点）を作成します。因子得点の計算などに便利です。
+                        </p>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">計算に使用する変数 (複数選択可):</label>
+                            <div id="compute-col-select-container"></div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">計算方法:</label>
+                            <select id="compute-method-select" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                                <option value="mean">平均 (Mean)</option>
+                                <option value="sum">合計 (Sum)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">新しい変数名 (必須):</label>
+                            <input type="text" id="compute-new-col-name" class="form-control" placeholder="例: Factor1_Score" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        </div>
+                        <button id="apply-compute-btn" class="btn-analysis" style="background: #805ad5; width: 100%;">
+                            <i class="fas fa-plus-circle"></i> 変数を作成
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <!--処理オプション -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -409,15 +476,206 @@ export function render(container, currentData, dataCharacteristics) {
     // 元のデータを表示（折りたたみ可能、トップページと同じ仕様）
     renderDataOverview('#original-data-overview', originalData, originalCharacteristics, { initiallyCollapsed: true });
 
+    // エンジニアリングUIの初期化
+    initEngineeringUI();
+
     // イベントリスナーを追加
     document.getElementById('process-data-btn').addEventListener('click', processData);
 
-    document.getElementById('download-btn').addEventListener('click', () => {
-        const format = document.getElementById('file-format-select').value;
-        if (format === 'csv') {
-            downloadCSV();
-        } else {
-            downloadExcel();
-        }
+    // ... (既存のイベントリスナー) ...
+}
+
+// --- Data Engineering Functions ---
+
+let engMultiSelect = null; // MultiSelect instance for compute
+
+function initEngineeringUI() {
+    // タブ切り替えロジック
+    window.showEngineeringTab = function (tabName) {
+        document.getElementById('eng-tab-recode').style.display = tabName === 'recode' ? 'block' : 'none';
+        document.getElementById('eng-tab-compute').style.display = tabName === 'compute' ? 'block' : 'none';
+
+        // ボタンのスタイル更新
+        const buttons = document.querySelectorAll('.tab-btn');
+        buttons.forEach(btn => {
+            if (btn.textContent.includes(tabName === 'recode' ? '値の変換' : '変数の計算')) {
+                btn.style.borderBottom = '3px solid #6b46c1';
+                btn.style.color = '#6b46c1';
+            } else {
+                btn.style.borderBottom = '3px solid transparent';
+                btn.style.color = '#718096';
+            }
+        });
+    };
+
+    // Recode用変数セレクトボックスの更新
+    updateRecodeColumnSelect();
+
+    // Compute用マルチセレクトの更新
+    updateComputeColumnSelect();
+
+    // イベントリスナー
+    const recodeSelect = document.getElementById('recode-col-select');
+    if (recodeSelect) {
+        recodeSelect.addEventListener('change', updateRecodeMappingTable);
+    }
+
+    document.getElementById('apply-recode-btn').onclick = applyRecode;
+    document.getElementById('apply-compute-btn').onclick = applyCompute;
+}
+
+function updateRecodeColumnSelect() {
+    const select = document.getElementById('recode-col-select');
+    if (!select) return;
+    select.innerHTML = '';
+    const cols = Object.keys(originalData[0] || {});
+    cols.forEach(col => {
+        const option = document.createElement('option');
+        option.value = col;
+        option.textContent = col;
+        select.appendChild(option);
+    });
+    // 初回マッピング表示
+    updateRecodeMappingTable();
+}
+
+function updateComputeColumnSelect() {
+    const container = document.getElementById('compute-col-select-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    // 数値変数を抽出 (文字列でも数値変換可能なものは含めるべきだが、まずは数値のみ)
+    // いや、MultiSelectは全ての変数を出してよい
+    const cols = Object.keys(originalData[0] || {});
+
+    const MultiSelect = window.MultiSelect || (import('../components/MultiSelect.js').then(m => m.default));
+
+    import('../components/MultiSelect.js').then(module => {
+        const MultiSelect = module.default;
+        engMultiSelect = new MultiSelect(container, cols, []);
     });
 }
+
+function updateRecodeMappingTable() {
+    const col = document.getElementById('recode-col-select').value;
+    const container = document.getElementById('recode-mapping-area');
+    if (!col || !container) return;
+
+    // ユニークな値を取得
+    const uniqueValues = Array.from(new Set(originalData.map(d => d[col]))).sort();
+
+    // 値が多すぎる場合は警告
+    if (uniqueValues.length > 50) {
+        container.innerHTML = '<p style="color: red;">ユニークな値が多すぎるため（50以上）、マッピングテーブルを表示できません。</p>';
+        return;
+    }
+
+    let html = `
+        <table class="table" style="font-size: 0.9rem;">
+            <thead>
+                <tr>
+                    <th>元の値</th>
+                    <th>新しい値 (数値またはテキスト)</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    uniqueValues.forEach((val, idx) => {
+        let defaultVal = val;
+        // 簡易的なデフォルト変換ロジック (例: "とてもそう思う" -> 5)
+        // ここでは空欄にしてユーザーに入力させる
+        html += `
+            <tr>
+                <td>${val}</td>
+                <td><input type="text" class="recode-input" data-original="${val}" value="${val}" style="width: 100%; box-sizing: border-box; padding: 4px;"></td>
+            </tr>
+        `;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function applyRecode() {
+    const col = document.getElementById('recode-col-select').value;
+    const newColName = document.getElementById('recode-new-col-name').value.trim() || col;
+    const inputs = document.querySelectorAll('.recode-input');
+    const mapping = {};
+
+    inputs.forEach(input => {
+        let val = input.value;
+        // 数値変換を試みる
+        if (input.value !== '' && !isNaN(Number(input.value))) {
+            val = Number(input.value);
+        }
+        mapping[input.dataset.original] = val;
+    });
+
+    // データの更新
+    // originalDataを直接書き換える（エンジニアリングは分析の前段階として扱い、これが「新しいオリジナルデータ」になる）
+    // ただし、元のoriginalData配列の参照先を変更するのではなく、配列の中身（オブジェクト）を変更する
+
+    originalData.forEach(row => {
+        const oldVal = row[col];
+        // マッピングにない値はそのまま
+        if (mapping.hasOwnProperty(oldVal)) {
+            row[newColName] = mapping[oldVal];
+        } else {
+            row[newColName] = oldVal;
+        }
+    });
+
+    // 列が増えた場合、characteristicsを再分析
+    updateDataAndUI('変数変換を実行しました');
+}
+
+function applyCompute() {
+    const selectedCols = engMultiSelect.getValue();
+    if (selectedCols.length === 0) {
+        alert('計算に使用する変数を選択してください');
+        return;
+    }
+    const method = document.getElementById('compute-method-select').value;
+    const newColName = document.getElementById('compute-new-col-name').value.trim();
+
+    if (!newColName) {
+        alert('新しい変数名を入力してください');
+        return;
+    }
+
+    originalData.forEach(row => {
+        const values = selectedCols.map(c => Number(row[c])).filter(v => !isNaN(v));
+        let result = null;
+        if (values.length > 0) {
+            if (method === 'sum') {
+                result = values.reduce((a, b) => a + b, 0);
+            } else if (method === 'mean') {
+                result = values.reduce((a, b) => a + b, 0) / values.length;
+            }
+        }
+        row[newColName] = result; // null if no valid values
+    });
+
+    updateDataAndUI(`${newColName} を作成しました`);
+}
+
+function updateDataAndUI(message) {
+    // データ特性の再分析
+    originalCharacteristics = window.analyzeDataCharacteristics(originalData);
+
+    // UI更新 (テーブルの再描画)
+    renderDataOverview('#original-data-overview', originalData, originalCharacteristics, { initiallyCollapsed: false });
+
+    // セレクトボックス等の更新
+    updateRecodeColumnSelect();
+    updateComputeColumnSelect();
+
+    // データ品質情報の更新
+    displayDataQualityInfo();
+
+    alert(message);
+}
+
+
+// End of file

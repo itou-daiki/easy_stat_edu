@@ -75,6 +75,58 @@ export function getEffectSizeInterpretation(d) {
     return `効果はほとんどない (|d| = ${absD.toFixed(3)})`;
 };
 
+/**
+ * Performs Levene's Test for Homogeneity of Variance (k groups).
+ * Supports both (group1, group2) arguments or ([group1, group2, ...]) argument.
+ * @param {Array<number[]>|number[]} groups - Array of arrays, where each inner array is data for a group.
+ * @returns {object} { F, p, significant }
+ */
+export function calculateLeveneTest(groups) {
+    let groupArrays = [];
+    if (arguments.length > 1) {
+        groupArrays = Array.from(arguments);
+    } else if (Array.isArray(groups) && Array.isArray(groups[0])) {
+        groupArrays = groups;
+    } else {
+        return { F: 0, p: 1, significant: false };
+    }
+
+    // 1. Calculate means
+    const groupMeans = groupArrays.map(g => jStat.mean(g));
+
+    // 2. Calculate absolute deviations
+    const deviations = groupArrays.map((g, i) => g.map(v => Math.abs(v - groupMeans[i])));
+
+    // 3. Perform One-Way ANOVA on deviations
+    const allDevs = deviations.flat();
+    const grandMeanDev = jStat.mean(allDevs);
+    const N = allDevs.length;
+    const k = groupArrays.length;
+
+    // Sum of Squares Between
+    let SSb = 0;
+    deviations.forEach((gDevs, i) => {
+        const meanDev = jStat.mean(gDevs);
+        SSb += gDevs.length * Math.pow(meanDev - grandMeanDev, 2);
+    });
+    const dfb = k - 1;
+    const MSb = SSb / dfb;
+
+    // Sum of Squares Within
+    let SSw = 0;
+    deviations.forEach((gDevs, i) => {
+        const meanDev = jStat.mean(gDevs);
+        SSw += jStat.sum(gDevs.map(d => Math.pow(d - meanDev, 2)));
+    });
+    const dfw = N - k;
+    const MSw = SSw / dfw;
+
+    const F = MSb / MSw;
+    const p = 1 - jStat.centralF.cdf(F, dfb, dfw);
+
+    return { F, p, significant: p < 0.05 };
+}
+
 // ==========================================
 // Data Preview and Summary Statistics
 // ==========================================

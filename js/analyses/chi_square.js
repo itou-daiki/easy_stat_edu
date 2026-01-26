@@ -67,7 +67,34 @@ function runChiSquare(currentData) {
         adjResiduals.push(rowRes);
     });
 
-    displayChiSquareResult(chiSquare, df, pValue, cramersV, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar);
+    // Assumption Check: Expected Frequency < 5
+    let cellsCount = 0;
+    let smallExpCount = 0;
+    expected.forEach(row => {
+        row.forEach(exp => {
+            cellsCount++;
+            if (exp < 5) smallExpCount++;
+        });
+    });
+    const smallExpRate = (smallExpCount / cellsCount) * 100;
+
+    // Yates' Continuity Correction (Only for 2x2)
+    let yatesChiSquare = null;
+    let yatesPValue = null;
+    if (rowKeys.length === 2 && colKeys.length === 2) {
+        let yatesSum = 0;
+        expected.forEach((row, i) => {
+            row.forEach((exp, j) => {
+                if (exp > 0) {
+                    yatesSum += Math.pow(Math.abs(observed[i][j] - exp) - 0.5, 2) / exp;
+                }
+            });
+        });
+        yatesChiSquare = yatesSum;
+        yatesPValue = 1 - jStat.chisquare.cdf(yatesChiSquare, df);
+    }
+
+    displayChiSquareResult(chiSquare, df, pValue, cramersV, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, smallExpRate, yatesChiSquare, yatesPValue);
 
     // Generate APA Table (Crosstab with Counts and %)
     // Header: [RowVar, ...ColKeys, Total]
@@ -94,11 +121,32 @@ function runChiSquare(currentData) {
     }, 0);
 }
 
-function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar) {
+function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, smallExpRate, yatesChi, yatesP) {
     const container = document.getElementById('chi-results');
 
-    // 検定結果
-    let html = `
+    // Warning for Assumption
+    let warningHtml = '';
+    if (smallExpRate > 20) {
+        warningHtml = `
+            <div style="background-color: #fffbe6; border: 1px solid #fde68a; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; color: #92400e;">
+                <strong><i class="fas fa-exclamation-triangle"></i> 注意: 期待度数が5未満のセルが ${smallExpRate.toFixed(1)}% あります。</strong><br>
+                カイ二乗検定の前提条件（全体の20%以下）を満たしていません。結果の信頼性が低い可能性があります。<br>
+                サンプルサイズを増やすか、Fisherの正確確率検定（本ツール未実装）を検討してください。
+            </div>`;
+    }
+
+    // Yates Result HTML
+    let yatesHtml = '';
+    if (yatesChi !== null) {
+        yatesHtml = `
+            <div class="data-stat-card" style="background: #f0f9ff; border: 1px solid #bae6fd;">
+                <div class="stat-label">Yates補正 χ² (2x2)</div>
+                <div class="stat-value">${yatesChi.toFixed(2)}</div>
+                <div class="stat-sub" style="font-size: 0.8rem; color: #666;">p = ${yatesP.toFixed(4)} ${yatesP < 0.05 ? '*' : ''}</div>
+            </div>
+        `;
+    }
+    let html = warningHtml + `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">
                 <i class="fas fa-clipboard-check"></i> 検定結果
@@ -120,6 +168,7 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
                     <div class="stat-label">クラメールのV</div>
                     <div class="stat-value">${v.toFixed(3)}</div>
                 </div>
+                ${yatesHtml}
             </div>
             
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">

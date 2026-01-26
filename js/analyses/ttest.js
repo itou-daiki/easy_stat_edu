@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest } from '../utils.js';
 // import { MultiSelect } from '../components/MultiSelect.js'; // REMOVED
 
 // let depVarMultiSelect = null; // REMOVED
@@ -120,6 +120,7 @@ function runIndependentTTest(currentData) {
                         <th>${groups[0]} S.D</th>
                         <th>${groups[1]} M</th>
                         <th>${groups[1]} S.D</th>
+                        <th style="background-color: #fff3cd;">Levene p<br><small>(等分散性)</small></th>
                         <th>df</th>
                         <th>t</th>
                         <th>p</th>
@@ -162,6 +163,13 @@ function runIndependentTTest(currentData) {
         const cohens_d = Math.abs((mean1 - mean2) / pooled_std);
         let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.1 ? '†' : 'n.s.';
 
+        const levenes = calculateLeveneTest(group0Values, group1Values);
+        const levenesPStr = levenes.p < 0.001 ? '< .001' : levenes.p.toFixed(3);
+        const levenesSign = levenes.p < 0.05 ? '<i class="fas fa-exclamation-triangle" style="color: #d97706;" title="等分散性が棄却されました。ウェルチのt検定の結果を採用することを推奨します（このアプリはデフォルトでウェルチです）。"></i>' : '<i class="fas fa-check" style="color: #10b981;" title="等分散性は棄却されませんでした。"></i>';
+
+        // P-value formatting
+        const pValueStr = p_value < 0.001 ? '< .001' : p_value.toFixed(3);
+
         resultsTableHtml += `
             <tr>
                 <td style="font-weight: bold; color: #1e90ff;">${varName}</td>
@@ -171,9 +179,12 @@ function runIndependentTTest(currentData) {
                 <td>${std1.toFixed(2)}</td>
                 <td>${mean2.toFixed(2)}</td>
                 <td>${std2.toFixed(2)}</td>
+                <td style="background-color: ${levenes.p < 0.05 ? '#fff3cd' : 'transparent'}; font-size: 0.9rem;">
+                    ${levenesPStr} ${levenesSign}
+                </td>
                 <td>${df_welch.toFixed(2)}</td>
                 <td>${Math.abs(t_stat).toFixed(2)}</td>
-                <td>${p_value.toFixed(3)}</td>
+                <td>${pValueStr}</td>
                 <td><strong>${significance}</strong></td>
                 <td>${cohens_d.toFixed(2)}</td>
             </tr>
@@ -193,6 +204,10 @@ function runIndependentTTest(currentData) {
             <strong>注意:</strong> 次の変数は、片方または両方のグループのサンプルサイズが2未満だったため、分析から除外されました: ${skippedVars.join(', ')}
         </div>`;
     }
+
+    resultsTableHtml += `<div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem;">
+        <i class="fas fa-info-circle"></i> <strong>Levene p</strong>: 等分散性の検定（Levene検定）のp値です。p < .05 の場合、等分散ではない（分散が異なる）可能性が高いため、Welchのt検定（本分析のデフォルト）の結果がより信頼できます。
+    </div>`;
 
     document.getElementById('test-results-table').innerHTML = resultsTableHtml;
 

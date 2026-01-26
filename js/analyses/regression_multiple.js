@@ -143,6 +143,7 @@ function runMultipleRegression(currentData) {
                                     <th>標準化係数 (β)</th>
                                     <th>t値</th>
                                     <th>p値</th>
+                                    <th>VIF</th>
                                     <th>判定</th>
                                 </tr>
                             </thead>
@@ -158,15 +159,37 @@ function runMultipleRegression(currentData) {
                     <td>${beta[0].toFixed(3)}</td>
                     <td>${seBeta[0].toFixed(3)}</td>
                     <td>-</td>
-                    <td>${tValConst.toFixed(3)}</td>
                     <td>${pValConst.toFixed(3)}</td>
+                    <td>-</td> <!-- Const VIF -->
                     <td>${pValConst < 0.05 ? '*' : ''}</td>
                 </tr>
             `;
 
-            const interpretationCoeffs = []; // Collect coeffs for interpretation
+            const interpretationCoeffs = [];
 
-            // Vars Rows
+            // Calculate VIF for each variable
+            const vifs = [];
+            independentVars.forEach((targetVar, targetIdx) => {
+                // y for VIF is the current independent variable
+                const yVif = cleanData.map(d => d.x[targetIdx]);
+                // X for VIF is all OTHER independent variables (+ const)
+                const XVif = cleanData.map(d => {
+                    const row = [1];
+                    d.x.forEach((val, xIdx) => {
+                        if (xIdx !== targetIdx) row.push(val);
+                    });
+                    return row;
+                });
+
+                try {
+                    const r2_k = calculateR2(yVif, XVif);
+                    const vif = 1 / (1 - r2_k);
+                    vifs.push(vif);
+                } catch (e) {
+                    vifs.push(Infinity);
+                }
+            });
+
             independentVars.forEach((v, i) => {
                 const b = beta[i + 1];
                 const se = seBeta[i + 1];
@@ -174,20 +197,23 @@ function runMultipleRegression(currentData) {
                 const t = b / se;
                 const p = (1 - jStat.studentt.cdf(Math.abs(t), n - k - 1)) * 2;
                 const sig = p < 0.01 ? '**' : (p < 0.05 ? '*' : (p < 0.1 ? '†' : ''));
+                const vif = vifs[i];
+                const vifStyle = vif > 10 ? 'color: #ef4444; font-weight: bold;' : (vif > 5 ? 'color: #d97706;' : '');
 
                 interpretationCoeffs.push({ name: v, beta: b, stdBeta: betaStd, p: p });
 
                 sectionHtml += `
-                    <tr>
-                        <td style="font-weight: bold; color: #2d3748;">${v}</td>
-                        <td>${b.toFixed(3)}</td>
-                        <td>${se.toFixed(3)}</td>
-                        <td>${betaStd.toFixed(3)}</td>
-                        <td>${t.toFixed(3)}</td>
-                        <td>${p.toFixed(3)}</td>
-                        <td><strong style="color: ${p < 0.05 ? '#e53e3e' : '#718096'}">${sig}</strong></td>
-                    </tr>
-                `;
+                        <tr>
+                            <td style="font-weight: bold; color: #2d3748;">${v}</td>
+                            <td>${b.toFixed(3)}</td>
+                            <td>${se.toFixed(3)}</td>
+                            <td>${betaStd.toFixed(3)}</td>
+                            <td>${t.toFixed(3)}</td>
+                            <td>${p.toFixed(3)}</td>
+                            <td style="${vifStyle}">${vif.toFixed(2)}</td>
+                            <td><strong style="color: ${p < 0.05 ? '#e53e3e' : '#718096'}">${sig}</strong></td>
+                        </tr>
+                    `;
             });
 
             sectionHtml += `
@@ -208,10 +234,24 @@ function runMultipleRegression(currentData) {
                        <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
                        <div id="reporting-table-container-multi-reg-${idx}"></div>
                     </div>
+
+                    <!-- Diagnostic Plots for this Dependent Var -->
+                    <div style="margin-top: 2rem; border-top: 1px dashed #cbd5e0; padding-top: 1rem;">
+                        <h4 style="color: #4b5563; font-size: 1.1rem; margin-bottom: 1rem;">診断プロット: ${dependentVar}</h4>
+                        <div id="diagnostic-plot-${idx}" style="height: 400px;"></div>
+                    </div>
                 </div>
             `;
 
             resultsContainer.innerHTML += sectionHtml;
+
+            // Plot Diagnostics
+            setTimeout(() => {
+                // Convert math.js matrix/arrays to JS arrays
+                const fittedArr = Array.isArray(yPred) ? yPred : yPred.toArray().flat();
+                const residArr = Array.isArray(residuals) ? residuals : residuals.toArray().flat();
+                plotResidualsVsFittedForMulti(`diagnostic-plot-${idx}`, fittedArr, residArr);
+            }, 0);
 
             // Generate APA Table
             // We need to execute this after the HTML is added.
@@ -531,4 +571,65 @@ export function render(container, currentData, characteristics) {
     });
 
     createAnalysisButton('run-regression-btn-container', '分析を実行', () => runMultipleRegression(currentData), { id: 'run-regression-btn' });
+}
+
+// Helper: Calculate R2 for VIF
+function calculateR2(y, X) {
+    const n = y.length;
+
+    // Matrix math
+    // beta = (X'X)^-1 X'y
+    const XT = math.transpose(X);
+    const XTX = math.multiply(XT, X);
+    const XTy = math.multiply(XT, y);
+    const XTX_inv = math.inv(XTX);
+    const beta = math.multiply(XTX_inv, XTy);
+
+    // RSS
+    const yPred = math.multiply(X, beta);
+    const residuals = math.subtract(y, yPred);
+    // Handle both math.js Matrix and Array if needed, but here simple arrays
+    const residArr = Array.isArray(residuals) ? residuals : residuals.toArray();
+    const rss = math.sum(residArr.map(r => r * r));
+
+    // TSS
+    const yMean = math.mean(y);
+    const tss = math.sum(y.map(yi => (yi - yMean) ** 2));
+
+    return 1 - (rss / tss);
+}
+
+function plotResidualsVsFittedForMulti(containerId, fitted, residuals) {
+    const trace = {
+        x: fitted,
+        y: residuals,
+        mode: 'markers',
+        type: 'scatter',
+        marker: { color: '#ef4444', size: 8, opacity: 0.7 },
+        name: '残差'
+    };
+
+    const layout = {
+        title: { text: '残差プロット (Residuals vs Fitted)', font: { size: 14 } },
+        xaxis: { title: '予測値 (Fitted values)', zeroline: false },
+        yaxis: { title: '残差 (Residuals)', zeroline: true, zerolinecolor: '#9ca3af', zerolinewidth: 2 },
+        margin: { l: 80, r: 20, b: 60, t: 40 },
+        hovermode: 'closest',
+        shapes: [
+            {
+                type: 'line',
+                x0: Math.min(...fitted),
+                y0: 0,
+                x1: Math.max(...fitted),
+                y1: 0,
+                line: {
+                    color: 'gray',
+                    width: 2,
+                    dash: 'dashdot'
+                }
+            }
+        ]
+    };
+
+    Plotly.newPlot(containerId, [trace], layout, { displayModeBar: false, responsive: true });
 }
