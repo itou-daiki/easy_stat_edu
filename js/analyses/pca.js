@@ -1,4 +1,5 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
+import { calculateCorrelationMatrix } from './correlation.js';
 
 function runPCA(currentData) {
     const varsSelect = document.getElementById('pca-vars');
@@ -21,23 +22,13 @@ function runPCA(currentData) {
             stds.push(jStat.stdev(vals, true));
         });
 
-        // 行列データの作成
+        // 行列データの作成 (標準化)
         const matrix = currentData.map(row => {
             return variables.map((v, i) => (row[v] - means[i]) / stds[i]);
         });
 
-        // 共分散行列（相関行列）
-        const corrMatrix = [];
-        for (let i = 0; i < variables.length; i++) {
-            const row = [];
-            for (let j = 0; j < variables.length; j++) {
-                // standardized data covariance is correlation
-                const col1 = matrix.map(r => r[i]);
-                const col2 = matrix.map(r => r[j]);
-                row.push(jStat.covariance(col1, col2));
-            }
-            corrMatrix.push(row);
-        }
+        // 相関行列の計算 (共通関数を使用)
+        const { matrix: corrMatrix } = calculateCorrelationMatrix(variables, currentData);
 
         // 固有値分解
         const { values, vectors } = math.eigs(corrMatrix);

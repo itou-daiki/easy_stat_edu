@@ -566,7 +566,7 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
 
                 // 反発力(gravitationalConstant)も強めて、より広がりやすくする
                 fa.gravitationalConstant = (fa.gravitationalConstant || -2500) * SCALE;
-                
+
                 highResOptions.physics.stabilization = { enabled: true, iterations: 2000, fit: true };
             }
             // ラベル重複描画を防ぐため、描画用データセットのラベルを空にする
@@ -582,20 +582,20 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
             // 安定化計算（物理演算）完了を待つ
             hdNetwork.once("stabilizationIterationsDone", () => {
                 hdNetwork.fit({ animation: false });
-                
+
                 hdNetwork.once("afterDrawing", (ctx) => {
                     // 1. 白背景合成
                     const tempCanvas = document.createElement('canvas');
                     const width = ctx.canvas.width;
                     const height = ctx.canvas.height;
-                    
+
                     tempCanvas.width = width;
                     tempCanvas.height = height;
                     const tempCtx = tempCanvas.getContext('2d');
-                    
+
                     tempCtx.fillStyle = '#ffffff';
                     tempCtx.fillRect(0, 0, width, height);
-                    
+
                     // ネットワーク描画 (等倍コピー)
                     tempCtx.drawImage(ctx.canvas, 0, 0);
 
@@ -606,20 +606,20 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
                     // hiddenContainerの論理サイズを取得し、Canvasの物理サイズとの比率を計算
                     const domWidth = parseFloat(hiddenContainer.style.width) || 2400; // 2400px指定済み
                     const pixelRatio = width / domWidth;
-                    
+
                     tempCtx.save();
                     // 座標系を論理ピクセルに合わせる (getPositions()の戻り値は論理座標)
                     tempCtx.scale(pixelRatio, pixelRatio);
-                    
+
                     const positions = hdNetwork.getPositions();
                     tempCtx.textAlign = 'center';
                     tempCtx.textBaseline = 'middle';
                     tempCtx.lineJoin = 'round';
-                    
+
                     navData.nodes.forEach(node => {
                         const pos = positions[node.id];
                         if (!pos) return;
-                        
+
                         // 重要: シミュレーション座標(pos)をDOM座標(画面上のピクセル位置)に変換する
                         // fit()によるズームやパンを反映させるために必須
                         const domPos = hdNetwork.canvasToDOM(pos);
@@ -627,11 +627,11 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
                         // ノードのサイズからフォントサイズを決定
                         const box = hdNetwork.getBoundingBox(node.id);
                         const width = box.right - box.left;
-                        
+
                         // 直径の40%程度を基本とするが、最低サイズを大きく確保
-                        const minSize = 16 * SCALE; 
+                        const minSize = 16 * SCALE;
                         let fontSize = Math.max(minSize, width * 0.25);
-                        
+
                         // フォント設定
                         tempCtx.font = `bold ${fontSize}px "Helvetica Neue", Arial, sans-serif`;
                         tempCtx.lineWidth = fontSize * 0.15; // 縁取りの太さ
@@ -639,15 +639,15 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
                         // 白縁取り + 黒文字
                         tempCtx.strokeStyle = '#ffffff';
                         tempCtx.fillStyle = '#333333';
-                        
+
                         tempCtx.strokeText(node.label, domPos.x, domPos.y);
                         tempCtx.fillText(node.label, domPos.x, domPos.y);
                     });
-                    
+
                     tempCtx.restore(); // スケーリング解除
-                    
+
                     const dataUrl = tempCanvas.toDataURL("image/png");
-                    
+
                     const link = document.createElement('a');
                     link.download = filename;
                     link.href = dataUrl;
@@ -695,7 +695,7 @@ export function render(container, currentData, characteristics) {
                         <li><strong>共起ネットワーク:</strong> 関連性の強い単語を線で結びます。<strong>同じ色のノードは、似た文脈で使われる「グループ（コミュニティ）」を表します。</strong></li>
                     </ul>
                     <h4>対象となる品詞</h4>
-                    <p>分析では<strong>名詞・動詞・形容詞</strong>を抽出します。助詞や記号などは自動的に除外されます。</p>
+                    <p>分析では<strong>2文字以上の主要な単語</strong>を抽出します（一般的な助詞や記号は自動的に除外されます）。</p>
                 </div>
             </div>
 

@@ -63,6 +63,15 @@ function setupEventListeners() {
     document.querySelectorAll('.collapsible-header').forEach(header => {
         header.addEventListener('click', () => toggleCollapsible(header));
     });
+
+    // 分析カードクリック時のデータ未ロードチェック
+    featureGrid.addEventListener('click', (event) => {
+        const card = event.target.closest('.feature-card');
+        // データがロードされていない、かつカードがクリックされた場合
+        if (card && !currentData) {
+            showError('分析を開始するには、データをアップロードするかデモデータを試してください。');
+        }
+    });
 }
 
 // ==========================================

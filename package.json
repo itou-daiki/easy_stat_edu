@@ -21,7 +21,8 @@
   },
   "homepage": "https://github.com/itou-daiki/easy_stat_edu#readme",
   "devDependencies": {
-    "@playwright/test": "^1.57.0"
+    "@playwright/test": "^1.57.0",
+    "jstat": "^1.9.6"
   },
   "dependencies": {
     "http-server": "^14.1.1"
