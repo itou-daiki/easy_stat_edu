@@ -55,6 +55,7 @@ export function calculateCorrelationMatrix(variables, currentData) {
 }
 
 // 相関分析の実行
+// 相関分析の実行
 function runCorrelationAnalysis(currentData) {
     const varsSelect = document.getElementById('corr-vars-select');
     const selectedVars = varsSelect ? Array.from(varsSelect.selectedOptions).map(o => o.value) : [];
@@ -65,6 +66,7 @@ function runCorrelationAnalysis(currentData) {
     }
 
     const { matrix, pValues, nValues } = calculateCorrelationMatrix(selectedVars, currentData);
+    const matrixData = { matrix, pValues, nValues };
 
     const corrTableHtml = createCorrelationTable(selectedVars, matrix, pValues, nValues);
     document.getElementById('correlation-table').innerHTML = corrTableHtml;
@@ -121,10 +123,10 @@ function runCorrelationAnalysis(currentData) {
     document.getElementById('analysis-results').style.display = 'block';
 
     // ヒートマップの描画
-    renderCorrelationHeatmap(selectedVars, matrix);
+    plotHeatmap(selectedVars, matrix);
 
     // 散布図行列の描画
-    renderScatterMatrix(selectedVars, currentData);
+    plotScatterMatrix(selectedVars, currentData, matrixData);
 
     // APA Table Generation
     const headersAPA = ["Variable", ...selectedVars.map((_, i) => `${i + 1}`)];
@@ -168,8 +170,7 @@ function runCorrelationAnalysis(currentData) {
     }
 }
 
-function displayResults(variables, matrix, pValues) {
-    const container = document.getElementById('correlation-table');
+function createCorrelationTable(variables, matrix, pValues, nValues) {
     let html = `
         <div class="table-container">
             <table class="table">
@@ -230,7 +231,7 @@ function displayResults(variables, matrix, pValues) {
         </div>
     `;
 
-    container.innerHTML = html;
+    return html;
 }
 
 function plotHeatmap(variables, matrix) {
@@ -586,12 +587,7 @@ export function render(container, currentData, characteristics) {
 
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 
-                <div style="padding: 1rem; background: #fafbfc; border-radius: 8px; margin-bottom: 1.5rem;">
-                    <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                        <i class="fas fa-check-square"></i> 分析する数値変数を選択（複数選択可、2つ以上）:
-                    </label>
-                    <div id="corr-vars-container"></div>
-                </div>
+                <div id="correlation-vars-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
 
                 <div id="run-correlation-btn-container"></div>
             </div>
@@ -631,10 +627,10 @@ export function render(container, currentData, characteristics) {
 
     renderDataOverview('#corr-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
-    renderDataOverview('#corr-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
-    createVariableSelector('corr-vars-container', numericColumns, 'corr-vars-select', {
-        label: '<i class="fas fa-check-square"></i> 分析する変数を選択（複数選択可）:',
+
+    createVariableSelector('correlation-vars-container', numericColumns, 'correlation-vars', {
+        label: '<i class="fas fa-check-square"></i> 分析する変数を選択:',
         multiple: true,
         placeholder: '変数を選択...'
     });
