@@ -464,6 +464,25 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>推定法:</strong> 最小二乗法 (OLS) - 行列演算による解析解</li>
+                            <li><strong>自由度調整済み決定係数 (Adj R²):</strong> \( 1 - (1-R^2)\frac{n-1}{n-p-1} \) (p:説明変数の数)</li>
+                            <li><strong>標準化係数 (Standardized Beta):</strong> 変数を標準化(Zスコア化)した場合の回帰係数。比較可能性のため算出。</li>
+                            <li><strong>多重共線性:</strong> VIF（分散拡大係数）の算出は現在未実装です（相関行列の確認を推奨）。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <!-- データプレビュー -->
             <div id="regression-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 

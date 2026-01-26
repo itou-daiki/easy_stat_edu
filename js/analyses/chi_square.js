@@ -285,6 +285,26 @@ export function render(container, currentData, characteristics) {
             </div>
 
             <!-- データ概要 -->
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>検定手法:</strong> ピアソンのカイ二乗検定 (Pearson's Chi-square test)</li>
+                            <li><strong>統計量:</strong> \( \chi^2 = \sum \frac{(O_{ij} - E_{ij})^2}{E_{ij}} \) （O:観測度数, E:期待度数）</li>
+                            <li><strong>効果量 (Cramer's V):</strong> \( V = \sqrt{\frac{\chi^2}{N \times \min(r-1, c-1)}} \)</li>
+                            <li><strong>残差分析:</strong> 調整済み標準化残差 (Adjusted Standardized Residuals) を算出。絶対値が1.96を超える場合、有意な偏りとみなします。</li>
+                            <li>※ イェーツの補正は適用していません（標準的な実装）。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="chi-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!-- 分析設定 -->

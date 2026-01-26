@@ -563,6 +563,25 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>係数:</strong> ピアソンの積率相関係数 (Pearson's product-moment correlation coefficient)</li>
+                            <li><strong>式:</strong> \( r = \frac{\sum(x - \bar{x})(y - \bar{y})}{\sqrt{\sum(x-\bar{x})^2 \sum(y-\bar{y})^2}} \)</li>
+                            <li><strong>無相関の検定:</strong> t検定を使用。 \( t = \frac{r\sqrt{n-2}}{\sqrt{1-r^2}} \) (df = n-2)</li>
+                            <li>※ リストワイズ削除（欠損値がある行は除外）を適用しています。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="corr-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">

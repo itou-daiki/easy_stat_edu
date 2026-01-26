@@ -257,6 +257,25 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>手法:</strong> 相関行列の固有値分解 (Eigenvalue Decomposition of Correlation Matrix)</li>
+                            <li>※ データは自動的に標準化（Zスコア化）されます。</li>
+                            <li><strong>アルゴリズム:</strong> <code>math.eigs</code> (ヤコビ法またはQR法等の近似解) を使用。</li>
+                            <li><strong>主成分スコア:</strong> \( Z \times V \) （標準化データ行列と固有ベクトルの積）</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <!-- データ概要 -->
             <div id="pca-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 

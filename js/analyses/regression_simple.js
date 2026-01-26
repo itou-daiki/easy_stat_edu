@@ -262,6 +262,26 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>推定法:</strong> 最小二乗法 (Ordinary Least Squares: OLS)</li>
+                            <li><strong>回帰係数:</strong> \( \hat{\beta} = (X^T X)^{-1} X^T y \) (解析解)</li>
+                            <li><strong>決定係数 (R²):</strong> \( 1 - \frac{RSS}{TSS} \) (残差平方和 / 全平方和)</li>
+                            <li><strong>検定:</strong> 回帰係数の有意性はt検定を用いています。 (標準誤差 SE を計算)</li>
+                            <li><strong>仮定:</strong> 誤差項の正規性と等分散性を仮定しています。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <!-- データ概要 -->
             <div id="simple-reg-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 

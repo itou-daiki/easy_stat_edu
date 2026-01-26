@@ -678,6 +678,36 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <p>本ページでは、以下の標準的な統計ロジックに基づき計算を行っています（ソースコード準拠）。</p>
+                        <ul>
+                            <li><strong>独立な2群:</strong> ウェルチのt検定 (Welch's t-test)
+                                <ul>
+                                    <li>等分散を仮定しません。</li>
+                                    <li>統計量: \( t = \frac{\bar{X}_1 - \bar{X}_2}{\sqrt{s_1^2/n_1 + s_2^2/n_2}} \)</li>
+                                    <li>自由度: ウェルチ・サタスウェイトの式で近似</li>
+                                    <li>効果量 (Cohens d): プールされた標準偏差を使用 (\( d = \frac{\bar{X}_1 - \bar{X}_2}{SD_{pooled}} \))</li>
+                                </ul>
+                            </li>
+                            <li><strong>対応のある2群:</strong> 差分の1標本t検定
+                                <ul>
+                                    <li>効果量 (d): 差分の平均 / 差分の標準偏差 (\( d_z \))</li>
+                                </ul>
+                            </li>
+                            <li><strong>p値:</strong> t分布の累積分布関数 (CDF) から算出 (両側検定)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="ttest-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">

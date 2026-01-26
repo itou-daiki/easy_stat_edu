@@ -428,6 +428,26 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <p>マン・ホイットニーのU検定 (Wilcoxon Rank Sum Test) を使用しています。</p>
+                        <ul>
+                            <li><strong>統計量 (U):</strong> 順位和から算出 (\( U_1 = R_1 - \frac{n_1(n_1+1)}{2} \))</li>
+                            <li><strong>p値:</strong> 正規近似 (Z検定) を使用 (タイ/同順位がある場合は分散の補正あり)</li>
+                            <li><strong>効果量 (r):</strong> \( r = \frac{|Z|}{\sqrt{N}} \) （Nは総サンプル数）</li>
+                            <li>※ N > 20 の場合、正規近似の精度は十分高いとみなされます。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="u-test-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">

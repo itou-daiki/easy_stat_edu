@@ -12,6 +12,26 @@ export function render(container, data, characteristics) {
                 <strong>移動平均</strong>を使ってギザギザしたグラフを滑らかにしたり、<strong>自己相関</strong>を使って「周期性（季節性）」を見つけることができます。
             </p>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>移動平均 (SMA):</strong> 単純移動平均 \( \frac{1}{k} \sum_{i=0}^{k-1} x_{t-i} \)</li>
+                            <li><strong>自己相関 (ACF):</strong> 
+                                \( r_k = \frac{\sum (x_t - \bar{x})(x_{t+k} - \bar{x})}{\sum (x_t - \bar{x})^2} \)
+                            </li>
+                            <li>※ 定常性の検定（ADF検定など）は実装されていません。視覚的確認を目的としています。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col-md-6" style="margin-bottom: 1rem;">
                     <div id="time-var-container" style="background: #f8fafc; padding: 1rem; border-radius: 8px; height: 100%;"></div>
