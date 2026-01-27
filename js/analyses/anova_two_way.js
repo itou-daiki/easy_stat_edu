@@ -410,7 +410,7 @@ function renderTwoWayANOVATable(results) {
     const container = document.getElementById('test-results-section');
     let finalHtml = '';
 
-    results.forEach(res => {
+    results.forEach((res, index) => {
         const sources = [
             { name: res.factor1, ss: res.ssA, df: res.dfA, ms: res.msA, f: res.fA, p: res.pA, eta: res.etaA },
             { name: res.factor2, ss: res.ssB, df: res.dfB, ms: res.msB, f: res.fB, p: res.pB, eta: res.etaB },
@@ -1122,7 +1122,7 @@ export function render(container, currentData, characteristics) {
         </div>
     `;
 
-    renderDataOverview('#anova-2way-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+    renderDataOverview('#anova2-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
     // 軸ラベル表示オプションの追加 (Moved)
     // createAxisLabelControl('axis-label-control-container');
