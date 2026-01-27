@@ -57,7 +57,7 @@ export function calculateCorrelationMatrix(variables, currentData) {
 // 相関分析の実行
 // 相関分析の実行
 function runCorrelationAnalysis(currentData) {
-    const varsSelect = document.getElementById('corr-vars-select');
+    const varsSelect = document.getElementById('correlation-vars');
     const selectedVars = varsSelect ? Array.from(varsSelect.selectedOptions).map(o => o.value) : [];
 
     if (selectedVars.length < 2) {

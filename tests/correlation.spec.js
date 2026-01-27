@@ -34,7 +34,7 @@ test('Correlation Analysis Heatmap Verification', async ({ page }) => {
 
     // 4. Select variables
     // Wait for Variable MultiSelect to appear
-    const multiSelectInput = page.locator('#corr-vars-container .multiselect-input');
+    const multiSelectInput = page.locator('#correlation-vars-container .multiselect-input');
     await expect(multiSelectInput).toBeVisible();
 
     // Open dropdown
@@ -43,13 +43,14 @@ test('Correlation Analysis Heatmap Verification', async ({ page }) => {
     // Select two variables (assuming "数学" and "理科" exist in correlation_demo.xlsx or similar numeric columns)
     // We'll just pick the first two options available in the dropdown
     // Select two variables
-    const options = page.locator('#corr-vars-container .multiselect-options li');
+    // Select two variables
+    const options = page.locator('#correlation-vars-container .multiselect-dropdown .multiselect-option');
 
     // Select first variable
     await options.first().click();
 
     // Ensure dropdown is still open or re-open it for the second variable
-    const optionsContainer = page.locator('#corr-vars-container .multiselect-options');
+    const optionsContainer = page.locator('#correlation-vars-container .multiselect-dropdown');
     if (!(await optionsContainer.isVisible())) {
         await multiSelectInput.click();
         await expect(optionsContainer).toBeVisible();

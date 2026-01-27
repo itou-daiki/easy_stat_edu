@@ -353,7 +353,7 @@ export function render(container, currentData, dataCharacteristics) {
             <div id="original-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!--処理済みデータプレビューと要約統計量（トップページと同じ仕様） -->
-            <div id="original-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
+            <!-- Note: Processed data overview is at the bottom, so this placeholder is likely redundant or should be removed. Logic below uses #processed-data-overview-section -->
 
             <!-- データエンジニアリング（変数変換・作成） -->
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem; border-left: 5px solid #805ad5;">
@@ -377,13 +377,14 @@ export function render(container, currentData, dataCharacteristics) {
                             <i class="fas fa-info-circle"></i> テキストデータを数値に変換したり（例：「とてもそう思う」→ 5）、逆転項目の処理を行います。
                         </p>
                         <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="font-weight: bold;">変換する変数を選択:</label>
-                            <select id="recode-col-select" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;"></select>
+                            <label style="font-weight: bold;">変換する変数を選択 (複数選択可/Multiple Selection):</label>
+                            <div id="recode-col-select-container"></div>
                         </div>
                         <div id="recode-mapping-area" style="margin-bottom: 1rem;"></div>
                         <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="font-weight: bold;">新しい変数名 (空欄の場合は上書き):</label>
-                            <input type="text" id="recode-new-col-name" class="form-control" placeholder="例: Q1_score" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                            <label style="font-weight: bold;">新しい変数名 (接尾辞/Suffix):</label>
+                            <p style="font-size: 0.8rem; color: #666; margin-top: 0;">※空欄の場合は上書き、入力した場合は「元の変数名 + 接尾辞」で作成されます (例: _num)</p>
+                            <input type="text" id="recode-new-col-name" class="form-control" placeholder="例: _recoded" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
                         </div>
                         <button id="apply-recode-btn" class="btn-analysis" style="background: #805ad5; width: 100%;">
                             <i class="fas fa-exchange-alt"></i> 変換を実行
@@ -497,6 +498,7 @@ export function render(container, currentData, dataCharacteristics) {
 // --- Data Engineering Functions ---
 
 let engMultiSelect = null; // MultiSelect instance for compute
+let recodeMultiSelect = null; // MultiSelect instance for recode
 
 function initEngineeringUI() {
     // タブ切り替えロジック
@@ -524,28 +526,32 @@ function initEngineeringUI() {
     updateComputeColumnSelect();
 
     // イベントリスナー
-    const recodeSelect = document.getElementById('recode-col-select');
-    if (recodeSelect) {
-        recodeSelect.addEventListener('change', updateRecodeMappingTable);
-    }
+    // recodeSelectは削除され、MultiSelectのonChangeで処理するようになるため、ここでのイベントリスナー追加は不要
+    // 代わりにMultiSelectの初期化時にonChangeを設定する
 
     document.getElementById('apply-recode-btn').onclick = applyRecode;
     document.getElementById('apply-compute-btn').onclick = applyCompute;
 }
 
 function updateRecodeColumnSelect() {
-    const select = document.getElementById('recode-col-select');
-    if (!select) return;
-    select.innerHTML = '';
+    const container = document.getElementById('recode-col-select-container');
+    if (!container) {
+        console.error('Recode container not found');
+        return;
+    }
+    container.innerHTML = '';
+
     const cols = Object.keys(originalData[0] || {});
-    cols.forEach(col => {
-        const option = document.createElement('option');
-        option.value = col;
-        option.textContent = col;
-        select.appendChild(option);
+    console.log('UpdateRecodeColumnSelect cols:', cols);
+
+    import('../components/MultiSelect.js').then(module => {
+        const { MultiSelect } = module;
+        recodeMultiSelect = new MultiSelect(container, cols, {
+            onChange: () => updateRecodeMappingTable()
+        });
+    }).catch(err => {
+        console.error('Failed to load MultiSelect:', err);
     });
-    // 初回マッピング表示
-    updateRecodeMappingTable();
 }
 
 function updateComputeColumnSelect() {
@@ -557,21 +563,44 @@ function updateComputeColumnSelect() {
     // いや、MultiSelectは全ての変数を出してよい
     const cols = Object.keys(originalData[0] || {});
 
-    const MultiSelect = window.MultiSelect || (import('../components/MultiSelect.js').then(m => m.default));
-
     import('../components/MultiSelect.js').then(module => {
-        const MultiSelect = module.default;
+        const { MultiSelect } = module;
         engMultiSelect = new MultiSelect(container, cols, []);
     });
 }
 
 function updateRecodeMappingTable() {
-    const col = document.getElementById('recode-col-select').value;
+    if (!recodeMultiSelect) return;
+    const selectedCols = recodeMultiSelect.getValue();
     const container = document.getElementById('recode-mapping-area');
-    if (!col || !container) return;
 
-    // ユニークな値を取得
-    const uniqueValues = Array.from(new Set(originalData.map(d => d[col]))).sort();
+    if (selectedCols.length === 0) {
+        container.innerHTML = '<p style="color: #666;">変数が選択されていません。</p>';
+        return;
+    }
+
+    if (!container) return;
+
+    // 全ての選択されたカラムからユニークな値を収集
+    let allValues = new Set();
+    selectedCols.forEach(col => {
+        originalData.forEach(d => {
+            const val = d[col];
+            if (val !== null && val !== undefined && val !== '') {
+                allValues.add(val);
+            }
+        });
+    });
+
+    // ソート（数値として解釈できる場合は数値順、そうでなければ辞書順）
+    const uniqueValues = Array.from(allValues).sort((a, b) => {
+        const numA = Number(a);
+        const numB = Number(b);
+        if (!isNaN(numA) && !isNaN(numB)) {
+            return numA - numB;
+        }
+        return String(a).localeCompare(String(b));
+    });
 
     // 値が多すぎる場合は警告
     if (uniqueValues.length > 50) {
@@ -607,8 +636,15 @@ function updateRecodeMappingTable() {
 }
 
 function applyRecode() {
-    const col = document.getElementById('recode-col-select').value;
-    const newColName = document.getElementById('recode-new-col-name').value.trim() || col;
+    if (!recodeMultiSelect) return;
+    const selectedCols = recodeMultiSelect.getValue();
+
+    if (selectedCols.length === 0) {
+        alert('変換する変数を選択してください');
+        return;
+    }
+
+    const suffix = document.getElementById('recode-new-col-name').value.trim();
     const inputs = document.querySelectorAll('.recode-input');
     const mapping = {};
 
@@ -626,13 +662,18 @@ function applyRecode() {
     // ただし、元のoriginalData配列の参照先を変更するのではなく、配列の中身（オブジェクト）を変更する
 
     originalData.forEach(row => {
-        const oldVal = row[col];
-        // マッピングにない値はそのまま
-        if (mapping.hasOwnProperty(oldVal)) {
-            row[newColName] = mapping[oldVal];
-        } else {
-            row[newColName] = oldVal;
-        }
+        selectedCols.forEach(col => {
+            const oldVal = row[col];
+            // 新しいカラム名を決定 (サフィックスがあれば追加、なければ上書き)
+            const newColName = suffix ? `${col}${suffix}` : col;
+
+            // マッピングにない値はそのまま
+            if (mapping.hasOwnProperty(oldVal)) {
+                row[newColName] = mapping[oldVal];
+            } else {
+                row[newColName] = oldVal;
+            }
+        });
     });
 
     // 列が増えた場合、characteristicsを再分析

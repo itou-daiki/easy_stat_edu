@@ -66,6 +66,7 @@ export class MultiSelect {
 
         availableOptions.forEach(opt => {
             const li = document.createElement('li');
+            li.classList.add('multiselect-option');
             li.textContent = opt;
             li.dataset.value = opt;
             list.appendChild(li);
