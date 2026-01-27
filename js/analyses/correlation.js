@@ -335,15 +335,21 @@ function plotScatterMatrix(variables, currentData, matrixData) {
     const { matrix, pValues } = matrixData;
 
     const traces = [];
+    const width = Math.max(600, 250 * n);
+    const height = Math.max(600, 250 * n);
+
     const layout = {
         title: '',
-        height: Math.max(600, 250 * n), // 最小サイズ600px、変数ごと250px確保
-        width: Math.max(600, 250 * n),
+        height: height,
+        width: width,
         showlegend: false,
         plot_bgcolor: '#f8fafc',
-        margin: { l: 60, r: 60, t: 80, b: 150 }, // Increased bottom margin for bottom title
+        // Update margins to ensure space for labels
+        margin: { l: 150, r: 60, t: 80, b: 150 },
         annotations: []
     };
+
+    // ... (rest of domains calculation) ...
 
     // ドメイン計算 (余白 gap を考慮)
     const gap = 0.05;
@@ -455,9 +461,6 @@ function plotScatterMatrix(variables, currentData, matrixData) {
         }
     }
 
-
-
-
     // アノテーションによる軸ラベルの追加
     for (let k = 0; k < n; k++) {
         // X col labels (variable[k])
@@ -468,11 +471,19 @@ function plotScatterMatrix(variables, currentData, matrixData) {
         const yStart = 1 - (k + 1) * (size + gap) + gap;
         const yCenter = yStart + size / 2;
 
+        // Calculate offsets in paper coordinates based on fixed pixel values
+        // margins: l=150, b=150
+        // We want Y label to be around 80px to the left of axis (leaving space for ticks)
+        const yLabelX = -(80 / width);
+
+        // We want X label to be around 60px below the axis (leaving space for ticks)
+        const xLabelY = -(60 / height);
+
         // X-axis Label (Bottom)
         layout.annotations.push({
             text: variables[k],
             xref: 'paper', yref: 'paper',
-            x: xCenter, y: -0.06,
+            x: xCenter, y: xLabelY,
             xanchor: 'center', yanchor: 'top',
             showarrow: false,
             font: { size: 14, weight: 'bold' }
@@ -482,7 +493,7 @@ function plotScatterMatrix(variables, currentData, matrixData) {
         layout.annotations.push({
             text: variables[k],
             xref: 'paper', yref: 'paper',
-            x: -0.07, y: yCenter,
+            x: yLabelX, y: yCenter,
             xanchor: 'right', yanchor: 'middle',
             showarrow: false,
             font: { size: 14, weight: 'bold' }

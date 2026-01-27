@@ -66,17 +66,40 @@ test('Correlation Analysis Heatmap Verification', async ({ page }) => {
     const runBtn = page.locator('#run-correlation-btn');
     await runBtn.click();
 
-    // 6. Verify Heatmap Visibility
+    // Verify Heatmap is visible
     const heatmapContainer = page.locator('#correlation-heatmap');
     await expect(heatmapContainer).toBeVisible();
-
-    // Verify that Plotly graph is rendered inside
-    // Plotly usually adds a main-svg or user-select-none class
-    // Verify that Plotly graph is rendered inside
-    // Plotly usually adds a main-svg or user-select-none class
-    // Use .first() to avoid strict mode violations if multiple layers exist
     await expect(heatmapContainer.locator('.main-svg').first()).toBeVisible({ timeout: 10000 });
 
+    // 7. Verify Scatter Scatter Matrix Visibility & Labels
+    const scatterMatrix = page.locator('#scatter-matrix');
+    await expect(scatterMatrix).toBeVisible();
+    await expect(scatterMatrix.locator('.main-svg').first()).toBeVisible({ timeout: 10000 });
+
+    // Verify axis labels (selected variables) are present in the scatter matrix
+    // We captured the variable names earlier? No, let's capture them now or assume they are displayed.
+    // The previous steps selected the first two options. Let's find out what they are.
+    // However, it's safer to just check if *any* text is visible, but better to check for the specific var names.
+    // Since we didn't capture them in variables, let's look for text that matches what we expect from the demo file or just generic check.
+
+    // Better approach: Capture the text of the selected options during selection
+    // But since we can't easily modify the logic above without replacing more code, let's just checking for generic SVG text elements isn't quite enough.
+    // Let's rely on the screenshot for manual verification if exact text matching is hard without knowing var names.
+    // BUT, we can inspect the DOM of the multiselect to see what is selected.
+
+    // Let's try to capture the text from the chip elements in the multiselect input
+    const selectedChips = page.locator('#correlation-vars-container .multiselect-tag');
+    const var1Config = await selectedChips.nth(0).innerText();
+    const var2Config = await selectedChips.nth(1).innerText();
+
+    // Clean up text (remove '×' if it exists in innerText)
+    const var1 = var1Config.replace('×', '').trim();
+    const var2 = var2Config.replace('×', '').trim();
+
+    // Check if these texts exists in the scatter matrix container
+    await expect(scatterMatrix.getByText(var1).first()).toBeVisible();
+    await expect(scatterMatrix.getByText(var2).first()).toBeVisible();
+
     // Screenshot for proof
-    await page.screenshot({ path: 'correlation_heatmap_verification.png', fullPage: true });
+    await page.screenshot({ path: 'correlation_verification.png', fullPage: true });
 });
