@@ -27,6 +27,12 @@ test('Two-Way Independent ANOVA Verification', async ({ page }) => {
     await card.click();
     await expect(page.locator('#analysis-area')).toBeVisible();
 
+    // Check Data Preview Visibility
+    const dataPreview = page.locator('#anova2-data-overview');
+    await expect(dataPreview).toBeVisible();
+    // Check if the "Data Preview" header exists inside it
+    await expect(dataPreview).toContainText('データプレビュー');
+
     // 4. Ensure "Independent" is selected (default)
     const independentRadio = page.locator('input[name="anova2-type"][value="independent"]');
     await expect(independentRadio).toBeChecked();

@@ -1122,7 +1122,7 @@ export function render(container, currentData, characteristics) {
         </div>
     `;
 
-    renderDataOverview('#anova2-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+    renderDataOverview('#anova2-data-overview', currentData, characteristics, { initiallyCollapsed: false });
 
     // 軸ラベル表示オプションの追加 (Moved)
     // createAxisLabelControl('axis-label-control-container');
