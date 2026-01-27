@@ -664,13 +664,15 @@ function renderTwoWayANOVAVisualization(results) {
 }
 
 
-function runTwoWayMixedANOVA(currentData) {
+function runTwoWayMixedANOVA(currentData, pairs) {
     const betweenVar = document.getElementById('mixed-between-var').value;
-    const withinVarsSelect = document.getElementById('mixed-within-vars');
-    const withinVars = Array.from(withinVarsSelect.selectedOptions).map(o => o.value);
 
-    if (!betweenVar || withinVars.length < 2) {
-        alert('被験者間因子（グループ）と、2つ以上の被験者内因子（測定値列）を選択してください。');
+    if (!betweenVar) {
+        alert('被験者間因子（グループ）を選択してください。');
+        return;
+    }
+    if (!pairs || pairs.length === 0) {
+        alert('分析する変数ペア（観測変数・測定変数）を1つ以上追加してください。');
         return;
     }
 
@@ -691,173 +693,189 @@ function runTwoWayMixedANOVA(currentData) {
         });
     }
 
-    // Filter valid data
-    const validData = currentData.filter(d =>
-        d[betweenVar] != null &&
-        withinVars.every(v => d[v] != null && !isNaN(d[v]))
-    );
+    const testResults = [];
+    const resultSigPairsList = [];
 
-    const nTotal = validData.length;
-    const groups = getLevels(validData, betweenVar);
-    const conditions = withinVars;
-    const nGroups = groups.length;
-    const nConditions = conditions.length; // k
-
-    if (nGroups < 2) {
-        alert('被験者間因子のグループは2つ以上必要です。');
-        return;
-    }
-
-    // 1. Calculate Grand Mean
-    const allValues = validData.flatMap(d => withinVars.map(v => d[v]));
-    const grandMean = jStat.mean(allValues);
-    const ssTotal = jStat.sum(allValues.map(v => Math.pow(v - grandMean, 2)));
-
-    // 2. Between-Subjects Calculations
-    // SS_Between (Factor A) & SS_Subjects(within groups) (Error A)
-
-    // Calculate Group Means (Factor A means)
-    const groupData = {};
-    const groupMeans = {};
-    const groupNs = {};
-
-    groups.forEach(g => {
-        const gRows = validData.filter(d => d[betweenVar] === g);
-        const gValues = gRows.flatMap(d => withinVars.map(v => d[v]));
-        groupData[g] = gRows;
-        groupMeans[g] = jStat.mean(gValues);
-        groupNs[g] = gRows.length;
-    });
-
-    let ssBetween = 0; // Factor A
-    groups.forEach(g => {
-        ssBetween += groupNs[g] * nConditions * Math.pow(groupMeans[g] - grandMean, 2);
-    });
-
-    // Subject Means (averaged across within-factors)
-    const subjectMeans = validData.map(d => jStat.mean(withinVars.map(v => d[v])));
-
-    // SS_Subjects (Total variability between subjects)
-    // = nConditions * sum((subjectMean - grandMean)^2)
-    const ssSubjectsTotal = nConditions * jStat.sum(subjectMeans.map(m => Math.pow(m - grandMean, 2)));
-
-    const ssErrorBetween = ssSubjectsTotal - ssBetween; // Error term for Factor A
+    pairs.forEach((pair, index) => {
+        const withinVars = [pair.pre, pair.post];
 
 
-    // 3. Within-Subjects Calculations
-    // SS_Within (Factor B) & SS_Interaction (AxB) & SS_ErrorWithin (Error B)
+        // Filter valid data
+        const validData = currentData.filter(d =>
+            d[betweenVar] != null &&
+            withinVars.every(v => d[v] != null && !isNaN(d[v]))
+        );
 
-    // SS_Within (Factor B)
-    const conditionMeans = {};
-    withinVars.forEach(v => {
-        conditionMeans[v] = jStat.mean(validData.map(d => d[v]));
-    });
+        const nTotal = validData.length;
+        const groups = getLevels(validData, betweenVar);
+        const conditions = withinVars;
+        const nGroups = groups.length;
+        const nConditions = conditions.length; // k
 
-    let ssWithin = 0;
-    withinVars.forEach(v => {
-        ssWithin += nTotal * Math.pow(conditionMeans[v] - grandMean, 2);
-    });
+        if (nGroups < 2) {
+            // alert('被験者間因子のグループは2つ以上必要です。'); // Suppress alert in loop, maybe log warning
+            console.warn(`Skipping pair ${pair.pre}-${pair.post}: Not enough groups.`);
+            return;
+        }
 
-    // SS_Cells (A x B) - to calculate Interaction
-    const cellStats = {}; // { 'GroupA': { 'Math': {mean, n}, ... }, ... }
-    let ssCells = 0;
+        // 1. Calculate Grand Mean
+        const allValues = validData.flatMap(d => withinVars.map(v => d[v]));
+        const grandMean = jStat.mean(allValues);
+        const ssTotal = jStat.sum(allValues.map(v => Math.pow(v - grandMean, 2)));
 
-    groups.forEach(g => {
-        cellStats[g] = {};
-        withinVars.forEach(v => {
-            const cellValues = groupData[g].map(d => d[v]);
-            const mean = jStat.mean(cellValues);
-            const n = cellValues.length;
-            const std = jStat.stdev(cellValues, true);
-            cellStats[g][v] = { mean, n, std };
+        // 2. Between-Subjects Calculations
+        // SS_Between (Factor A) & SS_Subjects(within groups) (Error A)
 
-            ssCells += n * Math.pow(mean - grandMean, 2);
+        // Calculate Group Means (Factor A means)
+        const groupData = {};
+        const groupMeans = {};
+        const groupNs = {};
+
+        groups.forEach(g => {
+            const gRows = validData.filter(d => d[betweenVar] === g);
+            const gValues = gRows.flatMap(d => withinVars.map(v => d[v]));
+            groupData[g] = gRows;
+            groupMeans[g] = jStat.mean(gValues);
+            groupNs[g] = gRows.length;
         });
-    });
 
-    const ssInteraction = ssCells - ssBetween - ssWithin;
+        let ssBetween = 0; // Factor A
+        groups.forEach(g => {
+            ssBetween += groupNs[g] * nConditions * Math.pow(groupMeans[g] - grandMean, 2);
+        });
 
-    // SS_ErrorWithin (Total Within - Factor B - Interaction)
-    // Calculate SS_Total_Within (variability of scores around subject means)
-    // Or easier: SS_Total - SS_SubjectsTotal
-    const ssBroadWithin = ssTotal - ssSubjectsTotal;
-    const ssErrorWithin = ssBroadWithin - ssWithin - ssInteraction;
+        // Subject Means (averaged across within-factors)
+        const subjectMeans = validData.map(d => jStat.mean(withinVars.map(v => d[v])));
 
-    // 4. Degrees of Freedom
-    const dfBetween = nGroups - 1;
-    const dfErrorBetween = nTotal - nGroups;
+        // SS_Subjects (Total variability between subjects)
+        // = nConditions * sum((subjectMean - grandMean)^2)
+        const ssSubjectsTotal = nConditions * jStat.sum(subjectMeans.map(m => Math.pow(m - grandMean, 2)));
 
-    const dfWithin = nConditions - 1;
-    const dfInteraction = dfBetween * dfWithin;
-    const dfErrorWithin = dfErrorBetween * dfWithin;
+        const ssErrorBetween = ssSubjectsTotal - ssBetween; // Error term for Factor A
 
-    // 5. Mean Squares
-    const msBetween = ssBetween / dfBetween;
-    const msErrorBetween = ssErrorBetween / dfErrorBetween;
 
-    const msWithin = ssWithin / dfWithin;
-    const msInteraction = ssInteraction / dfInteraction;
-    const msErrorWithin = ssErrorWithin / dfErrorWithin;
+        // 3. Within-Subjects Calculations
+        // SS_Within (Factor B) & SS_Interaction (AxB) & SS_ErrorWithin (Error B)
 
-    // 6. F-ratios & P-values
-    const fBetween = msBetween / msErrorBetween;
-    const pBetween = 1 - jStat.centralF.cdf(fBetween, dfBetween, dfErrorBetween);
+        // SS_Within (Factor B)
+        const conditionMeans = {};
+        withinVars.forEach(v => {
+            conditionMeans[v] = jStat.mean(validData.map(d => d[v]));
+        });
 
-    const fWithin = msWithin / msErrorWithin;
-    const pWithin = 1 - jStat.centralF.cdf(fWithin, dfWithin, dfErrorWithin);
+        let ssWithin = 0;
+        withinVars.forEach(v => {
+            ssWithin += nTotal * Math.pow(conditionMeans[v] - grandMean, 2);
+        });
 
-    const fInteraction = msInteraction / msErrorWithin;
-    const pInteraction = 1 - jStat.centralF.cdf(fInteraction, dfInteraction, dfErrorWithin);
+        // SS_Cells (A x B) - to calculate Interaction
+        const cellStats = {}; // { 'GroupA': { 'Math': {mean, n}, ... }, ... }
+        let ssCells = 0;
 
-    // 7. Effect Sizes (Partial Eta Squared)
-    const etaBetween = ssBetween / (ssBetween + ssErrorBetween);
-    const etaWithin = ssWithin / (ssWithin + ssErrorWithin);
-    const etaInteraction = ssInteraction / (ssInteraction + ssErrorWithin);
+        groups.forEach(g => {
+            cellStats[g] = {};
+            withinVars.forEach(v => {
+                const cellValues = groupData[g].map(d => d[v]);
+                const mean = jStat.mean(cellValues);
+                const n = cellValues.length;
+                const std = jStat.stdev(cellValues, true);
+                cellStats[g][v] = { mean, n, std };
 
-    // Perform Simple Main Effect Tests
-    // For Mixed: Factor 1 is Between (betweenVar), Factor 2 is Within (conditions/columns)
-    const resultSigPairs = performSimpleMainEffectTests(validData, betweenVar, 'conditions', 'value', 'mixed', withinVars);
+                ssCells += n * Math.pow(mean - grandMean, 2);
+            });
+        });
 
-    const result = {
-        factorBetween: betweenVar,
-        factorWithin: '条件(Time)',
-        levelsBetween: groups,
-        levelsWithin: withinVars,
-        cellStats,
+        const ssInteraction = ssCells - ssBetween - ssWithin;
 
-        sources: [
-            { name: `被験者間: ${betweenVar}`, ss: ssBetween, df: dfBetween, ms: msBetween, f: fBetween, p: pBetween, eta: etaBetween },
-            { name: '誤差(間)', ss: ssErrorBetween, df: dfErrorBetween, ms: msErrorBetween, f: null, p: null, eta: null },
-            { name: `被験者内: 条件`, ss: ssWithin, df: dfWithin, ms: msWithin, f: fWithin, p: pWithin, eta: etaWithin },
-            { name: `交互作用: ${betweenVar}×条件`, ss: ssInteraction, df: dfInteraction, ms: msInteraction, f: fInteraction, p: pInteraction, eta: etaInteraction },
-            { name: '誤差(内)', ss: ssErrorWithin, df: dfErrorWithin, ms: msErrorWithin, f: null, p: null, eta: null }
-        ]
-    };
+        // SS_ErrorWithin (Total Within - Factor B - Interaction)
+        // Calculate SS_Total_Within (variability of scores around subject means)
+        // Or easier: SS_Total - SS_SubjectsTotal
+        const ssBroadWithin = ssTotal - ssSubjectsTotal;
+        const ssErrorWithin = ssBroadWithin - ssWithin - ssInteraction;
 
-    renderTwoWayMixedANOVATable(result);
-    displayTwoWayANOVAInterpretation([result], 'mixed');
-    // Reuse visualization logic with slight adaptation
-    const vizResult = {
-        depVar: '測定値',
-        factor1: betweenVar,
+        // 4. Degrees of Freedom
+        const dfBetween = nGroups - 1;
+        const dfErrorBetween = nTotal - nGroups;
+
+        const dfWithin = nConditions - 1;
+        const dfInteraction = dfBetween * dfWithin;
+        const dfErrorWithin = dfErrorBetween * dfWithin;
+
+        // 5. Mean Squares
+        const msBetween = ssBetween / dfBetween;
+        const msErrorBetween = ssErrorBetween / dfErrorBetween;
+
+        const msWithin = ssWithin / dfWithin;
+        const msInteraction = ssInteraction / dfInteraction;
+        const msErrorWithin = ssErrorWithin / dfErrorWithin;
+
+        // 6. F-ratios & P-values
+        const fBetween = msBetween / msErrorBetween;
+        const pBetween = 1 - jStat.centralF.cdf(fBetween, dfBetween, dfErrorBetween);
+
+        const fWithin = msWithin / msErrorWithin;
+        const pWithin = 1 - jStat.centralF.cdf(fWithin, dfWithin, dfErrorWithin);
+
+        const fInteraction = msInteraction / msErrorWithin;
+        const pInteraction = 1 - jStat.centralF.cdf(fInteraction, dfInteraction, dfErrorWithin);
+
+        // 7. Effect Sizes (Partial Eta Squared)
+        const etaBetween = ssBetween / (ssBetween + ssErrorBetween);
+        const etaWithin = ssWithin / (ssWithin + ssErrorWithin);
+        const etaInteraction = ssInteraction / (ssInteraction + ssErrorWithin);
+
+        // Perform Simple Main Effect Tests
+        // For Mixed: Factor 1 is Between (betweenVar), Factor 2 is Within (conditions/columns)
+        const resultSigPairs = performSimpleMainEffectTests(validData, betweenVar, 'conditions', 'value', 'mixed', withinVars);
+
+        testResults.push({
+            pairName: `${pair.pre} - ${pair.post}`,
+            factorBetween: betweenVar,
+            factorWithin: '条件(Time)',
+            levelsBetween: groups,
+            levelsWithin: withinVars, // [pre, post]
+            cellStats,
+            sources: [
+                { name: `被験者間: ${betweenVar}`, ss: ssBetween, df: dfBetween, ms: msBetween, f: fBetween, p: pBetween, eta: etaBetween },
+                { name: '誤差(間)', ss: ssErrorBetween, df: dfErrorBetween, ms: msErrorBetween, f: null, p: null, eta: null },
+                { name: `被験者内: 条件`, ss: ssWithin, df: dfWithin, ms: msWithin, f: fWithin, p: pWithin, eta: etaWithin },
+                { name: `交互作用: ${betweenVar}×条件`, ss: ssInteraction, df: dfInteraction, ms: msInteraction, f: fInteraction, p: pInteraction, eta: etaInteraction },
+                { name: '誤差(内)', ss: ssErrorWithin, df: dfErrorWithin, ms: msErrorWithin, f: null, p: null, eta: null }
+            ],
+            sigPairs: resultSigPairs
+        });
+    }); // End pair loop
+
+    if (testResults.length === 0) return;
+
+    renderTwoWayMixedANOVATable(testResults);
+    displayTwoWayANOVAInterpretation(testResults, 'mixed');
+
+    // Reuse visualization logic
+    const vizResults = testResults.map(res => ({
+        depVar: res.pairName, // Use pair name as 'depVar' for title
+        factor1: res.factorBetween,
         factor2: '条件',
-        levels1: groups,
-        levels2: withinVars,
-        cellStats: cellStats,
-        sigPairs: resultSigPairs
-    };
-    renderTwoWayANOVAVisualization([vizResult]);
+        levels1: res.levelsBetween,
+        levels2: res.levelsWithin,
+        cellStats: res.cellStats,
+        sigPairs: res.sigPairs
+    }));
+    renderTwoWayANOVAVisualization(vizResults);
 
     document.getElementById('analysis-results').style.display = 'block';
 }
 
-function renderTwoWayMixedANOVATable(res) {
+function renderTwoWayMixedANOVATable(results) {
+    if (!results || results.length === 0) return;
     const container = document.getElementById('test-results-section');
+    let tableHtml = '';
 
-    let tableHtml = `
+    results.forEach((res, index) => {
+        tableHtml += `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-table"></i> 混合計画分散分析の結果 (${res.factorBetween} × 条件)
+                <i class="fas fa-table"></i> 混合計画分散分析の結果 (${res.pairName})
             </h4>
             <div class="table-container">
                 <table class="table">
@@ -874,14 +892,15 @@ function renderTwoWayMixedANOVATable(res) {
                     </thead>
                     <tbody>`;
 
-    res.sources.forEach(src => {
-        const sig = src.p !== null ? (src.p < 0.01 ? '**' : src.p < 0.05 ? '*' : src.p < 0.1 ? '†' : '') : '';
-        const pStr = src.p !== null ? src.p.toFixed(3) + sig : '-';
-        const fStr = src.f !== null ? src.f.toFixed(2) : '-';
-        const etaStr = src.eta !== null ? src.eta.toFixed(2) : '-';
-        const msStr = src.ms.toFixed(2);
 
-        tableHtml += `
+        res.sources.forEach(src => {
+            const sig = src.p !== null ? (src.p < 0.01 ? '**' : src.p < 0.05 ? '*' : src.p < 0.1 ? '†' : '') : '';
+            const pStr = src.p !== null ? src.p.toFixed(3) + sig : '-';
+            const fStr = src.f !== null ? src.f.toFixed(2) : '-';
+            const etaStr = src.eta !== null ? src.eta.toFixed(2) : '-';
+            const msStr = src.ms.toFixed(2);
+
+            tableHtml += `
             <tr>
                 <td style="text-align: left; font-weight: 500;">${src.name}</td>
                 <td>${src.ss.toFixed(2)}</td>
@@ -892,14 +911,14 @@ function renderTwoWayMixedANOVATable(res) {
                 <td>${etaStr}</td>
             </tr>
         `;
-    });
+        });
 
-    tableHtml += `</tbody></table>
+        tableHtml += `</tbody></table>
         <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">p&lt;0.1† p&lt;0.05* p&lt;0.01**</p>
         </div></div>`;
 
-    // Descriptive Stats Table
-    tableHtml += `
+        // Descriptive Stats Table
+        tableHtml += `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
              <h4 style="color: #475569; margin-bottom: 1rem; font-size: 1.1rem; font-weight: bold;">
                 平均値と標準偏差
@@ -914,39 +933,40 @@ function renderTwoWayMixedANOVATable(res) {
                     </thead>
                     <tbody>`;
 
-    res.levelsBetween.forEach(l1 => {
-        tableHtml += `<tr>
+        res.levelsBetween.forEach(l1 => {
+            tableHtml += `<tr>
             <td style="font-weight: bold;">${l1}</td>`;
-        res.levelsWithin.forEach(l2 => {
-            const s = res.cellStats[l1][l2];
-            tableHtml += `<td>${s.mean.toFixed(2)} (SD: ${s.std.toFixed(2)})</td>`;
+            res.levelsWithin.forEach(l2 => {
+                const s = res.cellStats[l1][l2];
+                tableHtml += `<td>${s.mean.toFixed(2)} (SD: ${s.std.toFixed(2)})</td>`;
+            });
+            tableHtml += `</tr>`;
         });
-        tableHtml += `</tr>`;
-    });
 
-    tableHtml += `</tbody></table></div></div>`;
+        tableHtml += `</tbody></table></div></div>`;
 
-    // Generate APA Source Table
-    const headersAPA = ["Source", "<em>SS</em>", "<em>df</em>", "<em>MS</em>", "<em>F</em>", "<em>p</em>", "&eta;<sub>p</sub><sup>2</sup>"];
-    const rowsAPA = res.sources.map(src => {
-        const sig = src.p !== null ? (src.p < 0.001 ? '< .001' : src.p.toFixed(3)) : '-';
-        return [
-            src.name,
-            src.ss.toFixed(2),
-            src.df,
-            src.ms.toFixed(2),
-            src.f !== null ? src.f.toFixed(2) : '-',
-            sig,
-            src.eta !== null ? src.eta.toFixed(2) : '-'
-        ];
-    });
+        // Generate APA Source Table
+        const headersAPA = ["Source", "<em>SS</em>", "<em>df</em>", "<em>MS</em>", "<em>F</em>", "<em>p</em>", "&eta;<sub>p</sub><sup>2</sup>"];
+        const rowsAPA = res.sources.map(src => {
+            const sig = src.p !== null ? (src.p < 0.001 ? '< .001' : src.p.toFixed(3)) : '-';
+            return [
+                src.name,
+                src.ss.toFixed(2),
+                src.df,
+                src.ms.toFixed(2),
+                src.f !== null ? src.f.toFixed(2) : '-',
+                sig,
+                src.eta !== null ? src.eta.toFixed(2) : '-'
+            ];
+        });
 
-    tableHtml += `
+        tableHtml += `
         <div style="margin-bottom: 2rem;">
                 <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
-                <div>${generateAPATableHtml('anova-mixed-apa', `Table 1. Mixed Design ANOVA Source Table`, headersAPA, rowsAPA, `<em>Note</em>. Effect size is partial eta-squared.`)}</div>
+                <div>${generateAPATableHtml(`anova-mixed-apa-${index}`, `Table 1. Mixed Design ANOVA Source Table (${res.pairName})`, headersAPA, rowsAPA, `<em>Note</em>. Effect size is partial eta-squared.`)}</div>
         </div>
     `;
+    }); // End results loop
 
     container.innerHTML = tableHtml;
 }
@@ -1060,7 +1080,29 @@ export function render(container, currentData, characteristics) {
                 <!-- Mixed Controls -->
                 <div id="mixed-controls" style="display: none;">
                     <div id="mixed-between-container" style="margin-bottom: 1rem;"></div>
-                    <div id="mixed-within-container" style="margin-bottom: 1.5rem;"></div>
+                    
+                    <!-- Pair Selection UI -->
+                    <div style="padding: 1rem; background: #fafbfc; border-radius: 8px; margin-bottom: 1.5rem;">
+                        <h5 style="color: #2d3748; margin-bottom: 1rem;"><i class="fas fa-list-ol"></i> 被験者内因子のペア選択:</h5>
+                        <p style="margin: -0.5rem 0 1rem 0; color: #6b7280; font-size: 0.9rem;">観測変数（前測）と測定変数（後測）のペアを追加してください。</p>
+                        
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem;">
+                            <div id="mixed-var-pre-container" style="flex: 1; min-width: 200px;"></div>
+                            <span style="font-weight: bold; color: #1e90ff; font-size: 1.5rem;">→</span>
+                            <div id="mixed-var-post-container" style="flex: 1; min-width: 200px;"></div>
+                            <button id="add-mixed-pair-btn" class="analysis-button" style="background-color: #28a745; min-width: 120px; margin-top: 1.5rem;">
+                                <i class="fas fa-plus"></i> ペアを追加
+                            </button>
+                        </div>
+                        
+                        <h5 style="color: #2d3748; margin-bottom: 1rem;">
+                            <i class="fas fa-list-ul"></i> 選択された変数ペア
+                        </h5>
+                        <div id="selected-mixed-pairs-list" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; min-height: 50px; background: white;">
+                            <p id="no-mixed-pairs-text" style="color: #6b7280;">ここに追加されたペアが表示されます</p>
+                        </div>
+                    </div>
+
                     <div id="run-mixed-btn"></div>
                 </div>
 
@@ -1093,8 +1135,90 @@ export function render(container, currentData, characteristics) {
 
     // Mixed Selectors
     createVariableSelector('mixed-between-container', categoricalColumns, 'mixed-between-var', { label: '被験者間因子（グループ）:', multiple: false });
-    createVariableSelector('mixed-within-container', numericColumns, 'mixed-within-vars', { label: '被験者内因子（測定値列・複数）:', multiple: true });
-    createAnalysisButton('run-mixed-btn', '実行（混合計画）', () => runTwoWayMixedANOVA(currentData), { id: 'run-mixed-anova' });
+    // Pairs logic replaces 'mixed-within-vars'
+    createVariableSelector('mixed-var-pre-container', numericColumns, 'mixed-var-pre', { label: '観測変数（前測）:', multiple: false });
+    createVariableSelector('mixed-var-post-container', numericColumns, 'mixed-var-post', { label: '測定変数（後測）:', multiple: false });
+
+    // Internal state for selected pairs
+    let selectedMixedPairs = [];
+
+    const renderSelectedMixedPairs = () => {
+        const listContainer = document.getElementById('selected-mixed-pairs-list');
+        const noPairsText = document.getElementById('no-mixed-pairs-text');
+        listContainer.innerHTML = '';
+        if (selectedMixedPairs.length === 0) {
+            listContainer.appendChild(noPairsText);
+            noPairsText.style.display = 'block';
+        } else {
+            noPairsText.style.display = 'none';
+            selectedMixedPairs.forEach((pair, index) => {
+                const pairEl = document.createElement('div');
+                pairEl.className = 'selected-pair-item';
+                pairEl.innerHTML = `
+                    <span>${pair.pre} → ${pair.post}</span>
+                    <button class="remove-pair-btn" data-index="${index}"><i class="fas fa-times"></i></button>
+                `;
+                listContainer.appendChild(pairEl);
+            });
+        }
+    };
+
+    const updateMixedPairSelectors = () => {
+        const preSelect = document.getElementById('mixed-var-pre');
+        const postSelect = document.getElementById('mixed-var-post');
+        if (!preSelect || !postSelect) return;
+
+        const selectedPre = preSelect.value;
+        const selectedPost = postSelect.value;
+
+        // Reset
+        Array.from(preSelect.options).forEach(opt => opt.disabled = false);
+        Array.from(postSelect.options).forEach(opt => opt.disabled = false);
+
+        // Disable selected
+        if (selectedPre) {
+            const postOption = postSelect.querySelector(`option[value="${selectedPre}"]`);
+            if (postOption) postOption.disabled = true;
+        }
+        if (selectedPost) {
+            const preOption = preSelect.querySelector(`option[value="${selectedPost}"]`);
+            if (preOption) preOption.disabled = true;
+        }
+    };
+
+    document.getElementById('mixed-var-pre').addEventListener('change', updateMixedPairSelectors);
+    document.getElementById('mixed-var-post').addEventListener('change', updateMixedPairSelectors);
+
+    document.getElementById('add-mixed-pair-btn').addEventListener('click', () => {
+        const preVar = document.getElementById('mixed-var-pre').value;
+        const postVar = document.getElementById('mixed-var-post').value;
+
+        if (!preVar || !postVar) {
+            alert('観測変数と測定変数の両方を選択してください。');
+            return;
+        }
+        if (preVar === postVar) {
+            alert('観測変数と測定変数に同じ変数は選べません。');
+            return;
+        }
+        if (selectedMixedPairs.some(p => p.pre === preVar && p.post === postVar)) {
+            alert('この変数の組み合わせは既に追加されています。');
+            return;
+        }
+
+        selectedMixedPairs.push({ pre: preVar, post: postVar });
+        renderSelectedMixedPairs();
+    });
+
+    document.getElementById('selected-mixed-pairs-list').addEventListener('click', (e) => {
+        if (e.target.closest('.remove-pair-btn')) {
+            const index = e.target.closest('.remove-pair-btn').dataset.index;
+            selectedMixedPairs.splice(index, 1);
+            renderSelectedMixedPairs();
+        }
+    });
+
+    createAnalysisButton('run-mixed-btn', '実行（混合計画）', () => runTwoWayMixedANOVA(currentData, selectedMixedPairs), { id: 'run-mixed-anova' });
 
     // Toggle Logic
     document.querySelectorAll('input[name="anova2-type"]').forEach(radio => {
