@@ -605,6 +605,137 @@ function createCustomMultiSelect(container, options, id, placeholder, disabled) 
 }
 
 /**
+ * Creates a specialized single-select component for pair selection (Pre/Post).
+ * Matches the DOM structure expected by the pairs test.
+ * @param {string} containerId - Container ID to append to.
+ * @param {Array<string>} options - List of variable names.
+ * @param {string} id - ID for the hidden select element.
+ * @param {string} placeholder - Placeholder text.
+ */
+export function createPairSelector(containerId, options, id, placeholder) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Hidden select for value holding
+    const hiddenSelect = document.createElement('select');
+    hiddenSelect.id = id;
+    hiddenSelect.style.display = 'none';
+    options.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt;
+        o.text = opt;
+        hiddenSelect.appendChild(o);
+    });
+    container.appendChild(hiddenSelect);
+
+    if (!options || options.length === 0) {
+        const msg = document.createElement('div');
+        msg.className = 'pairs-select-input disabled';
+        msg.textContent = '変数なし';
+        container.appendChild(msg);
+        return;
+    }
+
+    // Custom UI Wrapper
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pairs-select-wrapper';
+    wrapper.style.position = 'relative';
+
+    // Input Area
+    const inputArea = document.createElement('div');
+    inputArea.className = 'pairs-select-input';
+    inputArea.style.border = '1px solid #e2e8f0';
+    inputArea.style.padding = '0.5rem';
+    inputArea.style.borderRadius = '6px';
+    inputArea.style.cursor = 'pointer';
+    inputArea.style.background = 'white';
+    inputArea.style.display = 'flex';
+    inputArea.style.justifyContent = 'space-between';
+    inputArea.style.alignItems = 'center';
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'pairs-current-value';
+    labelSpan.textContent = placeholder;
+    labelSpan.style.color = '#64748b';
+    inputArea.appendChild(labelSpan);
+
+    const arrow = document.createElement('i');
+    arrow.className = 'fas fa-chevron-down';
+    arrow.style.color = '#cbd5e1';
+    inputArea.appendChild(arrow);
+
+    // Dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'pairs-select-dropdown';
+    dropdown.style.position = 'absolute';
+    dropdown.style.top = '100%';
+    dropdown.style.left = '0';
+    dropdown.style.right = '0';
+    dropdown.style.background = 'white';
+    dropdown.style.border = '1px solid #e2e8f0';
+    dropdown.style.borderRadius = '6px';
+    dropdown.style.zIndex = '100';
+    dropdown.style.marginTop = '4px';
+    dropdown.style.maxHeight = '200px';
+    dropdown.style.overflowY = 'auto';
+    dropdown.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+    dropdown.style.display = 'none';
+
+    options.forEach(opt => {
+        const item = document.createElement('div');
+        item.className = 'pairs-select-option';
+        item.style.padding = '0.5rem';
+        item.style.cursor = 'pointer';
+        item.textContent = opt;
+        item.dataset.value = opt;
+
+        item.addEventListener('mouseenter', () => item.style.background = '#f1f5f9');
+        item.addEventListener('mouseleave', () => item.style.background = 'white');
+
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Update hidden select
+            hiddenSelect.value = opt;
+            hiddenSelect.dispatchEvent(new Event('change')); // Trigger change listener
+
+            // Update UI
+            labelSpan.textContent = opt;
+            labelSpan.style.color = '#334155';
+            dropdown.style.display = 'none';
+        });
+
+        dropdown.appendChild(item);
+    });
+
+    // Toggle Dropdown
+    inputArea.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = dropdown.style.display === 'block';
+        // Close others
+        document.querySelectorAll('.pairs-select-dropdown').forEach(d => d.style.display = 'none');
+        dropdown.style.display = isOpen ? 'none' : 'block';
+    });
+
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    wrapper.appendChild(inputArea);
+    wrapper.appendChild(dropdown);
+    container.appendChild(wrapper);
+    wrapper.appendChild(inputArea);
+    wrapper.appendChild(dropdown);
+    container.appendChild(wrapper);
+
+    return hiddenSelect;
+}
+
+/**
  * サンプルサイズ情報（全体N、グループ別N）のHTMLを生成して表示する
  * @param {HTMLElement|string} container - 表示先のコンテナ要素またはID
  * @param {number} totalN - 全体サンプルサイズ

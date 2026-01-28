@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, createPairSelector } from '../utils.js';
 
 // ======================================================================
 // Helper Functions
@@ -1122,7 +1122,7 @@ export function render(container, currentData, characteristics) {
         </div>
     `;
 
-    renderDataOverview('#anova2-data-overview', currentData, characteristics, { initiallyCollapsed: false });
+    renderDataOverview('#anova2-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
     // 軸ラベル表示オプションの追加 (Moved)
     // createAxisLabelControl('axis-label-control-container');
@@ -1136,21 +1136,29 @@ export function render(container, currentData, characteristics) {
     // Mixed Selectors
     createVariableSelector('mixed-between-container', categoricalColumns, 'mixed-between-var', { label: '被験者間因子（グループ）:', multiple: false });
     // Pairs logic replaces 'mixed-within-vars'
-    createVariableSelector('mixed-var-pre-container', numericColumns, 'mixed-var-pre', { label: '観測変数（前測）:', multiple: false });
-    createVariableSelector('mixed-var-post-container', numericColumns, 'mixed-var-post', { label: '測定変数（後測）:', multiple: false });
+    createPairSelector('mixed-var-pre-container', numericColumns, 'mixed-var-pre', '観測変数（前測）');
+    createPairSelector('mixed-var-post-container', numericColumns, 'mixed-var-post', '測定変数（後測）');
 
     // Internal state for selected pairs
     let selectedMixedPairs = [];
 
+    // Capture the "No Pairs" element immediately after initial render
+    const noPairsText = document.getElementById('no-mixed-pairs-text');
+
     const renderSelectedMixedPairs = () => {
         const listContainer = document.getElementById('selected-mixed-pairs-list');
-        const noPairsText = document.getElementById('no-mixed-pairs-text');
+
         listContainer.innerHTML = '';
+
         if (selectedMixedPairs.length === 0) {
-            listContainer.appendChild(noPairsText);
-            noPairsText.style.display = 'block';
+            if (noPairsText) {
+                listContainer.appendChild(noPairsText);
+                noPairsText.style.display = 'block';
+            }
         } else {
-            noPairsText.style.display = 'none';
+            if (noPairsText) {
+                noPairsText.style.display = 'none';
+            }
             selectedMixedPairs.forEach((pair, index) => {
                 const pairEl = document.createElement('div');
                 pairEl.className = 'selected-pair-item';
