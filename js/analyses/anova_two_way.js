@@ -973,18 +973,309 @@ function renderTwoWayMixedANOVATable(results) {
 
 
 // ======================================================================
-// UI Logic
+// Two-Way Within-Subjects ANOVA (2x2) Logic
+// ======================================================================
+
+async function runTwoWayWithinANOVA(data) {
+    const factorAName = document.getElementById('within-factor-a-name').value || 'FactorA';
+    const factorBName = document.getElementById('within-factor-b-name').value || 'FactorB';
+    const a1 = document.getElementById('within-level-a1').value || 'A1';
+    const a2 = document.getElementById('within-level-a2').value || 'A2';
+    const b1 = document.getElementById('within-level-b1').value || 'B1';
+    const b2 = document.getElementById('within-level-b2').value || 'B2';
+
+    const varA1B1 = document.getElementById('within-var-a1b1').value;
+    const varA1B2 = document.getElementById('within-var-a1b2').value;
+    const varA2B1 = document.getElementById('within-var-a2b1').value;
+    const varA2B2 = document.getElementById('within-var-a2b2').value;
+
+    if (!varA1B1 || !varA1B2 || !varA2B1 || !varA2B2) {
+        alert('全てのセルに変数を割り当ててください。');
+        return;
+    }
+
+    // Listwise Deletion
+    const cleanData = data.filter(row => {
+        return [varA1B1, varA1B2, varA2B1, varA2B2].every(v => row[v] !== "" && row[v] !== null && row[v] !== undefined);
+    });
+
+    if (cleanData.length < 2) {
+        alert('有効なデータが不足しています。');
+        return;
+    }
+
+    const n = cleanData.length;
+    const a = 2; // Levels of A
+    const b = 2; // Levels of B
+
+    // Extract values
+    const Y11 = cleanData.map(r => parseFloat(r[varA1B1]));
+    const Y12 = cleanData.map(r => parseFloat(r[varA1B2]));
+    const Y21 = cleanData.map(r => parseFloat(r[varA2B1]));
+    const Y22 = cleanData.map(r => parseFloat(r[varA2B2]));
+
+    // Helper SumSq
+    const sumSq = (arr) => arr.reduce((s, x) => s + x * x, 0);
+    const sum = (arr) => arr.reduce((s, x) => s + x, 0);
+
+    // Totals
+    const T = sum(Y11) + sum(Y12) + sum(Y21) + sum(Y22);
+    const N = n * a * b; // Total observations
+    const CF = (T * T) / N;
+
+    const SS_Total = sumSq(Y11) + sumSq(Y12) + sumSq(Y21) + sumSq(Y22) - CF;
+
+    // Subjects Totals
+    const S = cleanData.map((_, i) => Y11[i] + Y12[i] + Y21[i] + Y22[i]);
+    const SS_S = sumSq(S) / (a * b) - CF;
+
+    // Factor A Totals (Level 1 vs Level 2)
+    const A1_total = sum(Y11) + sum(Y12);
+    const A2_total = sum(Y21) + sum(Y22);
+    const SS_A = (A1_total * A1_total + A2_total * A2_total) / (b * n) - CF;
+
+    // Factor B Totals
+    const B1_total = sum(Y11) + sum(Y21);
+    const B2_total = sum(Y12) + sum(Y22);
+    const SS_B = (B1_total * B1_total + B2_total * B2_total) / (a * n) - CF;
+
+    // Cell Totals for AB Interaction
+    const T11 = sum(Y11);
+    const T12 = sum(Y12);
+    const T21 = sum(Y21);
+    const T22 = sum(Y22);
+    const SS_Cells = (T11 ** 2 + T12 ** 2 + T21 ** 2 + T22 ** 2) / n - CF;
+    const SS_AxB = SS_Cells - SS_A - SS_B;
+
+    // Interaction with Subjects (Error terms)
+    // AS_ij: Total for Subject i at Level A_j
+    const AS1 = cleanData.map((_, i) => Y11[i] + Y12[i]);
+    const AS2 = cleanData.map((_, i) => Y21[i] + Y22[i]);
+    const SS_AS_Cell = (sumSq(AS1) + sumSq(AS2)) / b - CF;
+    const SS_AxS = SS_AS_Cell - SS_S - SS_A;
+
+    // BS_ik: Total for Subject i at Level B_k
+    const BS1 = cleanData.map((_, i) => Y11[i] + Y21[i]);
+    const BS2 = cleanData.map((_, i) => Y12[i] + Y22[i]);
+    const SS_BS_Cell = (sumSq(BS1) + sumSq(BS2)) / a - CF;
+    const SS_BxS = SS_BS_Cell - SS_S - SS_B;
+
+    const SS_AxBxS = SS_Total - (SS_S + SS_A + SS_B + SS_AxB + SS_AxS + SS_BxS);
+
+    // Degrees of Freedom
+    const df_A = a - 1;
+    const df_B = b - 1;
+    const df_AxB = (a - 1) * (b - 1);
+    const df_S = n - 1;
+    const df_AxS = (a - 1) * (n - 1);
+    const df_BxS = (b - 1) * (n - 1);
+    const df_AxBxS = (a - 1) * (b - 1) * (n - 1);
+
+    // MS & F
+    const MS_A = SS_A / df_A;
+    const MS_AxS = SS_AxS / df_AxS;
+    const F_A = MS_A / MS_AxS;
+    const p_A = 1 - jStat.centralF.cdf(F_A, df_A, df_AxS);
+
+    const MS_B = SS_B / df_B;
+    const MS_BxS = SS_BxS / df_BxS;
+    const F_B = MS_B / MS_BxS;
+    const p_B = 1 - jStat.centralF.cdf(F_B, df_B, df_BxS);
+
+    const MS_AxB = SS_AxB / df_AxB;
+    const MS_AxBxS = SS_AxBxS / df_AxBxS;
+    const F_AxB = MS_AxB / MS_AxBxS;
+    const p_AxB = 1 - jStat.centralF.cdf(F_AxB, df_AxB, df_AxBxS);
+
+    // Partial Eta Squared
+    const eta_A = SS_A / (SS_A + SS_AxS);
+    const eta_B = SS_B / (SS_B + SS_BxS);
+    const eta_AxB = SS_AxB / (SS_AxB + SS_AxBxS);
+
+    // Structure Results
+    const results = {
+        factorA: factorAName,
+        factorB: factorBName,
+        levelsA: [a1, a2],
+        levelsB: [b1, b2],
+        sources: [
+            { name: factorAName, ss: SS_A, df: df_A, ms: MS_A, f: F_A, p: p_A, eta: eta_A },
+            { name: `${factorAName} × Subject (Error)`, ss: SS_AxS, df: df_AxS, ms: MS_AxS, f: null, p: null, eta: null },
+            { name: factorBName, ss: SS_B, df: df_B, ms: MS_B, f: F_B, p: p_B, eta: eta_B },
+            { name: `${factorBName} × Subject (Error)`, ss: SS_BxS, df: df_BxS, ms: MS_BxS, f: null, p: null, eta: null },
+            { name: `${factorAName} × ${factorBName}`, ss: SS_AxB, df: df_AxB, ms: MS_AxB, f: F_AxB, p: p_AxB, eta: eta_AxB },
+            { name: `${factorAName} × ${factorBName} × Subject (Error)`, ss: SS_AxBxS, df: df_AxBxS, ms: MS_AxBxS, f: null, p: null, eta: null }
+        ],
+        cellStats: {
+            [a1]: { [b1]: { mean: T11 / n, std: jStat.stdev(Y11) }, [b2]: { mean: T12 / n, std: jStat.stdev(Y12) } },
+            [a2]: { [b1]: { mean: T21 / n, std: jStat.stdev(Y21) }, [b2]: { mean: T22 / n, std: jStat.stdev(Y22) } }
+        }
+    };
+
+    renderTwoWayWithinANOVATable(results);
+}
+
+function renderTwoWayWithinANOVATable(res) {
+    const container = document.getElementById('analysis-results');
+    const tableContainer = document.getElementById('test-results-section');
+    const summaryContainer = document.getElementById('summary-stats-section');
+    const vizContainer = document.getElementById('visualization-section');
+
+    container.style.display = 'block';
+
+    // Clear previous
+    tableContainer.innerHTML = '';
+    summaryContainer.innerHTML = '';
+    vizContainer.innerHTML = '';
+
+    // ANOVA Table
+    let tableHtml = `
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+        <h4 style="color: #475569; margin-bottom: 1rem; font-size: 1.1rem; font-weight: bold;">
+            分散分析表 (Within-Subjects Design)
+        </h4>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>変動要因 (Source)</th>
+                        <th>平方和 (SS)</th>
+                        <th>自由度 (df)</th>
+                        <th>平均平方 (MS)</th>
+                        <th>F値</th>
+                        <th>p値</th>
+                        <th>偏η²</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    res.sources.forEach(src => {
+        const sig = src.p !== null ? (src.p < 0.01 ? '**' : src.p < 0.05 ? '*' : src.p < 0.1 ? '†' : '') : '';
+        const pStr = src.p !== null ? src.p.toFixed(3) + sig : '-';
+        const fStr = src.f !== null ? src.f.toFixed(2) : '-';
+        const etaStr = src.eta !== null ? src.eta.toFixed(2) : '-';
+        const msStr = src.ms.toFixed(2);
+
+        tableHtml += `
+        <tr>
+            <td style="text-align: left; font-weight: 500;">${src.name}</td>
+            <td>${src.ss.toFixed(2)}</td>
+            <td>${src.df}</td>
+            <td>${msStr}</td>
+            <td>${fStr}</td>
+            <td style="${src.p < 0.05 ? 'color: #e11d48; font-weight: bold;' : ''}">${pStr}</td>
+            <td>${etaStr}</td>
+        </tr>
+    `;
+    });
+
+    tableHtml += `</tbody></table>
+    <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">p&lt;0.1† p&lt;0.05* p&lt;0.01**</p>
+    </div></div>`;
+
+    tableContainer.innerHTML = tableHtml;
+
+    // Descriptive Stats Table
+    let summaryHtml = `
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <h4 style="color: #475569; margin-bottom: 1rem; font-size: 1.1rem; font-weight: bold;">
+            平均値と標準偏差
+        </h4>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>${res.factorA}</th>
+                        ${res.levelsB.map(l => `<th>${l} (${res.factorB})</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    res.levelsA.forEach(l1 => {
+        summaryHtml += `<tr>
+        <td style="font-weight: bold;">${l1}</td>`;
+        res.levelsB.forEach(l2 => {
+            const s = res.cellStats[l1][l2];
+            summaryHtml += `<td>${s.mean.toFixed(2)} (SD: ${s.std.toFixed(2)})</td>`;
+        });
+        summaryHtml += `</tr>`;
+    });
+
+    summaryHtml += `</tbody></table></div></div>`;
+    summaryContainer.innerHTML = summaryHtml;
+
+    // Generate APA Source Table
+    const headersAPA = ["Source", "<em>SS</em>", "<em>df</em>", "<em>MS</em>", "<em>F</em>", "<em>p</em>", "&eta;<sub>p</sub><sup>2</sup>"];
+    const rowsAPA = res.sources.map(src => {
+        const sig = src.p !== null ? (src.p < 0.001 ? '< .001' : src.p.toFixed(3)) : '-';
+        return [
+            src.name,
+            src.ss.toFixed(2),
+            src.df,
+            src.ms.toFixed(2),
+            src.f !== null ? src.f.toFixed(2) : '-',
+            sig,
+            src.eta !== null ? src.eta.toFixed(2) : '-'
+        ];
+    });
+
+    tableContainer.innerHTML += `
+    <div style="margin-bottom: 2rem;">
+            <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+            <div>${generateAPATableHtml('anova-within-apa', 'Table 1. Two-Way Within-Subjects ANOVA Source Table', headersAPA, rowsAPA, '<em>Note</em>. Effect size is partial eta-squared.')}</div>
+    </div>
+    `;
+
+    // Visualization (Interaction Plot)
+    const trace1 = {
+        x: res.levelsA,
+        y: res.levelsA.map(a => res.cellStats[a][res.levelsB[0]].mean),
+        name: res.levelsB[0],
+        type: 'scatter',
+        mode: 'lines+markers'
+    };
+
+    const trace2 = {
+        x: res.levelsA,
+        y: res.levelsA.map(a => res.cellStats[a][res.levelsB[1]].mean),
+        name: res.levelsB[1],
+        type: 'scatter',
+        mode: 'lines+markers'
+    };
+
+    const layout = {
+        title: `Interaction Plot: ${res.factorA} x ${res.factorB}`,
+        xaxis: { title: res.factorA },
+        yaxis: { title: 'Mean Value' },
+        margin: { l: 50, r: 50, b: 50, t: 50 },
+        height: 400
+    };
+
+    vizContainer.innerHTML = '<div id="within-interaction-plot"></div>';
+
+    setTimeout(() => {
+        const plotDiv = document.getElementById('within-interaction-plot');
+        if (plotDiv) {
+            Plotly.newPlot(plotDiv, [trace1, trace2], layout);
+        }
+    }, 0);
+}
+
+
 // ======================================================================
 
 function switchTestType(testType) {
     const indControls = document.getElementById('independent-controls');
     const mixedControls = document.getElementById('mixed-controls');
+    const withinControls = document.getElementById('within-controls');
 
     indControls.style.display = 'none';
     mixedControls.style.display = 'none';
+    withinControls.style.display = 'none';
 
     if (testType === 'independent') indControls.style.display = 'block';
     else if (testType === 'mixed') mixedControls.style.display = 'block';
+    else if (testType === 'within') withinControls.style.display = 'block';
 
     document.getElementById('analysis-results').style.display = 'none';
 }
@@ -1059,10 +1350,10 @@ export function render(container, currentData, characteristics) {
                             <strong>混合計画 (Mixed)</strong>
                             <p style="color: #666; font-size: 0.8rem;">被験者間因子 × 被験者内因子</p>
                         </label>
-                        <label style="flex: 1; min-width: 200px; padding: 1rem; background: #fafbfc; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; opacity: 0.6;">
-                            <input type="radio" name="anova2-type" value="within" disabled>
+                        <label style="flex: 1; min-width: 200px; padding: 1rem; background: #fafbfc; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" name="anova2-type" value="within">
                             <strong>対応あり (Within)</strong>
-                            <p style="color: #666; font-size: 0.8rem;">(実装中) 2つの被験者内因子</p>
+                            <p style="color: #666; font-size: 0.8rem;">2つの被験者内因子</p>
                         </label>
                     </div>
                 </div>
@@ -1106,9 +1397,50 @@ export function render(container, currentData, characteristics) {
                     <div id="run-mixed-btn"></div>
                 </div>
 
-                <!-- Within Controls (Placeholder) -->
+                <!-- Within Controls -->
                 <div id="within-controls" style="display: none;">
-                    <p>現在開発中です。</p>
+                    <div style="margin-bottom: 1.5rem; background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                        <h5 style="margin-bottom: 1rem;">実験デザインの設定 (2 × 2)</h5>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div>
+                                <label class="form-label">要因Aの名前:</label>
+                                <input type="text" id="within-factor-a-name" class="form-control" value="FactorA" style="width: 100%; padding: 0.5rem;">
+                            </div>
+                            <div>
+                                <label class="form-label">要因Bの名前:</label>
+                                <input type="text" id="within-factor-b-name" class="form-control" value="FactorB" style="width: 100%; padding: 0.5rem;">
+                            </div>
+                        </div>
+                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <label class="form-label">要因Aの水準 (例: 前, 後):</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="text" id="within-level-a1" class="form-control" value="A1" placeholder="水準1">
+                                    <input type="text" id="within-level-a2" class="form-control" value="A2" placeholder="水準2">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label">要因Bの水準 (例: 条件1, 条件2):</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="text" id="within-level-b1" class="form-control" value="B1" placeholder="水準1">
+                                    <input type="text" id="within-level-b2" class="form-control" value="B2" placeholder="水準2">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <h5 style="margin-bottom: 1rem;">変数の割り当て</h5>
+                        <div class="grid-2-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                             <!-- Dynamic mapping containers -->
+                             <div id="within-cell-a1b1-container"></div>
+                             <div id="within-cell-a1b2-container"></div>
+                             <div id="within-cell-a2b1-container"></div>
+                             <div id="within-cell-a2b2-container"></div>
+                        </div>
+                    </div>
+
+                    <div id="run-within-btn"></div>
                 </div>
 
             </div>
@@ -1239,4 +1571,39 @@ export function render(container, currentData, characteristics) {
             });
         });
     });
+
+    // Within Selectors Initialization
+    createVariableSelector('within-cell-a1b1-container', numericColumns, 'within-var-a1b1', { label: 'FactorA(A1) - FactorB(B1):', multiple: false });
+    createVariableSelector('within-cell-a1b2-container', numericColumns, 'within-var-a1b2', { label: 'FactorA(A1) - FactorB(B2):', multiple: false });
+    createVariableSelector('within-cell-a2b1-container', numericColumns, 'within-var-a2b1', { label: 'FactorA(A2) - FactorB(B1):', multiple: false });
+    createVariableSelector('within-cell-a2b2-container', numericColumns, 'within-var-a2b2', { label: 'FactorA(A2) - FactorB(B2):', multiple: false });
+
+    // Dynamic Label Update for Within Design
+    const updateWithinLabels = () => {
+        const fa = document.getElementById('within-factor-a-name').value || 'FactorA';
+        const fb = document.getElementById('within-factor-b-name').value || 'FactorB';
+        const a1 = document.getElementById('within-level-a1').value || 'A1';
+        const a2 = document.getElementById('within-level-a2').value || 'A2';
+        const b1 = document.getElementById('within-level-b1').value || 'B1';
+        const b2 = document.getElementById('within-level-b2').value || 'B2';
+
+        const setLabel = (containerId, text) => {
+            const container = document.getElementById(containerId);
+            if (container) {
+                const label = container.querySelector('label');
+                if (label) label.textContent = text;
+            }
+        };
+
+        setLabel('within-cell-a1b1-container', `${fa}(${a1}) - ${fb}(${b1}):`);
+        setLabel('within-cell-a1b2-container', `${fa}(${a1}) - ${fb}(${b2}):`);
+        setLabel('within-cell-a2b1-container', `${fa}(${a2}) - ${fb}(${b1}):`);
+        setLabel('within-cell-a2b2-container', `${fa}(${a2}) - ${fb}(${b2}):`);
+    };
+
+    ['within-factor-a-name', 'within-factor-b-name', 'within-level-a1', 'within-level-a2', 'within-level-b1', 'within-level-b2'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateWithinLabels);
+    });
+
+    createAnalysisButton('run-within-btn', '実行（対応あり2要因）', () => runTwoWayWithinANOVA(currentData), { id: 'run-within-anova' });
 }
