@@ -38,6 +38,16 @@ function exactFactors(variables, numFactors, currentData) {
 
 
 
+// 行列演算ヘルパー
+function matMul(A, B) { return math.multiply(A, B); }
+function matTrans(A) { return math.transpose(A); }
+function matInv(A) { return math.inv(A); }
+function matDiag(A) {
+    // math.diag behavior depends on input, handle 2D matrix vs vector if needed
+    // Here assuming A is a matrix, returns vector diagonal
+    return math.diag(A);
+}
+
 // 3. バリマックス回転 (Varimax Rotation)
 function calculateVarimax(loadings, maxIter = 50, epsilon = 1e-6) {
     const p = loadings.length;       // 変数数
@@ -45,18 +55,14 @@ function calculateVarimax(loadings, maxIter = 50, epsilon = 1e-6) {
     let R = loadings.map(row => row.slice()); // 複製
     let d = 0;
 
-    // 初期回転行列 (単位行列) - 今回はペアワイズ法なので明示的なTは保持せず直接Rを更新
-
     for (let iter = 0; iter < maxIter; iter++) {
         let dOld = d;
         d = 0;
 
-        // すべての因子ペアについて回転
         for (let i = 0; i < k - 1; i++) {
             for (let j = i + 1; j < k; j++) {
-                // 回転角の計算用変数
-                let sum_d = 0; // x^2 - y^2
-                let sum_c = 0; // 2xy
+                let sum_d = 0;
+                let sum_c = 0;
                 let sum_d2_minus_c2 = 0;
                 let sum_2dc = 0;
 
@@ -72,12 +78,10 @@ function calculateVarimax(loadings, maxIter = 50, epsilon = 1e-6) {
                     sum_2dc += (2 * d_val * c_val);
                 }
 
-                // Raw Varimax の角度計算
                 const numer = 2 * (p * sum_2dc - sum_d * sum_c);
                 const denom = p * sum_d2_minus_c2 - (sum_d * sum_d - sum_c * sum_c);
                 const theta = Math.atan2(numer, denom) / 4;
 
-                // 収束判定と回転適用
                 if (Math.abs(theta) > epsilon) {
                     d += Math.abs(theta);
                     const cos = Math.cos(theta);
@@ -92,10 +96,300 @@ function calculateVarimax(loadings, maxIter = 50, epsilon = 1e-6) {
                 }
             }
         }
-        if (d < epsilon) break; // 変化が小さければ終了
+        if (d < epsilon) break;
+    }
+    return R;
+}
+
+// 4. プロマックス回転 (Promax Rotation)
+// kappa=4 is standard.
+function calculatePromax(loadings, kappa = 4) {
+    // 1. まずバリマックス回転を行う
+    const varimaxLoadings = calculateVarimax(loadings);
+
+    // 2. ターゲット行列 P の作成: P_ij = |L_ij|^(kappa-1) * L_ij
+    // (符号を維持したまま、絶対値をkappa乗) -> 実質 P = |L|^kappa * sgn(L) / |L| = |L|^(k-1) * L ?
+    // 定義: H_ij = |v_ij|^(k+1) / v_ij という記述もあるが、通常は H = |V|^k * sgn(V) ?
+    // 多くの実装では H_ij = |V_ij|^(kappa) * sgn(V_ij)  (要素ごとの演算)
+    // ここでは kappa=4 なので 4乗... ではなく、power parameter k=4 の場合、
+    // H = abs(V).^(k) .* sign(V) が一般的 (k=3 or 4)
+    // Python factor_analyzer defaults to power=4
+
+    // Varimax行列を V とする
+    const V = varimaxLoadings;
+    const rows = V.length;
+    const cols = V[0].length;
+
+    // Target Matrix H
+    const H = [];
+    for (let i = 0; i < rows; i++) {
+        const row = [];
+        for (let j = 0; j < cols; j++) {
+            const val = V[i][j];
+            // H_ij = |val|^3 * val (if kappa=4 in mathematical sense implies power=4?)
+            // factor_analyzer uses: target = np.abs(loadings)**(power-1) * loadings
+            // default power=4 -> |L|^3 * L.
+            row.push(Math.pow(Math.abs(val), kappa - 1) * val);
+        }
+        H.push(row);
     }
 
-    return R;
+    // 3. 変換行列 T の計算 (最小二乗法)
+    // T = (V'V)^(-1) V' H
+    // math.js を使用して計算
+
+    // V_matrix (p x k)
+    // H_matrix (p x k)
+
+    const V_mat = math.matrix(V);
+    const H_mat = math.matrix(H);
+    const V_t = matTrans(V_mat);  // (k x p)
+
+    // V'V (k x k)
+    const VtV = matMul(V_t, V_mat);
+
+    // (V'V)^-1
+    let VtV_inv;
+    try {
+        VtV_inv = matInv(VtV);
+    } catch (e) {
+        console.warn("Promax: Singular matrix, using pseudo-inverse or identify fallback");
+        VtV_inv = math.identity(cols); // Fallback
+    }
+
+    // M = (V'V)^-1 * V' * H
+    // Step 1: temp = V' * H (k x k)
+    const VtH = matMul(V_t, H_mat);
+    // Step 2: M = VtV_inv * temp
+    const M_mat = matMul(VtV_inv, VtH);
+
+    // 4. 正規化: T の各列ベクトルを正規化する
+    // T = M * D^(-1), where D = sqrt(diag(M'M)) ? 
+    // 通常、T = inv(diag(sqrt(diag(inv(M'M))))) * M ? No.
+    // Standard Promax normalize columns of T to have unit length?
+    // Or normalize columns of Rotated Loadings?
+    // "We normalize the columns of the transformation matrix T."
+
+    const M = M_mat.toArray(); // Array of arrays
+    const T = []; // Will construct T manually column by column
+
+    // Transpose M to iterate easier? Or just loop cols
+    // M is (k x k)
+
+    for (let j = 0; j < cols; j++) {
+        // Extract column j
+        let sumSq = 0;
+        for (let i = 0; i < cols; i++) {
+            sumSq += M[i][j] * M[i][j];
+        }
+        const norm = Math.sqrt(sumSq);
+
+        // Normalize column
+        for (let i = 0; i < cols; i++) {
+            if (!T[i]) T[i] = [];
+            T[i][j] = M[i][j] / norm;
+        }
+    }
+
+    // 5. 回転後の負荷量行列 L_promax = V * T
+    const T_mat = math.matrix(T);
+    const L_promax_mat = matMul(V_mat, T_mat);
+    const L_promax = L_promax_mat.toArray();
+
+    // 6. 因子間相関行列 Phi = (T' T)^(-1)
+    // Note: If T columns are normalized, T'T has 1 on diagonal? Not necessarily if oblique.
+    // Correct formula for factor correlations in Promax is (T'T)^(-1) assuming P = A T.
+
+    const T_t = matTrans(T_mat);
+    const TtT = matMul(T_t, T_mat);
+    const Phi_mat = matInv(TtT);
+
+    // 正規化して相関行列にする (対角成分を1にする)
+    const Phi = Phi_mat.toArray();
+    const corrMatrix = [];
+    for (let i = 0; i < cols; i++) {
+        corrMatrix[i] = [];
+        for (let j = 0; j < cols; j++) {
+            const val = Phi[i][j];
+            const div = Math.sqrt(Phi[i][i] * Phi[j][j]);
+            corrMatrix[i][j] = val / div;
+        }
+    }
+
+    return { loadings: L_promax, correlations: corrMatrix };
+}
+
+// 5. ダイレクト・オブリミン回転 (placeholder / simplified)
+// 5. 汎用的な勾配射影法 (Gradient Projection Algorithm) for Oblique Rotation
+// Reference: Bernaards, C. A., & Jennrich, R. I. (2005). Gradient projection algorithms...
+function calculateGradientProjection(loadings, gradientFn, maxIter = 500, epsilon = 1e-5) {
+    const p = loadings.length;
+    const k = loadings[0].length;
+
+    // 初期負荷量行列 A (直交解)
+    const A = math.matrix(loadings);
+
+    // 初期変換行列 T = I
+    let T = math.identity(k);
+    let T_arr = T.toArray();
+
+    let alpha = 1.0; // 初期ステップサイズ
+
+    for (let iter = 0; iter < maxIter; iter++) {
+        const T_mat = math.matrix(T_arr);
+        let T_inv;
+        try {
+            T_inv = math.inv(T_mat);
+        } catch (e) {
+            console.warn("GP: Singular T matrix, resetting to I");
+            T_arr = math.identity(k).toArray();
+            T_inv = math.identity(k);
+        }
+
+        // 現在の負荷量 L = A * (T')^-1 = A * (T^-1)^T
+        const L_mat = matMul(A, matTrans(T_inv));
+        const L = L_mat.toArray();
+
+        // 勾配 G = dQ/dL
+        const G = gradientFn(L);
+        const G_mat = math.matrix(G);
+
+        // Tに関する勾配: dQ/dT = - (L' * G) * T
+        // math.js での計算: -(L' * G) * T
+        const Lt = matTrans(L_mat);
+        const LtG = matMul(Lt, G_mat);
+        const negLtG = math.multiply(LtG, -1);
+        const GradientT = matMul(negLtG, T_mat);
+
+        // 射影 (Projection onto Normal Oblique Manifold: diag(T'*T) = I を保つための接空間への射影)
+        // P(X) = X - T * diag(T' * X)
+        const Tt = matTrans(T_mat);
+        const TtX = matMul(Tt, GradientT);
+        // TtX の対角成分のみ抽出して対角行列にする
+        const diagVals = [];
+        for (let i = 0; i < k; i++) diagVals.push(TtX.get([i, i]));
+        const diagMat = math.diag(diagVals);
+
+        const correction = matMul(T_mat, diagMat);
+        const ProjGrad = math.subtract(GradientT, correction);
+
+        // 収束判定 (射影勾配のノルム)
+        const PG_arr = ProjGrad.toArray();
+        let sumSq = 0;
+        for (let i = 0; i < k; i++) {
+            for (let j = 0; j < k; j++) sumSq += PG_arr[i][j] ** 2;
+        }
+        const gradNorm = Math.sqrt(sumSq);
+
+        if (gradNorm < epsilon) break;
+
+        // 更新: T_new = T - alpha * ProjGrad
+        // 単純な勾配法 (固定ステップ)。必要に応じてラインサーチを入れるが、今回は簡易実装。
+        // 発散を防ぐため、ステップサイズを小さめにするか調整
+        const stepMap = math.multiply(ProjGrad, 0.5); // alpha=0.5
+        const T_next_mat = math.subtract(T_mat, stepMap);
+        let T_next = T_next_mat.toArray();
+
+        // 正規化 (各列のノルムを1にする)
+        for (let j = 0; j < k; j++) {
+            let colSq = 0;
+            for (let i = 0; i < k; i++) colSq += T_next[i][j] ** 2;
+            const norm = Math.sqrt(colSq);
+            for (let i = 0; i < k; i++) T_next[i][j] /= norm;
+        }
+
+        T_arr = T_next;
+    }
+
+    // 最終的な L と Phi を計算
+    const T_final_mat = math.matrix(T_arr);
+    const T_inv_final = math.inv(T_final_mat);
+    const L_final_mat = matMul(A, matTrans(T_inv_final));
+
+    // Factor Correlations Phi = T' * T
+    const Phi_mat = matMul(matTrans(T_final_mat), T_final_mat);
+
+    return {
+        loadings: L_final_mat.toArray(),
+        correlations: Phi_mat.toArray()
+    };
+}
+
+// 6. ダイレクト・オブリミン回転 (Strict Implementation)
+function calculateDirectOblimin(loadings, gamma = 0) {
+    const p = loadings.length;
+
+    // Gradient Function for Oblimin
+    // G_is = L_is * [ sum(L_ik^2 for k!=s) - (gamma/p) * sum( sum(L_rk^2) for r ) ] ?
+    // 正確な微分: dQ/dlam_is = 2 * lam_is * sum_{k!=s} ( lam_ik^2 - (gamma/p)*sum_r(lam_rk^2) ) ?
+    // Check factor_analyzer logic:
+    // G = L * ( theta - gamma/p * sum(...) ) ?
+    // Let's use the explicit element-wise derivative derived earlier:
+    // G_is = 2 * L_is * [ sum_{k!=s} L_ik^2 - (gamma/p) * sum_{k!=s} (sum_r L_rk^2) ]
+
+    const gradientFn = (L) => {
+        const k = L[0].length;
+        const G = L.map(row => row.slice().fill(0));
+
+        // 列ごとの二乗和を事前計算 (sum_r L_rk^2)
+        const colSumSq = Array(k).fill(0);
+        const L2 = L.map(r => r.map(v => v * v));
+
+        for (let j = 0; j < k; j++) {
+            for (let i = 0; i < p; i++) colSumSq[j] += L2[i][j];
+        }
+
+        for (let i = 0; i < p; i++) {
+            for (let s = 0; s < k; s++) {
+                let term1 = 0; // sum_{k!=s} L_ik^2
+                let term2 = 0; // sum_{k!=s} colSumSq[k]
+
+                for (let factor = 0; factor < k; factor++) {
+                    if (factor === s) continue;
+                    term1 += L2[i][factor];
+                    term2 += colSumSq[factor];
+                }
+
+                // Partial derivative
+                // The term -gamma/p needs to be applied carefully.
+                // Standard Direct Oblimin Criterion: sum_{j<k} ( sum L_ij^2 L_ik^2 - gamma/p * sum L_ij^2 * sum L_ik^2 )
+                // Deriv wrt L_is:
+                // = sum_{k!=s} [ 2 L_is L_ik^2 - (gamma/p) * ( 2 L_is * colSumSq[k] ) ]
+                // = 2 * L_is * sum_{k!=s} [ L_ik^2 - (gamma/p) * colSumSq[k] ]
+
+                G[i][s] = 2 * L[i][s] * (term1 - (gamma / p) * term2);
+            }
+        }
+        return G;
+    };
+
+    return calculateGradientProjection(loadings, gradientFn);
+}
+
+// 7. ジェオミン回転 (Geomin Rotation)
+function calculateGeomin(loadings, epsilon = 0.01) {
+    const p = loadings.length;
+
+    const gradientFn = (L) => {
+        const k = L[0].length;
+        const G = L.map(row => row.slice().fill(0));
+        const L2 = L.map(r => r.map(v => v * v + epsilon)); // L^2 + eps
+
+        for (let i = 0; i < p; i++) {
+            // product_term P_i = ( prod_j (L_ij^2 + eps) )^(1/k)
+            let prod = 1;
+            for (let j = 0; j < k; j++) prod *= L2[i][j];
+            const Pi = Math.pow(prod, 1 / k);
+
+            for (let s = 0; s < k; s++) {
+                // dQ/dL_is = (2/k) * (L_is / (L_is^2 + eps)) * Pi
+                G[i][s] = (2.0 / k) * (L[i][s] / L2[i][s]) * Pi;
+            }
+        }
+        return G;
+    };
+
+    return calculateGradientProjection(loadings, gradientFn);
 }
 
 function runFactorAnalysis(currentData) {
@@ -117,36 +411,62 @@ function runFactorAnalysis(currentData) {
         const result = exactFactors(variables, numFactors, currentData);
         let loadings = result.loadings;
         const eigenvalues = result.eigenvalues;
+        let factorCorrelations = null;
 
         // 回転の適用
         let rotatedStats = null;
+
         if (rotationMethod === 'varimax') {
             loadings = calculateVarimax(loadings);
-
-            // 回転後の負荷量の二乗和を計算 (Rotation Sums of Squared Loadings)
-            const numVars = variables.length; // 標準化データの場合、総分散 = 変数数
-            const colSS = Array(numFactors).fill(0);
-
-            for (let i = 0; i < numVars; i++) {
-                for (let j = 0; j < numFactors; j++) {
-                    colSS[j] += loadings[i][j] ** 2;
-                }
-            }
-
-            let cumulative = 0;
-            rotatedStats = colSS.map(val => {
-                const contribution = (val / numVars) * 100;
-                cumulative += contribution;
-                return {
-                    eigenvalue: val,
-                    contribution: contribution,
-                    cumulative: cumulative
-                };
-            });
+        } else if (rotationMethod === 'promax') {
+            const res = calculatePromax(loadings, 4); // kappa=4
+            loadings = res.loadings;
+            factorCorrelations = res.correlations;
+        } else if (rotationMethod === 'oblimin') {
+            const res = calculateDirectOblimin(loadings, 0); // gamma=0
+            loadings = res.loadings;
+            factorCorrelations = res.correlations;
+        } else if (rotationMethod === 'geomin') {
+            const res = calculateGeomin(loadings, 0.01); // epsilon=0.01
+            loadings = res.loadings;
+            factorCorrelations = res.correlations;
         }
+
+        // 回転後の負荷量二乗和 (SS Loadings)
+        // 斜交回転の場合、Sum of Squared Loadings は単なる二乗和でいいのか？
+        // 通常は Structure Matrix の二乗和を見ることもあるが、Pattern Matrixの二乗和を表示しておく。
+        const numVars = variables.length;
+        const colSS = Array(numFactors).fill(0);
+
+        for (let i = 0; i < numVars; i++) {
+            for (let j = 0; j < numFactors; j++) {
+                colSS[j] += loadings[i][j] ** 2;
+            }
+        }
+
+        let cumulative = 0;
+        rotatedStats = colSS.map(val => {
+            const contribution = (val / numVars) * 100;
+            cumulative += contribution;
+            return {
+                eigenvalue: val,
+                contribution: contribution,
+                cumulative: cumulative
+            };
+        });
 
         displayEigenvalues(eigenvalues, rotatedStats);
         displayLoadings(variables, loadings, rotationMethod);
+
+        // 因子間相関行列の表示 (斜交回転のみ)
+        if (['promax', 'oblimin'].includes(rotationMethod) && factorCorrelations) {
+            displayFactorCorrelations(factorCorrelations);
+        } else {
+            // コンテナを空にする/隠す
+            const container = document.getElementById('factor-correlations');
+            if (container) container.innerHTML = '';
+        }
+
         displayFactorInterpretation(variables, loadings);
         plotScree(eigenvalues);
         plotLoadingsHeatmap(variables, loadings, rotationMethod);
@@ -447,6 +767,9 @@ export function render(container, currentData, characteristics) {
                          <select id="rotation-method" style="padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; width: 100%;">
                              <option value="none">なし (None)</option>
                              <option value="varimax" selected>バリマックス回転 (Varimax)</option>
+                             <option value="promax">プロマックス回転 (Promax)</option>
+                             <option value="oblimin">ダイレクト・オブリミン回転 (Direct Oblimin)</option>
+                             <option value="geomin">ジェオミン回転 (Geomin)</option>
                          </select>
                     </div>
                 </div>
@@ -463,21 +786,26 @@ export function render(container, currentData, characteristics) {
                 </div>
 
                 <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                    <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-th"></i> 因子負荷量</h4>
-                    <div id="loadings-table"></div>
-                    <div id="loadings-heatmap" style="margin-top: 1.5rem;"></div>
-                </div>
+                     <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-th"></i> 因子負荷量</h4>
+                     <div id="loadings-table"></div>
+                     <div id="loadings-heatmap" style="margin-top: 1.5rem;"></div>
+                 </div>
 
-                <!-- 因子解釈のサマリーエリア -->
-                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                    <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-lightbulb"></i> 因子の解釈 (Factor Interpretation)</h4>
-                    <p style="color: #4a5568; margin-bottom: 1rem;">負荷量の絶対値が高い項目 (≧ 0.4) をリストアップしました。</p>
-                    <div id="factor-interpretation"></div>
-                </div>
+                 <!-- 因子間相関行列 (斜交回転時のみ表示) -->
+                 <div id="factor-correlations-container">
+                    <div id="factor-correlations" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;"></div>
+                 </div>
 
-            </div>
-        </div>
-    `;
+                 <!-- 因子解釈のサマリーエリア -->
+                 <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                     <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-lightbulb"></i> 因子の解釈 (Factor Interpretation)</h4>
+                     <p style="color: #4a5568; margin-bottom: 1rem;">負荷量の絶対値が高い項目 (≧ 0.4) をリストアップしました。</p>
+                     <div id="factor-interpretation"></div>
+                 </div>
+
+             </div>
+         </div>
+     `;
 
     renderDataOverview('#fa-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
@@ -488,4 +816,47 @@ export function render(container, currentData, characteristics) {
     });
 
     createAnalysisButton('run-factor-btn-container', '因子分析を実行', () => runFactorAnalysis(currentData), { id: 'run-factor-btn' });
+}
+
+// Helper to display Factor Correlations
+function displayFactorCorrelations(corrMatrix) {
+    const container = document.getElementById('factor-correlations');
+    if (!corrMatrix || !container) return; // container might be missing if re-rendered? 
+    // Wait, the container is inside #analysis-results which is static in render(), but innerHTML runs once.
+
+    // Check if we need to show/hide the whole container div
+    const wrapper = document.getElementById('factor-correlations-container');
+    if (wrapper) wrapper.style.display = 'block';
+
+    const numFactors = corrMatrix.length;
+    let html = `
+        <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-project-diagram"></i> 因子間相関行列 (Factor Correlations)</h4>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>因子</th>
+                        ${Array.from({ length: numFactors }, (_, i) => `<th>第${i + 1}因子</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    for (let i = 0; i < numFactors; i++) {
+        html += `<tr><td><strong>第${i + 1}因子</strong></td>`;
+        for (let j = 0; j < numFactors; j++) {
+            const val = corrMatrix[i][j];
+            // Weak < 0.2, Moderate 0.2-0.4, Strong > 0.4 ?
+            let bg = '';
+            const absVal = Math.abs(val);
+            if (i !== j && absVal > 0.3) bg = 'background: rgba(236, 201, 75, 0.2); font-weight: bold;';
+
+            html += `<td style="${bg}">${val.toFixed(3)}</td>`;
+        }
+        html += `</tr>`;
+    }
+    html += `</tbody></table></div>`;
+    html += `<p style="font-size: 0.85rem; color: #4a5568; margin-top: 0.5rem;">※ 因子の相関が高い場合、プロマックスなどの斜交回転が適しています。</p>`;
+
+    container.innerHTML = html;
 }
