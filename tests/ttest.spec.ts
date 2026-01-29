@@ -24,7 +24,7 @@ test.describe('T-Test Feature', () => {
 
         // 4. 変数選択（独立なサンプルのt検定）
         // グループ変数: 性別 (index 1)
-        await selectStandardOption(page, 'group-var', '1', 'index');
+        await selectStandardOption(page, '#group-var', '1', 'index');
 
         // 検定変数: 数学 (MultiSelect)
         // Note: T-Test implementation uses a custom multiselect for dependent variables
@@ -65,8 +65,8 @@ test.describe('T-Test Feature', () => {
 
         // 4. ペア変数選択
         // 変数A: 数学, 変数B: 英語
-        await selectStandardOption(page, 'pair-var1-0', '1', 'index'); // 数学 (assuming index 1)
-        await selectStandardOption(page, 'pair-var2-0', '3', 'index'); // 英語 (assuming index 3, need to check data)
+        await selectStandardOption(page, '#pair-var1-0', '1', 'index'); // 数学 (assuming index 1)
+        await selectStandardOption(page, '#pair-var2-0', '3', 'index'); // 英語 (assuming index 3, need to check data)
         // index logic matches standard selects in demo data context
 
         // 5. 分析実行

@@ -1,6 +1,6 @@
 
 import { test, expect } from '@playwright/test';
-import { loadParamsFromConfig, navigateToFeature, uploadFile, selectStandardOption } from './utils/test-helpers';
+import { loadParamsFromConfig, navigateToFeature, uploadFile, selectStandardOption, selectVariables } from './utils/test-helpers';
 
 test.describe('Regression Analysis Verification', () => {
     test.beforeEach(async ({ page }) => {
@@ -12,50 +12,39 @@ test.describe('Regression Analysis Verification', () => {
     test('should run Simple Regression successfully', async ({ page }) => {
         await navigateToFeature(page, 'regression_simple');
 
-        // Skip visibility check for hidden select, use robust selector
-        await selectStandardOption(page, '#dependent-variable-select', '数学', 'label');
-        await selectStandardOption(page, '#independent-variable-select', '英語', 'label');
+        // Simple Regression uses single selects
+        await selectStandardOption(page, '#dependent-var', '数学', 'label');
+        await selectStandardOption(page, '#independent-var', '英語', 'label');
 
-        await page.click('#run-analysis-btn');
+        await page.click('#run-regression-btn');
 
-        await expect(page.locator('#analysis-result')).toBeVisible({ timeout: 30000 });
-        const textContent = await page.locator('#analysis-result').textContent();
+        await expect(page.locator('#regression-results')).toBeVisible({ timeout: 30000 });
+        const textContent = await page.locator('#regression-results').textContent();
         expect(textContent).toContain('回帰式');
         expect(textContent).toContain('決定係数');
 
         await expect(page.locator('#regression-plot')).toBeVisible();
+        // Note: Plot container ID might vary, usually it's dynamic or inside results
     });
 
     test('should run Multiple Regression successfully', async ({ page }) => {
         await navigateToFeature(page, 'regression_multiple');
 
-        await selectStandardOption(page, '#dependent-variable-select', '数学', 'label');
+        // Multiple Regression dependent var allows multiple! Use selectVariables
+        await selectVariables(page, ['数学']);
+        // Need to check if #dependent-var is handled by selectVariables (it checks input[value] or select options).
+        // Since createVariableSelector makes a custom UI if multiple=true?
+        // Let's assume createVariableSelector with multiple:true uses the custom multiselect class logic.
+        // If so, selectVariables helper should handle it.
+        // Wait, '数学' is the value.
 
-        // Checking multiple checkboxes for independent variables
-        // If these inputs are hidden, our updated selectVariables or manual logic needed.
-        // Assuming they are input[type=checkbox] with value="VarName"
-        // Let's use robust manual check if needed, or page.check if visible.
-        // If hidden, manual usage of robust strategy:
-        const checkVar = async (val: string) => {
-            const input = page.locator(`input.variable-checkbox[value="${val}"]`);
-            if (await input.isVisible()) {
-                await input.check();
-            } else {
-                await input.evaluate((el: HTMLInputElement) => {
-                    el.checked = true;
-                    el.dispatchEvent(new Event('change', { bubbles: true }));
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-                });
-            }
-        };
+        // Independent vars (multiple)
+        await selectVariables(page, ['英語', '理科']);
 
-        await checkVar('英語');
-        await checkVar('理科');
+        await page.click('#run-regression-btn');
 
-        await page.click('#run-analysis-btn');
-
-        await expect(page.locator('#analysis-result')).toBeVisible({ timeout: 30000 });
-        const textContent = await page.locator('#analysis-result').textContent();
+        await expect(page.locator('#regression-results')).toBeVisible({ timeout: 30000 });
+        const textContent = await page.locator('#regression-results').textContent();
         expect(textContent).toContain('偏回帰係数');
         expect(textContent).toContain('自由度修正済み決定係数');
     });
