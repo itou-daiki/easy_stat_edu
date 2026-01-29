@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { selectVariables } from './utils/test-helpers';
+import { selectVariables, selectStandardOption } from './utils/test-helpers';
 
 test.describe('Mann-Whitney U Test Feature', () => {
     test.beforeEach(async ({ page }) => {
@@ -29,8 +29,10 @@ test.describe('Mann-Whitney U Test Feature', () => {
 
         // 4. 変数選択
         // グループ変数: 性別 (カテゴリカル, 2群)
+        await selectStandardOption(page, '#group-var', '性別', 'value');
+
         // 従属変数: 数学 (数値)
-        await selectVariables(page, ['性別', '数学']);
+        await selectVariables(page, ['数学']);
 
         // 5. 分析実行
         await page.click('#run-u-test-btn', { force: true });

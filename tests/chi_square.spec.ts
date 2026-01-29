@@ -1,19 +1,19 @@
 
 import { test, expect } from '@playwright/test';
-import { loadParamsFromConfig, navigateToFeature, uploadFile, selectOptionRobust } from './utils/test-helpers';
+import { loadParamsFromConfig, navigateToFeature, uploadFile, selectStandardOption } from './utils/test-helpers';
 
 test.describe('Chi-Square Test Verification', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
         await uploadFile(page, 'datasets/demo_all_analysis.csv');
-        await navigateToFeature(page, 'chi-square');
+        await navigateToFeature(page, 'chi_square');
     });
 
     test('should run Chi-Square test successfully', async ({ page }) => {
         // Select categorical variables explicitly using IDs
         // Row: 部活動の有無, Col: 性別
-        await selectOptionRobust(page, '#row-var', '部活動の有無');
-        await selectOptionRobust(page, '#col-var', '性別');
+        await selectStandardOption(page, '#row-var', '部活動の有無');
+        await selectStandardOption(page, '#col-var', '性別');
 
         // Run analysis
         await page.click('#run-chi-btn');

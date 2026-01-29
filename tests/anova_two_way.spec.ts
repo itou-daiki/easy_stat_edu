@@ -1,6 +1,6 @@
 
 import { test, expect } from '@playwright/test';
-import { uploadFile, checkRobust, selectOptionRobust } from './utils/test-helpers';
+import { uploadFile, checkRobust, selectStandardOption } from './utils/test-helpers';
 
 test('Two-Way Mixed ANOVA Verification', async ({ page }) => {
     // 1. Load the application
@@ -24,11 +24,11 @@ test('Two-Way Mixed ANOVA Verification', async ({ page }) => {
 
     // 5. Select Between-Subjects Factor
     // Utilizing robust selection for hidden elements
-    await selectOptionRobust(page, '#mixed-between-var', '1', 'index');
+    await selectStandardOption(page, '#mixed-between-var', '1', 'index');
 
     // 6. Add Pairs
-    await selectOptionRobust(page, '#mixed-var-pre', '1', 'index');
-    await selectOptionRobust(page, '#mixed-var-post', '2', 'index');
+    await selectStandardOption(page, '#mixed-var-pre', '1', 'index');
+    await selectStandardOption(page, '#mixed-var-post', '2', 'index');
 
     await page.locator('#add-mixed-pair-btn').click();
 

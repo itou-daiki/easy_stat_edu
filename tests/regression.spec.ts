@@ -1,6 +1,6 @@
 
 import { test, expect } from '@playwright/test';
-import { loadParamsFromConfig, navigateToFeature, uploadFile, selectOptionRobust } from './utils/test-helpers';
+import { loadParamsFromConfig, navigateToFeature, uploadFile, selectStandardOption } from './utils/test-helpers';
 
 test.describe('Regression Analysis Verification', () => {
     test.beforeEach(async ({ page }) => {
@@ -13,8 +13,8 @@ test.describe('Regression Analysis Verification', () => {
         await navigateToFeature(page, 'regression_simple');
 
         // Skip visibility check for hidden select, use robust selector
-        await selectOptionRobust(page, '#dependent-variable-select', '数学', 'label');
-        await selectOptionRobust(page, '#independent-variable-select', '英語', 'label');
+        await selectStandardOption(page, '#dependent-variable-select', '数学', 'label');
+        await selectStandardOption(page, '#independent-variable-select', '英語', 'label');
 
         await page.click('#run-analysis-btn');
 
@@ -29,7 +29,7 @@ test.describe('Regression Analysis Verification', () => {
     test('should run Multiple Regression successfully', async ({ page }) => {
         await navigateToFeature(page, 'regression_multiple');
 
-        await selectOptionRobust(page, '#dependent-variable-select', '数学', 'label');
+        await selectStandardOption(page, '#dependent-variable-select', '数学', 'label');
 
         // Checking multiple checkboxes for independent variables
         // If these inputs are hidden, our updated selectVariables or manual logic needed.

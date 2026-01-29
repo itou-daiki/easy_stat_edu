@@ -1,5 +1,5 @@
 
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 import path from 'path';
 
 export async function uploadFile(page: Page, filePath: string) {
@@ -15,24 +15,39 @@ export async function navigateToFeature(page: Page, featureId: string) {
 
 export async function selectVariables(page: Page, variables: string[]) {
     for (const variable of variables) {
-        // 1. Try standard select option (visible or hidden)
+        // Standard select option (needed for fallback at step 4)
         const selectWithOption = page.locator(`select:has(option[value="${variable}"])`);
-        const visibleSelect = selectWithOption.filter({ has: page.locator('visible=true') });
+        // 1. Try standard visible checkbox/radio input
+        const input = page.locator(`input[value="${variable}"]`);
+        if (await input.count() > 0) {
+            // Check visibility of the first match
+            if (await input.first().isVisible()) {
+                await input.first().check();
+            } else {
+                // Fallback for hidden input, but check if it's inside a custom multiselect
+                const insideMultiselect = await input.first().locator('xpath=ancestor::div[contains(@class, "multiselect-option")]').count() > 0;
 
-        if (await visibleSelect.count() > 0 && await visibleSelect.first().isVisible()) {
-            await visibleSelect.first().selectOption(variable);
-            continue;
+                if (!insideMultiselect) {
+                    // Truly hidden standalone input
+                    console.log(`Using fallback hidden input for: ${variable}`);
+                    await input.first().evaluate((el: HTMLInputElement) => {
+                        el.checked = true;
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
+                    continue;
+                }
+            }
         }
 
         // 2. Try standard visible input (checkbox/radio)
         // Exclude inputs inside custom multiselects (.multiselect-checkbox) as they require special handling in step 3
-        const input = page.locator(`input[value="${variable}"]:not(.multiselect-checkbox)`);
-        if (await input.count() > 0) {
-            if (await input.first().isVisible()) {
-                await input.first().check();
+        const visibleInput = page.locator(`input[value="${variable}"]:not(.multiselect-checkbox)`);
+        if (await visibleInput.count() > 0) {
+            if (await visibleInput.first().isVisible()) {
+                await visibleInput.first().check();
             } else {
                 console.log(`Using fallback hidden input for: ${variable}`);
-                await input.first().evaluate((el: HTMLInputElement) => {
+                await visibleInput.first().evaluate((el: HTMLInputElement) => {
                     el.checked = !el.checked; // Toggle or set true? Typically set true for selection.
                     el.checked = true;
                     el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -77,6 +92,11 @@ export async function selectVariables(page: Page, variables: string[]) {
                             await option.click({ force: true });
                         }
                         matched = true;
+                        // Close dropdown to prevent blocking other elements
+                        await page.locator('body').click({ position: { x: 0, y: 0 } });
+                        // Check if dropdown is closed
+                        const dropdown = container.locator('.multiselect-dropdown');
+                        await expect(dropdown).toBeHidden({ timeout: 1000 }).catch(() => { });
                         break;
                     }
                 }
@@ -109,11 +129,17 @@ export async function loadParamsFromConfig(configPath: string) {
     return {};
 }
 
-export async function selectOptionRobust(page: Page, selector: string, value: string, optionType: 'value' | 'label' | 'index' = 'value') {
+export async function selectStandardOption(page: Page, selector: string, value: string, optionType: 'value' | 'label' | 'index' = 'value') {
     const element = page.locator(selector);
 
     // Try standard selection first if visible
     try {
+        if (await element.count() === 0) {
+            console.error(`Element not found: ${selector}`);
+            // Don't throw yet, let fallback try (though fallback also needs element) -> Actually if count is 0, fallback will fail too.
+            // But wait, page.locator() is lazy. 
+        }
+
         if (await element.isVisible()) {
             if (optionType === 'index') {
                 await element.selectOption({ index: parseInt(value) });

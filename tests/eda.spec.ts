@@ -1,6 +1,6 @@
 
 import { test, expect } from '@playwright/test';
-import { loadParamsFromConfig, navigateToFeature, uploadFile, selectOptionRobust } from './utils/test-helpers';
+import { loadParamsFromConfig, navigateToFeature, uploadFile, selectStandardOption } from './utils/test-helpers';
 
 test.describe('EDA Verification', () => {
     test.beforeEach(async ({ page }) => {
@@ -27,8 +27,8 @@ test.describe('EDA Verification', () => {
         await expect(page.locator('#two-variables-viz-section')).toBeVisible();
 
         // Select variables
-        await selectOptionRobust(page, '#two-var-1', '数学');
-        await selectOptionRobust(page, '#two-var-2', '理科');
+        await selectStandardOption(page, '#two-var-1', '数学');
+        await selectStandardOption(page, '#two-var-2', '理科');
 
         // Run 2-var analysis
         await page.click('#plot-two-vars-btn');

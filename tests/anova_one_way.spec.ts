@@ -1,6 +1,6 @@
 
 import { test, expect } from '@playwright/test';
-import { loadParamsFromConfig, navigateToFeature, uploadFile, selectOptionRobust, selectVariables } from './utils/test-helpers';
+import { loadParamsFromConfig, navigateToFeature, uploadFile, selectStandardOption, selectVariables } from './utils/test-helpers';
 
 test.describe('ANOVA One-Way Verification', () => {
     test.beforeEach(async ({ page }) => {
@@ -14,7 +14,7 @@ test.describe('ANOVA One-Way Verification', () => {
         // Factor: 学年 (Single Select), Dependent: 数学 (Multi Select)
 
         // Use robust selector for Factor (Single)
-        await selectOptionRobust(page, '#factor-var', '学年', 'label');
+        await selectStandardOption(page, '#factor-var', '学年', 'label');
 
         // Use selectVariables for Dependent (Multi - Custom)
         await selectVariables(page, ['数学']);
