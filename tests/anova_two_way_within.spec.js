@@ -6,7 +6,7 @@ test('Two-Way Within-Subjects ANOVA Verification', async ({ page }) => {
     page.on('console', msg => console.log(`[Browser Console]: ${msg.text()}`));
 
     // 1. Load the application
-    await page.goto('http://127.0.0.1:8080/');
+    await page.goto('http://127.0.0.1:8081/');
     await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
 
     // 2. Upload Data

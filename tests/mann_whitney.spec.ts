@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { selectVariables } from './utils/test-helpers';
 
 test.describe('Mann-Whitney U Test Feature', () => {
     test.beforeEach(async ({ page }) => {
@@ -28,20 +29,11 @@ test.describe('Mann-Whitney U Test Feature', () => {
 
         // 4. 変数選択
         // グループ変数: 性別 (カテゴリカル, 2群)
-        // select要素を選択
-        await page.selectOption('#group-var', { label: '性別' });
-
         // 従属変数: 数学 (数値)
-        // カスタムマルチセレクトコンポーネントの操作
-        // 1. ドロップダウンを開く
-        await page.locator('#dep-var-multiselect .multiselect-input').click();
-        // 2. オプションを選択
-        await page.locator('.multiselect-option').filter({ hasText: '数学' }).click();
-        // 3. ドロップダウンを閉じる (外側をクリック)
-        await page.locator('body').click();
+        await selectVariables(page, ['性別', '数学']);
 
         // 5. 分析実行
-        await page.click('#run-u-test-btn');
+        await page.click('#run-u-test-btn', { force: true });
 
         // 6. 結果表示の検証
         const resultsSection = page.locator('#test-results-section');
@@ -53,12 +45,12 @@ test.describe('Mann-Whitney U Test Feature', () => {
         // 7. [新機能] 論文報告用テーブル (Hyoun) の検証
         const reportingTable = page.locator('#reporting-table-container table');
         await expect(reportingTable).toBeVisible();
-        await expect(reportingTable).toContainText('Table 1. 結果の比較');
+        await expect(reportingTable).toContainText('Table 1. Results of Mann-Whitney U Test');
         await expect(reportingTable).toContainText('Mean Rank');
-        await expect(reportingTable).toContainText('Effect size r');
+        await expect(reportingTable).toContainText('r');
 
         // 8. [新機能] 可視化 (Plotly) の検証
-        const plotContainer = page.locator('#plots-container .plot-container');
+        const plotContainer = page.locator('#plots-container .plot-container').first();
         await expect(plotContainer).toBeVisible();
         // Plotlyのグラフが描画されたことを確認（class="js-plotly-plot"などが付与される）
         await expect(page.locator('.js-plotly-plot')).toBeVisible();

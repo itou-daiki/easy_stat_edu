@@ -7,7 +7,7 @@ test.describe('Factor Analysis Rotation Tests using demo data', () => {
         page.on('console', msg => console.log(`BROWSER LOG: ${msg.text()}`));
         page.on('pageerror', err => console.log(`BROWSER ERROR: ${err}`));
 
-        await page.goto('http://127.0.0.1:8080/');
+        await page.goto('http://127.0.0.1:8081/');
         await expect(page.locator('#loading-screen')).toBeHidden();
 
         // データアップロード

@@ -178,7 +178,7 @@ test.describe('Smoke Tests for all Analyses', () => {
     for (const analysis of analyses) {
         test(`Verify ${analysis.name} Analysis`, async ({ page }) => {
             // 1. Load Application
-            await page.goto('http://127.0.0.1:8080/');
+            await page.goto('http://127.0.0.1:8081/');
 
             // Debug: Log console messages and dialogs
             page.on('console', msg => console.log(`PAGE LOG (${analysis.name}): ${msg.text()}`));
