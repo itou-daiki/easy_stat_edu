@@ -168,7 +168,7 @@ function getPackageManager(options = {}) {
   }
 
   // 2. Check project-specific config
-  const projectConfigPath = path.join(projectDir, '.claude', 'package-manager.json');
+  const projectConfigPath = path.join(projectDir, '.agent', 'package-manager.json');
   const projectConfig = readFile(projectConfigPath);
   if (projectConfig) {
     try {
@@ -259,7 +259,7 @@ function setProjectPackageManager(pmName, projectDir = process.cwd()) {
     throw new Error(`Unknown package manager: ${pmName}`);
   }
 
-  const configDir = path.join(projectDir, '.claude');
+  const configDir = path.join(projectDir, '.agent');
   const configPath = path.join(configDir, 'package-manager.json');
 
   const config = {

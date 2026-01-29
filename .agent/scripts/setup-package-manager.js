@@ -26,15 +26,15 @@ const { log } = require('./lib/utils');
 
 function showHelp() {
   console.log(`
-Package Manager Setup for Claude Code
+Package Manager Setup for Antigravity (ported from Claude Code)
 
 Usage:
   node scripts/setup-package-manager.js [options] [package-manager]
 
 Options:
   --detect        Detect and show current package manager
-  --global <pm>   Set global preference (saves to ~/.claude/package-manager.json)
-  --project <pm>  Set project preference (saves to .claude/package-manager.json)
+  --global <pm>   Set global preference (saves to ~/.antigravity_global/package-manager.json)
+  --project <pm>  Set project preference (saves to .agent/package-manager.json)
   --list          List available package managers
   --help          Show this help message
 

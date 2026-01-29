@@ -24,7 +24,7 @@ function getHomeDir() {
  * Get the Claude config directory
  */
 function getClaudeDir() {
-  return path.join(getHomeDir(), '.claude');
+  return path.join(getHomeDir(), '.antigravity_global');
 }
 
 /**
