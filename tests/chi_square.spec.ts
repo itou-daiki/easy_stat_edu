@@ -10,6 +10,10 @@ test.describe('Chi-Square Test Verification', () => {
     });
 
     test('should run Chi-Square test successfully', async ({ page }) => {
+        // Wait for analysis to render
+        await page.waitForSelector('.chisquare-container', { state: 'visible', timeout: 10000 });
+        await expect(page.locator('#row-var')).toBeVisible();
+
         // Select categorical variables explicitly using IDs
         // Row: 部活動の有無, Col: 性別
         await selectStandardOption(page, '#row-var', '部活動の有無');

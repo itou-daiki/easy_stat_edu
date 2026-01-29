@@ -156,24 +156,35 @@ export async function selectStandardOption(page: Page, selector: string, value: 
 
     // Fallback for hidden select
     console.log(`Using fallback for hidden select: ${selector}`);
-    await element.evaluate((select: HTMLSelectElement, { val, type }) => {
-        let option;
-        if (type === 'index') {
-            option = select.options[parseInt(val)];
-        } else if (type === 'label') {
-            option = Array.from(select.options).find(o => o.text === val);
-        } else {
-            option = Array.from(select.options).find(o => o.value === val);
-        }
+    try {
+        await element.first().evaluate((select, { val, type }) => {
+            if (!(select instanceof HTMLSelectElement)) return;
 
-        if (option) {
-            option.selected = true;
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-            select.dispatchEvent(new Event('input', { bubbles: true }));
-        } else {
-            console.warn(`Option not found: ${val} (${type})`);
-        }
-    }, { val: value, type: optionType });
+            let option;
+            const options = Array.from(select.options);
+
+            if (type === 'index') {
+                option = options[parseInt(val)];
+            } else if (type === 'label') {
+                option = options.find(o => o.text.trim() === val);
+            } else {
+                option = options.find(o => o.value === val);
+            }
+
+            if (option) {
+                select.value = option.value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                select.dispatchEvent(new Event('input', { bubbles: true }));
+            } else {
+                // Log but don't crash page context?
+                // Just log to console
+                console.warn(`Option not found (fallback): ${val} [${type}]`);
+            }
+        }, { val: value, type: optionType });
+    } catch (err) {
+        console.error(`Fallback error for ${selector}: ${err}`);
+        // Do not throw here to allow test to potentially recover or fail on assertion
+    }
 }
 
 export async function checkRobust(page: Page, selector: string) {

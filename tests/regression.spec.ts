@@ -11,12 +11,13 @@ test.describe('Regression Analysis Verification', () => {
 
     test('should run Simple Regression successfully', async ({ page }) => {
         await navigateToFeature(page, 'regression_simple');
+        await expect(page.locator('.regression-container')).toBeVisible();
 
         // Simple Regression uses single selects
         await selectStandardOption(page, '#dependent-var', '数学', 'label');
         await selectStandardOption(page, '#independent-var', '英語', 'label');
 
-        await page.click('#run-regression-btn');
+        await page.click('#run-simple-regression-btn');
 
         await expect(page.locator('#regression-results')).toBeVisible({ timeout: 30000 });
         const textContent = await page.locator('#regression-results').textContent();
@@ -30,18 +31,18 @@ test.describe('Regression Analysis Verification', () => {
     test('should run Multiple Regression successfully', async ({ page }) => {
         await navigateToFeature(page, 'regression_multiple');
 
-        // Multiple Regression dependent var allows multiple! Use selectVariables
-        await selectVariables(page, ['数学']);
-        // Need to check if #dependent-var is handled by selectVariables (it checks input[value] or select options).
-        // Since createVariableSelector makes a custom UI if multiple=true?
-        // Let's assume createVariableSelector with multiple:true uses the custom multiselect class logic.
-        // If so, selectVariables helper should handle it.
-        // Wait, '数学' is the value.
+        // Dependent variable (Math) explicitly in dependent container
+        const depContainer = page.locator('#dependent-var-container');
+        await depContainer.locator('.multiselect-input').click();
+        await depContainer.locator('.multiselect-option').filter({ hasText: '数学' }).click();
 
-        // Independent vars (multiple)
-        await selectVariables(page, ['英語', '理科']);
+        // Independent vars (English, Science) explicitly in independent container
+        const indepContainer = page.locator('#independent-vars-container');
+        await indepContainer.locator('.multiselect-input').click();
+        await indepContainer.locator('.multiselect-option').filter({ hasText: '英語' }).click();
+        await indepContainer.locator('.multiselect-option').filter({ hasText: '理科' }).click();
 
-        await page.click('#run-regression-btn');
+        await page.click('#run-multiple-regression-btn');
 
         await expect(page.locator('#regression-results')).toBeVisible({ timeout: 30000 });
         const textContent = await page.locator('#regression-results').textContent();

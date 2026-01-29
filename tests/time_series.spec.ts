@@ -22,6 +22,7 @@ test.describe('Time Series Analysis Feature', () => {
         await card.click();
 
         // 2. Verify settings area
+        await page.waitForSelector('.time-series-container');
         await expect(page.locator('#analysis-area h3').filter({ hasText: '時系列データ分析' })).toBeVisible();
 
         // 3. Select Variables
@@ -37,7 +38,7 @@ test.describe('Time Series Analysis Feature', () => {
         await page.fill('#ma-window', '3');
 
         // DEBUG: Check selected value
-        const selectedValue = await page.$eval('#value-var', el => el.value);
+        const selectedValue = await page.locator('#value-var').inputValue();
         console.log(`DEBUG: Selected value-var is "${selectedValue}"`);
 
         // 5. Run Analysis

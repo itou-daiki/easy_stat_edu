@@ -377,5 +377,5 @@ export function render(container, currentData, characteristics) {
         multiple: false
     });
 
-    createAnalysisButton('run-regression-btn-container', '分析を実行', () => runSimpleRegression(currentData), { id: 'run-regression-btn' });
+    createAnalysisButton('run-regression-btn-container', '分析を実行', () => runSimpleRegression(currentData), { id: 'run-simple-regression-btn' });
 }

@@ -2,7 +2,7 @@ import { renderDataOverview, createVariableSelector, createAnalysisButton, rende
 
 // 重回帰分析の実行
 function runMultipleRegression(currentData) {
-    const dependentVarsSelect = document.getElementById('dependent-var');
+    const dependentVarsSelect = document.getElementById('dependent-vars');
     const dependentVars = Array.from(dependentVarsSelect.selectedOptions).map(option => option.value);
 
     const independentVarsSelect = document.getElementById('independent-vars');
@@ -559,7 +559,7 @@ export function render(container, currentData, characteristics) {
     // createAxisLabelControl('axis-label-control-container');
 
     // 目的変数 (Multiple Select)
-    createVariableSelector('dependent-var-container', numericColumns, 'dependent-var', {
+    createVariableSelector('dependent-var-container', numericColumns, 'dependent-vars', {
         label: '<i class="fas fa-bullseye"></i> 目的変数（予測したい変数）を選択（複数可）:',
         multiple: true
     });
@@ -570,7 +570,7 @@ export function render(container, currentData, characteristics) {
         multiple: true
     });
 
-    createAnalysisButton('run-regression-btn-container', '分析を実行', () => runMultipleRegression(currentData), { id: 'run-regression-btn' });
+    createAnalysisButton('run-regression-btn-container', '分析を実行', () => runMultipleRegression(currentData), { id: 'run-multiple-regression-btn' });
 }
 
 // Helper: Calculate R2 for VIF

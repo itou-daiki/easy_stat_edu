@@ -136,7 +136,7 @@ const analyses = [
             await options.nth(1).click(); // Pick the SECOND option
             await page.locator('body').click({ position: { x: 0, y: 0 } });
         },
-        runBtn: '#run-regression-btn',
+        runBtn: '#run-simple-regression-btn',
         resultSelector: '#regression-results'
     },
     {

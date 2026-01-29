@@ -2,6 +2,7 @@ import { createVariableSelector, createAnalysisButton, showError, createPlotlyCo
 
 export function render(container, data, characteristics) {
     container.innerHTML = `
+        <div class="time-series-container">
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <h3 style="margin-bottom: 1.5rem; color: #2d3748;">
                 <i class="fas fa-chart-line" style="color: #1e90ff; margin-right: 0.5rem;"></i>
@@ -61,6 +62,7 @@ export function render(container, data, characteristics) {
             <div id="ts-plot-section"></div>
             <div id="ts-acf-section" style="margin-top: 2rem;"></div>
             <div id="ts-interpretation" style="margin-top: 2rem; background: white; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+        </div>
         </div>
     `;
 

@@ -11,6 +11,11 @@ test.describe('ANOVA One-Way Verification', () => {
     });
 
     test('should run ANOVA One-Way successfully', async ({ page }) => {
+        // Wait for analysis to render
+        await page.waitForSelector('.anova-container', { state: 'visible', timeout: 10000 });
+        // Check element visibility to avoid crash
+        await expect(page.locator('#factor-var')).toBeVisible();
+
         // Factor: 学年 (Single Select), Dependent: 数学 (Multi Select)
 
         // Use robust selector for Factor (Single)

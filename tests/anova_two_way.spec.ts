@@ -17,6 +17,7 @@ test('Two-Way Mixed ANOVA Verification', async ({ page }) => {
     await card.scrollIntoViewIfNeeded();
     await card.click();
     await expect(page.locator('#analysis-area')).toBeVisible();
+    await expect(page.locator('.anova-container')).toBeVisible();
 
     // 4. Select "Mixed Design"
     await checkRobust(page, 'input[name="anova2-type"][value="mixed"]');
