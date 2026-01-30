@@ -246,7 +246,7 @@ function displayANOVAVisualization(results, testType) {
             marker: { color: 'rgba(30, 144, 255, 0.7)' }
         };
 
-        const plotAnnotations = [...res.plotAnnotations]; // Start with existing annotations (brackets)
+        const plotAnnotations = [...(res.plotAnnotations || [])]; // Start with existing annotations (brackets)
         const tategakiTitle = getTategakiAnnotation(res.varName);
         const graphTitleText = `平均値の比較：${res.varName} by グループ`;
         const bottomTitle = getBottomTitleAnnotation(graphTitleText);

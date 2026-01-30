@@ -5,6 +5,7 @@ import { loadParamsFromConfig, navigateToFeature, uploadFile, selectStandardOpti
 test.describe('Chi-Square Test Verification', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
+        await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
         await uploadFile(page, 'datasets/demo_all_analysis.csv');
         await navigateToFeature(page, 'chi_square');
     });
@@ -14,10 +15,10 @@ test.describe('Chi-Square Test Verification', () => {
         await page.waitForSelector('.chisquare-container', { state: 'visible', timeout: 10000 });
         await expect(page.locator('#row-var')).toBeVisible();
 
-        // Select categorical variables explicitly using IDs
-        // Row: 部活動の有無, Col: 性別
-        await selectStandardOption(page, '#row-var', '部活動の有無');
-        await selectStandardOption(page, '#col-var', '性別');
+        // Select categorical variables - using available variables
+        // Row: 性別, Col: クラス
+        await selectStandardOption(page, '#row-var', '性別', 'label');
+        await selectStandardOption(page, '#col-var', 'クラス', 'label');
 
         // Run analysis
         await page.click('#run-chi-btn');

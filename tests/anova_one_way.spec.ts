@@ -16,10 +16,10 @@ test.describe('ANOVA One-Way Verification', () => {
         // Check element visibility to avoid crash
         await expect(page.locator('#factor-var')).toBeVisible();
 
-        // Factor: 学年 (Single Select), Dependent: 数学 (Multi Select)
+        // Factor: クラス (Single Select), Dependent: 数学 (Multi Select)
 
         // Use robust selector for Factor (Single)
-        await selectStandardOption(page, '#factor-var', '学年', 'label');
+        await selectStandardOption(page, '#factor-var', 'クラス', 'label');
 
         // Use selectVariables for Dependent (Multi - Custom)
         await selectVariables(page, ['数学']);
