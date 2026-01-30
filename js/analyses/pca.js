@@ -4,31 +4,33 @@ import {
     displayEigenvalues,
     plotScree,
     displayLoadings,
+    plotBiplot
+} from './pca/visualization.js';
 
 function runPCA(currentData) {
-        const varsSelect = document.getElementById('pca-vars');
-        const variables = Array.from(varsSelect.selectedOptions).map(o => o.value);
+    const varsSelect = document.getElementById('pca-vars');
+    const variables = Array.from(varsSelect.selectedOptions).map(o => o.value);
 
-        if (variables.length < 2) {
-            alert('変数を2つ以上選択してください');
-            return;
-        }
-
-        try {
-            const { eigenvalues, vectors, scores } = performPCA(variables, currentData);
-
-            displayEigenvalues(eigenvalues);
-            plotScree(eigenvalues);
-            displayLoadings(variables, vectors, eigenvalues);
-            plotBiplot(scores, vectors, variables);
-
-            document.getElementById('analysis-results').style.display = 'block';
-
-        } catch (e) {
-            console.error(e);
-            alert(e.message || '計算エラーが発生しました。');
-        }
+    if (variables.length < 2) {
+        alert('変数を2つ以上選択してください');
+        return;
     }
+
+    try {
+        const { eigenvalues, vectors, scores } = performPCA(variables, currentData);
+
+        displayEigenvalues(eigenvalues);
+        plotScree(eigenvalues);
+        displayLoadings(variables, vectors, eigenvalues);
+        plotBiplot(scores, vectors, variables);
+
+        document.getElementById('analysis-results').style.display = 'block';
+
+    } catch (e) {
+        console.error(e);
+        alert(e.message || '計算エラーが発生しました。');
+    }
+}
 
 
 export function render(container, currentData, characteristics) {
