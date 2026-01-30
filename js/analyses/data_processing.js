@@ -542,7 +542,6 @@ function updateRecodeColumnSelect() {
     container.innerHTML = '';
 
     const cols = Object.keys(originalData[0] || {});
-    console.log('UpdateRecodeColumnSelect cols:', cols);
 
     import('../components/MultiSelect.js').then(module => {
         const { MultiSelect } = module;

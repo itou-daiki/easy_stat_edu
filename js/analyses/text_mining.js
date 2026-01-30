@@ -79,7 +79,6 @@ async function initTokenizer(statusCallback) {
 
             tokenizer = new TinySegmenter();
             if (statusCallback) statusCallback('解析エンジンの準備完了！');
-            console.log('TinySegmenter tokenizer ready');
             resolve();
         } catch (err) {
             console.error('TinySegmenter Init Error:', err);
@@ -92,8 +91,6 @@ async function initTokenizer(statusCallback) {
 async function runTextMining(currentData) {
     const textVar = document.getElementById('text-var').value;
     const catVar = document.getElementById('category-var').value;
-    // alert('DEBUG: catVar=' + catVar); // Removed debug alert
-    console.log('DEBUG runTextMining: textVar=', textVar, 'catVar=', catVar);
 
     if (!textVar) {
         alert('テキスト変数を選択してください');

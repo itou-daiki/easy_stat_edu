@@ -36,17 +36,26 @@ test.describe('Regression Analysis Verification', () => {
         await depContainer.locator('.multiselect-input').click();
         await depContainer.locator('.multiselect-option').filter({ hasText: '数学' }).click();
 
+        // Close the dependent dropdown by clicking outside
+        await page.click('body', { position: { x: 0, y: 0 } });
+        await page.waitForTimeout(200);
+
         // Independent vars (English, Science) explicitly in independent container
         const indepContainer = page.locator('#independent-vars-container');
         await indepContainer.locator('.multiselect-input').click();
+        await page.waitForTimeout(100);
         await indepContainer.locator('.multiselect-option').filter({ hasText: '英語' }).click();
         await indepContainer.locator('.multiselect-option').filter({ hasText: '理科' }).click();
+
+        // Close the independent dropdown by clicking outside
+        await page.click('body', { position: { x: 0, y: 0 } });
+        await page.waitForTimeout(200);
 
         await page.click('#run-multiple-regression-btn');
 
         await expect(page.locator('#regression-results')).toBeVisible({ timeout: 30000 });
         const textContent = await page.locator('#regression-results').textContent();
-        expect(textContent).toContain('偏回帰係数');
-        expect(textContent).toContain('自由度修正済み決定係数');
+        expect(textContent).toContain('非標準化係数');
+        expect(textContent).toContain('調整済み R²');
     });
 });

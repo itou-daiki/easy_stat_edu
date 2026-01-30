@@ -1,9 +1,19 @@
+/**
+ * @fileoverview t検定モジュール
+ * 対応なしt検定、対応ありt検定、1サンプルt検定を実行
+ * @module analyses/ttest
+ */
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
 // import { MultiSelect } from '../components/MultiSelect.js'; // REMOVED
 
 // let depVarMultiSelect = null; // REMOVED
 
-// 要約統計量の計算と表示
+/**
+ * 要約統計量の計算と表示
+ * @param {string[]} variables - 分析対象の変数名配列
+ * @param {Object[]} currentData - データ配列
+ * @returns {void}
+ */
 function displaySummaryStatistics(variables, currentData) {
     const container = document.getElementById('summary-stats-section');
 
@@ -68,7 +78,13 @@ function displaySummaryStatistics(variables, currentData) {
     container.innerHTML = tableHtml;
 }
 
-// 対応なしt検定の実行
+
+/**
+ * 対応なしt検定（独立サンプルt検定）を実行
+ * グループ変数で分けた2群間の平均値の差を検定
+ * @param {Object[]} currentData - データ配列
+ * @returns {void}
+ */
 function runIndependentTTest(currentData) {
     const groupVar = document.getElementById('group-var').value;
     const depVarSelect = document.getElementById('dep-var-multiselect-hidden');
@@ -242,7 +258,13 @@ function runIndependentTTest(currentData) {
     document.getElementById('results-section').style.display = 'block';
 }
 
-// 対応ありt検定
+/**
+ * 対応ありt検定（ペアードt検定）を実行
+ * 同一被験者の事前・事後測定など、対応のあるデータの平均値の差を検定
+ * @param {Object[]} currentData - データ配列
+ * @param {Array<{pre: string, post: string}>} pairs - 変数ペアの配列
+ * @returns {void}
+ */
 function runPairedTTest(currentData, pairs) {
     if (pairs.length === 0) {
         alert('分析する変数ペアを1つ以上追加してください');
@@ -387,7 +409,12 @@ function runPairedTTest(currentData, pairs) {
     document.getElementById('results-section').style.display = 'block';
 }
 
-// 1サンプルのt検定
+/**
+ * 1サンプルt検定を実行
+ * サンプルの平均値が特定の母平均と有意に異なるかを検定
+ * @param {Object[]} currentData - データ配列
+ * @returns {void}
+ */
 function runOneSampleTTest(currentData) {
     const varName = document.getElementById('one-sample-var').value;
     const mu = parseFloat(document.getElementById('one-sample-mu').value);
