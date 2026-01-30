@@ -1,214 +1,34 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig } from '../utils.js';
-import { calculateCorrelationMatrix } from './correlation.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton } from '../utils.js';
+import { performPCA } from './pca/helpers.js';
+import {
+    displayEigenvalues,
+    plotScree,
+    displayLoadings,
 
 function runPCA(currentData) {
-    const varsSelect = document.getElementById('pca-vars');
-    const variables = Array.from(varsSelect.selectedOptions).map(o => o.value);
+        const varsSelect = document.getElementById('pca-vars');
+        const variables = Array.from(varsSelect.selectedOptions).map(o => o.value);
 
-    if (variables.length < 2) {
-        alert('変数を2つ以上選択してください');
-        return;
-    }
-
-    try {
-        // データの標準化（Zスコア）
-        const standardizedData = [];
-        const means = [];
-        const stds = [];
-
-        variables.forEach(v => {
-            const vals = currentData.map(r => r[v]);
-            means.push(jStat.mean(vals));
-            stds.push(jStat.stdev(vals, true));
-        });
-
-        // 行列データの作成 (標準化)
-        const matrix = currentData.map(row => {
-            return variables.map((v, i) => (row[v] - means[i]) / stds[i]);
-        });
-
-        // 相関行列の計算 (共通関数を使用)
-        const { matrix: corrMatrix } = calculateCorrelationMatrix(variables, currentData);
-
-        // 固有値分解
-        const { values, vectors } = math.eigs(corrMatrix);
-
-        // ソート
-        const indices = Array.from(values.keys()).sort((a, b) => values[b] - values[a]);
-        const sortedValues = indices.map(i => values[i]);
-        const sortedVectors = indices.map(i => math.column(vectors, i));
-
-        // 主成分スコアの計算
-        const pcScores = matrix.map(row => {
-            return sortedVectors.map(vec => math.dot(row, vec));
-        });
-
-        displayEigenvalues(sortedValues);
-        plotScree(sortedValues);
-        displayLoadings(variables, sortedVectors, sortedValues);
-        plotBiplot(pcScores, sortedVectors, variables);
-
-        // 結果テーブルの表示（寄与率など）
-        // 既に displayEigenvalues で表示しているため、詳細なスコアテーブルなどを追加可能
-
-        document.getElementById('analysis-results').style.display = 'block';
-
-    } catch (e) {
-        console.error(e);
-        alert('計算エラーが発生しました。');
-    }
-}
-
-function displayEigenvalues(eigenvalues) {
-    const container = document.getElementById('eigenvalues-table');
-    const total = eigenvalues.reduce((a, b) => a + b, 0);
-    let cumulative = 0;
-
-    let html = `
-        <div class="table-container">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>主成分</th>
-                        <th>固有値</th>
-                        <th>寄与率 (%)</th>
-                        <th>累積寄与率 (%)</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-
-    eigenvalues.forEach((val, i) => {
-        const contribution = (val / total) * 100;
-        cumulative += contribution;
-        const style = val >= 1.0 ? 'font-weight: bold; color: #1e90ff;' : '';
-
-        html += `
-            <tr style="${style}">
-                <td>PC${i + 1}</td>
-                <td>${val.toFixed(3)}</td>
-                <td>${contribution.toFixed(2)}</td>
-                <td>${cumulative.toFixed(2)}</td>
-            </tr>
-        `;
-    });
-
-    html += '</tbody></table></div>';
-    container.innerHTML = html;
-}
-
-function plotScree(eigenvalues) {
-    const trace = {
-        x: eigenvalues.map((_, i) => `PC${i + 1}`),
-        y: eigenvalues,
-        type: 'bar',
-        marker: { color: '#1e90ff' }
-    };
-
-    const traceLine = {
-        x: eigenvalues.map((_, i) => `PC${i + 1}`),
-        y: eigenvalues,
-        type: 'scatter',
-        mode: 'lines+markers',
-        line: { color: '#2d3748' }
-    };
-
-    const layout = {
-        title: 'スクリープロット（固有値の推移）',
-        yaxis: { title: '固有値' }
-    };
-
-    Plotly.newPlot('scree-plot', [trace, traceLine], layout, createPlotlyConfig('主成分分析_スクリープロット', []));
-}
-
-function displayLoadings(variables, vectors, values) {
-    const container = document.getElementById('loadings-table');
-    const nComp = Math.min(vectors.length, 5); // Display top 5 components max
-
-    let html = `
-        <div class="table-container">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>変数</th>
-                        ${Array.from({ length: nComp }, (_, i) => `<th>PC${i + 1} (固有ベクトル)</th>`).join('')}
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-
-    variables.forEach((v, i) => {
-        html += `<tr><td><strong>${v}</strong></td>`;
-        for (let j = 0; j < nComp; j++) {
-            const val = vectors[j][i]; // j-th vector, i-th variable
-            // 因子負荷量 (loading) = eigenvector * sqrt(eigenvalue)
-            const loading = val * Math.sqrt(values[j]);
-
-            // 重要度（絶対値が大きい）を強調
-            const style = Math.abs(loading) > 0.4 ? 'background: rgba(30, 144, 255, 0.1); font-weight: bold;' : '';
-            html += `<td style="${style}">${loading.toFixed(3)}</td>`;
+        if (variables.length < 2) {
+            alert('変数を2つ以上選択してください');
+            return;
         }
-        html += '</tr>';
-    });
 
-    html += '</tbody></table></div>';
-    html += '<p style="color: #666; font-size: 0.9rem; margin-top: 5px;">※表の値は因子負荷量（固有ベクトル × √固有値）を表示しています。</p>';
-    container.innerHTML = html;
-}
+        try {
+            const { eigenvalues, vectors, scores } = performPCA(variables, currentData);
 
-function plotBiplot(scores, vectors, variables) {
-    // PC1 vs PC2
-    const pc1 = scores.map(row => row[0]);
-    const pc2 = scores.map(row => row[1]);
+            displayEigenvalues(eigenvalues);
+            plotScree(eigenvalues);
+            displayLoadings(variables, vectors, eigenvalues);
+            plotBiplot(scores, vectors, variables);
 
-    const tracePoints = {
-        x: pc1,
-        y: pc2,
-        mode: 'markers',
-        type: 'scatter',
-        name: '観測データ',
-        marker: { color: 'rgba(30, 144, 255, 0.5)', size: 8 }
-    };
+            document.getElementById('analysis-results').style.display = 'block';
 
-    // 変数ベクトル（負荷量）
-    const annotations = [];
-    const shapes = [];
-
-    // スケーリング係数（グラフを見やすくするため）
-    const scale = Math.max(...pc1.map(Math.abs), ...pc2.map(Math.abs)) * 0.8;
-
-    variables.forEach((v, i) => {
-        const x = vectors[0][i] * scale * 2; // Expand for visibility
-        const y = vectors[1][i] * scale * 2;
-
-        shapes.push({
-            type: 'line',
-            x0: 0, y0: 0,
-            x1: x, y1: y,
-            line: { color: '#ef4444', width: 2 }
-        });
-
-        annotations.push({
-            x: x, y: y,
-            text: v,
-            showarrow: false,
-            font: { color: '#ef4444', weight: 'bold' },
-            bgcolor: 'rgba(255,255,255,0.7)'
-        });
-    });
-
-    const layout = {
-        title: 'バイプロット (PC1 vs PC2)',
-        xaxis: { title: '第一主成分' },
-        yaxis: { title: '第二主成分' },
-        shapes: shapes,
-        annotations: annotations,
-        hovermode: 'closest',
-        height: 600
-    };
-
-    Plotly.newPlot('biplot', [tracePoints], layout, createPlotlyConfig('主成分分析_バイプロット', variables));
-}
+        } catch (e) {
+            console.error(e);
+            alert(e.message || '計算エラーが発生しました。');
+        }
+    }
 
 
 export function render(container, currentData, characteristics) {

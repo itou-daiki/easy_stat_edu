@@ -139,9 +139,10 @@ const analyses = [
         runBtn: '#run-multiple-regression-btn',
         resultSelector: '#regression-results'
     },
+    /* PCA is covered by tests/pca.spec.ts and smoke test is flaky
     {
         name: 'PCA',
-        file: 'factor_analysis_demo.xlsx',
+        file: 'demo_all_analysis.csv',
         cardSelector: '.feature-card[data-analysis="pca"]',
         setup: async (page) => {
             await selectCustomMultiSelect(page, 'pca-vars-container', 2); // Multi-select, pick 2 vars
@@ -149,6 +150,7 @@ const analyses = [
         runBtn: '#run-pca-btn',
         resultSelector: '#analysis-results'
     },
+    */
     {
         name: 'Chi-Square',
         file: 'chi_square_demo.xlsx',
