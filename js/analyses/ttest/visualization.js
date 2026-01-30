@@ -73,10 +73,23 @@ export function displayVisualization(testResults, testType) {
             const yMin = 0;
             const yRange = yMax - yMin;
 
+            let xAxisTitle = '';
+            let yAxisTitle = 'Mean';
+
+            if (testType === 'independent') {
+                xAxisTitle = result.groupVar || 'Groups';
+                yAxisTitle = result.varName;
+            } else if (testType === 'paired') {
+                xAxisTitle = '条件';
+                yAxisTitle = '平均値';
+            } else {
+                xAxisTitle = result.varName;
+            }
+
             layout = {
                 title: getBottomTitleAnnotation(title),
-                xaxis: { title: result.varName },
-                yaxis: { title: 'Mean' },
+                xaxis: { title: xAxisTitle },
+                yaxis: { title: yAxisTitle },
                 shapes: shapes,
                 annotations: annotations,
                 margin: { t: 60, b: 80, l: 60, r: 20 }

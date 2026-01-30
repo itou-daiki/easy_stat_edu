@@ -1244,12 +1244,14 @@ export const InterpretationHelper = {
      * @param {number} mean2 - 群2の平均
      * @param {string[]} groupNames - [群1名, 群2名] Or 変数名ペア
      * @param {number} d - 効果量 (Cohen's d)
+     * @param {string} varName - 従属変数名 (Optional)
      * @returns {string} 解釈文
      */
-    interpretTTest(p, mean1, mean2, groupNames, d) {
+    interpretTTest(p, mean1, mean2, groupNames, d, varName = "") {
         const pEval = this.evaluatePValue(p);
         const g1 = groupNames[0];
         const g2 = groupNames[1];
+        const varText = varName ? `「<strong>${varName}</strong>」について、` : "";
 
         let dText = "";
         if (d !== undefined && d !== null) {
@@ -1265,10 +1267,10 @@ export const InterpretationHelper = {
         if (pEval.isSignificant) {
             const high = mean1 > mean2 ? g1 : g2;
             const low = mean1 > mean2 ? g2 : g1;
-            return `<strong>${high}は${low}よりも有意に高い</strong>値を示しました (${pEval.text}${dText})。<br>` +
+            return `${varText}<strong>${high}は${low}よりも有意に高い</strong>値を示しました (${pEval.text}${dText})。<br>` +
                 `平均値の差は統計的に意味があると言えます。`;
         } else {
-            return `「<strong>${g1}</strong>」と「<strong>${g2}</strong>」の間に、統計的に有意な差は見られませんでした (<em>p</em> = ${p.toFixed(2)}${dText})。<br>` +
+            return `${varText}「<strong>${g1}</strong>」と「<strong>${g2}</strong>」の間に、統計的に有意な差は見られませんでした (<em>p</em> = ${p.toFixed(2)}${dText})。<br>` +
                 `平均値の違いは偶然の範囲内である可能性があります。`;
         }
     },
@@ -1278,10 +1280,12 @@ export const InterpretationHelper = {
      * @param {number} p - P値
      * @param {number} eta2 - 効果量 (Eta-squared)
      * @param {string} factorName - 要因名
+     * @param {string} varName - 従属変数名 (Optional)
      * @returns {string} 解釈文
      */
-    interpretANOVA(p, eta2, factorName) {
+    interpretANOVA(p, eta2, factorName, varName = "") {
         const pEval = this.evaluatePValue(p);
+        const varText = varName ? `「<strong>${varName}</strong>」に対して、` : "";
 
         let etaText = "";
         if (eta2 !== undefined && eta2 !== null) {
@@ -1294,11 +1298,11 @@ export const InterpretationHelper = {
         }
 
         if (pEval.isSignificant) {
-            return `要因「<strong>${factorName}</strong>」による<strong>主効果は有意</strong>でした (${pEval.text}${etaText})。<br>` +
+            return `${varText}要因「<strong>${factorName}</strong>」による<strong>主効果は有意</strong>でした (${pEval.text}${etaText})。<br>` +
                 `つまり、グループ間で平均値に統計的な差があると言えます。<br>` +
                 `どのグループ間に差があるか確認するには、多重比較の結果を参照してください。`;
         } else {
-            return `要因「<strong>${factorName}</strong>」による有意な主効果は見られませんでした (<em>p</em> = ${p.toFixed(2)}${etaText})。<br>` +
+            return `${varText}要因「<strong>${factorName}</strong>」による有意な主効果は見られませんでした (<em>p</em> = ${p.toFixed(2)}${etaText})。<br>` +
                 `グループ間の平均値に統計的な違いがあるとは言えません。`;
         }
     },
@@ -1309,8 +1313,9 @@ export const InterpretationHelper = {
      * @param {number} cramerV - クラメールのV
      * @returns {string} 解釈文
      */
-    interpretChiSquare(p, cramerV) {
+    interpretChiSquare(p, cramerV, rowVar = "", colVar = "") {
         const pEval = this.evaluatePValue(p);
+        const varsText = (rowVar && colVar) ? `「<strong>${rowVar}</strong>」と「<strong>${colVar}</strong>」の間には` : "2つの変数の間には";
 
         let vText = "";
         if (cramerV !== undefined && cramerV !== null) {
@@ -1323,11 +1328,11 @@ export const InterpretationHelper = {
         }
 
         if (pEval.isSignificant) {
-            return `2つの変数の間には<strong>有意な関連（連関）</strong>があります (${pEval.text}${vText})。<br>` +
+            return `${varsText}<strong>有意な関連（連関）</strong>があります (${pEval.text}${vText})。<br>` +
                 `変数の組み合わせによって偏りがある（独立ではない）と言えます。<br>` +
                 `具体的な偏りについては、調整済み残差の表を確認してください。`;
         } else {
-            return `2つの変数の間に有意な関連は見られませんでした (<em>p</em> = ${p.toFixed(2)}${vText})。<br>` +
+            return `${varsText}有意な関連は見られませんでした (<em>p</em> = ${p.toFixed(2)}${vText})。<br>` +
                 `変数は互いに独立である（偏りがない）と考えられます。`;
         }
     },

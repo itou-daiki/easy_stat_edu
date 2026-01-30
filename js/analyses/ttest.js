@@ -4,6 +4,7 @@
  * @module analyses/ttest
  */
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
+import { displayVisualization } from './ttest/visualization.js';
 // import { MultiSelect } from '../components/MultiSelect.js'; // REMOVED
 
 // let depVarMultiSelect = null; // REMOVED
@@ -209,7 +210,7 @@ function runIndependentTTest(currentData) {
         testResults.push({
             varName, groups, mean1, mean2, std1, std2, n1, n2,
             t_stat, p_value, cohens_d, significance, df: df_welch,
-            group0Values, group1Values
+            group0Values, group1Values, groupVar
         });
     });
 
@@ -543,17 +544,13 @@ function displayInterpretation(testResults, groupVar, testType) {
     testResults.forEach(result => {
         let text = "";
         if (testType === 'independent') {
-            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d);
+            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d, result.varName);
         } else if (testType === 'paired') {
             // For paired, we use [Pre, Post] as groups
-            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d);
+            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d, result.varName);
         } else if (testType === 'one-sample') {
             // One sample: Compare Mean vs Mu
-            // result.mu IS present in OneSample result object? Checking runOneSampleTTest...
-            // It pushes { varName, mu, mean1: mean ... } (I assume based on context)
-            // Let's verify runOneSampleTTest push.
-            // If not present, I might need to check. But assuming yes.
-            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mu, [result.varName, `検定値(μ=${result.mu})`], result.cohens_d);
+            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mu, [result.varName, `検定値(μ=${result.mu})`], result.cohens_d, result.varName);
         }
 
         interpretationHtml += `<li style="margin-bottom: 0.5rem;">${text}</li>`;
@@ -563,100 +560,7 @@ function displayInterpretation(testResults, groupVar, testType) {
     contentContainer.innerHTML = interpretationHtml;
 }
 
-function displayVisualization(testResults, testType) {
-    const container = document.getElementById('visualization-section');
-    container.innerHTML = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-chart-bar"></i> 可視化
-            </h4>
-            <div id="visualization-controls-container"></div>
-            <div id="plots-container"></div>
-        </div>
-    `;
 
-    const controlsContainer = document.getElementById('visualization-controls-container');
-    const { titleControl } = createVisualizationControls(controlsContainer);
-
-    const plotsContainer = document.getElementById('plots-container');
-    plotsContainer.innerHTML = '';
-
-    testResults.forEach((result, index) => {
-        const plotId = `plot-${index}`;
-        const plotDiv = document.createElement('div');
-        plotDiv.id = plotId;
-        plotDiv.className = 'plot-container';
-        plotsContainer.appendChild(plotDiv);
-
-        let data, layout, config, title;
-        let layout_yaxis_range = null;
-
-        if (testType === 'independent' || testType === 'paired') {
-            const groupNames = (testType === 'paired') ? result.groups : result.groups;
-            const meanValues = [result.mean1, result.mean2];
-            const stdValues = [result.std1, result.std2];
-            const nValues = [result.n1, result.n2];
-            const errorValues = [stdValues[0] / Math.sqrt(nValues[0]), stdValues[1] / Math.sqrt(nValues[1])];
-
-            data = [{
-                x: groupNames,
-                y: meanValues,
-                error_y: { type: 'data', array: errorValues, visible: true },
-                type: 'bar',
-                marker: { color: ['#11b981', '#f59e0b'] }
-            }];
-
-            title = titleControl.checked ? `平均値の比較: ${result.varName}` : '';
-
-            const annotations = [];
-            const shapes = [];
-
-            // Add significance brackets using the standardized helper
-            // Create a temporary 'pairs' object for the helper
-            const pairs = [{
-                g1: groupNames[0],
-                g2: groupNames[1],
-                significance: result.significance,
-                p: result.p_value
-            }];
-
-            const yMax = Math.max(...meanValues.map((m, i) => m + errorValues[i]));
-            const yMin = 0;
-            const yRange = yMax - yMin;
-
-            layout = {
-                title: getBottomTitleAnnotation(title),
-                xaxis: { title: result.varName }, // Or group?
-                yaxis: { title: 'Mean' },
-                shapes: shapes,
-                annotations: annotations,
-                margin: { t: 60, b: 80, l: 60, r: 20 }
-            };
-
-            // Apply brackets
-            addSignificanceBrackets(layout, pairs, groupNames, yMax, yRange);
-
-            config = createPlotlyConfig('t-test_bar', result.varName);
-
-        } else if (testType === 'one-sample') {
-            // ... (one-sample t-test visualization)
-        }
-
-        if (data && layout && config) {
-            Plotly.newPlot(plotId, data, layout, config);
-        }
-    });
-
-    const updateAllPlots = () => {
-        testResults.forEach((result, index) => {
-            const plotId = `plot-${index}`;
-            const title = titleControl.checked ? `平均値の比較: ${result.varName}` : '';
-            Plotly.relayout(plotId, { title: getBottomTitleAnnotation(title) });
-        });
-    };
-
-    titleControl.addEventListener('change', updateAllPlots);
-}
 
 function switchTestType(testType) {
     document.getElementById('independent-controls').style.display = 'none';

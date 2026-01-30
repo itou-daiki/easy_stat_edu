@@ -186,7 +186,7 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
                     <i class="fas fa-comment-dots"></i> 結果の解釈
                 </h4>
                 <div style="line-height: 1.6;">
-                    ${(() => { try { return InterpretationHelper.interpretChiSquare(p, v); } catch (e) { console.error('Interpretation Error:', e); return '結果の解釈中にエラーが発生しました。'; } })()}
+                    ${(() => { try { return InterpretationHelper.interpretChiSquare(p, v, rowVar, colVar); } catch (e) { console.error('Interpretation Error:', e); return '結果の解釈中にエラーが発生しました。'; } })()}
                 </div>
             </div>
 

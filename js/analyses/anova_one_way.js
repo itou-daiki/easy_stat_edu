@@ -165,9 +165,9 @@ function displayANOVAInterpretation(results, factorVar, testType) {
         // Check if etaSquared or partialEtaSquared exists
         let effectSize = res.etaSquared !== undefined ? res.etaSquared : res.partialEtaSquared;
 
-        let text = InterpretationHelper.interpretANOVA(res.pValue, effectSize, factor);
+        let text = InterpretationHelper.interpretANOVA(res.pValue, effectSize, factor, res.varName);
 
-        interpretationHtml += `<li style="margin-bottom: 0.5rem;"><strong>${res.varName}:</strong> ${text}</li>`;
+        interpretationHtml += `<li style="margin-bottom: 0.5rem;">${text}</li>`;
     });
     interpretationHtml += '</ul>';
 
