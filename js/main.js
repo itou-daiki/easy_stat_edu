@@ -58,7 +58,32 @@ function setupEventListeners() {
         const file = event.dataTransfer.files[0];
         if (file) handleFile(file);
     });
-    demoBtn.addEventListener('click', () => loadDemoData('demo_all_analysis.csv'));
+    demoBtn.addEventListener('click', () => {
+        document.getElementById('demo-modal').style.display = 'block';
+    });
+
+    // Close Modal logic
+    const demoModal = document.getElementById('demo-modal');
+    const closeDemoModal = document.getElementById('close-demo-modal');
+
+    closeDemoModal.addEventListener('click', () => {
+        demoModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target === demoModal) {
+            demoModal.style.display = 'none';
+        }
+    });
+
+    // Handle Demo Option Clicks
+    document.querySelectorAll('.demo-option-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const fileName = btn.dataset.demo;
+            demoModal.style.display = 'none';
+            loadDemoData(fileName);
+        });
+    });
 
     document.querySelectorAll('.collapsible-header').forEach(header => {
         header.addEventListener('click', () => toggleCollapsible(header));

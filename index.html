@@ -37,19 +37,86 @@
         </div>
     </div>
 
-    <script>
-        // Global Error Handler for Loading Issues
-        window.addEventListener('error', function (event) {
-            const loadingScreen = document.getElementById('loading-screen');
-            if (loadingScreen && loadingScreen.style.display !== 'none') {
-                const errorDiv = document.getElementById('loading-error');
-                if (errorDiv) {
-                    errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = `<strong>起動エラー:</strong><br>${event.message}`;
-                    console.error('Startup Error:', event.error);
-                }
-            }
-        });
+    <!-- Demo Data Selector Modal -->
+    <div id="demo-modal" class="modal">
+        <div class="modal-content demo-modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-database"></i> デモデータを選択</h3>
+                <span class="close-modal" id="close-demo-modal">&times;</span>
+            </div>
+            <p style="margin-bottom: 1.5rem; color: #64748b;">
+                分析目的に合わせたデータセットを選択してください。<br>
+                クリックするとデータが読み込まれます。
+            </p>
+
+            <div class="demo-options-grid">
+                <!-- 総合データ -->
+                <button class="demo-option-btn primary" data-demo="demo_all_analysis.csv">
+                    <div class="icon"><i class="fas fa-star"></i></div>
+                    <div class="info">
+                        <strong>総合デモデータ (推奨)</strong>
+                        <span>全機能の動作確認用</span>
+                    </div>
+                </button>
+
+                <!-- 平均値の差の検定 -->
+                <button class="demo-option-btn" data-demo="ttest_demo.xlsx">
+                    <div class="icon"><i class="fas fa-balance-scale"></i></div>
+                    <div class="info">
+                        <strong>t検定用データ</strong>
+                        <span>2群間の平均値比較</span>
+                    </div>
+                </button>
+
+                <!-- 分散分析 -->
+                <button class="demo-option-btn" data-demo="anova_demo.xlsx">
+                    <div class="icon"><i class="fas fa-layer-group"></i></div>
+                    <div class="info">
+                        <strong>分散分析用データ (ANOVA)</strong>
+                        <span>3群以上の差の比較</span>
+                    </div>
+                </button>
+
+                <!-- 多変量解析 -->
+                <button class="demo-option-btn" data-demo="multiple_regression_demo.xlsx">
+                    <div class="icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="info">
+                        <strong>重回帰分析用データ</strong>
+                        <span>数値予測・要因分析</span>
+                    </div>
+                </button>
+
+                <!-- 因子分析・主成分分析 -->
+                <button class="demo-option-btn" data-demo="factor_analysis_demo.xlsx">
+                    <div class="icon"><i class="fas fa-project-diagram"></i></div>
+                    <div class="info">
+                        <strong>因子分析・PCA用データ</strong>
+                        <span>データ要約・潜在構造探索</span>
+                    </div>
+                </button>
+
+                <!-- テキストマイニング -->
+                <button class="demo-option-btn" data-demo="textmining_demo.xlsx">
+                    <div class="icon"><i class="fas fa-comments"></i></div>
+                    <div class="info">
+                        <strong>テキストマイニング用</strong>
+                        <span>アンケート自由記述など</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+    window.addEventListener('error', function (event) {
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen && loadingScreen.style.display !== 'none') {
+    const errorDiv = document.getElementById('loading-error');
+    if (errorDiv) {
+    errorDiv.style.display = 'block';
+    errorDiv.innerHTML = `<strong>起動エラー:</strong><br>${event.message}`;
+    console.error('Startup Error:', event.error);
+    }
+    }
+    });
     </script>
 
     <!-- メインコンテナ -->
