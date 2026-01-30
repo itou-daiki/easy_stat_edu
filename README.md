@@ -62,11 +62,42 @@ easyStatは、モダンなブラウザだけで動作する統計分析Webアプ
 - **NLP**:
     - `kuromoji.js`: ブラウザ内日本語形態素解析
 
-## 開発者向け情報 (Deployment)
+## 開発者向け情報
 
-GitHub Pagesなどの静的ホスティングサービスにそのままデプロイ可能です。
+### プロジェクト構成
 
-### GitHub Pagesへのデプロイ手順
+```
+easy_stat_edu/
+├── js/
+│   ├── analyses/          # 統計分析モジュール（16ファイル + 9サブモジュール）
+│   │   ├── anova_one_way/  # 一要因分散分析（分割済み）
+│   │   ├── anova_two_way/  # 二要因分散分析（分割済み）
+│   │   ├── correlation/    # 相関分析（分割済み）
+│   │   ├── eda/            # 探索的データ分析（分割済み）
+│   │   ├── factor_analysis/ # 因子分析（分割済み）
+│   │   ├── pca/            # 主成分分析（分割済み）
+│   │   ├── regression_multiple/ # 重回帰分析（分割済み）
+│   │   ├── text_mining/    # テキストマイニング（分割済み）
+│   │   └── ttest/          # t検定（分割済み）
+│   └── utils.js           # 共通ユーティリティ
+├── tests/                 # Playwright E2Eテスト（20ファイル、36テスト）
+└── css/                   # スタイルシート
+```
+
+### テストの実行
+
+```bash
+# 全テスト実行
+npx playwright test
+
+# 特定のテスト実行
+npx playwright test tests/correlation.spec.ts
+
+# テストレポート表示
+npx playwright show-report
+```
+
+### GitHub Pagesへのデプロイ
 1. リポジトリの `Settings` -> `Pages` を開く。
 2. Sourceを `Deploy from a branch` に設定。
 3. Branchを `main` (または `master`) の `/ (root)` または `/docs` に設定してSave。
@@ -79,4 +110,4 @@ easyStat: Open Source for Ubiquitous Statistics
 
 ## サポート
 
-- [GitHub Issues](https://github.com/itou-daiki/easy_stat/issues)
+- [GitHub Issues](https://github.com/itou-daiki/easy_stat-edu/issues)

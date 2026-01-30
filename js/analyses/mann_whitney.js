@@ -1,6 +1,16 @@
+/**
+ * @fileoverview マン・ホイットニーのU検定
+ * @module mann_whitney
+ * @description 2群間のノンパラメトリック検定（順序尺度・非正規分布用）
+ */
+
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, showError, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 
-// 要約統計量の計算と表示
+/**
+ * 要約統計量の計算と表示
+ * @param {Array<string>} variables - 変数名配列
+ * @param {Array<Object>} currentData - 分析対象データ
+ */
 function displaySummaryStatistics(variables, currentData) {
     const container = document.getElementById('summary-stats-section');
 

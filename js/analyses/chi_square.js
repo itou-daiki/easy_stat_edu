@@ -1,5 +1,15 @@
+/**
+ * @fileoverview カイ二乗検定（独立性の検定）
+ * @module chi_square
+ * @description クロス集計表を用いた変数間の関連性検定
+ */
+
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
 
+/**
+ * カイ二乗検定を実行
+ * @param {Array<Object>} currentData - 分析対象データ
+ */
 function runChiSquare(currentData) {
     const rowVar = document.getElementById('row-var').value;
     const colVar = document.getElementById('col-var').value;

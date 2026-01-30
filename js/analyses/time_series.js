@@ -1,5 +1,17 @@
+/**
+ * @fileoverview 時系列データ分析
+ * @module time_series
+ * @description 時系列データの可視化と移動平均計算
+ */
+
 import { createVariableSelector, createAnalysisButton, showError, createPlotlyConfig, createVisualizationControls } from '../utils.js';
 
+/**
+ * 時系列分析UIをレンダリング
+ * @param {HTMLElement} container - レンダリング先コンテナ
+ * @param {Array<Object>} data - 分析対象データ
+ * @param {Object} characteristics - データ特性
+ */
 export function render(container, data, characteristics) {
     container.innerHTML = `
         <div class="time-series-container">

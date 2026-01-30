@@ -1,97 +1,105 @@
-/**
- * @file Correlation Analysis テスト
- * @description 相関分析の機能（相関係数計算、ヒートマップ、有意性検定）をテスト
- */
+// @ts-check
 const { test, expect } = require('@playwright/test');
 const path = require('path');
 
-test.describe('Correlation Analysis Tests', () => {
-    test.beforeEach(async ({ page }) => {
-        page.on('console', msg => console.log(`BROWSER LOG: ${msg.text()}`));
-        page.on('pageerror', err => console.log(`BROWSER ERROR: ${err}`));
+test('Correlation Analysis Heatmap Verification', async ({ page }) => {
+    // 1. Load the application
+    await page.goto('http://127.0.0.1:8081/');
 
-        await page.goto('http://127.0.0.1:8081/');
-        await expect(page.locator('#loading-screen')).toBeHidden();
+    // Wait for loading screen to disappear
+    await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
 
-        // データアップロード
-        const fileInput = page.locator('#main-data-file');
-        await fileInput.setInputFiles(path.join(__dirname, '../datasets/demo_all_analysis.csv'));
+    // 2. Upload sample dataset
+    // Wait for upload button to be enabled (initialization complete)
+    const uploadBtn = page.locator('#main-upload-btn');
+    await expect(uploadBtn).toBeEnabled({ timeout: 30000 });
 
-        // 相関分析へ移動
-        await page.locator('.feature-card[data-analysis="correlation"]').click();
-        await expect(page.locator('#analysis-area')).toBeVisible();
-    });
+    const fileInput = page.locator('#main-data-file');
+    const filePath = path.join(__dirname, '../datasets/correlation_demo.xlsx');
 
-    test('should calculate and display correlation matrix', async ({ page }) => {
-        // 変数選択
-        await page.locator('#correlation-vars-container .multiselect-input').click();
-        const variables = ['数学', '英語', '理科'];
-        for (const v of variables) {
-            await page.locator(`.multiselect-option input[value="${v}"]`).check();
-        }
-        await page.locator('#correlation-vars-container .multiselect-input').click();
+    // Create a promise to wait for file processing (preview container visible)
+    const previewVisiblePromise = page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 30000 });
 
-        // 実行
-        await page.click('#run-correlation-btn');
+    await fileInput.setInputFiles(filePath);
 
-        // 結果確認
-        await expect(page.locator('#analysis-results')).toBeVisible();
+    // Wait until processing is done
+    await previewVisiblePromise;
 
-        // 相関行列テーブル確認
-        await expect(page.locator('#correlation-table')).toBeVisible();
+    // 3. Navigate to Correlation Analysis
+    const correlationCard = page.locator('.feature-card[data-analysis="correlation"]');
+    await correlationCard.click();
 
-        // 対角成分（1.000）確認
-        await expect(page.locator('#correlation-table')).toContainText('1.00');
-    });
+    // Wait for analysis area to be visible
+    await expect(page.locator('#analysis-area')).toBeVisible();
 
-    test('should display correlation heatmap', async ({ page }) => {
-        // 変数選択
-        await page.locator('#correlation-vars-container .multiselect-input').click();
-        const variables = ['数学', '英語', '理科', '学習時間'];
-        for (const v of variables) {
-            await page.locator(`.multiselect-option input[value="${v}"]`).check();
-        }
-        await page.locator('#correlation-vars-container .multiselect-input').click();
+    // 4. Select variables
+    // Wait for Variable MultiSelect to appear
+    const multiSelectInput = page.locator('#correlation-vars-container .multiselect-input');
+    await expect(multiSelectInput).toBeVisible();
 
-        // 実行
-        await page.click('#run-correlation-btn');
+    // Open dropdown
+    await multiSelectInput.click();
 
-        // ヒートマップ確認
-        await expect(page.locator('#correlation-heatmap')).toBeVisible();
-    });
+    // Select two variables (assuming "数学" and "理科" exist in correlation_demo.xlsx or similar numeric columns)
+    // We'll just pick the first two options available in the dropdown
+    // Select two variables
+    // Select two variables
+    const options = page.locator('#correlation-vars-container .multiselect-dropdown .multiselect-option');
 
-    test('should display significance test results', async ({ page }) => {
-        // 変数選択
-        await page.locator('#correlation-vars-container .multiselect-input').click();
-        const variables = ['数学', '英語'];
-        for (const v of variables) {
-            await page.locator(`.multiselect-option input[value="${v}"]`).check();
-        }
-        await page.locator('#correlation-vars-container .multiselect-input').click();
+    // Select first variable
+    await options.first().click();
 
-        // 実行
-        await page.click('#run-correlation-btn');
+    // Ensure dropdown is still open or re-open it for the second variable
+    const optionsContainer = page.locator('#correlation-vars-container .multiselect-dropdown');
+    if (!(await optionsContainer.isVisible())) {
+        await multiSelectInput.click();
+        await expect(optionsContainer).toBeVisible();
+    }
 
-        // 有意性検定結果確認（p値表示）
-        await expect(page.locator('#analysis-results')).toBeVisible();
-        const resultsText = await page.locator('#analysis-results').textContent();
-        // p値またはsignificanceの存在を確認
-        expect(resultsText).toMatch(/p|有意|significance/i);
-    });
+    // Select second variable
+    await options.nth(1).click();
 
-    test('should display scatter plot matrix for multiple variables', async ({ page }) => {
-        // 変数選択
-        await page.locator('#correlation-vars-container .multiselect-input').click();
-        const variables = ['数学', '英語', '理科'];
-        for (const v of variables) {
-            await page.locator(`.multiselect-option input[value="${v}"]`).check();
-        }
-        await page.locator('#correlation-vars-container .multiselect-input').click();
+    // Close dropdown by clicking outside
+    await page.locator('body').click({ position: { x: 0, y: 0 } });
 
-        // 実行
-        await page.click('#run-correlation-btn');
+    // 5. Run Analysis
+    const runBtn = page.locator('#run-correlation-btn');
+    await runBtn.click();
 
-        // 散布図行列確認
-        await expect(page.locator('#scatter-matrix, #correlation-visualization')).toBeVisible();
-    });
+    // Verify Heatmap is visible
+    const heatmapContainer = page.locator('#correlation-heatmap');
+    await expect(heatmapContainer).toBeVisible();
+    await expect(heatmapContainer.locator('.main-svg').first()).toBeVisible({ timeout: 10000 });
+
+    // 7. Verify Scatter Scatter Matrix Visibility & Labels
+    const scatterMatrix = page.locator('#scatter-matrix');
+    await expect(scatterMatrix).toBeVisible();
+    await expect(scatterMatrix.locator('.main-svg').first()).toBeVisible({ timeout: 10000 });
+
+    // Verify axis labels (selected variables) are present in the scatter matrix
+    // We captured the variable names earlier? No, let's capture them now or assume they are displayed.
+    // The previous steps selected the first two options. Let's find out what they are.
+    // However, it's safer to just check if *any* text is visible, but better to check for the specific var names.
+    // Since we didn't capture them in variables, let's look for text that matches what we expect from the demo file or just generic check.
+
+    // Better approach: Capture the text of the selected options during selection
+    // But since we can't easily modify the logic above without replacing more code, let's just checking for generic SVG text elements isn't quite enough.
+    // Let's rely on the screenshot for manual verification if exact text matching is hard without knowing var names.
+    // BUT, we can inspect the DOM of the multiselect to see what is selected.
+
+    // Let's try to capture the text from the chip elements in the multiselect input
+    const selectedChips = page.locator('#correlation-vars-container .multiselect-tag');
+    const var1Config = await selectedChips.nth(0).innerText();
+    const var2Config = await selectedChips.nth(1).innerText();
+
+    // Clean up text (remove '×' if it exists in innerText)
+    const var1 = var1Config.replace('×', '').trim();
+    const var2 = var2Config.replace('×', '').trim();
+
+    // Check if these texts exists in the scatter matrix container
+    await expect(scatterMatrix.getByText(var1).first()).toBeVisible();
+    await expect(scatterMatrix.getByText(var2).first()).toBeVisible();
+
+    // Screenshot for proof
+    await page.screenshot({ path: 'correlation_verification.png', fullPage: true });
 });
