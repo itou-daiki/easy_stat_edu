@@ -353,17 +353,73 @@ function runTwoWayIndependentANOVA(currentData) {
             });
         });
 
-        const ssA = levels1.reduce((sum, l1) => {
-            const marginalData = validData.filter(d => d[factor1] === l1).map(d => d[depVar]);
-            return sum + (marginalData.length * Math.pow(jStat.mean(marginalData) - grandMean, 2));
-        }, 0);
+        // Unweighted Means Analysis (Type III SS approximation for unbalanced data)
+        const allCellNs = [];
+        let hasEmptyCell = false;
+        levels1.forEach(l1 => levels2.forEach(l2 => {
+            if (cellStats[l1][l2].n === 0) hasEmptyCell = true;
+            allCellNs.push(cellStats[l1][l2].n);
+        }));
 
-        const ssB = levels2.reduce((sum, l2) => {
-            const marginalData = validData.filter(d => d[factor2] === l2).map(d => d[depVar]);
-            return sum + (marginalData.length * Math.pow(jStat.mean(marginalData) - grandMean, 2));
-        }, 0);
+        if (hasEmptyCell) {
+            alert('すべての組み合わせ（セル）にデータが存在する必要があります。');
+            return;
+        }
 
-        const ssAxB = ssCells - ssA - ssB;
+        // Harmonic Mean of n
+        const k = allCellNs.length;
+        const sumInverseN = allCellNs.reduce((sum, n) => sum + (1 / n), 0);
+        const harmonicMeanN = k / sumInverseN;
+
+        // Unweighted Marginal Means
+        // Row Means (Factor 1)
+        const rowMeans = {};
+        let grandMeanUnweightedSum = 0;
+        levels1.forEach(l1 => {
+            let sumMeans = 0;
+            levels2.forEach(l2 => sumMeans += cellStats[l1][l2].mean);
+            rowMeans[l1] = sumMeans / levels2.length;
+            grandMeanUnweightedSum += rowMeans[l1];
+        });
+        const grandMeanUnweighted = grandMeanUnweightedSum / levels1.length;
+
+        // Col Means (Factor 2)
+        const colMeans = {};
+        levels2.forEach(l2 => {
+            let sumMeans = 0;
+            levels1.forEach(l1 => sumMeans += cellStats[l1][l2].mean);
+            colMeans[l2] = sumMeans / levels1.length;
+        });
+
+        // SS A (Factor 1)
+        let ssA = 0;
+        levels1.forEach(l1 => {
+            ssA += Math.pow(rowMeans[l1] - grandMeanUnweighted, 2);
+        });
+        ssA *= (levels2.length * harmonicMeanN);
+
+        // SS B (Factor 2)
+        let ssB = 0;
+        levels2.forEach(l2 => {
+            ssB += Math.pow(colMeans[l2] - grandMeanUnweighted, 2);
+        });
+        ssB *= (levels1.length * harmonicMeanN);
+
+        // SS AxB (Interaction)
+        let ssAxB = 0;
+        levels1.forEach(l1 => {
+            levels2.forEach(l2 => {
+                const cellMean = cellStats[l1][l2].mean;
+                // Interaction deviation: M_ij - M_i. - M_.j + M_..
+                const dev = cellMean - rowMeans[l1] - colMeans[l2] + grandMeanUnweighted;
+                ssAxB += Math.pow(dev, 2);
+            });
+        });
+        ssAxB *= harmonicMeanN;
+
+        // SS Error is based on Within-Cell variance (calculated from Raw data)
+        // ssTotal - ssCells = SS_Within
+
         const ssError = ssTotal - ssCells;
         const dfA = levels1.length - 1;
         const dfB = levels2.length - 1;
