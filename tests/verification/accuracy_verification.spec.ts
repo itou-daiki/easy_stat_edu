@@ -282,4 +282,31 @@ test.describe('Statistical Accuracy Verification', () => {
         assertClose(fWithin, groundTruth.anova_mixed.within.F, 1.0, 'Mixed Within F');
         assertClose(fInter, groundTruth.anova_mixed.interaction.F, 0.5, 'Mixed Interaction F');
     });
+
+    // 10. PCA - Principal Component Analysis
+    test('PCA Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'pca');
+
+        // Select numeric variables: 数学, 英語, 理科, 学習時間
+        await selectVariables(page, ['数学', '英語', '理科', '学習時間'], '#pca-vars-container');
+        await page.click('#run-pca-btn-container button');
+
+        await expect(page.locator('#analysis-results')).toBeVisible();
+
+        // Eigenvalues table
+        const eigenTable = page.locator('#eigenvalues-table table');
+        await expect(eigenTable).toBeVisible();
+
+        // First eigenvalue (PC1)
+        const eigen1Text = await eigenTable.locator('tbody tr:first-child td:nth-child(2)').innerText();
+        const eigen1 = parseFloat(eigen1Text);
+
+        // First explained variance ratio
+        const ratio1Text = await eigenTable.locator('tbody tr:first-child td:nth-child(3)').innerText();
+        const ratio1 = parseFloat(ratio1Text.replace('%', '')) / 100;
+
+        assertClose(eigen1, groundTruth.pca.eigenvalues[0], 0.5, 'PCA Eigenvalue 1');
+        assertClose(ratio1, groundTruth.pca.explained_ratio[0], 0.02, 'PCA Explained Ratio 1');
+    });
+
 });

@@ -173,6 +173,38 @@ def verify_anova_mixed():
         'interaction': {'F': float(row_inter['F']), 'p': float(row_inter['p-unc'])}
     }
 
+# 10. PCA - Principal Component Analysis
+def verify_pca():
+    df = load_data("demo_all_analysis.csv")
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import StandardScaler
+    
+    # Use numeric columns: 数学, 英語, 理科, 学習時間
+    cols = ['数学', '英語', '理科', '学習時間']
+    X = df[cols].dropna()
+    
+    # Standardize (the JS uses correlation matrix, equivalent to standardized data PCA)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    pca = PCA()
+    pca.fit(X_scaled)
+    
+    # Eigenvalues (variance explained by each PC)
+    eigenvalues = pca.explained_variance_.tolist()
+    # Explained variance ratio (cumulative)
+    explained_ratio = pca.explained_variance_ratio_.tolist()
+    # Loadings (components_ = eigenvectors, transpose for variables x components)
+    loadings = pca.components_.T.tolist()  # Shape: (n_vars, n_components)
+    
+    results['pca'] = {
+        'eigenvalues': eigenvalues,
+        'explained_ratio': explained_ratio,
+        'n_components': len(eigenvalues),
+        # First PC loadings for verification
+        'pc1_loadings': [row[0] for row in loadings]
+    }
+
 # Run All
 if __name__ == "__main__":
     try:
@@ -185,6 +217,7 @@ if __name__ == "__main__":
         verify_regression_multiple()
         verify_anova_oneway_repeated()
         verify_anova_mixed()
+        verify_pca()
         
         with open(OUTPUT_FILE, 'w') as f:
             json.dump(results, f, indent=4)
