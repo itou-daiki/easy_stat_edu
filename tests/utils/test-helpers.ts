@@ -13,12 +13,14 @@ export async function navigateToFeature(page: Page, featureId: string) {
     await page.waitForTimeout(500); // Wait for transition
 }
 
-export async function selectVariables(page: Page, variables: string[]) {
+export async function selectVariables(page: Page, variables: string[], containerSelector?: string) {
+    const root = containerSelector ? page.locator(containerSelector) : page;
+
     for (const variable of variables) {
         // Standard select option (needed for fallback at step 4)
-        const selectWithOption = page.locator(`select:has(option[value="${variable}"])`);
+        const selectWithOption = root.locator(`select:has(option[value="${variable}"])`);
         // 1. Try standard visible checkbox/radio input
-        const input = page.locator(`input[value="${variable}"]`);
+        const input = root.locator(`input[value="${variable}"]`);
         if (await input.count() > 0) {
             // Check visibility of the first match
             if (await input.first().isVisible()) {
@@ -41,7 +43,7 @@ export async function selectVariables(page: Page, variables: string[]) {
 
         // 2. Try standard visible input (checkbox/radio)
         // Exclude inputs inside custom multiselects (.multiselect-checkbox) as they require special handling in step 3
-        const visibleInput = page.locator(`input[value="${variable}"]:not(.multiselect-checkbox)`);
+        const visibleInput = root.locator(`input[value="${variable}"]:not(.multiselect-checkbox)`);
         if (await visibleInput.count() > 0) {
             if (await visibleInput.first().isVisible()) {
                 await visibleInput.first().check();
@@ -61,7 +63,7 @@ export async function selectVariables(page: Page, variables: string[]) {
         // STRATEGY: Find the visible CONTAINER first.
         // The options themselves are hidden inside the dropdown, but the container (.multiselect-wrapper) must be visible.
 
-        const allContainers = page.locator('.multiselect-wrapper');
+        const allContainers = root.locator('.multiselect-wrapper');
         const count = await allContainers.count();
         let matched = false;
 
@@ -93,6 +95,7 @@ export async function selectVariables(page: Page, variables: string[]) {
                         }
                         matched = true;
                         // Close dropdown to prevent blocking other elements
+                        // Click body (global) might be safer than root click
                         await page.locator('body').click({ position: { x: 0, y: 0 } });
                         // Check if dropdown is closed
                         const dropdown = container.locator('.multiselect-dropdown');

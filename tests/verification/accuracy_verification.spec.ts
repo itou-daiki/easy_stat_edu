@@ -153,4 +153,72 @@ test.describe('Statistical Accuracy Verification', () => {
         assertClose(resI.f, groundTruth.anova_twoway_ind['C:S'].f, 0.1, '2-Way Interaction F');
     });
 
+    // 6. Simple Regression Accuracy
+    test('Simple Regression Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'regression_simple');
+        await selectStandardOption(page, '#independent-var', '学習時間', 'label');
+        await selectStandardOption(page, '#dependent-var', '数学', 'label');
+        await page.click('#run-regression-btn-container button');
+
+        await expect(page.locator('#regression-results')).toBeVisible();
+
+        // R2 check
+        const r2Card = page.locator('.data-stat-card', { hasText: '決定係数 (R²)' });
+        const r2Text = await r2Card.locator('.stat-value').innerText();
+        const r2Val = parseFloat(r2Text);
+
+        // Coefficient check (Table)
+        // Row 2 is Slope (学習時間)
+        // Col 2: Coef, Col 5: p
+        const resultsContainer = page.locator('#regression-results');
+        const tableRow = resultsContainer.locator('.table-container table tbody tr:nth-child(2)');
+        const coefText = await tableRow.locator('td:nth-child(2)').innerText();
+        const pText = await tableRow.locator('td:nth-child(5)').innerText();
+
+        const coefVal = parseFloat(coefText);
+        const pVal = parseFloat(pText.replace(/[^\d.-]/g, ''));
+
+        assertClose(r2Val, groundTruth.regression_simple.R2, 0.05, 'Simple Reg R2');
+        assertClose(coefVal, groundTruth.regression_simple.coef_time, 0.05, 'Simple Reg Coef');
+        assertClose(pVal, groundTruth.regression_simple.p_time, 0.05, 'Simple Reg p-value');
+    });
+
+    // 7. Multiple Regression Accuracy
+    test('Multiple Regression Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'regression_multiple');
+        await selectVariables(page, ['数学'], '#dependent-var-container'); // Math
+        await selectVariables(page, ['学習時間', '英語'], '#independent-vars-container'); // Time, Eng
+        await page.click('#run-regression-btn-container button');
+
+        await expect(page.locator('#regression-results')).toBeVisible();
+
+        // R2 check - scope to first result section
+        const resultsSection = page.locator('#regression-results');
+        const r2Card = resultsSection.locator('.data-stat-card', { hasText: '決定係数 (R²)' }).first();
+        const r2Text = await r2Card.locator('.stat-value').innerText();
+        const r2Val = parseFloat(r2Text);
+
+        // Coefficients - scope to first table
+        const firstTable = resultsSection.locator('.table-container table').first();
+        const getCoef = async (varName: string) => {
+            const row = firstTable.locator('tbody tr', { hasText: varName });
+            const bText = await row.locator('td:nth-child(2)').innerText();
+            const pText = await row.locator('td:nth-child(6)').innerText();
+            return {
+                b: parseFloat(bText),
+                p: parseFloat(pText.replace(/[^\d.-]/g, ''))
+            };
+        };
+
+        const regTime = await getCoef('学習時間');
+        const regEng = await getCoef('英語');
+
+        // Ground Truth
+        assertClose(r2Val, groundTruth.regression_multiple.R2, 0.05, 'Multi Reg R2');
+        assertClose(regTime.b, groundTruth.regression_multiple.coef_time, 0.1, 'Multi Reg Coef Time');
+        assertClose(regEng.b, groundTruth.regression_multiple.coef_eng, 0.1, 'Multi Reg Coef Eng');
+        assertClose(regTime.p, groundTruth.regression_multiple.p_time, 0.05, 'Multi Reg p Time');
+        assertClose(regEng.p, groundTruth.regression_multiple.p_eng, 0.05, 'Multi Reg p Eng');
+    });
+
 });

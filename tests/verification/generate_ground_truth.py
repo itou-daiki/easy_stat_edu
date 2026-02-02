@@ -76,6 +76,37 @@ def verify_chisquare():
     chi2, p, dof, expected = stats.chi2_contingency(contingency)
     results['chisquare'] = {'chi2': chi2, 'p': p}
 
+# 6. Simple Regression
+# Dependent: 数学 (OutcomeM), Indep: 学習時間 (Time)
+def verify_regression_simple():
+    df = load_data("demo_all_analysis.csv")
+    df = df.rename(columns={'数学': 'OutcomeM', '学習時間': 'Time'})
+    model = ols('OutcomeM ~ Time', data=df).fit()
+    
+    results['regression_simple'] = {
+        'R2': model.rsquared,
+        'intercept': model.params['Intercept'],
+        'coef_time': model.params['Time'],
+        'p_time': model.pvalues['Time']
+    }
+
+# 7. Multiple Regression
+# Dependent: 数学 (OutcomeM), Indep: 学習時間 (Time) + 英語 (Eng)
+def verify_regression_multiple():
+    df = load_data("demo_all_analysis.csv")
+    df = df.rename(columns={'数学': 'OutcomeM', '学習時間': 'Time', '英語': 'Eng'})
+    model = ols('OutcomeM ~ Time + Eng', data=df).fit()
+    
+    results['regression_multiple'] = {
+        'R2': model.rsquared,
+        'adj_R2': model.rsquared_adj,
+        'intercept': model.params['Intercept'],
+        'coef_time': model.params['Time'],
+        'coef_eng': model.params['Eng'],
+        'p_time': model.pvalues['Time'],
+        'p_eng': model.pvalues['Eng']
+    }
+
 # Run All
 if __name__ == "__main__":
     try:
@@ -84,6 +115,8 @@ if __name__ == "__main__":
         verify_anova_twoway_ind()
         verify_correlation()
         verify_chisquare()
+        verify_regression_simple()
+        verify_regression_multiple()
         
         with open(OUTPUT_FILE, 'w') as f:
             json.dump(results, f, indent=4)
