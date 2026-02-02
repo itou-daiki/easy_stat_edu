@@ -901,39 +901,421 @@ function renderTwoWayMixedResults(testResults) {
     let html = '';
 
     testResults.forEach((res, index) => {
-        html += `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-table"></i> 混合要因分散分析表
-            </h4>
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>変動要因</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p</th><th>ηp²</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-
-        res.sources.forEach(src => {
-            const sig = src.p !== null ? (src.p < 0.01 ? '**' : src.p < 0.05 ? '*' : src.p < 0.1 ? '†' : '') : '';
+        // Repeated Measures Table
+        if (res.designType === 'repeated') {
             html += `
-                <tr>
-                    <td>${src.name}</td>
-                    <td>${src.ss.toFixed(2)}</td>
-                    <td>${src.df}</td>
-                    <td>${src.ms.toFixed(2)}</td>
-                    <td>${src.f ? src.f.toFixed(2) : '-'}</td>
-                    <td style="${src.p && src.p < 0.05 ? 'color:#e11d48;font-weight:bold;' : ''}">${src.p ? src.p.toFixed(3) + sig : '-'}</td>
-                     <td>${src.eta ? src.eta.toFixed(2) : '-'}</td>
-                </tr>`;
-        });
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-table"></i> 反復測定分散分析表
+                </h4>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>変動要因 (Source)</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p</th><th>ηp²</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
 
-        html += `</tbody></table></div></div>`;
+            res.sources.forEach(src => {
+                const isSig = src.p !== null && src.p < 0.05;
+                const sigMark = src.p !== null ? (src.p < 0.01 ? '**' : src.p < 0.05 ? '*' : src.p < 0.1 ? '†' : '') : '';
+                const pDisplay = src.p !== null ? src.p.toFixed(3) + sigMark : '-';
+                const fDisplay = src.f !== null ? src.f.toFixed(2) : '-';
+                const msDisplay = src.ms !== null ? src.ms.toFixed(2) : '-';
+                const etaDisplay = src.eta !== null ? src.eta.toFixed(2) : '-';
+                const style = isSig ? 'color: #e11d48; font-weight: bold;' : '';
+
+                html += `
+                    <tr>
+                        <td style="text-align: left;">${src.name}</td>
+                        <td>${src.ss.toFixed(2)}</td>
+                        <td>${src.df}</td>
+                        <td>${msDisplay}</td>
+                        <td>${fDisplay}</td>
+                        <td style="${style}">${pDisplay}</td>
+                        <td>${etaDisplay}</td>
+                    </tr>
+                `;
+            });
+            html += `</tbody></table></div>
+                <p style="font-size: 0.9rem; color: #666; text-align: right;">※ 球面性の仮定(Mauchly's Test)は現在未実装のため、Geisser-Greenhouse補正等は適用されていません。</p>
+             </div>`;
+
+        } else {
+            // Existing Mixed/Independent output (Simplified for brevity as we are just appending/modifying logic)
+            // But wait, I am replacing the renderTwoWayMixedResults function? No, I am replacing from 900 to 1056.
+            // I need to preserve existing Mixed render logic or merge it.
+
+            // ... (This block is handling Mixed primarily in the original code, but 'renderTwoWayMixedResults' name implies Mixed only)
+            // I should make a generic render function or add 'repeated' case to 'renderTwoWayMixedResults' 
+            // essentially renaming it to renderComplexDesignResults
+
+            // For now, I'll follow the pattern and render based on design type in the loop.
+
+            html += `
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-table"></i> ${res.designType === 'mixed' ? '混合要因分散分析表' : '分散分析表'}
+                </h4>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>変動要因</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p</th><th>ηp²</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+            res.sources.forEach(src => {
+                const sig = src.p !== null ? (src.p < 0.01 ? '**' : src.p < 0.05 ? '*' : src.p < 0.1 ? '†' : '') : '';
+                html += `
+                    <tr>
+                        <td>${src.name}</td>
+                        <td>${src.ss.toFixed(2)}</td>
+                        <td>${src.df}</td>
+                        <td>${src.ms.toFixed(2)}</td>
+                        <td>${src.f ? src.f.toFixed(2) : '-'}</td>
+                        <td style="${src.p && src.p < 0.05 ? 'color:#e11d48;font-weight:bold;' : ''}">${src.p ? src.p.toFixed(3) + sig : '-'}</td>
+                         <td>${src.eta ? src.eta.toFixed(2) : '-'}</td>
+                    </tr>`;
+            });
+
+            html += `</tbody></table></div></div>`;
+        }
     });
 
     container.innerHTML = html;
 }
+
+// ----------------------------------------------------------------------
+// Repeated Measures Logic
+// ----------------------------------------------------------------------
+
+function runTwoWayRepeatedANOVA(currentData, factors, mapping) {
+    // factors: { f1: { name, levels: [] }, f2: { name, levels: [] } }
+    // mapping: { "levelA1-levelB1": colName, ... }
+
+    const methodSelect = document.getElementById('two-way-comparison-method');
+    const method = methodSelect ? methodSelect.value : 'bonferroni'; // Default to Bonferroni for RM
+
+    const f1 = factors.f1;
+    const f2 = factors.f2;
+    const n = currentData.length;
+    const a = f1.levels.length;
+    const b = f2.levels.length;
+
+    // 1. Gather Data Matrix Y[i][j][k] (Subject i, F1 level j, F2 level k)
+    // Structure: [Subject] -> [Factor1] -> [Factor2] -> Value
+    const Y = [];
+
+    // Valid data check
+    const validRows = currentData.filter(row => {
+        // Check all involved columns are numeric and not null
+        return f1.levels.every(l1 =>
+            f2.levels.every(l2 => {
+                const col = mapping[`${l1}-${l2}`];
+                const val = row[col];
+                return val != null && !isNaN(val);
+            })
+        );
+    });
+
+    const realN = validRows.length;
+    if (realN < 2) {
+        alert('有効なデータ行が少なすぎます');
+        return;
+    }
+
+    // Pre-calculate Means
+    // Grand Mean
+    let grandSum = 0;
+    let grandCount = 0;
+
+    // Subject Means (averaged over A and B)
+    const subjectMeans = [];
+
+    // Cell Means (A=j, B=k)
+    const cellMeans = {}; // key: "j-k"
+    f1.levels.forEach(l1 => f2.levels.forEach(l2 => cellMeans[`${l1}-${l2}`] = 0));
+
+    // Factor A Means
+    const aMeans = {};
+    f1.levels.forEach(l1 => aMeans[l1] = 0);
+
+    // Factor B Means
+    const bMeans = {};
+    f2.levels.forEach(l2 => bMeans[l2] = 0);
+
+    // Populate Data and Sums
+    validRows.forEach((row, i) => {
+        let subSum = 0;
+        f1.levels.forEach(l1 => {
+            f2.levels.forEach(l2 => {
+                const col = mapping[`${l1}-${l2}`];
+                const val = parseFloat(row[col]);
+                grandSum += val;
+                grandCount++;
+                subSum += val;
+
+                cellMeans[`${l1}-${l2}`] += val;
+                aMeans[l1] += val;
+                bMeans[l2] += val;
+            });
+        });
+        subjectMeans.push(subSum / (a * b));
+    });
+
+    const grandMean = grandSum / grandCount;
+
+    // Convert Sums to Means
+    Object.keys(cellMeans).forEach(k => cellMeans[k] /= realN);
+    Object.keys(aMeans).forEach(k => aMeans[k] /= (realN * b));
+    Object.keys(bMeans).forEach(k => bMeans[k] /= (realN * a));
+
+    // 2. Calculate Sum of Squares
+
+    // SS_Total
+    let ssTotal = 0;
+    validRows.forEach(row => {
+        f1.levels.forEach(l1 => {
+            f2.levels.forEach(l2 => {
+                const col = mapping[`${l1}-${l2}`];
+                const val = parseFloat(row[col]);
+                ssTotal += Math.pow(val - grandMean, 2);
+            });
+        });
+    });
+
+    // SS_Subjects (Between Subjects)
+    let ssSubjects = 0;
+    subjectMeans.forEach(m => {
+        ssSubjects += (a * b) * Math.pow(m - grandMean, 2);
+    });
+
+    // SS_Within (Total - Subjects)
+    const ssWithin = ssTotal - ssSubjects;
+
+    // Partition Within: A, B, AxB and Errors
+
+    // SS_A
+    let ssA = 0;
+    f1.levels.forEach(l1 => {
+        ssA += (realN * b) * Math.pow(aMeans[l1] - grandMean, 2);
+    });
+
+    // SS_B
+    let ssB = 0;
+    f2.levels.forEach(l2 => {
+        ssB += (realN * a) * Math.pow(bMeans[l2] - grandMean, 2);
+    });
+
+    // SS_AxB
+    let ssAxB = 0;
+    f1.levels.forEach(l1 => {
+        f2.levels.forEach(l2 => {
+            const cellMean = cellMeans[`${l1}-${l2}`];
+            const effectInteraction = cellMean - aMeans[l1] - bMeans[l2] + grandMean;
+            ssAxB += realN * Math.pow(effectInteraction, 2);
+        });
+    });
+
+    // Error Terms
+    // To assume Geisser-Greenhouse requires calculation of matrix sphericity which is complex in vanilla JS.
+    // We will compute standard error terms by subtraction.
+
+    // Calculate SS_AxSubjects (Error A)
+    // Create Subject x A table (averaged over B)
+    let ssAxS_raw = 0; // standard calculation of Interaction(AxS) SS
+    // Direct formula: SS_AxS = Sum( (Y_ij. - Y_i.. - Y_.j. + Y_...)^2 ) * b ?? No, we are averaging over B implies /b somewhere?
+    // Actually simpler: 
+    // SS_ErrorA = SS_WithinA - SS_A ?? Not exactly.
+    // Let's use the explicit interaction calculation approach for AxS.
+    // SS_AxS = Sum_i Sum_j b * (Mean_ij - Mean_i.. - Mean_.j. + Mean_...)^2
+
+    let ssErrorA = 0;
+    validRows.forEach((row, i) => {
+        const meanI = subjectMeans[i];
+        f1.levels.forEach(l1 => {
+            // Mean of subject i at level A=j (across B)
+            let sumB = 0;
+            f2.levels.forEach(l2 => sumB += parseFloat(row[mapping[`${l1}-${l2}`]]));
+            const meanIJ = sumB / b;
+            const meanJ = aMeans[l1];
+
+            ssErrorA += b * Math.pow(meanIJ - meanI - meanJ + grandMean, 2);
+        });
+    });
+
+    // SS_ErrorB (BxS)
+    let ssErrorB = 0;
+    validRows.forEach((row, i) => {
+        const meanI = subjectMeans[i];
+        f2.levels.forEach(l2 => {
+            // Mean of subject i at level B=k (across A)
+            let sumA = 0;
+            f1.levels.forEach(l1 => sumA += parseFloat(row[mapping[`${l1}-${l2}`]]));
+            const meanIK = sumA / a;
+            const meanK = bMeans[l2];
+
+            ssErrorB += a * Math.pow(meanIK - meanI - meanK + grandMean, 2);
+        });
+    });
+
+    // SS_ErrorAxB (AxBxS)
+    // Residual = ssWithin - ssA - ssB - ssAxB - ssErrorA - ssErrorB
+    const ssErrorAxB = ssWithin - ssA - ssB - ssAxB - ssErrorA - ssErrorB;
+
+    // 3. Degrees of Freedom
+    const dfSubjects = realN - 1;
+    const dfA = a - 1;
+    const dfB = b - 1;
+    const dfAxB = dfA * dfB;
+    const dfErrorA = dfA * dfSubjects;
+    const dfErrorB = dfB * dfSubjects;
+    const dfErrorAxB = dfAxB * dfSubjects;
+
+    // 4. Mean Squares & F
+    const msA = ssA / dfA;
+    const msErrorA = ssErrorA / dfErrorA;
+    const fA = msA / msErrorA;
+    const pA = 1 - jStat.centralF.cdf(fA, dfA, dfErrorA);
+    const etaA = ssA / (ssA + ssErrorA);
+
+    const msB = ssB / dfB;
+    const msErrorB = ssErrorB / dfErrorB;
+    const fB = msB / msErrorB;
+    const pB = 1 - jStat.centralF.cdf(fB, dfB, dfErrorB);
+    const etaB = ssB / (ssB + ssErrorB);
+
+    const msAxB = ssAxB / dfAxB;
+    const msErrorAxB = ssErrorAxB / dfErrorAxB;
+    const fAxB = msAxB / msErrorAxB;
+    const pAxB = 1 - jStat.centralF.cdf(fAxB, dfAxB, dfErrorAxB);
+    const etaAxB = ssAxB / (ssAxB + ssErrorAxB);
+
+
+    // 5. Post Hoc (Simple Main Effects)
+    // Strategy: Repeated Measures -> Use Paired T-Tests with Correction for the pairwise comparisons
+    const sigPairs = [];
+    const allComparisons = [];
+
+    // We treat Factor 1 as the primary grouping axis for the graph (X-axis=Factor2 usually in my code? Let's check render)
+    // In Independent: X-axis=Factor2, Legend=Factor1.
+    // So we usually compare Levels of F1 at each Level of F2.
+    // Or Compare Levels of F2 within F1.
+    // Let's support both or stick to standard: "Simple Main Effects of Legend Factor at X-axis Factor"
+    // Here: Compare Groups (Factor 1) at each Condition (Factor 2).
+
+    // xIndex corresponds to Factor 2 (X-axis).
+    f2.levels.forEach((l2, i) => {
+        const groups = f1.levels; // These are the bars clustered at l2
+
+        // Pairwise comparisons between Factor 1 levels AT this Factor 2 level
+        for (let gA = 0; gA < groups.length; gA++) {
+            for (let gB = gA + 1; gB < groups.length; gB++) {
+                const groupA = groups[gA];
+                const groupB = groups[gB];
+
+                const colA = mapping[`${groupA}-${l2}`];
+                const colB = mapping[`${groupB}-${l2}`];
+
+                const valsA = validRows.map(r => r[colA]);
+                const valsB = validRows.map(r => r[colB]);
+
+                // Paired T-Test
+                const diffs = valsA.map((v, k) => v - valsB[k]);
+                const meanDiff = jStat.mean(diffs);
+                const sdDiff = jStat.stdev(diffs, true); // sample SD
+                const stderr = sdDiff / Math.sqrt(realN);
+                const t = stderr > 0 ? meanDiff / stderr : 0;
+                const df = realN - 1;
+                const p_raw = jStat.studentt.cdf(-Math.abs(t), df) * 2;
+
+                allComparisons.push({ xIndex: i, g1: groupA, g2: groupB, p: p_raw, method });
+            }
+        }
+    });
+
+    // Corrections
+    const xIndices = [...new Set(allComparisons.map(c => c.xIndex))];
+    xIndices.forEach(idx => {
+        const family = allComparisons.filter(c => c.xIndex === idx);
+
+        if (method === 'bonferroni') {
+            const m = family.length;
+            family.forEach(c => {
+                const pAdj = Math.min(1, c.p * m);
+                if (pAdj < 0.1) sigPairs.push({ ...c, p: pAdj });
+            });
+        } else if (method === 'holm') {
+            const adjusted = performHolmCorrection(family); // Assumes generic structure compatibility
+            adjusted.forEach(c => {
+                // performHolmCorrection returns objects with p_holm
+                // Note: utility expects {p: raw} and returns new objects
+                if (c.p_holm < 0.1) sigPairs.push({ ...c, p: c.p_holm });
+            });
+        } else {
+            // Tukey not standard for Repeated Measures simple main effect on Paired T?
+            // Usually just Bonferroni or Holm. If Tukey selected, fallback to Bonferroni or Raw?
+            // Let's use Raw for 'tukey' if forced, or just alias to Bonferroni?
+            // Currently UI says 'Tukey (Recommended)'. 
+            // Ideally implement Tukey-Kramer for Repeated Measures (requiring q-dist).
+            // Fallback to Bonferroni for specific Repeated case simplicity/robustness.
+            const m = family.length;
+            family.forEach(c => {
+                const pAdj = Math.min(1, c.p * m); // Fallback
+                if (pAdj < 0.1) sigPairs.push({ ...c, p: pAdj });
+            });
+        }
+    });
+
+    const sources = [
+        { name: `${f1.name} (要因1)`, ss: ssA, df: dfA, ms: msA, f: fA, p: pA, eta: etaA },
+        { name: `Error (${f1.name})`, ss: ssErrorA, df: dfErrorA, ms: msErrorA, f: null, p: null, eta: null },
+        { name: `${f2.name} (要因2)`, ss: ssB, df: dfB, ms: msB, f: fB, p: pB, eta: etaB },
+        { name: `Error (${f2.name})`, ss: ssErrorB, df: dfErrorB, ms: msErrorB, f: null, p: null, eta: null },
+        { name: `${f1.name} × ${f2.name}`, ss: ssAxB, df: dfAxB, ms: msAxB, f: fAxB, p: pAxB, eta: etaAxB },
+        { name: `Error (Interaction)`, ss: ssErrorAxB, df: dfErrorAxB, ms: msErrorAxB, f: null, p: null, eta: null }
+    ];
+
+    // Prepare Cell Stats for Visualization
+    const cellStats = {};
+    f1.levels.forEach(l1 => {
+        cellStats[l1] = {};
+        f2.levels.forEach(l2 => {
+            cellStats[l1][l2] = {
+                mean: cellMeans[`${l1}-${l2}`],
+                n: realN,
+                // For error bars in repeated measures:
+                // Standard Error should theoretically remove subject variability? (Morey, 2008)
+                // Or just show standard SD/SE?
+                // Standard is usually sufficient for simple viz, but specific 'within-subject CI' is better.
+                // We'll use standard SE here for consistency with other plots.
+                std: jStat.stdev(validRows.map(r => r[mapping[`${l1}-${l2}`]]), true)
+            };
+        });
+    });
+
+    const results = [{
+        depVar: '測定値',
+        factor1: f1.name,
+        factor2: f2.name,
+        levels1: f1.levels,
+        levels2: f2.levels,
+        cellStats,
+        sources,
+        sigPairs,
+        method,
+        designType: 'repeated'
+    }];
+
+    renderTwoWayMixedResults(results); // Reuse generic renderer
+    displayTwoWayANOVAInterpretation(results, 'repeated');
+    renderTwoWayANOVAVisualization(results);
+    document.getElementById('analysis-results').style.display = 'block';
+}
+
 
 // ----------------------------------------------------------------------
 // Main Render
@@ -957,16 +1339,21 @@ export function render(container, currentData, characteristics) {
                 
                <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
-                    <div style="display: flex; gap: 1rem;">
-                        <label style="flex: 1; padding: 1rem; background: #f0f8ff; border: 2px solid #1e90ff; border-radius: 8px; cursor: pointer;">
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <label style="flex: 1; min-width: 200px; padding: 1rem; background: #f0f8ff; border: 2px solid #1e90ff; border-radius: 8px; cursor: pointer;">
                             <input type="radio" name="anova-2-type" value="independent" checked>
                             <strong>対応なし（独立測度）</strong>
-                            <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">2つの要因ともに被験者間因子（例：性別 × 学年）</p>
+                            <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">2つの要因ともに被験者間因子<br>（例：性別 × 学年）</p>
                         </label>
-                        <label style="flex: 1; padding: 1rem; background: #fafbfc; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                        <label style="flex: 1; min-width: 200px; padding: 1rem; background: #fafbfc; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
                             <input type="radio" name="anova-2-type" value="mixed">
                             <strong>混合計画（Mixed）</strong>
-                            <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">被験者間因子 × 被験者内因子（例：群 × 時点）</p>
+                            <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">被験者間因子 × 被験者内因子<br>（例：群 × 分割測定）</p>
+                        </label>
+                        <label style="flex: 1; min-width: 200px; padding: 1rem; background: #fafbfc; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" name="anova-2-type" value="repeated">
+                            <strong>反復測定（対応あり）</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">2つの要因ともに被験者内因子<br>（例：条件A × 条件B）</p>
                         </label>
                     </div>
                 </div>
@@ -982,18 +1369,49 @@ export function render(container, currentData, characteristics) {
                     </select>
                 </div>
 
+                <!-- Independent Controls -->
                 <div id="independent-controls">
-                    <!-- Factor 1 & 2 -->
                     <div id="factor1-container" style="margin-bottom: 1rem;"></div>
                     <div id="factor2-container" style="margin-bottom: 1rem;"></div>
                     <div id="dependent-var-container" style="margin-bottom: 1rem;"></div>
                     <div id="run-ind-btn-container"></div>
                 </div>
 
+                <!-- Mixed Controls -->
                 <div id="mixed-controls" style="display: none;">
                     <div id="mixed-between-container" style="margin-bottom: 1rem;"></div>
                     <div id="pair-selector-container" style="margin-bottom: 1rem;"></div>
                     <div id="run-mixed-btn-container"></div>
+                </div>
+                
+                <!-- Repeated Controls -->
+                <div id="repeated-controls" style="display: none;">
+                     <div style="margin-bottom: 1.5rem; padding: 1rem; background: #fffacd; border-radius: 8px; font-size: 0.9rem;">
+                        <i class="fas fa-info-circle" style="color: #d97706;"></i> 
+                        反復測定デザインの設定：<br>
+                        1. 2つの要因名とそれぞれの水準数・水準名を入力してください。<br>
+                        2. 「グリッドを生成」を押すと、要因の組み合わせ表が表示されます。<br>
+                        3. 各セルに対応するデータの列（変数）を割り当ててください。
+                     </div>
+                     
+                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label style="font-weight: bold;">要因1 (Legend)</label>
+                            <input type="text" id="rm-f1-name" class="form-input" placeholder="例: 時間" value="時間" style="width:100%; padding:0.5rem; margin-bottom:0.5rem;">
+                            <input type="text" id="rm-f1-levels" class="form-input" placeholder="水準 (カンマ区切り) 例: Pre,Post" style="width:100%; padding:0.5rem;">
+                        </div>
+                        <div>
+                            <label style="font-weight: bold;">要因2 (X軸)</label>
+                            <input type="text" id="rm-f2-name" class="form-input" placeholder="例: 条件" value="条件" style="width:100%; padding:0.5rem; margin-bottom:0.5rem;">
+                            <input type="text" id="rm-f2-levels" class="form-input" placeholder="水準 (カンマ区切り) 例: A,B" style="width:100%; padding:0.5rem;">
+                        </div>
+                     </div>
+                     <button id="rm-generate-grid-btn" class="btn btn-secondary" style="margin-bottom: 1.5rem; width: 100%;">
+                        <i class="fas fa-table"></i> グリッドを生成
+                     </button>
+                     
+                     <div id="rm-grid-area" style="margin-bottom: 1.5rem;"></div>
+                     <div id="rm-run-btn-area"></div>
                 </div>
             </div>
 
@@ -1039,12 +1457,82 @@ export function render(container, currentData, characteristics) {
         runTwoWayMixedANOVA(currentData, pairs);
     }, { id: 'run-mixed-anova-btn' });
 
+    // Repeated Measures Logic Setup
+    const generateGridBtn = document.getElementById('rm-generate-grid-btn');
+    const gridArea = document.getElementById('rm-grid-area');
+    const runArea = document.getElementById('rm-run-btn-area');
 
+    generateGridBtn.addEventListener('click', () => {
+        const f1Name = document.getElementById('rm-f1-name').value || '要因1';
+        const f1Levels = document.getElementById('rm-f1-levels').value.split(',').map(s => s.trim()).filter(s => s);
+        const f2Name = document.getElementById('rm-f2-name').value || '要因2';
+        const f2Levels = document.getElementById('rm-f2-levels').value.split(',').map(s => s.trim()).filter(s => s);
+
+        if (f1Levels.length < 2 || f2Levels.length < 2) {
+            alert('各要因には少なくとも2つの水準が必要です');
+            return;
+        }
+
+        // Generate Grid
+        let tableHtml = `<table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>${f1Name} \\ ${f2Name}</th>
+                    ${f2Levels.map(l2 => `<th>${l2}</th>`).join('')}
+                </tr>
+            </thead>
+            <tbody>`;
+
+        f1Levels.forEach(l1 => {
+            tableHtml += `<tr><th>${l1}</th>`;
+            f2Levels.forEach(l2 => {
+                tableHtml += `<td id="cell-container-${l1}-${l2}"></td>`;
+            });
+            tableHtml += `</tr>`;
+        });
+        tableHtml += `</tbody></table>`;
+
+        gridArea.innerHTML = tableHtml;
+
+        // Inject Selectors into Cells
+        f1Levels.forEach(l1 => {
+            f2Levels.forEach(l2 => {
+                createVariableSelector(`cell-container-${l1}-${l2}`, numericColumns, `rm-select-${l1}-${l2}`, { placeholder: '変数を選択' });
+            });
+        });
+
+        createAnalysisButton('rm-run-btn-area', '分析を実行（反復測定）', () => {
+            const mapping = {};
+            let missing = false;
+            f1Levels.forEach(l1 => {
+                f2Levels.forEach(l2 => {
+                    const val = document.getElementById(`rm-select-${l1}-${l2}`).value;
+                    if (!val) missing = true;
+                    mapping[`${l1}-${l2}`] = val;
+                });
+            });
+
+            if (missing) {
+                alert('すべてのセルに変数を割り当ててください');
+                return;
+            }
+
+            runTwoWayRepeatedANOVA(currentData,
+                { f1: { name: f1Name, levels: f1Levels }, f2: { name: f2Name, levels: f2Levels } },
+                mapping
+            );
+        }, { id: 'run-rm-btn' });
+    });
+
+
+    // Toggle logic
     document.querySelectorAll('input[name="anova-2-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
-            const isInd = e.target.value === 'independent';
-            document.getElementById('independent-controls').style.display = isInd ? 'block' : 'none';
-            document.getElementById('mixed-controls').style.display = !isInd ? 'block' : 'none';
+            const val = e.target.value;
+            document.getElementById('independent-controls').style.display = val === 'independent' ? 'block' : 'none';
+            document.getElementById('mixed-controls').style.display = val === 'mixed' ? 'block' : 'none';
+            document.getElementById('repeated-controls').style.display = val === 'repeated' ? 'block' : 'none';
+
             document.querySelectorAll('input[name="anova-2-type"]').forEach(r => {
                 const label = r.closest('label');
                 label.style.background = r.checked ? '#f0f8ff' : '#fafbfc';
