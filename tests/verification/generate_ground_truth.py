@@ -107,6 +107,72 @@ def verify_regression_multiple():
         'p_eng': model.pvalues['Eng']
     }
 
+# 8. One-Way Repeated Measures ANOVA
+# Uses wide-format: 数学, 英語, 理科 as 3 conditions for each subject (row)
+def verify_anova_oneway_repeated():
+    df = load_data("demo_all_analysis.csv")
+    # Need pingouin for repeated measures
+    try:
+        import pingouin as pg
+    except ImportError:
+        print("pingouin not installed, skipping repeated measures verification")
+        return
+    
+    # Convert wide to long format for pingouin
+    df_long = df[['ID', '数学', '英語', '理科']].melt(
+        id_vars=['ID'], 
+        value_vars=['数学', '英語', '理科'],
+        var_name='Subject', 
+        value_name='Score'
+    )
+    df_long = df_long.dropna()
+    
+    # rm_anova returns a DataFrame with columns: Source, SS, DF, MS, F, p-unc, ...
+    # Row 0 is the within-subject factor (Subject)
+    aov = pg.rm_anova(data=df_long, dv='Score', within='Subject', subject='ID', detailed=True)
+    
+    # For One-Way RM ANOVA, DF for the factor is k-1, and we need error DF
+    df_factor = int(aov.loc[0, 'DF'])
+    df_error = int(aov.loc[1, 'DF']) if len(aov) > 1 else (len(df_long['ID'].unique()) - 1) * df_factor
+    
+    results['anova_oneway_repeated'] = {
+        'F': float(aov.loc[0, 'F']),
+        'p': float(aov.loc[0, 'p-unc']),
+        'ddof1': df_factor,
+        'ddof2': df_error
+    }
+
+# 9. Mixed ANOVA (Between: 性別, Within: 数学/英語/理科)
+def verify_anova_mixed():
+    df = load_data("demo_all_analysis.csv")
+    try:
+        import pingouin as pg
+    except ImportError:
+        print("pingouin not installed, skipping mixed ANOVA verification")
+        return
+    
+    # Convert to long format
+    df_long = df[['ID', '性別', '数学', '英語', '理科']].melt(
+        id_vars=['ID', '性別'],
+        value_vars=['数学', '英語', '理科'],
+        var_name='Subject',
+        value_name='Score'
+    )
+    df_long = df_long.dropna()
+    
+    aov = pg.mixed_anova(data=df_long, dv='Score', within='Subject', between='性別', subject='ID')
+    
+    # Results has 3 rows with Source: 性別, Subject, Interaction
+    row_between = aov[aov['Source'] == '性別'].iloc[0]
+    row_within = aov[aov['Source'] == 'Subject'].iloc[0]
+    row_inter = aov[aov['Source'] == 'Interaction'].iloc[0]
+    
+    results['anova_mixed'] = {
+        'between': {'F': float(row_between['F']), 'p': float(row_between['p-unc'])},
+        'within': {'F': float(row_within['F']), 'p': float(row_within['p-unc'])},
+        'interaction': {'F': float(row_inter['F']), 'p': float(row_inter['p-unc'])}
+    }
+
 # Run All
 if __name__ == "__main__":
     try:
@@ -117,6 +183,8 @@ if __name__ == "__main__":
         verify_chisquare()
         verify_regression_simple()
         verify_regression_multiple()
+        verify_anova_oneway_repeated()
+        verify_anova_mixed()
         
         with open(OUTPUT_FILE, 'w') as f:
             json.dump(results, f, indent=4)

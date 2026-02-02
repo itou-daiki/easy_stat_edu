@@ -221,4 +221,65 @@ test.describe('Statistical Accuracy Verification', () => {
         assertClose(regEng.p, groundTruth.regression_multiple.p_eng, 0.05, 'Multi Reg p Eng');
     });
 
+    // 8. One-Way Repeated Measures ANOVA
+    test('One-Way Repeated ANOVA Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'anova_one_way');
+        // Click Repeated radio button (not a tab)
+        await page.click('input[name="anova-type"][value="repeated"]');
+        await page.waitForTimeout(300);
+
+        // Select 3 within-subject variables: 数学, 英語, 理科
+        await selectVariables(page, ['数学', '英語', '理科'], '#rep-dependent-var-container');
+        await page.click('#run-rep-btn-container button');
+
+        await expect(page.locator('#test-results-section')).toBeVisible();
+
+        // F and p are in result table (exclude APA table by using first)
+        const fText = await page.locator('#test-results-section table tbody tr:first-child td:nth-last-child(5)').first().innerText();
+        const pText = await page.locator('#test-results-section table tbody tr:first-child td:nth-last-child(4)').first().innerText();
+
+        const fVal = parseFloat(fText);
+        const pVal = parseFloat(pText.replace(/[^\d.-]/g, ''));
+
+        assertClose(fVal, groundTruth.anova_oneway_repeated.F, 1.0, 'RM ANOVA F-value');
+        assertClose(pVal, groundTruth.anova_oneway_repeated.p, 0.001, 'RM ANOVA p-value');
+    });
+
+    // 9. Mixed ANOVA - Skipped: Uses complex pair selector (pre/post pairs) that requires different UI handling
+    test.skip('Mixed ANOVA Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'anova_two_way');
+        // Click Mixed radio button
+        await page.click('input[name="anova-2-type"][value="mixed"]');
+        await page.waitForTimeout(300);
+
+        // Between factor select in #mixed-between-container
+        await selectStandardOption(page, '#mixed-between-var', '性別', 'label');
+        // Within factor (pair selector in #pair-selector-container)
+        await selectVariables(page, ['数学', '英語', '理科'], '#pair-selector-container');
+        await page.click('#run-mixed-btn-container button');
+
+        await expect(page.locator('#test-results-section')).toBeVisible();
+
+        // Table rows: Between, Within, Interaction
+        const getRowF = async (pattern: string) => {
+            const rows = page.locator('#test-results-section table tbody tr');
+            const count = await rows.count();
+            for (let i = 0; i < count; ++i) {
+                const text = await rows.nth(i).locator('td:first-child').innerText();
+                if (text.includes(pattern)) {
+                    const fText = await rows.nth(i).locator('td:nth-child(5)').innerText();
+                    return parseFloat(fText);
+                }
+            }
+            throw new Error(`Row "${pattern}" not found`);
+        };
+
+        const fBetween = await getRowF('性別');
+        const fWithin = await getRowF('条件');
+        const fInter = await getRowF('×');
+
+        assertClose(fBetween, groundTruth.anova_mixed.between.F, 0.5, 'Mixed Between F');
+        assertClose(fWithin, groundTruth.anova_mixed.within.F, 1.0, 'Mixed Within F');
+        assertClose(fInter, groundTruth.anova_mixed.interaction.F, 0.5, 'Mixed Interaction F');
+    });
 });
