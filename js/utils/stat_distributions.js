@@ -6,7 +6,7 @@
  * Primarily focusing on the Studentized Range Distribution for Tukey-Kramer test.
  */
 
-import { jStat } from 'jstat';
+// import { jStat } from 'jstat'; // Removed to avoid browser module resolution error. Assume global jStat.
 
 // Normal PDF
 function normalPDF(x) {
