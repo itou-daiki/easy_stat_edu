@@ -1,11 +1,13 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
+import { calculateTukeyP, performHolmCorrection } from '../utils/stat_distributions.js';
 
 // Pairwise t-test helper for Between-Subjects (Independent)
-function performPostHocTests(groups, groupData) {
+function performPostHocTests(groups, groupData, msWithin, dfWithin, method = 'tukey') {
     const pairs = [];
     const numGroups = groups.length;
-    // Number of comparisons for Bonferroni
-    const numComparisons = (numGroups * (numGroups - 1)) / 2;
+
+    // Collect all raw comparisons
+    const comparisons = [];
 
     for (let i = 0; i < numGroups; i++) {
         for (let j = i + 1; j < numGroups; j++) {
@@ -20,49 +22,99 @@ function performPostHocTests(groups, groupData) {
             const n2 = d2.length;
             const mean1 = jStat.mean(d1);
             const mean2 = jStat.mean(d2);
+
+            // For report
             const std1 = jStat.stdev(d1, true);
             const std2 = jStat.stdev(d2, true);
-            const var1 = std1 * std1;
-            const var2 = std2 * std2;
 
-            // Welch's t-test
-            const se_welch = Math.sqrt(var1 / n1 + var2 / n2);
-            const t_stat = (mean1 - mean2) / se_welch;
+            let p_raw;
+            let t_val; // or q_val
 
-            // Welch-Satterthwaite df
-            const df_num = Math.pow(var1 / n1 + var2 / n2, 2);
-            const df_den = Math.pow(var1 / n1, 2) / (n1 - 1) + Math.pow(var2 / n2, 2) / (n2 - 1);
-            const df = df_num / df_den;
+            if (method === 'tukey') {
+                // Tukey-Kramer: Uses MS_within (Error variance from ANOVA)
+                // Standard Error for difference: sqrt(MSW/2 * (1/n1 + 1/n2))
+                // Studentized Range Statistic q = |m1 - m2| / sqrt(MSW * (1/n1 + 1/n2) / 2) ?
+                // Standard definition: q = |m1 - m2| / sqrt(MSW/n) for equal n.
+                // For unequal: q = |m1 - m2| / sqrt( (MSW/2) * (1/n1 + 1/n2) )
 
-            let p_raw = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;
+                const se_diff = Math.sqrt((msWithin / 2) * (1 / n1 + 1 / n2));
+                const q_stat = Math.abs(mean1 - mean2) / se_diff;
 
-            // Bonferroni correction
-            let p_adj = Math.min(1, p_raw * numComparisons);
+                // Tukey P-value
+                p_raw = calculateTukeyP(q_stat, numGroups, dfWithin);
 
-            pairs.push({
-                g1, g2,
-                p: p_adj,
-                mean1, mean2,
-                std1, std2,
-                n1, n2
-            });
+                pairs.push({
+                    g1, g2,
+                    p: p_raw,
+                    mean1, mean2,
+                    std1, std2,
+                    n1, n2,
+                    stat: q_stat,
+                    measure: 'q'
+                });
+
+            } else {
+                // Welch's t-test for Bonferroni/Holm (Robust to unequal variances)
+                const var1 = std1 * std1;
+                const var2 = std2 * std2;
+                const se_welch = Math.sqrt(var1 / n1 + var2 / n2);
+                const t_stat = (mean1 - mean2) / se_welch;
+
+                // Welch-Satterthwaite df
+                const df_num = Math.pow(var1 / n1 + var2 / n2, 2);
+                const df_den = Math.pow(var1 / n1, 2) / (n1 - 1) + Math.pow(var2 / n2, 2) / (n2 - 1);
+                const df = df_num / df_den;
+
+                p_raw = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;
+
+                comparisons.push({
+                    g1, g2,
+                    p: p_raw,
+                    mean1, mean2,
+                    std1, std2,
+                    n1, n2,
+                    stat: t_stat,
+                    measure: 't'
+                });
+            }
         }
     }
-    return pairs;
+
+    if (method === 'tukey') {
+        return pairs; // Tukey p-values are already adjusted/calculated directly
+    }
+
+    // Apply adjustments for Bonferroni / Holm
+    const numComparisons = comparisons.length; // Or theoretical max? Standard is number of specific planned comparisons, here all pairs.
+
+    if (method === 'bonferroni') {
+        return comparisons.map(c => ({
+            ...c,
+            p: Math.min(1, c.p * numComparisons)
+        }));
+    } else if (method === 'holm') {
+        const adjustedInfo = performHolmCorrection(comparisons);
+        return adjustedInfo.map(c => ({
+            ...c,
+            p: c.p_holm // Use the adjusted p
+        }));
+    }
+
+    return comparisons; // Default raw (none)
 }
 
 // Pairwise t-test helper for Within-Subjects (Repeated)
-function performRepeatedPostHocTests(dependentVars, currentData) {
+function performRepeatedPostHocTests(dependentVars, currentData, msError, dfError, nTotal, method = 'tukey') {
     const pairs = [];
     const numVars = dependentVars.length;
-    const numComparisons = (numVars * (numVars - 1)) / 2;
+    const comparisons = [];
 
     for (let i = 0; i < numVars; i++) {
         for (let j = i + 1; j < numVars; j++) {
             const var1 = dependentVars[i];
             const var2 = dependentVars[j];
 
-            // Extract pairs where both are present
+            // Valid pairs
             const validPairs = currentData
                 .map(row => ({ v1: row[var1], v2: row[var2] }))
                 .filter(p => p.v1 != null && !isNaN(p.v1) && p.v2 != null && !isNaN(p.v2));
@@ -75,27 +127,68 @@ function performRepeatedPostHocTests(dependentVars, currentData) {
             const mean1 = jStat.mean(values1);
             const mean2 = jStat.mean(values2);
 
-            // Paired t-test calculation
-            const diffs = validPairs.map(p => p.v1 - p.v2);
-            const diffMean = jStat.mean(diffs);
-            const diffStd = jStat.stdev(diffs, true);
-            const se = diffStd / Math.sqrt(n);
-            const t_stat = diffMean / se;
-            const df = n - 1;
+            let p_raw;
 
-            let p_raw = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;
-            let p_adj = Math.min(1, p_raw * numComparisons);
+            if (method === 'tukey') {
+                // Repeated Measures Tukey
+                // q = |m1 - m2| / sqrt(MSE / n)
+                // Note: This assumes sphericity / equal covariance.
+                // Using msError from the ANOVA table.
+                // Note: n here should be nTotal if no missing data, but robustly n.
+                // If checking within-sub, n is the number of subjects.
 
-            pairs.push({
-                g1: var1,
-                g2: var2,
-                p: p_adj,
-                mean1, mean2,
-                n
-            });
+                const se_diff = Math.sqrt(msError / n);
+                const q_stat = Math.abs(mean1 - mean2) / se_diff;
+
+                p_raw = calculateTukeyP(q_stat, numVars, dfError);
+
+                pairs.push({
+                    g1: var1, g2: var2,
+                    p: p_raw,
+                    mean1, mean2, n,
+                    stat: q_stat,
+                    measure: 'q'
+                });
+
+            } else {
+                // Paired t-test
+                const diffs = validPairs.map(p => p.v1 - p.v2);
+                const diffMean = jStat.mean(diffs);
+                const diffStd = jStat.stdev(diffs, true);
+                const se = diffStd / Math.sqrt(n);
+                const t_stat = diffMean / se;
+                const df = n - 1;
+
+                p_raw = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;
+
+                comparisons.push({
+                    g1: var1, g2: var2,
+                    p: p_raw,
+                    mean1, mean2, n,
+                    stat: t_stat,
+                    measure: 't'
+                });
+            }
         }
     }
-    return pairs;
+
+    if (method === 'tukey') return pairs;
+
+    const numComparisons = comparisons.length;
+
+    if (method === 'bonferroni') {
+        return comparisons.map(c => ({
+            ...c,
+            p: Math.min(1, c.p * numComparisons)
+        }));
+    } else if (method === 'holm') {
+        return performHolmCorrection(comparisons).map(c => ({
+            ...c,
+            p: c.p_holm
+        }));
+    }
+
+    return comparisons;
 }
 
 // ----------------------------------------------------------------------
@@ -226,6 +319,9 @@ function displayANOVAVisualization(results, testType) {
                         </tbody>
                     </table>
                 </div>
+                <!-- 多重比較の結果テーブル -->
+                ${renderPostHocTable(res.sigPairs, res.method)}
+                
                 <div id="${plotId}" class="plot-container"></div>
             </div>`;
     });
@@ -319,7 +415,43 @@ function displayANOVAVisualization(results, testType) {
     });
 }
 
+function renderPostHocTable(pairs, method) {
+    if (!pairs || pairs.length === 0) return '';
 
+    let methodName = '';
+    if (method === 'tukey') methodName = 'Tukey-Kramer法 (等分散仮定)';
+    else if (method === 'holm') methodName = 'Holm法 (Welchのt検定)';
+    else if (method === 'bonferroni') methodName = 'Bonferroni法 (Welchのt検定)';
+
+    let html = `
+    <div style="margin-bottom: 1rem; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden;">
+        <div style="background-color: #f3f4f6; padding: 0.5rem 1rem; font-weight: bold; font-size: 0.9rem; color: #374151;">
+             多重比較結果 (${methodName})
+        </div>
+        <div style="max-height: 200px; overflow-y: auto;">
+            <table class="table table-sm" style="margin: 0; font-size: 0.85rem;">
+                <thead style="position: sticky; top: 0; background: white;">
+                    <tr><th>対比</th><th>差</th><th>統計量</th><th>p値</th><th>有意</th></tr>
+                </thead>
+                <tbody>`;
+
+    pairs.forEach(p => {
+        const sig = p.p < 0.01 ? '**' : p.p < 0.05 ? '*' : p.p < 0.1 ? '†' : 'n.s.';
+        const diff = p.mean1 - p.mean2;
+        const statLabel = p.measure === 'q' ? 'q' : 't';
+
+        html += `<tr>
+            <td>${p.g1} vs ${p.g2}</td>
+            <td>${diff.toFixed(2)}</td>
+            <td>${statLabel}=${Math.abs(p.stat).toFixed(2)}</td>
+            <td>${p.p < 0.001 ? '< .001' : p.p.toFixed(3)}</td>
+            <td style="${p.p < 0.05 ? 'color: #ef4444; font-weight: bold;' : 'color: #9ca3af;'}">${sig}</td>
+        </tr>`;
+    });
+
+    html += `</tbody></table></div></div>`;
+    return html;
+}
 
 // ----------------------------------------------------------------------
 // Main Analysis Functions
@@ -329,6 +461,8 @@ function runOneWayIndependentANOVA(currentData) {
     const factorVar = document.getElementById('factor-var').value;
     const dependentVarSelect = document.getElementById('dependent-var');
     const dependentVars = Array.from(dependentVarSelect.selectedOptions).map(o => o.value);
+    const methodSelect = document.getElementById('comparison-method');
+    const method = methodSelect ? methodSelect.value : 'tukey';
 
     if (!factorVar || dependentVars.length === 0) {
         alert('要因（グループ変数）と従属変数を1つ以上選択してください');
@@ -398,7 +532,7 @@ function runOneWayIndependentANOVA(currentData) {
         const groupSEs = groups.map(g => jStat.stdev(groupData[g], true) / Math.sqrt(groupData[g].length));
 
         // Post-hoc for plot
-        const sigPairs = performPostHocTests(groups, groupData);
+        const sigPairs = performPostHocTests(groups, groupData, msWithin, dfWithin, method);
 
         const levenes = calculateLeveneTest(Object.values(groupData));
 
@@ -429,7 +563,8 @@ function runOneWayIndependentANOVA(currentData) {
             sigPairs: sigPairs.map(p => ({
                 ...p,
                 significance: p.p < 0.01 ? '**' : p.p < 0.05 ? '*' : p.p < 0.1 ? '†' : 'n.s.'
-            }))
+            })),
+            method
         });
     });
 
@@ -503,6 +638,8 @@ function runOneWayIndependentANOVA(currentData) {
 function runOneWayRepeatedANOVA(currentData) {
     const dependentVarSelect = document.getElementById('rep-dependent-var');
     const dependentVars = Array.from(dependentVarSelect.selectedOptions).map(o => o.value);
+    const methodSelect = document.getElementById('comparison-method');
+    const method = methodSelect ? methodSelect.value : 'tukey';
 
     if (dependentVars.length < 3) {
         alert('対応あり分散分析には3つ以上の変数（条件）が必要です');
@@ -588,7 +725,7 @@ function runOneWayRepeatedANOVA(currentData) {
     renderSampleSizeInfo(resultsContainer, N);
 
     const conditionSEs = dependentVars.map((v, i) => jStat.stdev(validData.map(row => row[i]), true) / Math.sqrt(N));
-    const sigPairs = performRepeatedPostHocTests(dependentVars, currentData);
+    const sigPairs = performRepeatedPostHocTests(dependentVars, currentData, msError, dfError, N, method);
 
     const testResults = [{
         varName: `条件 (${dependentVars.join(', ')})`,
@@ -600,7 +737,8 @@ function runOneWayRepeatedANOVA(currentData) {
         sigPairs: sigPairs.map(p => ({
             ...p,
             significance: p.p < 0.01 ? '**' : p.p < 0.05 ? '*' : p.p < 0.1 ? '†' : 'n.s.'
-        }))
+        })),
+        method
     }];
 
     // 4. Interpretation
@@ -612,6 +750,12 @@ function runOneWayRepeatedANOVA(currentData) {
     document.getElementById('analysis-results').style.display = 'block';
 }
 
+function createComparisonMethodSelector(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return; // Should create container in render if not exists
+
+    // Actually, we inject this into existing UI dynamically or structure it in render.
+}
 
 // ----------------------------------------------------------------------
 // Main Render
@@ -668,13 +812,8 @@ export function render(container, currentData, characteristics) {
             </div>
 
             <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
-
-            <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
             
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                
-                <!-- 軸ラベル表示オプション (Moved) -->
-                <!-- <div id="axis-label-control-container"></div> -->
                 
                 <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
@@ -690,6 +829,21 @@ export function render(container, currentData, characteristics) {
                             <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">同じ被験者の異なる条件間を比較</p>
                         </label>
                     </div>
+                </div>
+
+                <div id="posthoc-method-container" style="margin-bottom: 1.5rem; padding: 1rem; background: #fafbfc; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #4b5563;">
+                        <i class="fas fa-tasks"></i> 多重比較の手法:
+                    </label>
+                    <select id="comparison-method" class="form-select" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #d1d5db;">
+                        <option value="tukey" selected>Tukey-Kramer法 (推奨・等分散仮定)</option>
+                        <option value="holm">Holm法 (Welch t検定ベース・ロバスト)</option>
+                        <option value="bonferroni">Bonferroni法 (Welch t検定ベース)</option>
+                    </select>
+                    <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #6b7280;">
+                        ※ <strong>Tukey</strong>はANOVAの前提（等分散）に基づき検出力が高い手法です。
+                        <strong>Holm</strong>や<strong>Bonferroni</strong>は、Welchの検定を使用し等分散性が疑われる場合に頑健です。
+                    </p>
                 </div>
 
                 <div id="independent-controls" style="display: block;">
@@ -714,9 +868,6 @@ export function render(container, currentData, characteristics) {
     `;
 
     renderDataOverview('#anova-data-overview', currentData, characteristics, { initiallyCollapsed: true });
-
-    // 軸ラベル表示オプションの追加 (Moved)
-    // createAxisLabelControl('axis-label-control-container');
 
     createVariableSelector('factor-var-container', categoricalColumns, 'factor-var', {
         label: '<i class="fas fa-layer-group"></i> 要因（グループ変数・3群以上）:',
