@@ -1,6 +1,6 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, createPairSelector, addSignificanceBrackets } from '../utils.js';
 import { calculateTukeyP, performHolmCorrection } from '../utils/stat_distributions.js';
-import { jStat } from 'jstat';
+// import { jStat } from 'jstat'; // Use global jStat
 
 // ======================================================================
 // Helper Functions
@@ -951,6 +951,8 @@ export function render(container, currentData, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つの要因（グループ変数など）が従属変数に与える影響と、その交互作用を検定します</p>
             </div>
 
+            <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
+            
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 
                <div style="margin-bottom: 1.5rem;">
