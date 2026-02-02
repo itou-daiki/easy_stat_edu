@@ -75,6 +75,18 @@ export function calculateVarimax(loadings, maxIter = 50, epsilon = 1e-6) {
     const p = loadings.length;
     const k = loadings[0].length;
     let R = loadings.map(row => row.slice());
+
+    // Kaiser Normalization
+    const h = [];
+    for (let i = 0; i < p; i++) {
+        let sumSq = 0;
+        for (let j = 0; j < k; j++) sumSq += R[i][j] ** 2;
+        h[i] = Math.sqrt(sumSq);
+        if (h[i] > 1e-9) {
+            for (let j = 0; j < k; j++) R[i][j] /= h[i];
+        }
+    }
+
     let d = 0;
 
     for (let iter = 0; iter < maxIter; iter++) {
@@ -112,6 +124,14 @@ export function calculateVarimax(loadings, maxIter = 50, epsilon = 1e-6) {
         }
         if (d < epsilon) break;
     }
+
+    // Kaiser De-normalization
+    for (let i = 0; i < p; i++) {
+        if (h[i] > 1e-9) {
+            for (let j = 0; j < k; j++) R[i][j] *= h[i];
+        }
+    }
+
     return R;
 }
 

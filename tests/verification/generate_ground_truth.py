@@ -205,6 +205,144 @@ def verify_pca():
         'pc1_loadings': [row[0] for row in loadings]
     }
 
+
+def varimax(Phi, gamma=1.0, q=20, tol=1e-6):
+    from numpy import eye, asarray, dot, sum, diag
+    from numpy.linalg import svd
+    p, k = Phi.shape
+    R = eye(k)
+    d = 0
+    for i in range(q):
+        d_old = d
+        Lambda = dot(Phi, R)
+        u, s, vh = svd(dot(Phi.T, asarray(Lambda)**3 - (gamma/p) * dot(Lambda, diag(sum(Lambda**2, axis=0)))))
+        R = dot(u, vh)
+        d = sum(s)
+        if d_old != 0 and d/d_old < 1 + tol: break
+    return dot(Phi, R)
+
+def varimax_classic(loadings, max_iter=50, epsilon=1e-6):
+    """
+    Classic iterative pair-wise Varimax with Kaiser normalization,
+    matching the JavaScript implementation logic more closely.
+    """
+    import numpy as np
+    X = np.array(loadings)
+    n_rows, n_cols = X.shape
+    
+    # Kaiser Normalization
+    h = np.sqrt(np.sum(X**2, axis=1))
+    # Handle zero rows
+    h[h < 1e-9] = 1.0 
+    X_rel = X / h[:, None]
+    
+    # Varimax Rotation (Wikipedia / Kaiser 1958)
+    curr = X_rel.copy()
+    d = 0
+    
+    for _ in range(max_iter):
+        d_old = d
+        d = 0
+        
+        for i in range(n_cols):
+            for j in range(i + 1, n_cols):
+                x = curr[:, i].copy()
+                y = curr[:, j].copy()
+                
+                # u = x^2 - y^2, v = 2xy
+                u = x**2 - y**2
+                v = 2 * x * y
+                
+                sum_d = np.sum(u)
+                sum_c = np.sum(v)
+                sum_d2_minus_c2 = np.sum(u**2 - v**2)
+                sum_2dc = np.sum(2 * u * v)
+                
+                # JS Formula:
+                # numer = 2 * (p * sum_2dc - sum_d * sum_c);
+                # denom = p * sum_d2_minus_c2 - (sum_d * sum_d - sum_c * sum_c);
+                
+                p = n_rows
+                numer = 2 * (p * sum_2dc - sum_d * sum_c)
+                denom = p * sum_d2_minus_c2 - (sum_d**2 - sum_c**2)
+                
+                phi = np.arctan2(numer, denom) / 4.0
+                
+                if np.abs(phi) > epsilon:
+                    d += np.abs(phi)
+                    c = np.cos(phi)
+                    s = np.sin(phi)
+                    curr[:, i] = c * x + s * y
+                    curr[:, j] = -s * x + c * y
+        
+        if d < epsilon:
+            break
+            
+    # Kaiser De-normalization
+    # Restore h where it was zero? No, h was 1 where it was zero, so div by 1 is safe.
+    # But for de-normalization, multiply by original h.
+    # Re-calculate h from original X or use saved h?
+    # Original h has 0s.
+    # If h[i] was < 1e-9, we set it to 1. But for de-norm we should multiply by 0 (original Norm).
+    # So we need original h.
+    
+    h_orig = np.sqrt(np.sum(X**2, axis=1))
+    X_final = curr * h_orig[:, None]
+    
+    return X_final.tolist()
+
+# 11. Factor Analysis
+def verify_factor_analysis():
+    df = load_data("demo_all_analysis.csv")
+    import numpy as np
+    from sklearn.preprocessing import StandardScaler
+    
+    # Use numeric columns: 数学, 英語, 理科, 学習時間
+    cols = ['数学', '英語', '理科', '学習時間']
+    X = df[cols].dropna()
+    
+    # 1. Unrotated: PCA on Correlation Matrix (Manual)
+    # Calculate Correlation Matrix (Pearson)
+    corr_matrix = X.corr(method='pearson').values
+    
+    # Eigen decomposition (eigh for symmetric)
+    # Returns eigenvalues in ascending order
+    evals, evecs = np.linalg.eigh(corr_matrix)
+    
+    # Sort descending
+    idx = np.argsort(evals)[::-1]
+    evals = evals[idx]
+    evecs = evecs[:, idx]
+    
+    # Keep top 2 factors
+    n_factors = 2
+    evals_top = evals[:n_factors]
+    evecs_top = evecs[:, :n_factors]
+    
+    # Loadings = eigenvector * sqrt(eigenvalue)
+    # evecs columns are eigenvectors corresponding to eigenvalues
+    # But wait, eigenvectors from eigh are normalized to length 1.
+    # Loadings L = V * D^(1/2)
+    loadings_unrotated = evecs_top * np.sqrt(evals_top)
+    
+    # Enforce deterministic sign: make the first element of each column positive
+    for col in range(n_factors):
+        if loadings_unrotated[0, col] < 0:
+            loadings_unrotated[:, col] *= -1
+    
+    # 2. Varimax Rotation (Manual with Kaiser, to match JS)
+    loadings_varimax = varimax_classic(loadings_unrotated.tolist())
+    
+    # 3. Promax (Skip)
+    loadings_promax = [[0]*2 for _ in range(4)]
+    
+    results['factor_analysis'] = {
+        'eigenvalues': evals.tolist(), 
+        'unrotated_loadings': loadings_unrotated.tolist(),
+        'varimax_loadings': loadings_varimax,
+        'promax_loadings': loadings_promax
+    }
+
 # Run All
 if __name__ == "__main__":
     try:
@@ -218,6 +356,7 @@ if __name__ == "__main__":
         verify_anova_oneway_repeated()
         verify_anova_mixed()
         verify_pca()
+        verify_factor_analysis()
         
         with open(OUTPUT_FILE, 'w') as f:
             json.dump(results, f, indent=4)

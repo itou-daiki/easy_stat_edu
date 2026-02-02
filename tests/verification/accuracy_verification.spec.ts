@@ -309,4 +309,100 @@ test.describe('Statistical Accuracy Verification', () => {
         assertClose(ratio1, groundTruth.pca.explained_ratio[0], 0.02, 'PCA Explained Ratio 1');
     });
 
+    // 11. Factor Analysis (Unrotated & Varimax)
+    test('Factor Analysis Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'factor_analysis');
+
+        // Select numeric variables: 数学, 英語, 理科, 学習時間
+        await selectVariables(page, ['数学', '英語', '理科', '学習時間'], '#factor-vars-container');
+        // Default factors = 2, Rotation = Varimax
+        await page.click('#run-factor-btn');
+
+        await expect(page.locator('#analysis-results')).toBeVisible();
+
+        // 1. Check Initial Eigenvalues (Unrotated)
+        // Table: #eigenvalues-table table
+        // Row 1: Factor 1, Col 2: Initial Eigenvalue
+        const eigenTable = page.locator('#eigenvalues-table table');
+        await expect(eigenTable).toBeVisible();
+
+        const eigen1Text = await eigenTable.locator('tbody tr:first-child td:nth-child(2)').innerText();
+        const eigen1 = parseFloat(eigen1Text);
+
+        // Tolerance 0.05 for extraction method differences (though both should cause PC method)
+        assertClose(eigen1, groundTruth.factor_analysis.eigenvalues[0], 0.05, 'FA Initial Eigenvalue 1');
+
+        // Check Unrotated Loadings (Factor 1, Variable 1: 数学)
+        // Need to find where unrotated loadings are displayed. 
+        // The UI shows "Loadings (Varimax)" by default because we clicked Run.
+        // But runPCA/runFactor usually displays rotated if rotation is selected.
+        // To check unrotated, we might need to select "None" rotation?
+        // Or just rely on the fact that if Varimax fails, we suspect extraction.
+        // If we want to debug, we can check the internal state or just skip this visual check if UI doesn't show it easily.
+        // However, let's keep the focus on Varimax mismatch debug.
+        // I'll add a comment that we suspect unrotated difference.
+
+        // 2. Check Varimax Loadings
+        // Table: #loadings-table table
+        // Row 1: Variable "数学" (first selected)
+        // Col 2: Factor 1, Col 3: Factor 2
+        const loadTable = page.locator('#loadings-table table');
+        await expect(loadTable).toBeVisible();
+
+        // Get loadings for first variable
+        const l1Text = await loadTable.locator('tbody tr:first-child td:nth-child(2)').innerText();
+        const l2Text = await loadTable.locator('tbody tr:first-child td:nth-child(3)').innerText();
+        const l1 = parseFloat(l1Text);
+        const l2 = parseFloat(l2Text);
+
+        // Ground truth for first variable
+        const gtLoadings = groundTruth.factor_analysis.varimax_loadings[0]; // [F1, F2]
+
+        // Method to check if {l1, l2} is close to {gt1, gt2} allowing for sign flips and order swap
+        // Calculate max similarity score?
+        // Or simpler: check if (|l1| close to |gt1| AND |l2| close to |gt2|) OR (|l1| close to |gt2| AND |l2| close to |gt1|)
+        const matchDirect = (Math.abs(Math.abs(l1) - Math.abs(gtLoadings[0])) < 0.1) && (Math.abs(Math.abs(l2) - Math.abs(gtLoadings[1])) < 0.1);
+        const matchSwapped = (Math.abs(Math.abs(l1) - Math.abs(gtLoadings[1])) < 0.1) && (Math.abs(Math.abs(l2) - Math.abs(gtLoadings[0])) < 0.1);
+
+        expect(matchDirect || matchSwapped, 'FA Varimax Loadings match (abs/swap)').toBeTruthy();
+    });
+
+    // 12. Text Mining (Integration Check)
+    test('Text Mining Integration', async ({ page }) => {
+        await navigateToFeature(page, 'text_mining');
+
+        // Select text variable: 感想
+        await page.selectOption('#text-var', { label: '感想' });
+
+        // Select category variable: クラス (Optional but good to test)
+        await page.selectOption('#category-var', { label: 'クラス' });
+
+        // Run
+        await page.click('#run-text-btn');
+
+        // Wait for results
+        // It uses setTimeout(..., 10) so it's async but fast.
+        // Wait for overall results
+        await expect(page.locator('#overall-results')).toBeVisible();
+        await expect(page.locator('canvas#overall-wordcloud')).toBeVisible();
+        await expect(page.locator('#overall-network')).toBeVisible();
+
+        // Check for specific tokens in wordcloud list? 
+        // TinySegmenter output for "数学が楽しかった": "数学" should be there.
+        // But checking canvas content is hard.
+        // We can check if `WordCloud` function was called or simply checks if canvas has size > 0.
+        const canvas = page.locator('#overall-wordcloud');
+        const box = await canvas.boundingBox();
+        expect(box).not.toBeNull();
+        if (!box) return; // TypeScript narrowing
+        expect(box.width).toBeGreaterThan(0);
+        expect(box.height).toBeGreaterThan(0);
+
+        // Check Category Tab visibility
+        await expect(page.locator('#tm-cat-tab-btn')).toBeVisible();
+        await page.click('#tm-cat-tab-btn');
+        await expect(page.locator('#tm-category')).toBeVisible();
+        await expect(page.locator('#category-results')).not.toBeEmpty();
+    });
+
 });

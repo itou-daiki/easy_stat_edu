@@ -1,0 +1,34 @@
+[1A[2K[2m[WebServer] [22m(node:63275) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
+[2m[WebServer] [22m(Use `node --trace-deprecation ...` to show where the warning was created)
+
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] › tests/verification/accuracy_verification.spec.ts:313:9 › Statistical Accuracy Verification › Factor Analysis Accuracy
+[1A[2K[chromium] › tests/verification/accuracy_verification.spec.ts:313:9 › Statistical Accuracy Verification › Factor Analysis Accuracy
+BROWSER LOG: JS Unrotated Loadings: [[0.9977826674391758,0.004706163407704983],[0.9938621329979388,-0.10047929099604927],[0.9895704119351455,0.14125751260456001],[0.9977277532704796,-0.044719033421357864]]
+
+[1A[2K  1) [chromium] › tests/verification/accuracy_verification.spec.ts:313:9 › Statistical Accuracy Verification › Factor Analysis Accuracy 
+
+    Error: FA Varimax Mismatch: Actual=[0.829, -0.556], Expected (Approx Abs)=[-0.9667050852162283, -0.24713089170139085]
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mfalse[39m
+
+      367 |
+      368 |         const msg = `FA Varimax Mismatch: Actual=[${l1}, ${l2}], Expected (Approx Abs)=[${gtLoadings[0]}, ${gtLoadings[1]}]`;
+    > 369 |         expect(matchDirect || matchSwapped, msg).toBeTruthy();
+          |                                                  ^
+      370 |     });
+      371 |
+      372 | });
+        at /Users/itoudaiki/Program/easy_stat_edu/tests/verification/accuracy_verification.spec.ts:369:50
+
+    Error Context: test-results/verification-accuracy_veri-29b7d-on-Factor-Analysis-Accuracy-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] › tests/verification/accuracy_verification.spec.ts:313:9 › Statistical Accuracy Verification › Factor Analysis Accuracy 
+
+[36m  Serving HTML report at http://localhost:63680. Press Ctrl+C to quit.[39m
