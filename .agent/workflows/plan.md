@@ -110,4 +110,5 @@ After planning:
 ## Related Agents
 
 This command invokes the `planner` agent located at:
-`.agent/skills/planner/SKILL.md`
+`.agent/skills/planner/SKILL.md` and strictly follows the methodology in:
+`.agent/skills/planning-with-files/SKILL.md` (v2.2)

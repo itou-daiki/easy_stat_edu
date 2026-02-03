@@ -11,6 +11,12 @@ This skill outlines the architecture, development patterns, testing strategies, 
 
 Leverage your specialized MCP tools to act as an autonomous, intelligent partner.
 
+### **0. MANDATORY: Planning with Files**
+**Before creating any plan or writing code, you MUST use the `Planning with Files` skill.**
+-   **Always** read relevant files (`view_file`, `view_file_outline`) to verify the current state.
+-   Do not rely on your memory or assumptions.
+-   *Reference*: `planning-with-files/SKILL.md`
+
 ### **Sequential Thinking (Complex Logic)**
 When facing multi-step analytical problems (e.g., implementing a new ANOVA logic with multiple error terms):
 1.  **Call `sequential-thinking`**: Break the problem down.
