@@ -4,7 +4,7 @@
  * @description 時系列データの可視化と移動平均計算
  */
 
-import { createVariableSelector, createAnalysisButton, showError, createPlotlyConfig, createVisualizationControls } from '../utils.js';
+import { createVariableSelector, createAnalysisButton, showError, createPlotlyConfig, createVisualizationControls, renderDataOverview } from '../utils.js';
 
 /**
  * 時系列分析UIをレンダリング
@@ -25,6 +25,23 @@ export function render(container, data, characteristics) {
                 <strong>移動平均</strong>を使ってギザギザしたグラフを滑らかにしたり、<strong>自己相関</strong>を使って「周期性（季節性）」を見つけることができます。
             </p>
 
+            <!-- 分析の概要・方法 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note-section">
+                        <h4><i class="fas fa-chart-line"></i> 分析のアプローチ</h4>
+                        <ul>
+                            <li><strong>移動平均 (Moving Average):</strong> 短期的な変動（ノイズ）を平滑化し、長期的なトレンドを可視化します。</li>
+                            <li><strong>自己相関 (Autocorrelation):</strong> 過去のデータと現在のデータの相関を調べ、周期性や季節性を発見します。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <!-- ロジック詳説 -->
             <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
                 <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
@@ -44,6 +61,9 @@ export function render(container, data, characteristics) {
                     </div>
                 </div>
             </div>
+
+            <!-- データプレビュー -->
+            <div id="time_series-data-overview" style="margin-bottom: 2rem;"></div>
 
             <div class="row">
                 <div class="col-md-6" style="margin-bottom: 1rem;">
@@ -95,6 +115,9 @@ export function render(container, data, characteristics) {
     });
 
     createAnalysisButton('run-btn-container', '分析を実行', () => runTimeSeriesAnalysis(data), { id: 'run-ts-btn' });
+
+    // データ概要の表示
+    renderDataOverview('#time_series-data-overview', data, characteristics);
 }
 
 function runTimeSeriesAnalysis(data) {

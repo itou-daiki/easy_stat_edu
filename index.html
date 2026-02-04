@@ -107,17 +107,17 @@
         </div>
     </div>
     <script>
-    window.addEventListener('error', function (event) {
-    const loadingScreen = document.getElementById('loading-screen');
-    if (loadingScreen && loadingScreen.style.display !== 'none') {
-    const errorDiv = document.getElementById('loading-error');
-    if (errorDiv) {
-    errorDiv.style.display = 'block';
-    errorDiv.innerHTML = `<strong>起動エラー:</strong><br>${event.message}`;
-    console.error('Startup Error:', event.error);
-    }
-    }
-    });
+        window.addEventListener('error', function (event) {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
+                const errorDiv = document.getElementById('loading-error');
+                if (errorDiv) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerHTML = `<strong>起動エラー:</strong><br>${event.message}`;
+                    console.error('Startup Error:', event.error);
+                }
+            }
+        });
     </script>
 
     <!-- メインコンテナ -->
@@ -499,8 +499,41 @@
                     <div class="changelog">
                         <div class="changelog-entry">
                             <div class="changelog-header">
+                                <span class="changelog-version">v1.5.0</span>
+                                <span class="changelog-date">2026年2月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>機能強化と信頼性向上</h5>
+                                <ul>
+                                    <li><strong>統計機能の大幅強化:</strong> 二要因反復測定分散分析、多重比較検定（Tukey, Holm, Bonferroni）を追加</li>
+                                    <li><strong>信頼性の保証:</strong> Python（scipy/sklearn）との比較検証により、主要な分析の計算精度を担保</li>
+                                    <li><strong>UIの改善:</strong> 全分析画面でレイアウトを統一し、データの可視性と操作性を向上</li>
+                                    <li><strong>機能改善:</strong> 因子分析の回転アルゴリズム（Varimax）の精度向上</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.4.5</span>
+                                <span class="changelog-date">2026年1月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>機能拡充と基盤整備</h5>
+                                <ul>
+                                    <li><strong>デモデータ機能の拡充:</strong> 目的別（回帰・t検定・テキスト分析など）のデモデータ選択モーダルを実装</li>
+                                    <li><strong>可視化機能の強化:</strong> 相関分析（ヒートマップ）、主成分分析（バイプロット）、因子分析のグラフ描画を改善</li>
+                                    <li><strong>分析精度の向上:</strong> 重回帰・PCA等の計算ロジックを最適化し、信頼性を向上</li>
+                                    <li><strong>テスト基盤の整備:</strong> PlaywrightによるE2E自動テストを導入し、品質を担保</li>
+                                </ul>
+                            </div>
+                        </div>
+
+
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
                                 <span class="changelog-version">v1.4.0</span>
-                                <span class="changelog-date">2025年1月</span>
+                                <span class="changelog-date">2025年11月</span>
                             </div>
                             <div class="changelog-content">
                                 <h5>新機能・改善</h5>
@@ -516,7 +549,7 @@
                         <div class="changelog-entry">
                             <div class="changelog-header">
                                 <span class="changelog-version">v1.3.0</span>
-                                <span class="changelog-date">2025年1月</span>
+                                <span class="changelog-date">2025年11月</span>
                             </div>
                             <div class="changelog-content">
                                 <h5>統計分析機能の強化</h5>
@@ -531,8 +564,38 @@
 
                         <div class="changelog-entry">
                             <div class="changelog-header">
+                                <span class="changelog-version">v1.2.9</span>
+                                <span class="changelog-date">2025年10月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>AI活用・テキスト分析強化</h5>
+                                <ul>
+                                    <li><strong>生成AI機能の実装:</strong> 分析結果の解釈をAIがサポートする機能を導入</li>
+                                    <li><strong>テキストマイニング強化:</strong> ワードクラウドと共起ネットワークの描画精度向上</li>
+                                    <li><strong>エクスポート機能:</strong> 分析結果のExcelダウンロードに対応</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.2.5</span>
+                                <span class="changelog-date">2025年6月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>学習支援機能の実装</h5>
+                                <ul>
+                                    <li>統計初学者向けの機能ガイドをトップページに追加</li>
+                                    <li>デザインの全面的な刷新とダークモード対応</li>
+                                    <li>学習支援のためのヒント機能強化</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
                                 <span class="changelog-version">v1.2.0</span>
-                                <span class="changelog-date">2024年12月</span>
+                                <span class="changelog-date">2025年5月</span>
                             </div>
                             <div class="changelog-content">
                                 <h5>UI/UX改善</h5>

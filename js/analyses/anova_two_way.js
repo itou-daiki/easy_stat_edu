@@ -1389,6 +1389,24 @@ export function render(container, currentData, characteristics) {
                 <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つの要因（グループ変数など）が従属変数に与える影響と、その交互作用を検定します</p>
             </div>
 
+            <!-- 分析の概要・方法 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note-section">
+                        <h4><i class="fas fa-search"></i> どんな時に使う？</h4>
+                        <p>ある結果（売上、テストの点数など）に対して、2つの要因（性別と年齢層、広告媒体と時間帯など）が影響しているかを検証したい場合に使用します。</p>
+                        <ul>
+                            <li><strong>主効果（Main Effect）:</strong> 個々の要因が結果に与える影響</li>
+                            <li><strong>交互作用（Interaction）:</strong> 要因の組み合わせによって結果が変化するか（例：特定の薬は特定の年齢層にだけ効く、など）</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
             
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
