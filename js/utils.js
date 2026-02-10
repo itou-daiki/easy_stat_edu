@@ -1087,7 +1087,7 @@ export function toTategaki(text) {
 }
 
 // 縦書きタイトルの注釈オブジェクト生成
-export function getTategakiAnnotation(text, x = -0.15, y = 0.5) {
+export function getTategakiAnnotation(text, x = -0.08, y = 0.5) {
     if (!text) return null;
     return {
         text: toTategaki(text),

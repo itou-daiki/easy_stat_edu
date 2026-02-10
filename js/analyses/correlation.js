@@ -279,7 +279,6 @@ function runCorrelationAnalysis(currentData) {
 
     document.getElementById('analysis-results').style.display = 'block';
 
-    const methodLabel = currentCorrelationMethod === 'spearman' ? 'スピアマン' : 'ピアソン';
     plotHeatmap(selectedVars, matrix, methodLabel);
     plotScatterMatrix(selectedVars, currentData, { ...matrixData, matrix, pValues });
 
@@ -500,8 +499,8 @@ function plotScatterMatrix(variables, currentData, matrixData) {
     const { matrix, pValues } = matrixData;
 
     const traces = [];
-    const width = Math.max(600, 250 * n);
-    const height = Math.max(600, 250 * n);
+    const width = Math.max(700, 280 * n);
+    const height = Math.max(700, 280 * n);
 
     const layout = {
         title: '',
@@ -509,15 +508,13 @@ function plotScatterMatrix(variables, currentData, matrixData) {
         width: width,
         showlegend: false,
         plot_bgcolor: '#f8fafc',
-        // Update margins to ensure space for labels
-        margin: { l: 150, r: 60, t: 80, b: 150 },
+        // 最下行の横軸ラベルと変数名の両方を表示するため下余白を確保
+        margin: { l: 100, r: 40, t: 40, b: 120 },
         annotations: []
     };
 
-    // ... (rest of domains calculation) ...
-
-    // ドメイン計算 (余白 gap を考慮)
-    const gap = 0.05;
+    // ドメイン計算 (目盛りラベル表示のためギャップ拡大)
+    const gap = 0.07;
     const size = (1 - (n - 1) * gap) / n;
 
     // グリッド作成用のループ
@@ -536,22 +533,36 @@ function plotScatterMatrix(variables, currentData, matrixData) {
             const yDomainStart = 1 - (i + 1) * (size + gap) + gap; // 上から配置
             const yDomainEnd = yDomainStart + size;
 
-            layout[`xaxis${i * n + j + 1}`] = {
+            const showXTicks = (i === n - 1); // 最下行のみ横軸目盛り表示
+            const showYTicks = (j === 0);    // 最左列のみ縦軸目盛り表示
+
+            // トレースの 'x1' は layout の 'xaxis1' に対応する
+            const axisNum = i * n + j + 1;
+            const xAxisKey = `xaxis${axisNum}`;
+            const yAxisKey = `yaxis${axisNum}`;
+
+            layout[xAxisKey] = {
                 domain: [xDomainStart, xDomainEnd],
+                anchor: `y${axisNum}`,
                 showgrid: false,
                 zeroline: false,
-                showticklabels: i === n - 1, // 一番下の行だけラベル表示
-                automargin: true,
+                showticklabels: showXTicks,
+                tickfont: { size: 9, color: '#555' },
+                nticks: 5,
+                ticks: showXTicks ? 'outside' : '',
                 side: 'bottom',
                 title: { text: '' }
             };
 
-            layout[`yaxis${i * n + j + 1}`] = {
+            layout[yAxisKey] = {
                 domain: [yDomainStart, yDomainEnd],
+                anchor: `x${axisNum}`,
                 showgrid: false,
                 zeroline: false,
-                showticklabels: j === 0, // 一番左の列だけラベル表示
-                automargin: true,
+                showticklabels: showYTicks,
+                tickfont: { size: 9, color: '#555' },
+                nticks: 5,
+                ticks: showYTicks ? 'outside' : '',
                 side: 'left',
                 title: { text: '' }
             };
@@ -599,10 +610,13 @@ function plotScatterMatrix(variables, currentData, matrixData) {
                 });
 
                 // テキスト表示用の軸設定（範囲固定）
-                layout[`xaxis${i * n + j + 1}`].range = [0, 1];
-                layout[`xaxis${i * n + j + 1}`].showticklabels = false;
-                layout[`yaxis${i * n + j + 1}`].range = [0, 1];
-                layout[`yaxis${i * n + j + 1}`].showticklabels = false;
+                const txtAxisNum = i * n + j + 1;
+                const txtXKey = `xaxis${txtAxisNum}`;
+                const txtYKey = `yaxis${txtAxisNum}`;
+                layout[txtXKey].range = [0, 1];
+                layout[txtXKey].showticklabels = false;
+                layout[txtYKey].range = [0, 1];
+                layout[txtYKey].showticklabels = false;
 
             } else {
                 // 左下：散布図
@@ -636,13 +650,9 @@ function plotScatterMatrix(variables, currentData, matrixData) {
         const yStart = 1 - (k + 1) * (size + gap) + gap;
         const yCenter = yStart + size / 2;
 
-        // Calculate offsets in paper coordinates based on fixed pixel values
-        // margins: l=150, b=150
-        // We want Y label to be around 80px to the left of axis (leaving space for ticks)
-        const yLabelX = -(80 / width);
-
-        // We want X label to be around 60px below the axis (leaving space for ticks)
-        const xLabelY = -(60 / height);
+        // マージンに合わせたラベル位置（tickの下に変数名が来るよう調整）
+        const yLabelX = -(60 / width);
+        const xLabelY = -(80 / height);
 
         // X-axis Label (Bottom)
         layout.annotations.push({
@@ -651,7 +661,7 @@ function plotScatterMatrix(variables, currentData, matrixData) {
             x: xCenter, y: xLabelY,
             xanchor: 'center', yanchor: 'top',
             showarrow: false,
-            font: { size: 14, weight: 'bold' }
+            font: { size: 12, weight: 'bold' }
         });
 
         // Y-axis Label (Left)
@@ -661,7 +671,7 @@ function plotScatterMatrix(variables, currentData, matrixData) {
             x: yLabelX, y: yCenter,
             xanchor: 'right', yanchor: 'middle',
             showarrow: false,
-            font: { size: 14, weight: 'bold' }
+            font: { size: 12, weight: 'bold' }
         });
     }
 

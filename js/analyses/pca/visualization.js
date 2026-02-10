@@ -56,6 +56,7 @@ export function plotScree(eigenvalues) {
         x: eigenvalues.map((_, i) => `PC${i + 1}`),
         y: eigenvalues,
         type: 'bar',
+        name: '固有値',
         marker: { color: '#1e90ff' }
     };
 
@@ -64,12 +65,15 @@ export function plotScree(eigenvalues) {
         y: eigenvalues,
         type: 'scatter',
         mode: 'lines+markers',
+        name: '固有値（推移）',
+        showlegend: false,
         line: { color: '#2d3748' }
     };
 
     const layout = {
         title: 'スクリープロット（固有値の推移）',
-        yaxis: { title: '固有値' }
+        yaxis: { title: '固有値' },
+        showlegend: false
     };
 
     Plotly.newPlot('scree-plot', [trace, traceLine], layout, createPlotlyConfig('主成分分析_スクリープロット', []));
