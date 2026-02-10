@@ -214,8 +214,9 @@ function runMannWhitneyTest(currentData) {
             z = (u - meanU) / stdU;
         }
 
-        // P値 (両側検定)
-        const p_value = jStat.normal.cdf(z, 0, 1) * 2; // zは通常負になる（U < meanU のため）
+        // P値 (両側検定): 2 * min(P(Z≤z), P(Z≥z)) で正しく両側にする
+        const pLower = jStat.normal.cdf(z, 0, 1);
+        const p_value = 2 * Math.min(pLower, 1 - pLower);
 
         // 効果量 r = Z / sqrt(N)
         const r = Math.abs(z) / Math.sqrt(N);

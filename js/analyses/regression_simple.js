@@ -37,6 +37,10 @@ function runSimpleRegression(currentData) {
         numerator += (x[i] - xMean) * (y[i] - yMean);
         denominator += (x[i] - xMean) ** 2;
     }
+    if (denominator === 0) {
+        // 説明変数が定数（分散0）の場合、回帰は不可能
+        throw new Error('説明変数の分散が0です。すべて同じ値のため回帰分析を実行できません。');
+    }
     const b1 = numerator / denominator;
     const b0 = yMean - b1 * xMean;
 

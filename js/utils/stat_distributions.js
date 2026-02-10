@@ -38,6 +38,7 @@ function lanczosGammaLn(z) {
 }
 
 function getGammaLn(n) {
+    if (!isFinite(n) || n <= 0) return NaN;
     // Try imported jStat first
     if (typeof jStat !== 'undefined' && typeof jStat.gammaln === 'function') {
         return jStat.gammaln(n);
@@ -78,6 +79,8 @@ function normalCDF(x) {
  * @param {number} df - The degrees of freedom (for error)
  */
 export function studentizedRangeCDF(q, k, df) {
+    if (!isFinite(q) || !isFinite(k) || !isFinite(df)) return NaN;
+    if (k < 2) return NaN;
     if (q <= 0) return 0;
     if (df <= 0) return 0;
 

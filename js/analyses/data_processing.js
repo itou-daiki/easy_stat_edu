@@ -239,15 +239,16 @@ function displayDataQualityInfo() {
     const uniqueRows = new Set(stringifiedRows);
     const nDuplicates = nRows - uniqueRows.size;
 
-    // データ型情報
+    // データ型情報（保存済みの characteristics を使用）
     const dtypes = [];
-    if (dataCharacteristics.numericColumns) {
-        dataCharacteristics.numericColumns.forEach(col => {
+    const chars = originalCharacteristics || {};
+    if (chars.numericColumns) {
+        chars.numericColumns.forEach(col => {
             dtypes.push({ col, type: '数値型' });
         });
     }
-    if (dataCharacteristics.categoricalColumns) {
-        dataCharacteristics.categoricalColumns.forEach(col => {
+    if (chars.categoricalColumns) {
+        chars.categoricalColumns.forEach(col => {
             dtypes.push({ col, type: 'カテゴリ型' });
         });
     }

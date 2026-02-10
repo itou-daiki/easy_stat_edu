@@ -19,6 +19,8 @@
  */
 export function calculateSkewness(data) {
     const n = data.length;
+    if (n < 3) return NaN; // サンプル歪度は n >= 3 が必要
+
     const mean = jStat.mean(data);
     const stdev = jStat.stdev(data, true); // sample standard deviation
 
@@ -39,6 +41,8 @@ export function calculateSkewness(data) {
  */
 export function calculateKurtosis(data) {
     const n = data.length;
+    if (n < 4) return NaN; // 過剰尖度は n >= 4 が必要
+
     const mean = jStat.mean(data);
     const stdev = jStat.stdev(data, true);
 
@@ -109,7 +113,7 @@ export function displaySummaryStatistics(currentData, characteristics) {
                     count: dataVector.length,
                     mean: jstat.mean(),
                     median: jstat.median(),
-                    stdev: jstat.stdev(),
+                    stdev: jstat.stdev(true),  // 標本標準偏差 (n-1)
                     min: jstat.min(),
                     max: jstat.max(),
                     q1: jstat.quartiles()[0],
@@ -129,8 +133,8 @@ export function displaySummaryStatistics(currentData, characteristics) {
                         <td>${stats.q1.toFixed(4)}</td>
                         <td>${stats.q3.toFixed(4)}</td>
                         <td>${stats.max.toFixed(4)}</td>
-                        <td>${stats.skewness.toFixed(4)}</td>
-                        <td>${stats.kurtosis.toFixed(4)}</td>
+                        <td>${isNaN(stats.skewness) ? '-' : stats.skewness.toFixed(4)}</td>
+                        <td>${isNaN(stats.kurtosis) ? '-' : stats.kurtosis.toFixed(4)}</td>
                     </tr>
                 `;
             }

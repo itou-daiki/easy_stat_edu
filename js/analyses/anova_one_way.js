@@ -35,9 +35,10 @@ function performPostHocTests(groups, groupData, msWithin, dfWithin, method = 'tu
                 // Standard Error for difference: sqrt(MSW/2 * (1/n1 + 1/n2))
                 // Studentized Range Statistic q = |m1 - m2| / sqrt(MSW * (1/n1 + 1/n2) / 2) ?
                 // Standard definition: q = |m1 - m2| / sqrt(MSW/n) for equal n.
-                // For unequal: q = |m1 - m2| / sqrt( (MSW/2) * (1/n1 + 1/n2) )
-
-                const se_diff = Math.sqrt((msWithin / 2) * (1 / n1 + 1 / n2));
+                // Tukey-Kramer: q = |m1 - m2| / sqrt( MSW * (1/n1 + 1/n2) / 2 )
+                // SE for Tukey-Kramer with unequal n: sqrt(MSW/2 * (1/n1 + 1/n2))
+                // Note: The /2 is part of the Tukey q formula, applied to the harmonic mean
+                const se_diff = Math.sqrt(msWithin * (1 / n1 + 1 / n2) / 2);
                 const q_stat = Math.abs(mean1 - mean2) / se_diff;
 
                 // Tukey P-value
@@ -137,6 +138,10 @@ function performRepeatedPostHocTests(dependentVars, currentData, msError, dfErro
                 // Note: n here should be nTotal if no missing data, but robustly n.
                 // If checking within-sub, n is the number of subjects.
 
+                // Tukey for repeated measures: SE = sqrt(2 * MSE / n)
+                // q = |m1 - m2| / sqrt(MSE / n) but SE for the q formula = sqrt(2*MSE/n)/sqrt(2) = sqrt(MSE/n)
+                // Actually: q = (m1-m2) / SE where SE = sqrt(MSE/n) for equal-n repeated measures
+                // This is correct because MSE already accounts for subject variability
                 const se_diff = Math.sqrt(msError / n);
                 const q_stat = Math.abs(mean1 - mean2) / se_diff;
 

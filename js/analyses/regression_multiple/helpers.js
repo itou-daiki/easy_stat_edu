@@ -64,16 +64,26 @@ export function performRegression(dependentVar, independentVars, currentData) {
     const XTX_inv = math.inv(XTX);
     const beta = math.multiply(XTX_inv, XTy);
 
-    // 統計量
-    const yPred = math.multiply(XClean, beta);
-    const residuals = math.subtract(yClean, yPred);
+    // math.js の結果を確実に配列化
+    const toArray = (v) => {
+        if (Array.isArray(v)) return v;
+        if (v && typeof v.toArray === 'function') return v.toArray().flat();
+        return [v];
+    };
+
+    const betaArr = toArray(beta);
+    const yPredRaw = math.multiply(XClean, beta);
+    const yPred = toArray(yPredRaw);
+    const residualsRaw = math.subtract(yClean, yPredRaw);
+    const residuals = toArray(residualsRaw);
     const rss = math.sum(residuals.map(r => r * r));
     const yMean = math.mean(yClean);
     const tss = math.sum(yClean.map(yi => (yi - yMean) ** 2));
     const r2 = 1 - (rss / tss);
     const adjR2 = 1 - (1 - r2) * (n - 1) / (n - k - 1);
     const mse = rss / (n - k - 1);
-    const seBeta = math.map(math.diag(math.multiply(mse, XTX_inv)), math.sqrt);
+    const seBetaRaw = math.map(math.diag(math.multiply(mse, XTX_inv)), math.sqrt);
+    const seBeta = toArray(seBetaRaw);
     const msm = (tss - rss) / k;
     const fValue = msm / mse;
     const pValueModel = 1 - jStat.centralF.cdf(fValue, k, n - k - 1);
@@ -81,7 +91,7 @@ export function performRegression(dependentVar, independentVars, currentData) {
     // 標準化係数
     const yStd = jStat.stdev(yClean, true);
     const xStds = independentVars.map((_, i) => jStat.stdev(cleanData.map(d => d.x[i]), true));
-    const standardizedBeta = beta.slice(1).map((b, i) => b * (xStds[i] / yStd));
+    const standardizedBeta = betaArr.slice(1).map((b, i) => b * (xStds[i] / yStd));
 
     // VIF計算
     const vifs = independentVars.map((targetVar, targetIdx) => {
@@ -110,7 +120,7 @@ export function performRegression(dependentVar, independentVars, currentData) {
         adjR2,
         fValue,
         pValueModel,
-        beta,
+        beta: betaArr,
         seBeta,
         standardizedBeta,
         vifs,

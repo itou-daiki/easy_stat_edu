@@ -119,7 +119,13 @@ export function calculateLeveneTest(groups) {
         SSw += jStat.sum(gDevs.map(d => Math.pow(d - meanDev, 2)));
     });
     const dfw = N - k;
+    if (dfw <= 0 || dfb <= 0) {
+        return { F: NaN, p: NaN, significant: false };
+    }
     const MSw = SSw / dfw;
+    if (MSw === 0) {
+        return { F: Infinity, p: 0, significant: true };
+    }
 
     const F = MSb / MSw;
     const p = 1 - jStat.centralF.cdf(F, dfb, dfw);

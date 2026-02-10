@@ -35,20 +35,26 @@ export function performPCA(variables, currentData) {
     const { matrix: corrMatrix } = calculateCorrelationMatrix(variables, currentData);
 
     // 固有値分解
-    const { values, vectors } = math.eigs(corrMatrix);
-
-    // ソート
-    const indices = Array.from(values.keys()).sort((a, b) => values[b] - values[a]);
-    const sortedValues = indices.map(i => values[i]);
-
-    // math.column returns a Matrix or Array depending on input. 
-    // We want to ensure we have a usable vector for dot product.
-    // Assuming vectors is Matrix or Array of Arrays.
-    const sortedVectors = indices.map(i => {
-        const col = math.column(vectors, i);
-        // If it's a matrix object, flatten it to array
-        return Array.isArray(col) ? col : (col.toArray ? col.toArray().flat() : col);
-    });
+    const eigResult = math.eigs(corrMatrix);
+    // math.js >= 11: { values: Array, eigenvectors: [{value, vector}] }
+    // math.js < 11:  { values: Array, vectors: Matrix }
+    let sortedValues, sortedVectors;
+    if (eigResult.eigenvectors) {
+        const sorted = [...eigResult.eigenvectors].sort((a, b) => b.value - a.value);
+        sortedValues = sorted.map(e => e.value);
+        sortedVectors = sorted.map(e => {
+            const v = e.vector;
+            return Array.isArray(v) ? v : (v.toArray ? v.toArray().flat() : v);
+        });
+    } else {
+        const rawValues = Array.isArray(eigResult.values) ? eigResult.values : eigResult.values.toArray().flat();
+        const indices = Array.from(rawValues.keys()).sort((a, b) => rawValues[b] - rawValues[a]);
+        sortedValues = indices.map(i => rawValues[i]);
+        sortedVectors = indices.map(i => {
+            const col = math.column(eigResult.vectors, i);
+            return Array.isArray(col) ? col.flat() : (col.toArray ? col.toArray().flat() : col);
+        });
+    }
 
     // 主成分スコアの計算
     const pcScores = matrix.map(row => {

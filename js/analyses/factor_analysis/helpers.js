@@ -44,19 +44,41 @@ export function matDiag(A) { return math.diag(A); }
 export function exactFactors(variables, numFactors, currentData) {
     const data = currentData.map(row => variables.map(v => row[v]));
     const { matrix: corrMatrix } = calculateCorrelationMatrix(variables, currentData);
-    const { values, vectors } = math.eigs(corrMatrix);
+    const eigResult = math.eigs(corrMatrix);
+    // math.js >= 11: { values: Array, eigenvectors: [{value, vector}] }
+    // math.js < 11:  { values: Array, vectors: Matrix }
+    let values, getVector;
+    if (eigResult.eigenvectors) {
+        // New format: array of {value, vector}
+        const sorted = [...eigResult.eigenvectors].sort((a, b) => b.value - a.value);
+        values = sorted.map(e => e.value);
+        getVector = (i) => {
+            const v = sorted[i].vector;
+            return Array.isArray(v) ? v : (v.toArray ? v.toArray().flat() : v);
+        };
+    } else {
+        values = Array.isArray(eigResult.values) ? eigResult.values : eigResult.values.toArray().flat();
+        const vectors = eigResult.vectors;
+        const indices = Array.from(values.keys()).sort((a, b) => values[b] - values[a]);
+        const sortedVals = indices.map(i => values[i]);
+        values = sortedVals;
+        getVector = (i) => {
+            const col = math.column(vectors, indices[i]);
+            return Array.isArray(col) ? col.flat() : (col.toArray ? col.toArray().flat() : col);
+        };
+    }
 
-    const indices = Array.from(values.keys()).sort((a, b) => values[b] - values[a]);
-    const sortedValues = indices.map(i => values[i]);
-    const sortedVectors = indices.map(i => math.column(vectors, i));
+    const sortedValues = values;
+    const sortedVectors = sortedValues.map((_, i) => getVector(i));
 
     const loadings = [];
     for (let i = 0; i < variables.length; i++) {
         const row = [];
         for (let f = 0; f < numFactors; f++) {
             const eigVal = sortedValues[f];
-            const eigVec = sortedVectors[f][i];
-            row.push(eigVec * Math.sqrt(eigVal));
+            const vec = sortedVectors[f];
+            const eigVec = Array.isArray(vec) ? vec[i] : vec;
+            row.push(eigVec * Math.sqrt(Math.max(0, eigVal)));
         }
         loadings.push(row);
     }

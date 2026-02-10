@@ -40,6 +40,7 @@ export const SIGNIFICANCE_SYMBOLS = {
  * @returns {string} 有意性記号
  */
 export function getSignificanceSymbol(p) {
+    if (p == null || isNaN(p) || p < 0) return '';
     if (p < SIGNIFICANCE_LEVELS.STRONG) return SIGNIFICANCE_SYMBOLS.STRONG;
     if (p < SIGNIFICANCE_LEVELS.MODERATE) return SIGNIFICANCE_SYMBOLS.MODERATE;
     if (p < SIGNIFICANCE_LEVELS.WEAK) return SIGNIFICANCE_SYMBOLS.WEAK;

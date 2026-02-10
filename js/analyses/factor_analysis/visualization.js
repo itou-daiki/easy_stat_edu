@@ -12,7 +12,7 @@ import { createPlotlyConfig } from '../../utils.js';
  */
 export function displayEigenvalues(eigenvalues, rotatedStats) {
     const container = document.getElementById('eigenvalues-table');
-    const totalVariance = eigenvalues.length;
+    const totalVariance = eigenvalues.reduce((a, b) => a + b, 0);
 
     let html = `
         <div class="table-container">
