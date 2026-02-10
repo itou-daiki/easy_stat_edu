@@ -1,0 +1,50 @@
+---
+description: テスト要件とTDDワークフロー。テスト作成・機能実装時に適用。
+globs: ["tests/**", "**/*.spec.ts", "**/*.test.ts"]
+alwaysApply: false
+---
+
+# Testing Requirements
+
+## Minimum Test Coverage: 80%
+
+Test Types (ALL required):
+1. **Unit Tests** - Individual functions, utilities
+2. **Integration Tests** - Module interactions
+3. **E2E Tests** - Critical user flows (Playwright)
+
+## Test-Driven Development
+
+MANDATORY workflow:
+1. Write test first (RED)
+2. Run test - it should FAIL
+3. Write minimal implementation (GREEN)
+4. Run test - it should PASS
+5. Refactor (IMPROVE)
+6. Verify coverage (80%+)
+
+## Playwright Test Template (Easy Stat Edu)
+
+```typescript
+const { test, expect } = require('@playwright/test');
+const path = require('path');
+
+test('Feature Verification', async ({ page }) => {
+    page.on('console', msg => console.log(`[Browser]: ${msg.text()}`));
+
+    await page.goto('http://127.0.0.1:8080/');
+    await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 10000 });
+
+    const filePath = path.join(__dirname, '../datasets/demo.xlsx');
+    await page.locator('#main-data-file').setInputFiles(filePath);
+    await expect(page.locator('#dataframe-container')).toBeVisible({ timeout: 10000 });
+
+    await page.click('.feature-card[data-analysis="your_analysis"]');
+    await expect(page.locator('#analysis-area')).toBeVisible();
+});
+```
+
+## Debugging Tips
+- **Console Logs**: Always add `page.on('console', ...)` to see browser errors.
+- **Screenshots**: Use `await page.screenshot({ path: 'debug.png' })` for failures.
+- **Timeouts**: Increase for heavy calculations (`{ timeout: 30000 }`).

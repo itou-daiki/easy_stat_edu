@@ -1,0 +1,47 @@
+---
+description: Gitワークフローとコミットルール。コミット・PR作成時に適用。
+globs: []
+alwaysApply: false
+---
+
+# Git Workflow
+
+## Commit Message Format
+
+```
+<type>: <description>
+
+<optional body>
+```
+
+Types: feat, fix, refactor, docs, test, chore, perf, ci
+
+## Feature Implementation Workflow
+
+1. **Plan First**
+   - Break down into phases
+   - Identify dependencies and risks
+
+2. **TDD Approach**
+   - Write tests first (RED)
+   - Implement to pass tests (GREEN)
+   - Refactor (IMPROVE)
+   - Verify 80%+ coverage
+
+3. **Code Review**
+   - Review after writing code
+   - Address CRITICAL and HIGH issues
+   - Fix MEDIUM issues when possible
+
+4. **Commit & Push**
+   - Detailed commit messages
+   - Follow conventional commits format
+
+## Pull Request Workflow
+
+When creating PRs:
+1. Analyze full commit history (not just latest commit)
+2. Use `git diff [base-branch]...HEAD` to see all changes
+3. Draft comprehensive PR summary
+4. Include test plan with TODOs
+5. Push with `-u` flag if new branch

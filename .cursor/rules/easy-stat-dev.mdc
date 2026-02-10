@@ -1,0 +1,55 @@
+---
+description: Easy Stat Edu プロジェクト固有のルール。MCP活用・アーキテクチャ・開発パターン。
+globs: ["js/**", "css/**", "index.html", "tests/**"]
+alwaysApply: true
+---
+
+# Easy Stat Edu 開発ガイド
+
+## MCP Workflow & Agentic Behavior
+
+### Sequential Thinking（複雑なロジック）
+多段階の分析問題（例: 新しいANOVAロジックの実装）に直面した場合:
+1. **`sequential-thinking` を呼び出す**: 問題を分解する。
+   - Step 1: 統計式を理解する（SS, df, MS, F）
+   - Step 2: 式の項をコード変数にマッピング
+   - Step 3: データ変換を計画する
+   - Step 4: 検証戦略
+2. **反復**: テストが失敗した場合、新しい思考シーケンスで根本原因を仮説立て
+
+### Serena（コードベースナビゲーション）
+ファイルを編集する前に、**コンテキストを理解する**:
+1. `get_symbols_overview` / `find_symbol` で `js/utils.js` や `js/analyses/*.js` の関数を確認
+2. コアユーティリティを変更する場合は `find_referencing_symbols` で影響範囲をチェック
+3. `search_for_pattern` で特定のHTML ID やCSSクラスの使用箇所を検索
+
+### Context7（ドキュメント参照）
+ライブラリの具体的な構文が不明な場合:
+1. **`context7` を呼び出す**: 例: "jStatで非心F分布を計算する方法" / "Plotly.jsのグループ棒グラフ構文"
+2. **推測しない**: 実装前にAPIを確認（特に `jStat` と `Plotly`）
+
+## Project Architecture
+
+- **Type**: Client-side SPA (Vanilla JS + HTML). No build step.
+- **Entry**: `index.html` loads all libraries and `js/main.js` (module entry).
+- **Libraries (Global Scope)**: jStat, Plotly, XLSX, math (Math.js), vis (Network graphs)
+
+### Directory Structure
+- `js/analyses/`: Individual analysis modules (must export `render()`).
+- `js/utils.js`: Core UI/Logic helpers. **Check this file first** for reusable functions.
+- `css/style.css`: Main styling.
+- `tests/`: Playwright end-to-end tests.
+
+## Development Patterns
+
+### Common UI Helpers (`js/utils.js`)
+- `showLoadingMessage(msg)` / `hideLoadingMessage()`: Manage global spinner.
+- `toggleCollapsible(header)`: Handle accordion UI.
+- `toHtmlTable(headers, rows, data)`: Quick HTML table generation.
+- `createVariableSelector(...)`: Standardize variable input UI.
+
+### Coding Standards
+- **Japanese UI**: All user-facing text must be Japanese.
+- **English Internals**: Variable names and comments should be English.
+- **Error Handling**: Use `showLoadingMessage` for progress and `alert` for errors.
+- **Async Rendering**: Use `setTimeout(() => { ... }, 0)` for heavy Plotly charts.
