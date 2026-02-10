@@ -98,6 +98,8 @@ export function runTwoWayIndependentANOVA(currentData) {
             return sum + (marginalData.length * Math.pow(jStat.mean(marginalData) - grandMean, 2));
         }, 0);
 
+        // 注意: 本モジュールは Type I（逐次）平方和（周辺平均の加重）を使用しています。
+        // 非等サンプル時に Type III 風の結果が必要な場合は、メインの anova_two_way.js が未加重平均（unweighted-means）による分析を提供しています。
         const ssAxB = ssCells - ssA - ssB;
         const ssError = ssTotal - ssCells;
         const dfA = levels1.length - 1;

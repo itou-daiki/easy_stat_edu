@@ -32,7 +32,7 @@ export function performPCA(variables, currentData) {
     });
 
     // 相関行列の計算
-    const { matrix: corrMatrix } = calculateCorrelationMatrix(variables, currentData);
+    const { matrix: corrMatrix } = calculateCorrelationMatrix(variables, currentData, { useListwise: true });
 
     // 固有値分解
     const eigResult = math.eigs(corrMatrix);

@@ -6,7 +6,7 @@ let processedData = null;
 let originalCharacteristics = null;
 let processedCharacteristics = null;
 
-// 外れ値の削除（IQR法）
+// 外れ値の処理（IQR法）：該当する列の値のみNaNにし、行は削除しない
 function removeOutliers(data, numericColumns) {
     if (numericColumns.length === 0) {
         alert('外れ値を削除する数値列がありません');
@@ -29,18 +29,22 @@ function removeOutliers(data, numericColumns) {
         }
     });
 
-    // 外れ値を含む行を除外
-    const filtered = data.filter(row => {
-        return numericColumns.every(col => {
-            const val = row[col];
-            if (val === null || val === undefined || isNaN(val)) return true;
+    // 行は残し、外れ値のセルだけその列においてNaNに置き換える（イミュータブルに新オブジェクトで返す）
+    const result = data.map(row => {
+        const newRow = { ...row };
+        numericColumns.forEach(col => {
             const stat = stats[col];
-            if (!stat) return true;
-            return val >= stat.lower && val <= stat.upper;
+            if (!stat) return;
+            const val = newRow[col];
+            if (val === null || val === undefined || isNaN(val)) return;
+            if (val < stat.lower || val > stat.upper) {
+                newRow[col] = NaN;
+            }
         });
+        return newRow;
     });
 
-    return filtered;
+    return result;
 }
 
 // 欠損値の削除と文字列のtrim
@@ -124,6 +128,7 @@ function processData() {
 
     const processedRowCount = processedData.length;
     const processedColCount = Object.keys(processedData[0] || {}).length;
+    // 外れ値処理は行削除ではなくNaN置換のため、行数は変わらない（欠損・空列削除のみ行数・列数が変わる）
     const removedRows = originalRowCount - processedRowCount;
     const removedCols = originalColCount - processedColCount;
 
@@ -429,7 +434,7 @@ export function render(container, currentData, dataCharacteristics) {
                 <div style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
                     <label style="display: flex; align-items: center; cursor: pointer;">
                         <input type="checkbox" id="remove-outliers-checkbox" style="margin-right: 0.75rem; width: 18px; height: 18px; cursor: pointer;">
-                        <span style="font-size: 1rem;">外れ値の削除（IQR法：Q1-1.5×IQR ～ Q3+1.5×IQR の範囲外を削除）</span>
+                        <span style="font-size: 1rem;">外れ値の処理（IQR法：範囲外の値はその列のみ欠損（NaN）にし、行は残す）</span>
                     </label>
                     <label style="display: flex; align-items: center; cursor: pointer;">
                         <input type="checkbox" id="remove-missing-checkbox" style="margin-right: 0.75rem; width: 18px; height: 18px; cursor: pointer;">

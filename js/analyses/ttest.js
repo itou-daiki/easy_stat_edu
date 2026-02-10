@@ -143,6 +143,7 @@ function runIndependentTTest(currentData) {
                         <th>p</th>
                         <th>sign</th>
                         <th>d</th>
+                        <th>95% CI<br><small>(平均の差)</small></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -180,6 +181,13 @@ function runIndependentTTest(currentData) {
         const cohens_d = Math.abs((mean1 - mean2) / pooled_std);
         let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.1 ? '†' : 'n.s.';
 
+        const t_crit = jStat.studentt.inv(0.975, df_welch);
+        const meanDiff = mean1 - mean2;
+        const margin = t_crit * se_welch;
+        const ci_95_low = meanDiff - margin;
+        const ci_95_high = meanDiff + margin;
+        const ci95Str = `[${ci_95_low.toFixed(2)}, ${ci_95_high.toFixed(2)}]`;
+
         const levenes = calculateLeveneTest(group0Values, group1Values);
         const levenesPStr = levenes.p < 0.001 ? '< .001' : levenes.p.toFixed(3);
         const levenesSign = levenes.p < 0.05 ? '<i class="fas fa-exclamation-triangle" style="color: #d97706;" title="等分散性が棄却されました。ウェルチのt検定の結果を採用することを推奨します（このアプリはデフォルトでウェルチです）。"></i>' : '<i class="fas fa-check" style="color: #10b981;" title="等分散性は棄却されませんでした。"></i>';
@@ -204,12 +212,14 @@ function runIndependentTTest(currentData) {
                 <td>${pValueStr}</td>
                 <td><strong>${significance}</strong></td>
                 <td>${cohens_d.toFixed(2)}</td>
+                <td>${ci95Str}</td>
             </tr>
         `;
 
         testResults.push({
             varName, groups, mean1, mean2, std1, std2, n1, n2,
             t_stat, p_value, cohens_d, significance, df: df_welch,
+            ci_95_low, ci_95_high,
             group0Values, group1Values, groupVar
         });
     });
@@ -306,6 +316,7 @@ function runPairedTTest(currentData, pairs) {
                         <th>p</th>
                         <th>sign</th>
                         <th>d</th>
+                        <th>95% CI<br><small>(差の平均)</small></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -347,6 +358,12 @@ function runPairedTTest(currentData, pairs) {
         const cohens_d = Math.abs(diffMean / diffStd);
         let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.1 ? '†' : 'n.s.';
 
+        const t_crit = jStat.studentt.inv(0.975, df);
+        const margin = t_crit * se;
+        const ci_95_low = diffMean - margin;
+        const ci_95_high = diffMean + margin;
+        const ci95Str = `[${ci_95_low.toFixed(2)}, ${ci_95_high.toFixed(2)}]`;
+
         resultsTableHtml += `
             <tr>
                 <td style="font-weight: bold; color: #1e90ff;">${preVar} → ${postVar}</td>
@@ -359,17 +376,17 @@ function runPairedTTest(currentData, pairs) {
                 <td>${p_value.toFixed(3)}</td>
                 <td><strong>${significance}</strong></td>
                 <td>${cohens_d.toFixed(2)}</td>
+                <td>${ci95Str}</td>
             </tr>
         `;
 
         testResults.push({
             varName: pairName,
-            groups: [preVar, postVar],
-            mean1, mean2, std1, std2, n1: n, n2: n, t_stat, p_value, cohens_d, significance,
+            groups: [pair.pre, pair.post],
             mean1, mean2, std1, std2, n1: n, n2: n, t_stat, p_value, cohens_d, significance, df,
+            ci_95_low, ci_95_high,
             group0Values: preValues,
-            group1Values: postValues,
-            groups: [pair.pre, pair.post]
+            group1Values: postValues
         });
     });
 
@@ -448,6 +465,13 @@ function runOneSampleTTest(currentData) {
     const cohens_d = Math.abs(mean - mu) / std;
     let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : 'n.s.';
 
+    const t_crit = jStat.studentt.inv(0.975, df);
+    const meanDiff = mean - mu;
+    const margin = t_crit * se;
+    const ci_95_low = meanDiff - margin;
+    const ci_95_high = meanDiff + margin;
+    const ci95Str = `[${ci_95_low.toFixed(2)}, ${ci_95_high.toFixed(2)}]`;
+
     const resultsContainer = document.getElementById('test-results-section');
     resultsContainer.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -456,7 +480,7 @@ function runOneSampleTTest(currentData) {
             </h4>
             <div class="table-container">
                 <table class="table">
-                    <thead><tr><th>変数</th><th>平均値</th><th>S.D.</th><th>検定値(μ)</th><th>df</th><th>t</th><th>p</th><th>sign</th><th>d</th></tr></thead>
+                    <thead><tr><th>変数</th><th>平均値</th><th>S.D.</th><th>検定値(μ)</th><th>df</th><th>t</th><th>p</th><th>sign</th><th>d</th><th>95% CI<br><small>(平均−μ)</small></th></tr></thead>
                     <tbody>
                         <tr>
                             <td style="font-weight: bold; color: #1e90ff;">${varName}</td>
@@ -468,6 +492,7 @@ function runOneSampleTTest(currentData) {
                             <td>${p_value.toFixed(3)}</td>
                             <td><strong>${significance}</strong></td>
                             <td>${cohens_d.toFixed(2)}</td>
+                            <td>${ci95Str}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -483,6 +508,7 @@ function runOneSampleTTest(currentData) {
     const testResults = [{
         varName, groups: [varName], mean1: mean, std1: std, n1: n,
         t_stat, p_value, cohens_d, significance, mu, df,
+        ci_95_low, ci_95_high,
         group0Values: values,
     }];
 

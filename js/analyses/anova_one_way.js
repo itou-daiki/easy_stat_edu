@@ -525,7 +525,9 @@ function runOneWayIndependentANOVA(currentData) {
 
         const ssTotal = ssBetween + ssWithin;
         const etaSquared = ssBetween / ssTotal;
-        const omegaSquared = (ssBetween - (dfBetween * msWithin)) / (ssTotal + msWithin);
+        let omegaSquared = (ssBetween - (dfBetween * msWithin)) / (ssTotal + msWithin);
+        const omegaSquaredNegative = omegaSquared < 0;
+        if (omegaSquared < 0) omegaSquared = 0;
 
         let significance = 'n.s.';
         if (pValue < 0.01) significance = '**';
@@ -554,6 +556,7 @@ function runOneWayIndependentANOVA(currentData) {
             sign: significance,
             etaSquared,
             omegaSquared,
+            omegaSquaredNegative,
             levenes // Store Levene's result
         });
 
@@ -612,7 +615,7 @@ function runOneWayIndependentANOVA(currentData) {
         rowHtml += `<td>${pValueStr}</td>`;
         rowHtml += `<td><strong>${res.sign}</strong></td>`;
         rowHtml += `<td>${res.etaSquared.toFixed(2)}</td>`;
-        rowHtml += `<td>${res.omegaSquared.toFixed(3)}</td>`;
+        rowHtml += `<td>${res.omegaSquared.toFixed(3)}${res.omegaSquaredNegative ? ' <small title="算出値が負のため0にクリップしました">※</small>' : ''}</td>`;
         rowHtml += '</tr>';
 
         tableHtml += rowHtml;
@@ -620,6 +623,7 @@ function runOneWayIndependentANOVA(currentData) {
     tableHtml += `</tbody></table></div>
     <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem;">
         <i class="fas fa-info-circle"></i> <strong>Levene p</strong>: 等分散性の検定。p < .05 の場合、この通常のANOVAの結果は信頼性が低い可能性があります（分散が異なるため）。
+        ${mainResultsTable.some(r => r.omegaSquaredNegative) ? '<br><strong>ω²</strong>: 算出値が負の場合は0にクリップし、表に※を表示しています。' : ''}
     </div>
     <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p<0.01** p<0.05* p<0.1†</p></div>`;
     resultsContainer.innerHTML = tableHtml;
@@ -682,13 +686,57 @@ function runOneWayRepeatedANOVA(currentData) {
     const fValue = msConditions / msError;
     const pValue = 1 - jStat.centralF.cdf(fValue, dfConditions, dfError);
 
+    // Greenhouse-Geisser epsilon from covariance matrix (k×k of conditions)
+    let ggEpsilon = 1;
+    let pValueGG = pValue;
+    let dfConditionsGG = dfConditions;
+    let dfErrorGG = dfError;
+    if (k >= 3 && N >= 2) {
+        const cov = Array(k).fill(0).map(() => Array(k).fill(0));
+        for (let i = 0; i < k; i++) {
+            for (let j = i; j < k; j++) {
+                let sum = 0;
+                for (let s = 0; s < N; s++) {
+                    sum += (validData[s][i] - conditionMeans[i]) * (validData[s][j] - conditionMeans[j]);
+                }
+                const sij = sum / (N - 1);
+                cov[i][j] = sij;
+                cov[j][i] = sij;
+            }
+        }
+        const rowMeans = cov.map(row => jStat.mean(row));
+        const colMeans = Array(k).fill(0);
+        for (let j = 0; j < k; j++) {
+            for (let i = 0; i < k; i++) colMeans[j] += cov[i][j];
+            colMeans[j] /= k;
+        }
+        const grandMeanCov = cov.flat().reduce((a, b) => a + b, 0) / (k * k);
+        const numGG = Math.pow(rowMeans.reduce((s, m) => s + Math.pow(m - grandMeanCov, 2), 0), 2);
+        let denomGG = 0;
+        for (let i = 0; i < k; i++) {
+            for (let j = 0; j < k; j++) {
+                const dev = cov[i][j] - rowMeans[i] - colMeans[j] + grandMeanCov;
+                denomGG += dev * dev;
+            }
+        }
+        denomGG *= (k - 1);
+        if (denomGG > 0) {
+            ggEpsilon = Math.max(1 / (k - 1), Math.min(1, numGG / denomGG));
+            dfConditionsGG = ggEpsilon * dfConditions;
+            dfErrorGG = ggEpsilon * dfError;
+            pValueGG = 1 - jStat.centralF.cdf(fValue, dfConditionsGG, dfErrorGG);
+        }
+    }
+
     const etaSquaredPartial = ssConditions / (ssConditions + ssError);
-    const omegaSquared = (ssConditions - (dfConditions * msError)) / (ssTotal + msError);
+    let omegaSquared = (ssConditions - (dfConditions * msError)) / (ssTotal + msError);
+    const omegaSquaredNegativeRep = omegaSquared < 0;
+    if (omegaSquared < 0) omegaSquared = 0;
     let significance = pValue < 0.01 ? '**' : pValue < 0.05 ? '*' : pValue < 0.1 ? '†' : 'n.s.';
 
     // 2. Main Test Results Table
     const resultsContainer = document.getElementById('test-results-section');
-    const headers = ['要因', '全体M', '全体S.D', ...dependentVars.map(v => `${v} M`), ...dependentVars.map(v => `${v} S.D`), '条件<br>自由度', '誤差<br>自由度', 'F', 'p', 'sign', 'ηp²', 'ω²'];
+    const headers = ['要因', '全体M', '全体S.D', ...dependentVars.map(v => `${v} M`), ...dependentVars.map(v => `${v} S.D`), '条件 df', '誤差 df', 'F', 'p', 'sign', 'ηp²', 'ω²'];
     const conditionStds = dependentVars.map((v, i) => jStat.stdev(validData.map(row => row[i]), true));
     const rowData = [dependentVars.join(' vs '), grandMean, jStat.stdev(validData.flat(), true), ...conditionMeans, ...conditionStds, dfConditions, dfError, fValue, pValue, significance, etaSquaredPartial, omegaSquared];
 
@@ -700,8 +748,13 @@ function runOneWayRepeatedANOVA(currentData) {
             <div class="table-container">
                 <table class="table">
                     <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
-                    <tbody><tr>${rowData.map((d, i) => (i === 0 || i === headers.indexOf('sign')) ? `<td>${d}</td>` : `<td>${d.toFixed(2)}</td>`).join('')}</tr></tbody>
+                    <tbody><tr>${rowData.map((d, i) => (i === 0 || i === headers.indexOf('sign')) ? `<td>${d}</td>` : `<td>${typeof d === 'number' ? d.toFixed(2) : d}</td>`).join('')}</tr></tbody>
                 </table>
+            </div>
+            <div style="margin-top: 1rem; padding: 0.75rem; background: #f0f9ff; border-radius: 6px; font-size: 0.9rem;">
+                <strong><i class="fas fa-info-circle"></i> Greenhouse–Geisser 補正（球面性が満たされない場合）:</strong><br>
+                ε = ${ggEpsilon.toFixed(3)}, 補正後 df（条件）= ${dfConditionsGG.toFixed(2)}, 補正後 df（誤差）= ${dfErrorGG.toFixed(2)}, p（GG補正）= ${pValueGG < 0.001 ? '< .001' : pValueGG.toFixed(3)}.
+                ${omegaSquaredNegativeRep ? '<br><strong>ω²</strong>: 算出値が負のため0にクリップして表示しています。' : ''}
             </div>
             <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p<0.01** p<0.05* p<0.1†</p>
             
@@ -720,10 +773,12 @@ function runOneWayRepeatedANOVA(currentData) {
         ["Total (excl. subj)", (ssConditions + ssError).toFixed(2), dfConditions + dfError, "-", "-", "-", "-"]
     ];
 
+    const noteAPA = `<em>Note</em>. 上段は球面性仮定下的な結果。Greenhouse–Geisser ε = ${ggEpsilon.toFixed(3)}; 補正後 p = ${pValueGG < 0.001 ? '< .001' : pValueGG.toFixed(3)}.`;
+
     setTimeout(() => {
         const container = document.getElementById('reporting-table-container-anova-rep');
         if (container)
-            container.innerHTML = generateAPATableHtml('anova-rep-apa', 'Table 1. One-Way Repeated Measures ANOVA', headersAPA, rowsAPA, `<em>Note</em>. Sphericity assumed.`);
+            container.innerHTML = generateAPATableHtml('anova-rep-apa', 'Table 1. One-Way Repeated Measures ANOVA', headersAPA, rowsAPA, noteAPA);
     }, 0);
 
     // 3. Sample Size

@@ -995,7 +995,7 @@ function renderTwoWayMixedResults(testResults) {
                 `;
             });
             html += `</tbody></table></div>
-                <p style="font-size: 0.9rem; color: #666; text-align: right;">※ 球面性の仮定(Mauchly's Test)は現在未実装のため、Geisser-Greenhouse補正等は適用されていません。</p>
+                <p style="font-size: 0.9rem; color: #666; text-align: right;">※ 被験者内要因では球面性の仮定が必要です。満たされない場合は Greenhouse–Geisser 補正の利用を検討してください。本画面では Mauchly の検定・GG補正は未実装です。</p>
              </div>`;
 
         } else {

@@ -3,27 +3,85 @@ import { renderDataOverview, createVariableSelector, createAnalysisButton, creat
 
 // let multiSelectInstance = null; // REMOVED
 
-// 相関マトリックスの計算
-export function calculateCorrelationMatrix(variables, currentData) {
-    const n = variables.length;
-    const matrix = Array(n).fill(0).map(() => Array(n).fill(0));
-    const pValues = Array(n).fill(0).map(() => Array(n).fill(0));
-    const nValues = Array(n).fill(0).map(() => Array(n).fill(0));
+/** Returns array of ranks (average rank for ties). */
+function rankData(arr) {
+    const n = arr.length;
+    const indexed = arr.map((v, i) => ({ v, i }));
+    indexed.sort((a, b) => a.v - b.v);
+    const ranks = new Array(n);
+    let r = 0;
+    while (r < n) {
+        let s = r;
+        while (s + 1 < n && indexed[s + 1].v === indexed[s].v) s++;
+        const avgRank = 0.5 * (r + s) + 1;
+        for (let j = r; j <= s; j++) ranks[indexed[j].i] = avgRank;
+        r = s + 1;
+    }
+    return ranks;
+}
 
-    for (let i = 0; i < n; i++) {
-        for (let j = i; j < n; j++) {
+/**
+ * 95% CI for correlation using Fisher z-transform.
+ * z = 0.5*ln((1+r)/(1-r)), SE = 1/sqrt(n-3), CI = tanh(z ± 1.96*SE)
+ * Returns { lower, upper } or { lower: NaN, upper: NaN } if n <= 3 or |r| >= 1.
+ */
+function fisherZCI(r, n) {
+    if (n <= 3 || Math.abs(r) >= 1) return { lower: NaN, upper: NaN };
+    const rClamp = Math.max(-0.9999, Math.min(0.9999, r));
+    const z = 0.5 * Math.log((1 + rClamp) / (1 - rClamp));
+    const se = 1 / Math.sqrt(n - 3);
+    const margin = 1.96 * se;
+    const tanh = (x) => (Math.exp(2 * x) - 1) / (Math.exp(2 * x) + 1);
+    return { lower: tanh(z - margin), upper: tanh(z + margin) };
+}
+
+// 相関マトリックスの計算（ピアソン・スピアマン両方、95%信頼区間付き）
+// options.useListwise === true のときは欠損がある行を除いた上で全変数に同じNで計算（因子分析・PCA用）
+export function calculateCorrelationMatrix(variables, currentData, options = {}) {
+    const useListwise = options.useListwise === true;
+    const data = useListwise
+        ? currentData.filter(row => variables.every(v => {
+            const val = row[v];
+            return val != null && !isNaN(val);
+        }))
+        : currentData;
+
+    const N = variables.length;
+    const matrix = Array(N).fill(0).map(() => Array(N).fill(0));
+    const pValues = Array(N).fill(0).map(() => Array(N).fill(0));
+    const matrixSpearman = Array(N).fill(0).map(() => Array(N).fill(0));
+    const pValuesSpearman = Array(N).fill(0).map(() => Array(N).fill(0));
+    const nValues = Array(N).fill(0).map(() => Array(N).fill(0));
+    const ciLower = Array(N).fill(0).map(() => Array(N).fill(0));
+    const ciUpper = Array(N).fill(0).map(() => Array(N).fill(0));
+    const ciLowerSpearman = Array(N).fill(0).map(() => Array(N).fill(0));
+    const ciUpperSpearman = Array(N).fill(0).map(() => Array(N).fill(0));
+
+    function setPValue(r, numPairs, pValMatrix, i, j) {
+        if (Math.abs(r) === 1) {
+            pValMatrix[i][j] = pValMatrix[j][i] = 0;
+        } else {
+            const t = r * Math.sqrt((numPairs - 2) / (1 - r * r));
+            const df = numPairs - 2;
+            const p = jStat.studentt.cdf(-Math.abs(t), df) * 2;
+            pValMatrix[i][j] = pValMatrix[j][i] = p;
+        }
+    }
+
+    for (let i = 0; i < N; i++) {
+        for (let j = i; j < N; j++) {
             if (i === j) {
-                matrix[i][j] = 1;
-                pValues[i][j] = 0;
-                const validData = currentData.map(r => r[variables[i]]).filter(v => v != null && !isNaN(v));
-                nValues[i][j] = validData.length;
+                matrix[i][j] = matrixSpearman[i][j] = 1;
+                pValues[i][j] = pValuesSpearman[i][j] = 0;
+                ciLower[i][j] = ciUpper[i][j] = ciLowerSpearman[i][j] = ciUpperSpearman[i][j] = 1;
+                nValues[i][j] = useListwise ? data.length : data.map(r => r[variables[i]]).filter(v => v != null && !isNaN(v)).length;
                 continue;
             }
 
             const var1 = variables[i];
             const var2 = variables[j];
 
-            const pairs = currentData
+            const pairs = data
                 .map(r => ({ x: r[var1], y: r[var2] }))
                 .filter(p => p.x != null && !isNaN(p.x) && p.y != null && !isNaN(p.y));
 
@@ -33,28 +91,122 @@ export function calculateCorrelationMatrix(variables, currentData) {
             if (numPairs < 3) {
                 matrix[i][j] = matrix[j][i] = NaN;
                 pValues[i][j] = pValues[j][i] = NaN;
+                matrixSpearman[i][j] = matrixSpearman[j][i] = NaN;
+                pValuesSpearman[i][j] = pValuesSpearman[j][i] = NaN;
+                ciLower[i][j] = ciUpper[i][j] = ciLower[j][i] = ciUpper[j][i] = NaN;
+                ciLowerSpearman[i][j] = ciUpperSpearman[i][j] = ciLowerSpearman[j][i] = ciUpperSpearman[j][i] = NaN;
             } else {
                 const x = pairs.map(p => p.x);
                 const y = pairs.map(p => p.y);
-                const r = jStat.corrcoeff(x, y);
-                matrix[i][j] = matrix[j][i] = r;
+                const rPearson = jStat.corrcoeff(x, y);
+                matrix[i][j] = matrix[j][i] = rPearson;
+                setPValue(rPearson, numPairs, pValues, i, j);
+                const pearsonCI = fisherZCI(rPearson, numPairs);
+                ciLower[i][j] = ciLower[j][i] = pearsonCI.lower;
+                ciUpper[i][j] = ciUpper[j][i] = pearsonCI.upper;
 
-                // p-value calculation
-                if (Math.abs(r) === 1) {
-                    pValues[i][j] = pValues[j][i] = 0;
-                } else {
-                    const t = r * Math.sqrt((numPairs - 2) / (1 - r * r));
-                    const df = numPairs - 2;
-                    const p = jStat.studentt.cdf(-Math.abs(t), df) * 2;
-                    pValues[i][j] = pValues[j][i] = p;
-                }
+                const rx = rankData(x);
+                const ry = rankData(y);
+                const rSpearman = jStat.corrcoeff(rx, ry);
+                matrixSpearman[i][j] = matrixSpearman[j][i] = rSpearman;
+                setPValue(rSpearman, numPairs, pValuesSpearman, i, j);
+                const spearmanCI = fisherZCI(rSpearman, numPairs);
+                ciLowerSpearman[i][j] = ciLowerSpearman[j][i] = spearmanCI.lower;
+                ciUpperSpearman[i][j] = ciUpperSpearman[j][i] = spearmanCI.upper;
             }
         }
     }
-    return { matrix, pValues, nValues };
+    return {
+        matrix,
+        pValues,
+        matrixSpearman,
+        pValuesSpearman,
+        nValues,
+        ciLower,
+        ciUpper,
+        ciLowerSpearman,
+        ciUpperSpearman
+    };
 }
 
-// 相関分析の実行
+// 現在選択されている相関方法（ピアソン / スピアマン）
+let currentCorrelationMethod = 'pearson';
+// 直前の分析結果（方法切り替え時に再描画するため）
+let lastCorrelationState = null;
+
+function getActiveMatrixAndCI(matrixData) {
+    if (currentCorrelationMethod === 'spearman') {
+        return {
+            matrix: matrixData.matrixSpearman,
+            pValues: matrixData.pValuesSpearman,
+            ciLower: matrixData.ciLowerSpearman,
+            ciUpper: matrixData.ciUpperSpearman
+        };
+    }
+    return {
+        matrix: matrixData.matrix,
+        pValues: matrixData.pValues,
+        ciLower: matrixData.ciLower,
+        ciUpper: matrixData.ciUpper
+    };
+}
+
+function ensureMethodSelector() {
+    const container = document.getElementById('correlation-method-selector');
+    if (!container) return;
+    const isSpearman = currentCorrelationMethod === 'spearman';
+    container.innerHTML = `
+        <label style="margin-right: 1rem; font-weight: bold;">相関の種類:</label>
+        <label style="margin-right: 1rem;"><input type="radio" name="correlation-method" value="pearson" ${!isSpearman ? 'checked' : ''}> ピアソン（積率相関）</label>
+        <label><input type="radio" name="correlation-method" value="spearman" ${isSpearman ? 'checked' : ''}> スピアマン（順位相関）</label>
+    `;
+    container.querySelectorAll('input[name="correlation-method"]').forEach((radio) => {
+        radio.addEventListener('change', () => {
+            currentCorrelationMethod = radio.value;
+            if (lastCorrelationState) {
+                renderCorrelationByMethod(lastCorrelationState.selectedVars, lastCorrelationState.currentData, lastCorrelationState.matrixData);
+            }
+        });
+    });
+}
+
+function renderCorrelationByMethod(selectedVars, currentData, matrixData) {
+    const { matrix, pValues, ciLower, ciUpper } = getActiveMatrixAndCI(matrixData);
+    const nValues = matrixData.nValues;
+    const methodLabel = currentCorrelationMethod === 'spearman' ? 'スピアマン' : 'ピアソン';
+
+    const corrTableHtml = createCorrelationTable(selectedVars, matrix, pValues, nValues, ciLower, ciUpper, methodLabel);
+    document.getElementById('correlation-table').innerHTML = corrTableHtml;
+
+    plotHeatmap(selectedVars, matrix, methodLabel);
+    plotScatterMatrix(selectedVars, currentData, { ...matrixData, matrix, pValues });
+
+    const headersAPA = ["Variable", ...selectedVars.map((_, i) => `${i + 1}`)];
+    const rowsAPA = selectedVars.map((varName, i) => {
+        const row = [`${i + 1}. ${varName}`];
+        for (let j = 0; j < selectedVars.length; j++) {
+            if (j === i) {
+                row.push('-');
+            } else {
+                let r = matrix[i][j];
+                if (isNaN(r)) {
+                    row.push('NaN');
+                } else {
+                    let rText = r.toFixed(2);
+                    const p = pValues[i][j];
+                    if (p < 0.01) rText += '**';
+                    else if (p < 0.05) rText += '*';
+                    row.push(rText);
+                }
+            }
+        }
+        return row;
+    });
+    const noteAPA = `*<em>p</em> < .05. **<em>p</em> < .01.`;
+    document.getElementById('reporting-table-container-corr').innerHTML =
+        generateAPATableHtml('corr-apa-table', `Table 1. ${methodLabel} Correlation Matrix`, headersAPA, rowsAPA, noteAPA);
+}
+
 // 相関分析の実行
 function runCorrelationAnalysis(currentData) {
     const varsSelect = document.getElementById('correlation-vars');
@@ -65,10 +217,15 @@ function runCorrelationAnalysis(currentData) {
         return;
     }
 
-    const { matrix, pValues, nValues } = calculateCorrelationMatrix(selectedVars, currentData);
-    const matrixData = { matrix, pValues, nValues };
+    const matrixData = calculateCorrelationMatrix(selectedVars, currentData);
+    const { matrix, pValues, ciLower, ciUpper } = getActiveMatrixAndCI(matrixData);
+    const nValuesArr = matrixData.nValues;
 
-    const corrTableHtml = createCorrelationTable(selectedVars, matrix, pValues, nValues);
+    lastCorrelationState = { matrixData, selectedVars, currentData };
+    ensureMethodSelector();
+
+    const methodLabel = currentCorrelationMethod === 'spearman' ? 'スピアマン' : 'ピアソン';
+    const corrTableHtml = createCorrelationTable(selectedVars, matrix, pValues, nValuesArr, ciLower, ciUpper, methodLabel);
     document.getElementById('correlation-table').innerHTML = corrTableHtml;
 
     // Interpretation Section
@@ -122,13 +279,10 @@ function runCorrelationAnalysis(currentData) {
 
     document.getElementById('analysis-results').style.display = 'block';
 
-    // ヒートマップの描画
-    plotHeatmap(selectedVars, matrix);
+    const methodLabel = currentCorrelationMethod === 'spearman' ? 'スピアマン' : 'ピアソン';
+    plotHeatmap(selectedVars, matrix, methodLabel);
+    plotScatterMatrix(selectedVars, currentData, { ...matrixData, matrix, pValues });
 
-    // 散布図行列の描画
-    plotScatterMatrix(selectedVars, currentData, matrixData);
-
-    // APA Table Generation
     const headersAPA = ["Variable", ...selectedVars.map((_, i) => `${i + 1}`)];
     const rowsAPA = selectedVars.map((varName, i) => {
         const row = [`${i + 1}. ${varName}`];
@@ -141,7 +295,6 @@ function runCorrelationAnalysis(currentData) {
                     row.push('NaN');
                 } else {
                     let rText = r.toFixed(2);
-                    // Add significance asterisk
                     const p = pValues[i][j];
                     if (p < 0.01) rText += '**';
                     else if (p < 0.05) rText += '*';
@@ -151,10 +304,9 @@ function runCorrelationAnalysis(currentData) {
         }
         return row;
     });
-
     const noteAPA = `*<em>p</em> < .05. **<em>p</em> < .01.`;
     document.getElementById('reporting-table-container-corr').innerHTML =
-        generateAPATableHtml('corr-apa-table', 'Table 1. Pearson Correlation Matrix', headersAPA, rowsAPA, noteAPA);
+        generateAPATableHtml('corr-apa-table', `Table 1. ${methodLabel} Correlation Matrix`, headersAPA, rowsAPA, noteAPA);
 
     const controlsContainer = document.getElementById('visualization-controls-container');
     controlsContainer.innerHTML = '';
@@ -162,15 +314,20 @@ function runCorrelationAnalysis(currentData) {
 
     if (axisControl && titleControl) {
         const updatePlots = () => {
-            plotHeatmap(selectedVars, matrix);
-            plotScatterMatrix(selectedVars, currentData, matrixData);
+            const active = getActiveMatrixAndCI(matrixData);
+            plotHeatmap(selectedVars, active.matrix, currentCorrelationMethod === 'spearman' ? 'スピアマン' : 'ピアソン');
+            plotScatterMatrix(selectedVars, currentData, { ...matrixData, matrix: active.matrix, pValues: active.pValues });
         };
         axisControl.addEventListener('change', updatePlots);
         titleControl.addEventListener('change', updatePlots);
     }
 }
 
-function createCorrelationTable(variables, matrix, pValues, nValues) {
+function createCorrelationTable(variables, matrix, pValues, nValues, ciLower, ciUpper, methodLabel) {
+    const ciLowerArr = ciLower || [];
+    const ciUpperArr = ciUpper || [];
+    const label = methodLabel ? `${methodLabel} ` : '';
+
     let html = `
         <div class="table-container">
             <table class="table">
@@ -188,6 +345,9 @@ function createCorrelationTable(variables, matrix, pValues, nValues) {
         variables.forEach((colVar, j) => {
             const r = matrix[i][j];
             const p = pValues[i][j];
+            const low = ciLowerArr[i] && ciLowerArr[i][j];
+            const high = ciUpperArr[i] && ciUpperArr[i][j];
+            const hasCI = typeof low === 'number' && typeof high === 'number' && !isNaN(low) && !isNaN(high);
             let style = '';
             if (!isNaN(r)) {
                 if (Math.abs(r) > 0.7) style = 'background: rgba(30, 144, 255, 0.2); font-weight: bold;';
@@ -199,13 +359,17 @@ function createCorrelationTable(variables, matrix, pValues, nValues) {
             else if (p < 0.05) sig = '*';
             else if (p < 0.1) sig = '†';
 
-            html += `<td style="${style}">${isNaN(r) ? '-' : r.toFixed(3)}${sig}</td>`;
+            let cell = isNaN(r) ? '-' : `${r.toFixed(3)}${sig}`;
+            if (hasCI && i !== j) {
+                cell += `<br><span style="font-size: 0.85em; color: #64748b;">95%CI [${low.toFixed(3)}, ${high.toFixed(3)}]</span>`;
+            }
+            html += `<td style="${style}">${cell}</td>`;
         });
         html += '</tr>';
     });
 
     html += `</tbody></table></div>
-        <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">p&lt;0.1† p&lt;0.05* p&lt;0.01**</p>
+        <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">${label}相関係数・95%信頼区間（Fisher z変換）。p&lt;0.1† p&lt;0.05* p&lt;0.01**</p>
     `;
 
     html += `
@@ -234,7 +398,8 @@ function createCorrelationTable(variables, matrix, pValues, nValues) {
     return html;
 }
 
-function plotHeatmap(variables, matrix) {
+function plotHeatmap(variables, matrix, methodLabel) {
+    const barTitle = methodLabel ? `${methodLabel}相関係数` : '相関係数';
     const data = [{
         z: matrix,
         x: variables,
@@ -245,7 +410,7 @@ function plotHeatmap(variables, matrix) {
         zmax: 1,
         showscale: true,
         colorbar: {
-            title: '相関係数',
+            title: barTitle,
             titleside: 'right',
             thickness: 15,
             len: 0.8
@@ -585,9 +750,9 @@ export function render(container, currentData, characteristics) {
                     <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
                         <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
                         <ul>
-                            <li><strong>係数:</strong> ピアソンの積率相関係数 (Pearson's product-moment correlation coefficient)</li>
-                            <li><strong>式:</strong> \( r = \frac{\sum(x - \bar{x})(y - \bar{y})}{\sqrt{\sum(x-\bar{x})^2 \sum(y-\bar{y})^2}} \)</li>
-                            <li><strong>無相関の検定:</strong> t検定を使用。 \( t = \frac{r\sqrt{n-2}}{\sqrt{1-r^2}} \) (df = n-2)</li>
+                            <li><strong>ピアソン:</strong> 積率相関係数 \( r = \frac{\sum(x - \bar{x})(y - \bar{y})}{\sqrt{\sum(x-\bar{x})^2 \sum(y-\bar{y})^2}} \)。無相関検定: \( t = \frac{r\sqrt{n-2}}{\sqrt{1-r^2}} \) (df = n-2)。</li>
+                            <li><strong>スピアマン:</strong> 順位相関。データを順位に変換し、順位についてピアソン r を計算。</li>
+                            <li><strong>95%信頼区間:</strong> Fisher z 変換。\( z = 0.5\ln\frac{1+r}{1-r} \), \( \mathrm{SE} = 1/\sqrt{n-3} \), CI = \( \tanh(z \pm 1.96\,\mathrm{SE}) \)。</li>
                             <li>※ リストワイズ削除（欠損値がある行は除外）を適用しています。</li>
                         </ul>
                     </div>
@@ -608,6 +773,7 @@ export function render(container, currentData, characteristics) {
                     <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
                         <i class="fas fa-table"></i> 相関行列
                     </h4>
+                    <div id="correlation-method-selector" style="margin-bottom: 1rem;"></div>
                     <div id="correlation-table"></div>
                     <div style="margin-top: 1.5rem;">
                        <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>

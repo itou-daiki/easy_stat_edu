@@ -43,7 +43,7 @@ export function matDiag(A) { return math.diag(A); }
  */
 export function exactFactors(variables, numFactors, currentData) {
     const data = currentData.map(row => variables.map(v => row[v]));
-    const { matrix: corrMatrix } = calculateCorrelationMatrix(variables, currentData);
+    const { matrix: corrMatrix } = calculateCorrelationMatrix(variables, currentData, { useListwise: true });
     const eigResult = math.eigs(corrMatrix);
     // math.js >= 11: { values: Array, eigenvectors: [{value, vector}] }
     // math.js < 11:  { values: Array, vectors: Matrix }

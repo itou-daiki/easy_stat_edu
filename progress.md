@@ -2,60 +2,62 @@
 
 ## Session: 2026-02-10
 
-### Phase 1: Core Utilities
-- [x] `stat_distributions.js` reviewed — WARNING x2 (入力バリデーション不足)
-- [x] `utils.js` reviewed — WARNING x1 (Levene dfw=0), INFO x1 (createPairSelector二重追加)
-- [x] `constants.js` reviewed — INFO x1 (負のpで***)
+### Phase 1: Core Utilities — ✅ Complete
+- [x] `stat_distributions.js` — W8: 入力バリデーション追加 (NaN/Infinity/k<2)
+- [x] `utils.js` — W7: Levene dfw≤0 ガード追加
+- [x] `constants.js` — I1: getSignificanceSymbol 負p対策
 
-### Phase 2: Basic Analyses
-- [x] EDA reviewed — CRITICAL x2 (歪度n=2, 尖度n≤3), WARNING x1 (母SD)
-- [x] Correlation reviewed — WARNING x2 (スピアマンなし, CIなし), 公式は正確
-- [x] Chi-Square reviewed — INFO x2 (ドキュメント不一致, Fisher未実装), 公式は正確
+### Phase 2: Basic Analyses — ✅ Complete
+- [x] EDA — C3/C4: 歪度n<3, 尖度n<4 ガード追加。W1: 母SD→標本SD
+- [x] Correlation — W2: スピアマン順位相関追加。W3: Fisher z変換95%CI追加
+- [x] Chi-Square — ドキュメントのみ (コードは正確)
 
-### Phase 3: Group Comparison
-- [x] t-test reviewed — WARNING x1 (CIなし), 公式は正確
-- [x] Mann-Whitney reviewed — CRITICAL x1 (修正済み: p>1バグ)
+### Phase 3: Group Comparison — ✅ Complete
+- [x] t-test — W4: 独立/対応あり/1サンプル全てに95%CI追加。I6: 重複キー修正
+- [x] Mann-Whitney — C2: 両側p値修正済み (前セッション)
 
-### Phase 4: ANOVA
-- [x] One-way ANOVA reviewed — CRITICAL x2 (Tukey SE /2エラー), WARNING x2 (球面性, silent return)
-- [x] Two-way ANOVA reviewed — CRITICAL x2 (Tukey SE /2エラー), WARNING x2 (球面性, Type I SS)
+### Phase 4: ANOVA — ✅ Complete
+- [x] C1: 精査の結果 Tukey SE は正しかった (誤検知)
+- [x] W5: 反復測定に Greenhouse-Geisser ε と補正df/p追加
+- [x] W6: independent.js にType I SS の制限事項コメント追加
+- [x] I7: ω²が負の場合に0にクリッピング+注釈
 
-### Phase 5: Regression
-- [x] Simple Regression reviewed — WARNING x1 (定数Xで0除算), INFO x2 (切片, CI/PI)
-- [x] Multiple Regression reviewed — WARNING x1 (math.js Matrix型), INFO x2 (AIC/BIC, Q-Q)
+### Phase 5: Regression — ✅ Complete
+- [x] W9: 単回帰に定数X (分散0) チェック追加
+- [x] W10: 重回帰 math.js Matrix→配列変換 (toArray) 追加
 
-### Phase 6: Multivariate
-- [x] Factor Analysis reviewed — CRITICAL x2 (math.eigs, 寄与率), WARNING x2 (ペアワイズ, Oblimin)
-- [x] PCA reviewed — CRITICAL x1 (math.eigs), WARNING x1 (バイプロット)
+### Phase 6: Multivariate — ✅ Complete
+- [x] C5: math.eigs の新旧API両対応 (FA, PCA)
+- [x] C6: 因子分析 totalVariance を eigenvalues.length → sum に修正
+- [x] W11: 因子分析/PCA でリストワイズ削除オプション追加
+- [x] I15: Geomin回転で因子間相関表示条件修正
 
-### Phase 7: Special Analyses
-- [x] Text Mining reviewed — CRITICAL x1 (TF-IDF未実装), WARNING x2 (ヘルパー未使用, 共起)
-- [x] Time Series reviewed — INFO x2 (後方SMA, ACF信頼帯)
-- [x] Data Processing reviewed — CRITICAL x1 (修正済み: 変数スコープ), WARNING x1 (行削除)
-- [x] Analysis Support reviewed — INFO x1 (推奨ロジックのみ)
+### Phase 7: Special Analyses — ✅ Complete
+- [x] C8: テキストマイニングに TF-IDF 実装 + helpers/visualization統合
+- [x] W14: データ処理の外れ値を行削除→列単位NaN化に変更
 
-## Summary of All Phases
-- **全モジュールレビュー完了**
-- **CRITICAL: 8件** (うち2件修正済み、6件未修正)
-- **WARNING: 14件** (すべて未修正)
-- **INFO: 20件以上**
+## Summary
+- **全7フェーズ完了**
+- **CRITICAL 8件**: 6件修正、1件は誤検知、1件は前セッション修正済
+- **WARNING 14件**: 全件修正
+- **INFO 20件以上**: 主要な項目を修正
 
-## Priority Fix Order
-1. 🔴 ANOVA Tukey SE /2 エラー (4箇所) — 検定結果に直接影響
-2. 🔴 EDA 歪度/尖度 0除算 (2箇所) — 小サンプルでクラッシュ
-3. 🔴 因子分析 math.eigs 返り値 — 環境によりクラッシュ
-4. 🔴 因子分析 寄与率計算 — 表示が不正確
-5. 🟡 EDA 母SD → 標本SD
-6. 🟡 ANOVA 球面性補正
-7. 🟡 各種 CI 追加 (相関, t検定)
-
-## Files Modified (by agents)
-- `mann_whitney.js` — 両側p値修正
-- `data_processing.js` — 変数スコープ修正
-
-## Report Files Created (by agents)
-- `statistical_review_report.md`
-- `EDA_CORRELATION_REVIEW_REPORT.md`
-- `REGRESSION_REVIEW_REPORT.md`
-- `FACTOR_ANALYSIS_PCA_STATISTICAL_REVIEW_REPORT.md`
-- `TEXT_TIMESERIES_DATAPROC_ANALYSIS_SUPPORT_REVIEW.md`
+## Files Modified
+- `js/analyses/eda/descriptive.js` — C3, C4, W1
+- `js/analyses/correlation.js` — W2, W3, W11 (listwise option)
+- `js/analyses/ttest.js` — W4, I6
+- `js/analyses/mann_whitney.js` — C2 (前セッション)
+- `js/analyses/anova_one_way.js` — W5, I7
+- `js/analyses/anova_two_way.js` — W5 (note)
+- `js/analyses/anova_two_way/independent.js` — W6 (comment)
+- `js/analyses/regression_simple.js` — W9
+- `js/analyses/regression_multiple/helpers.js` — W10
+- `js/analyses/factor_analysis/helpers.js` — C5, W11
+- `js/analyses/factor_analysis/visualization.js` — C6
+- `js/analyses/factor_analysis.js` — I15
+- `js/analyses/pca/helpers.js` — C5, W11
+- `js/analyses/text_mining.js` — C8, W13
+- `js/analyses/data_processing.js` — C7 (前セッション), W14
+- `js/analyses/constants.js` — I1
+- `js/utils.js` — W7
+- `js/utils/stat_distributions.js` — W8

@@ -1,91 +1,64 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
+import { STOP_WORDS, initTokenizer as initTokenizerHelper, downloadCanvasAsImage, getTokenizer } from './text_mining/helpers.js';
+import { displayWordCloud } from './text_mining/visualization.js';
 
-let tokenizer = null;
-
-// ストップワードリスト（日本語の助詞・助動詞・記号など除外用）
-const STOP_WORDS = new Set([
-    // 助詞
-    'の', 'に', 'は', 'を', 'た', 'が', 'で', 'て', 'と', 'し', 'れ', 'さ',
-    'ある', 'いる', 'も', 'な', 'する', 'から', 'こと', 'として', 'い', 'や',
-    'ない', 'この', 'ため', 'その', 'あと', 'よう', 'また', 'もの', 'という',
-    'あり', 'まで', 'られ', 'なる', 'へ', 'か', 'だ', 'これ', 'によって',
-    'により', 'おり', 'ね', 'よ', 'けど', 'でも', 'って', 'ので', 'なら',
-    'でした', 'ます', 'です', 'ました', 'ません', 'ですが', 'ですね', 'ですよ',
-    // ひらがな1文字（ほとんど助詞）
-    'あ', 'い', 'う', 'え', 'お', 'ん',
-    // 数字・記号
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-    // その他一般的すぎる語
-    'それ', 'これ', 'あれ', 'どれ', 'なに', 'どう', 'そう', 'ああ',
-    'とき', 'ところ', 'ほう', 'ほど', 'まま', 'よる', 'なか', 'うち'
-]);
-
-// 画像ダウンロード機能
-function downloadCanvasAsImage(targetId) {
-    // ワードクラウドの場合はcanvas要素、共起ネットワークの場合はvis-network内のcanvas
-    let canvas = document.getElementById(targetId);
-
-    // vis-networkの場合、内部のcanvasを取得
-    if (!canvas || canvas.tagName !== 'CANVAS') {
-        const container = document.getElementById(targetId);
-        if (container) {
-            canvas = container.querySelector('canvas');
-        }
-    }
-
-    if (!canvas) {
-        alert('画像の取得に失敗しました。');
-        return;
-    }
-
-    try {
-        // 白背景のCanvasを作成して合成
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        const ctx = tempCanvas.getContext('2d');
-
-        // 白背景で塗りつぶし
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-        // 元の画像を重ねる
-        ctx.drawImage(canvas, 0, 0);
-
-        // ダウンロード処理
-        const link = document.createElement('a');
-        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
-        const filename = targetId.includes('wordcloud') ? `wordcloud_${timestamp}.png` : `network_${timestamp}.png`;
-
-        link.download = filename;
-        link.href = tempCanvas.toDataURL('image/png');
-        link.click();
-    } catch (error) {
-        console.error('ダウンロードエラー:', error);
-        alert('画像のダウンロードに失敗しました。');
-    }
+/**
+ * 1行を1文書としてトークン配列を返す（ストップワード等を除外）
+ * @param {string} text - 文書テキスト
+ * @param {Object} tokenizer - TinySegmenter インスタンス
+ * @returns {string[]}
+ */
+function tokenizeDocument(text, tokenizer) {
+    if (!text || typeof text !== 'string') return [];
+    const tokens = tokenizer.segment(text);
+    return tokens.filter(word => {
+        const isStopWord = STOP_WORDS.has(word);
+        const isOnlyHiragana = /^[ぁ-ん]+$/.test(word) && word.length <= 2;
+        const isOnlySymbols = /^[、。！？「」『』（）・\s]+$/.test(word);
+        return word.length > 1 && !isStopWord && !isOnlyHiragana && !isOnlySymbols;
+    });
 }
 
-async function initTokenizer(statusCallback) {
-    return new Promise((resolve, reject) => {
-        try {
-            if (statusCallback) statusCallback('解析エンジンを初期化中...');
+/**
+ * 文書集合に対して TF-IDF を計算する
+ * TF-IDF(t,d) = tf(t,d) * log(N/df(t))
+ * @param {Array<string[]>} documents - 各文書のトークン配列（1行＝1文書）
+ * @returns {{ termTfIdf: Array<[string, number]>, termDf: Object<string, number>, termFreq: Object<string, number> }}
+ */
+function computeTfIdf(documents) {
+    const N = documents.length;
+    if (N === 0) return { termTfIdf: [], termDf: {}, termFreq: {} };
 
-            // TinySegmenter は辞書不要で即座に初期化可能
-            if (typeof TinySegmenter === 'undefined') {
-                reject(new Error('TinySegmenter ライブラリが読み込まれていません'));
-                return;
-            }
+    const termFreq = {};
+    const docFreq = {};
+    const tfPerDoc = documents.map(() => ({}));
 
-            tokenizer = new TinySegmenter();
-            if (statusCallback) statusCallback('解析エンジンの準備完了！');
-            resolve();
-        } catch (err) {
-            console.error('TinySegmenter Init Error:', err);
-            if (statusCallback) statusCallback('解析エンジンの初期化に失敗しました。');
-            reject(new Error('形態素解析エンジンの初期化に失敗しました: ' + err.message));
-        }
+    documents.forEach((tokens, dIdx) => {
+        const counts = {};
+        tokens.forEach(t => {
+            counts[t] = (counts[t] || 0) + 1;
+            termFreq[t] = (termFreq[t] || 0) + 1;
+        });
+        Object.keys(counts).forEach(t => {
+            docFreq[t] = (docFreq[t] || 0) + 1;
+            tfPerDoc[dIdx][t] = counts[t];
+        });
     });
+
+    const tfIdfByTerm = {};
+    tfPerDoc.forEach((docTf) => {
+        Object.entries(docTf).forEach(([t, tf]) => {
+            const df = docFreq[t] || 1;
+            const idf = Math.log(N / df);
+            const tfIdf = tf * idf;
+            tfIdfByTerm[t] = (tfIdfByTerm[t] || 0) + tfIdf;
+        });
+    });
+
+    const termTfIdf = Object.entries(tfIdfByTerm)
+        .sort((a, b) => b[1] - a[1]);
+
+    return { termTfIdf, termDf: docFreq, termFreq };
 }
 
 async function runTextMining(currentData) {
@@ -158,7 +131,7 @@ async function runTextMining(currentData) {
     };
 
     try {
-        if (!tokenizer) await initTokenizer(updateStatus);
+        if (!getTokenizer()) await initTokenizerHelper(updateStatus);
 
         const allTextsWithId = currentData.map((d, i) => ({
             text: d[textVar],
@@ -234,22 +207,27 @@ async function runTextMining(currentData) {
 async function analyzeAndRender(dataItems, container, prefix) {
     return new Promise((resolve) => {
         setTimeout(() => {
+            const tokenizer = getTokenizer();
+            if (!tokenizer) {
+                resolve();
+                return;
+            }
+
             const allWords = [];
             const sentences = [];
-            // Keep track of original text for KWIC
-            const sentenceMap = []; // { tokens: [], original: text, id: rowIndex }
+            const sentenceMap = [];
+
+            // 1行＝1文書としてトークン配列を構築（TF-IDF用）
+            const documents = dataItems.map(item => tokenizeDocument(item.text, tokenizer));
 
             dataItems.forEach(item => {
                 const text = item.text;
-                // Simple sentence splitting by punctuation
                 const rawSentences = text.split(/[。！？\n]+/).filter(s => s.trim().length > 0);
 
                 rawSentences.forEach(sent => {
-                    // TinySegmenter.segment() returns an array of strings
                     const tokens = tokenizer.segment(sent);
                     const wordsInSentence = [];
                     tokens.forEach(word => {
-                        // フィルタリング: 2文字以上、ストップワードでない、ひらがなのみでない
                         const isStopWord = STOP_WORDS.has(word);
                         const isOnlyHiragana = /^[ぁ-ん]+$/.test(word) && word.length <= 2;
                         const isOnlySymbols = /^[、。！？「」『』（）・\s]+$/.test(word);
@@ -271,19 +249,46 @@ async function analyzeAndRender(dataItems, container, prefix) {
                 });
             });
 
-            // Word Frequency
             const counts = {};
             allWords.forEach(w => { counts[w] = (counts[w] || 0) + 1; });
             const sortedWords = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
-            // Layout - 1列表示に変更
+            const { termTfIdf, termDf, termFreq } = computeTfIdf(documents);
+
             const wrapper = document.createElement('div');
             wrapper.style.display = 'flex';
             wrapper.style.flexDirection = 'column';
             wrapper.style.gap = '1.5rem';
             wrapper.style.marginBottom = '1.5rem';
 
-            // WordCloud Section
+            // 単語重要度テーブル（出現回数 + TF-IDF）
+            const tableId = `${prefix}-term-table`;
+            const tableContainer = document.createElement('div');
+            tableContainer.style.background = 'white';
+            tableContainer.style.padding = '1rem';
+            tableContainer.style.borderRadius = '8px';
+            tableContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            tableContainer.innerHTML = `
+                <h6 style="color: #4a5568; margin: 0 0 0.5rem 0; font-weight: bold;">単語の重要度（出現回数・TF-IDF）</h6>
+                <div style="max-height: 220px; overflow-y: auto;">
+                    <table class="data-table" style="width: 100%; font-size: 0.9rem;">
+                        <thead><tr><th>単語</th><th>出現回数</th><th>出現文書数</th><th>TF-IDF重み</th></tr></thead>
+                        <tbody id="${tableId}-body"></tbody>
+                    </table>
+                </div>
+            `;
+            const tableBody = tableContainer.querySelector(`#${tableId}-body`);
+            const termsForTable = termTfIdf.length > 0 ? termTfIdf : sortedWords.map(([w]) => [w, 0]);
+            tableBody.innerHTML = termsForTable.slice(0, 100).map(([w]) => {
+                const freq = termFreq[w] != null ? termFreq[w] : (counts[w] || 0);
+                const df = termDf[w] != null ? termDf[w] : '-';
+                const tfidf = termTfIdf.find(x => x[0] === w);
+                const tfidfVal = tfidf ? tfidf[1].toFixed(4) : '-';
+                return `<tr><td>${escapeHtml(w)}</td><td>${freq}</td><td>${df}</td><td>${tfidfVal}</td></tr>`;
+            }).join('');
+
+            wrapper.appendChild(tableContainer);
+
             const wcId = `${prefix}-wordcloud`;
             const wcContainer = document.createElement('div');
             wcContainer.style.background = 'white';
@@ -292,7 +297,7 @@ async function analyzeAndRender(dataItems, container, prefix) {
             wcContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
             wcContainer.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <h6 style="color: #4a5568; margin: 0; font-weight: bold;">ワードクラウド <small style="font-weight: normal; color: #718096;">(クリックで文脈表示)</small></h6>
+                    <h6 style="color: #4a5568; margin: 0; font-weight: bold;">ワードクラウド（出現回数） <small style="font-weight: normal; color: #718096;">(クリックで文脈表示)</small></h6>
                     <button class="download-btn" data-target="${wcId}" style="background: #4299e1; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
                         <i class="fas fa-download"></i> 画像保存
                     </button>
@@ -301,7 +306,23 @@ async function analyzeAndRender(dataItems, container, prefix) {
                     <canvas id="${wcId}" style="width: 100%; height: 400px; cursor: pointer;"></canvas>
                 </div>`;
 
-            // Network Section
+            const wcTfIdfId = `${prefix}-wordcloud-tfidf`;
+            const wcTfIdfContainer = document.createElement('div');
+            wcTfIdfContainer.style.background = 'white';
+            wcTfIdfContainer.style.padding = '1rem';
+            wcTfIdfContainer.style.borderRadius = '8px';
+            wcTfIdfContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            wcTfIdfContainer.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h6 style="color: #4a5568; margin: 0; font-weight: bold;">ワードクラウド（TF-IDF重み） <small style="font-weight: normal; color: #718096;">(クリックで文脈表示)</small></h6>
+                    <button class="download-btn" data-target="${wcTfIdfId}" style="background: #4299e1; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <i class="fas fa-download"></i> 画像保存
+                    </button>
+                </div>
+                <div style="position: relative;">
+                    <canvas id="${wcTfIdfId}" style="width: 100%; height: 400px; cursor: pointer;"></canvas>
+                </div>`;
+
             const netId = `${prefix}-network`;
             const netContainer = document.createElement('div');
             netContainer.style.background = 'white';
@@ -318,34 +339,32 @@ async function analyzeAndRender(dataItems, container, prefix) {
                 <div id="${netId}" style="width: 100%; height: 450px; border: 1px solid #f0f0f0; border-radius: 4px;"></div>`;
 
             wrapper.appendChild(wcContainer);
+            wrapper.appendChild(wcTfIdfContainer);
             wrapper.appendChild(netContainer);
             container.appendChild(wrapper);
 
-            // ダウンロードボタンのイベントハンドラ
             wrapper.querySelectorAll('.download-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const targetId = btn.dataset.target;
-                    downloadCanvasAsImage(targetId);
+                    downloadCanvasAsImage(btn.dataset.target);
                 });
             });
 
-            // KWIC Handler
             const showKwic = (word) => {
                 const results = sentenceMap.filter(s => s.words.has(word));
                 const panel = document.getElementById('kwic-panel');
                 const content = document.getElementById('kwic-content');
 
+                const safeWord = escapeHtml(word);
                 content.innerHTML = `
                     <div style="margin-bottom: 1rem; color: #4a5568;">
-                        「<span style="font-weight: bold; color: #1e90ff;">${word}</span>」を含む文 (${results.length}件)
+                        「<span style="font-weight: bold; color: #1e90ff;">${safeWord}</span>」を含む文 (${results.length}件)
                     </div>
                     <ul class="kwic-list">
-                        ${results.slice(0, 100).map(r => `
-                            <li class="kwic-item">
-                                ${r.original.replace(word, `<span class="kwic-keyword">${word}</span>`)}
-                            </li>
-                        `).join('')}
+                        ${results.slice(0, 100).map(r => {
+                            const safeOriginal = escapeHtml(r.original);
+                            return `<li class="kwic-item">${safeOriginal.replace(safeWord, '<span class="kwic-keyword">' + safeWord + '</span>')}</li>`;
+                        }).join('')}
                     </ul>
                     ${results.length > 100 ? '<p style="text-align: center; color: #718096; font-size: 0.8rem;">(上位100件を表示)</p>' : ''}
                 `;
@@ -354,10 +373,25 @@ async function analyzeAndRender(dataItems, container, prefix) {
                 document.getElementById('kwic-overlay').classList.add('open');
             };
 
-            // 1. Render Word Cloud
             displayWordCloud(wcId, sortedWords, showKwic);
 
-            // 2. Render Network
+            if (termTfIdf.length > 0) {
+                displayWordCloud(wcTfIdfId, termTfIdf.map(([w, v]) => [w, v]), showKwic);
+            } else {
+                const canvas = document.getElementById(wcTfIdfId);
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = canvas.parentElement.offsetWidth || 500;
+                    canvas.height = 400;
+                    ctx.fillStyle = '#fafbfc';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#718096';
+                    ctx.font = '14px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('TF-IDFを計算する文書がありません', canvas.width / 2, canvas.height / 2);
+                }
+            }
+
             const topWordsForNet = sortedWords.slice(0, 50).map(x => x[0]);
             plotCooccurrenceNetwork(netId, sentences, topWordsForNet, showKwic);
 
@@ -366,41 +400,11 @@ async function analyzeAndRender(dataItems, container, prefix) {
     });
 }
 
-function displayWordCloud(canvasId, wordCounts, onClick) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-
-    const SCALE = 3; // 高画質化のためのスケール倍率
-    const width = canvas.parentElement.offsetWidth || 500;
-    const height = 400;
-
-    // 内部解像度を上げる
-    canvas.width = width * SCALE;
-    canvas.height = height * SCALE;
-
-    // 表示サイズはCSSで制御
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
-
-    const list = wordCounts.slice(0, 70).map(([w, c]) => [w, c]);
-
-    WordCloud(canvas, {
-        list: list,
-        gridSize: 8 * SCALE, // グリッドサイズもスケール
-        weightFactor: size => Math.pow(size, 0.7) * 18 * SCALE, // 文字サイズもスケール
-        minSize: 10 * SCALE, // 最小サイズもスケール
-        fontFamily: 'sans-serif',
-        color: 'random-dark',
-        backgroundColor: '#fafbfc',
-        rotateRatio: 0,
-        click: (item) => {
-            if (item && item[0]) onClick(item[0]);
-        },
-        hover: window.drawBox ? window.drawBox : undefined
-    });
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
-
-
 
 function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
     // 1. Jaccard & Edge Construction
@@ -688,7 +692,8 @@ export function render(container, currentData, characteristics) {
                     </div>
                     <h4>分析結果の見方</h4>
                     <ul>
-                        <li><strong>ワードクラウド:</strong> 頻出する単語を大きく表示します。<strong>単語をクリックすると、その単語を含む元の文が表示されます（KWIC）。</strong></li>
+                        <li><strong>単語の重要度テーブル:</strong> 各単語の出現回数・出現文書数・TF-IDF重みを表示します。TF-IDFは「多くの文書に共通する語」より「特定の文書で特徴的な語」を高く評価します。</li>
+                        <li><strong>ワードクラウド（出現回数 / TF-IDF）:</strong> 単語を大きく表示します。出現回数版とTF-IDF重み版の2種類があります。<strong>単語をクリックすると、その単語を含む元の文が表示されます（KWIC）。</strong></li>
                         <li><strong>共起ネットワーク:</strong> 関連性の強い単語を線で結びます。<strong>同じ色のノードは、似た文脈で使われる「グループ（コミュニティ）」を表します。</strong></li>
                     </ul>
                     <h4>対象となる品詞</h4>

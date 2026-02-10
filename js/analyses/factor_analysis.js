@@ -79,8 +79,8 @@ function runFactorAnalysis(currentData) {
         displayEigenvalues(eigenvalues, rotatedStats);
         displayLoadings(variables, loadings, rotationMethod);
 
-        // 因子間相関行列の表示 (斜交回転のみ)
-        if (['promax', 'oblimin'].includes(rotationMethod) && factorCorrelations) {
+        // 因子間相関行列の表示 (斜交回転のみ: promax, oblimin, geomin)
+        if (['promax', 'oblimin', 'geomin'].includes(rotationMethod) && factorCorrelations) {
             displayFactorCorrelations(factorCorrelations);
         } else {
             const container = document.getElementById('factor-correlations');
