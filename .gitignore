@@ -1,7 +1,29 @@
+# Dependencies
 node_modules/
+
+# Test outputs
 playwright-report/
 test-results/
+test_output.txt
+debug_log.txt
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
 *.log
 anova_log.txt
+
+# Generated images (screenshots, verification outputs)
 *.png
+
+# Cursor IDE (machine-specific MCP paths, local settings)
+.cursor/mcp.json
+
+# ECC temp files (everything-claude-code clone)
+.temp_ecc/
+
+# Agent config (machine-specific scripts/hooks)
+.agent/scripts/
+.agent/package-manager.json
