@@ -1015,7 +1015,7 @@ export function render(container, currentData, characteristics) {
                 const graphTitleText = `【${col}】の度数分布（${sortOrder === 'frequency' ? '度数順' : '名前順'}）`;
 
                 const currentLayout = plotDiv.layout;
-                let newAnnotations = (currentLayout.annotations || []).filter(a => a.x !== -0.15 && a.y !== -0.25);
+                let newAnnotations = (currentLayout.annotations || []).filter(a => a._annotationType !== 'tategaki' && a._annotationType !== 'bottomTitle');
 
                 if (showAxis) {
                     const ann = getTategakiAnnotation('度数');
@@ -1041,7 +1041,7 @@ export function render(container, currentData, characteristics) {
             if (histDiv && histDiv.data) {
                 const graphTitleText = `【${col}】のヒストグラム`;
                 const currentLayout = histDiv.layout;
-                let newAnnotations = (currentLayout.annotations || []).filter(a => a.x !== -0.15 && a.y !== -0.25);
+                let newAnnotations = (currentLayout.annotations || []).filter(a => a._annotationType !== 'tategaki' && a._annotationType !== 'bottomTitle');
 
                 if (showAxis) {
                     const ann = getTategakiAnnotation('度数');
@@ -1064,7 +1064,7 @@ export function render(container, currentData, characteristics) {
                 const graphTitleText = `【${col}】の箱ひげ図`;
                 const currentLayout = boxDiv.layout;
                 // Box plot doesn't use tategaki side title (uses yaxis title), only bottom title annotation
-                let newAnnotations = (currentLayout.annotations || []).filter(a => a.y !== -0.25);
+                let newAnnotations = (currentLayout.annotations || []).filter(a => a._annotationType !== 'bottomTitle');
 
                 if (showTitle) {
                     const titleAnn = getBottomTitleAnnotation(graphTitleText);

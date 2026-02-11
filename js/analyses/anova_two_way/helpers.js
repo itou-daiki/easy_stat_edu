@@ -192,9 +192,19 @@ export function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellS
             y: bracketY + legHeight,
             text: text,
             showarrow: false,
-            font: { size: 14, color: 'black', weight: 'bold' }
+            font: { size: 14, color: 'black', weight: 'bold' },
+            _annotationType: 'bracket'
         });
     });
 
-    return { shapes, annotations };
+    // Calculate recommended max Y for yaxis range
+    let recommendedMaxY = Math.max(...maxValsAtX);
+    annotations.forEach(a => {
+        if (a._annotationType === 'bracket' && a.y > recommendedMaxY) {
+            recommendedMaxY = a.y;
+        }
+    });
+    recommendedMaxY *= 1.1; // Add 10% buffer
+
+    return { shapes, annotations, recommendedMaxY };
 }

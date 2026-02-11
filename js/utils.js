@@ -1040,7 +1040,8 @@ export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange) {
             showarrow: false,
             font: { size: 14, color: 'black' },
             xanchor: 'center',
-            yanchor: 'bottom'
+            yanchor: 'bottom',
+            _annotationType: 'bracket'
         });
 
         // Update column heights for the spanned range
@@ -1055,24 +1056,21 @@ export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange) {
         }
     });
 
-    // Update layout yaxis range to accommodate brackets
-    // If range was already set, extend it. If not, Plotly auto-scales, but often cuts off text.
-    // It is safer to explicitely check and set range if we added things.
-    // However, existing range might be null (auto).
-    // Better strategy: Return the recommended max Y, let caller decide or set it here if 'range' exists.
+    // Update layout yaxis range to accommodate brackets and annotation text.
+    // Plotly auto-range includes shapes (data coords) but NOT annotations.
+    // We must explicitly set the range to ensure bracket text is visible.
+    const recommendedMaxY = maxOccupiedY + (yRange * 0.05);
 
-    // We will set typical auto-range buffer
     if (!layout.yaxis.range) {
-        // If no range exists, we can't easily modify 'auto' without knowing min. 
-        // But we can set the top limit if we knew the bottom.
-        // Since we don't know min, we might leave it to Plotly unless we want to force distinct top space.
-        // A common trick is to add an invisible scatter point at maxOccupiedY, or just return maxOccupiedY.
+        // For bar charts (most common use case), minimum is 0.
+        // Set explicit range so bracket annotations are never cut off.
+        layout.yaxis.range = [0, recommendedMaxY];
     } else {
-        layout.yaxis.range[1] = Math.max(layout.yaxis.range[1], maxOccupiedY + (yRange * 0.05));
+        layout.yaxis.range[1] = Math.max(layout.yaxis.range[1], recommendedMaxY);
     }
 
     // Attach recommended max y to layout for caller usage if needed
-    layout._recommendedMaxY = maxOccupiedY + (yRange * 0.05);
+    layout._recommendedMaxY = recommendedMaxY;
 }
 
 
@@ -1098,7 +1096,8 @@ export function getTategakiAnnotation(text, x = -0.08, y = 0.5) {
         showarrow: false,
         xanchor: 'right',
         yanchor: 'middle',
-        font: { size: 14, color: '#444' }
+        font: { size: 14, color: '#444' },
+        _annotationType: 'tategaki'
     };
 }
 
@@ -1114,7 +1113,8 @@ export function getBottomTitleAnnotation(text) {
         xanchor: 'center',
         yanchor: 'top',
         showarrow: false,
-        font: { size: 16, color: '#2c3e50', weight: 'bold' } // Slightly larger and bold
+        font: { size: 16, color: '#2c3e50', weight: 'bold' }, // Slightly larger and bold
+        _annotationType: 'bottomTitle'
     };
 }
 

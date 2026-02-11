@@ -287,11 +287,21 @@ function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellStats) {
             y: bracketY + legHeight,
             text: text,
             showarrow: false,
-            font: { size: 14, color: 'black', weight: 'bold' }
+            font: { size: 14, color: 'black', weight: 'bold' },
+            _annotationType: 'bracket'
         });
     });
 
-    return { shapes, annotations };
+    // Calculate recommended max Y for yaxis range
+    let recommendedMaxY = Math.max(...maxValsAtX);
+    annotations.forEach(a => {
+        if (a._annotationType === 'bracket' && a.y > recommendedMaxY) {
+            recommendedMaxY = a.y;
+        }
+    });
+    recommendedMaxY *= 1.1; // Add 10% buffer
+
+    return { shapes, annotations, recommendedMaxY };
 }
 
 // ======================================================================
@@ -712,7 +722,7 @@ function renderTwoWayANOVAVisualization(results) {
                     });
                 });
 
-                const { shapes, annotations } = generateBracketsForGroupedPlot(res.sigPairs || [], res.levels1, res.levels2, res.cellStats);
+                const { shapes, annotations, recommendedMaxY } = generateBracketsForGroupedPlot(res.sigPairs || [], res.levels1, res.levels2, res.cellStats);
 
                 const tategakiTitle = getTategakiAnnotation(res.depVar);
                 if (tategakiTitle) {
@@ -725,10 +735,15 @@ function renderTwoWayANOVAVisualization(results) {
                     annotations.push(bottomTitle);
                 }
 
+                const yaxisConfig = { title: '', rangemode: 'tozero' };
+                if (recommendedMaxY) {
+                    yaxisConfig.range = [0, recommendedMaxY];
+                }
+
                 const layout = {
                     title: '',
                     xaxis: { title: res.factor2 },
-                    yaxis: { title: '', rangemode: 'tozero' },
+                    yaxis: yaxisConfig,
                     legend: { title: { text: res.factor1 } },
                     barmode: 'group',
                     shapes: shapes,
@@ -761,7 +776,7 @@ function renderTwoWayANOVAVisualization(results) {
             const plotDiv = document.getElementById(plotId);
             if (plotDiv && plotDiv.data) {
                 const currentLayout = plotDiv.layout;
-                let newAnnotations = (currentLayout.annotations || []).filter(a => a.x !== -0.15 && a.y !== -0.25);
+                let newAnnotations = (currentLayout.annotations || []).filter(a => a._annotationType !== 'tategaki' && a._annotationType !== 'bottomTitle');
 
                 if (showAxis) {
                     const ann = getTategakiAnnotation(res.depVar);
@@ -1615,4 +1630,5 @@ export function render(container, currentData, characteristics) {
             document.getElementById('analysis-results').style.display = 'none';
         });
     });
+}
 }

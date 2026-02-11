@@ -409,7 +409,7 @@ export function renderTwoWayANOVAVisualization(results) {
                     });
                 });
 
-                const { shapes, annotations } = generateBracketsForGroupedPlot(res.sigPairs || [], res.levels1, res.levels2, res.cellStats);
+                const { shapes, annotations, recommendedMaxY } = generateBracketsForGroupedPlot(res.sigPairs || [], res.levels1, res.levels2, res.cellStats);
 
                 const tategakiTitle = getTategakiAnnotation(res.depVar);
                 if (tategakiTitle) {
@@ -422,10 +422,15 @@ export function renderTwoWayANOVAVisualization(results) {
                     annotations.push(bottomTitle);
                 }
 
+                const yaxisConfig = { title: '', rangemode: 'tozero' };
+                if (recommendedMaxY) {
+                    yaxisConfig.range = [0, recommendedMaxY];
+                }
+
                 const layout = {
                     title: '',
                     xaxis: { title: res.factor2 },
-                    yaxis: { title: '', rangemode: 'tozero' },
+                    yaxis: yaxisConfig,
                     legend: { title: { text: res.factor1 } },
                     barmode: 'group',
                     shapes: shapes,
@@ -461,7 +466,7 @@ export function renderTwoWayANOVAVisualization(results) {
                 const currentLayout = plotDiv.layout;
                 const graphTitleText = `平均値の棒グラフ: ${res.depVar}`;
 
-                let newAnnotations = (currentLayout.annotations || []).filter(a => a.x !== -0.15 && a.y !== -0.25);
+                let newAnnotations = (currentLayout.annotations || []).filter(a => a._annotationType !== 'tategaki' && a._annotationType !== 'bottomTitle');
 
                 if (showAxis) {
                     const ann = getTategakiAnnotation(res.depVar);

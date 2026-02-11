@@ -1,39 +1,45 @@
-# Task Plan: 全分析モジュールの可視化品質チェック
+# Task Plan: アノテーション・ブラケット描画の詳細検証
 
 ## Goal
-相関分析以外のすべての分析モジュールの可視化が適切に行われているか確認し、問題があれば修正する。
+全分析モジュールで使用されているアノテーション（軸ラベル、タイトル、統計値注記）と
+有意差ブラケット（significance brackets）が適切に描画されているか詳細に検証する。
 
-## Analysis Modules to Check
-| # | Module | File | Status |
-|---|--------|------|--------|
-| 1 | 探索的データ分析 (EDA) | eda.js | `pending` |
-| 2 | t検定 | ttest.js | `pending` |
-| 3 | 一元配置分散分析 | anova_one_way.js | `pending` |
-| 4 | 二元配置分散分析 | anova_two_way.js | `pending` |
-| 5 | 単回帰分析 | regression_simple.js | `pending` |
-| 6 | 重回帰分析 | regression_multiple.js | `pending` |
-| 7 | カイ二乗検定 | chi_square.js | `pending` |
-| 8 | マン・ホイットニーU検定 | mann_whitney.js | `pending` |
-| 9 | 主成分分析 (PCA) | pca.js | `pending` |
-| 10 | 因子分析 | factor_analysis.js | `pending` |
-| 11 | テキストマイニング | text_mining.js | `pending` |
-| 12 | 時系列分析 | time_series.js | `pending` |
-
-## Check Points
-- [ ] Plotlyの軸設定（showticklabels, anchor, domain）
-- [ ] 散布図の軸ラベル表示
-- [ ] グラフのマージン設定
-- [ ] テキストの表示・被り
-- [ ] レスポンシブ性
-- [ ] 全般的な可視化の品質
+## 検証対象
+| # | 対象 | 関連ファイル | 検証ポイント | Status |
+|---|------|-------------|-------------|--------|
+| 1 | getTategakiAnnotation (縦書きy軸) | utils.js | 位置・可視性 | `complete` |
+| 2 | getBottomTitleAnnotation (下部タイトル) | utils.js | 位置・可視性 | `complete` |
+| 3 | addSignificanceBrackets (有意差ブラケット) | utils.js | 正確な位置・重なり | `complete` |
+| 4 | 一要因ANOVA ブラケット | anova_one_way.js, helpers.js | 多重比較結果の描画 | `complete` |
+| 5 | 二要因ANOVA ブラケット | anova_two_way/, helpers.js | 単純主効果の描画 | `complete` |
+| 6 | t検定 ブラケット | ttest/visualization.js | 有意差表示 | `complete` |
+| 7 | Mann-Whitney ブラケット | mann_whitney.js | 有意差表示 | `complete` |
+| 8 | PCA バイプロット注釈 | pca/visualization.js | 変数矢印・ラベル | `complete` |
+| 9 | 回帰分析 注釈 | regression_simple/multiple | 回帰式・パス図 | `complete` |
+| 10 | カイ二乗 注釈 | chi_square.js | ヒートマップ注釈 | `complete` |
 
 ## Phases
-1. **Phase 1**: コード解析 - 各モジュールのPlotly呼び出しを確認 `in_progress`
-2. **Phase 2**: ブラウザ確認 - 実際に可視化を表示して問題を特定 `pending`
-3. **Phase 3**: 修正 - 問題のある可視化を修正 `pending`
-4. **Phase 4**: 最終確認 - 修正結果をブラウザで検証 `pending`
+1. **Phase 1**: コード解析 — 全アノテーション/ブラケット関数の実装を読み解く `complete`
+2. **Phase 2**: 問題特定 — コード解析から3つの重大な問題を発見 `complete`
+3. **Phase 3**: 問題修正 — 全ての問題を修正 `complete`
+4. **Phase 4**: lint検証 — エラーなし確認済み `complete`
+
+## 発見・修正した問題
+
+### Bug 1 (Critical): アノテーション切り替えフィルタの座標不整合
+- **修正**: 7箇所のフィルタ条件を `_annotationType` プロパティベースに変更
+- **影響ファイル**: anova_one_way.js, anova_one_way/helpers.js, anova_two_way.js, anova_two_way/independent.js, eda.js(3箇所)
+
+### Bug 2 (Important): addSignificanceBrackets yaxis auto-range未対応
+- **修正**: auto-range時にyaxis.rangeを明示設定 (utils.js)
+- **影響**: t検定、一要因ANOVA、Mann-Whitney全てのブラケットが確実に表示
+
+### Bug 3 (Important): generateBracketsForGroupedPlot yaxis range未設定
+- **修正**: recommendedMaxYを返却し、呼び出し側でyaxis.rangeを設定
+- **影響ファイル**: anova_two_way/helpers.js, anova_two_way.js, anova_two_way/independent.js
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |-------|---------|------------|
-| (none yet) | | |
+| Playwright MCP Chrome競合 | 1 | cursor-ide-browser使用に切替 |
+| cursor-ide-browser stale refs | 1 | コード解析ベースの検証に切替 |

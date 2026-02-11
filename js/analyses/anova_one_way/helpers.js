@@ -328,7 +328,7 @@ export function displayANOVAVisualization(results, testType) {
                 const showTitle = titleControl?.checked ?? true;
 
                 const currentLayout = plotDiv.layout;
-                let newAnnotations = (currentLayout.annotations || []).filter(a => a.x !== -0.15 && a.y !== -0.25);
+                let newAnnotations = (currentLayout.annotations || []).filter(a => a._annotationType !== 'tategaki' && a._annotationType !== 'bottomTitle');
 
                 if (showAxis) {
                     const ann = getTategakiAnnotation(res.varName);
