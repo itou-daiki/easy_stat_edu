@@ -1631,4 +1631,3 @@ export function render(container, currentData, characteristics) {
         });
     });
 }
-}
