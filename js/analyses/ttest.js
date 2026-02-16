@@ -799,13 +799,15 @@ export function render(container, currentData, characteristics) {
 
     const renderSelectedPairs = () => {
         const listContainer = document.getElementById('selected-pairs-list');
-        const noPairsText = document.getElementById('no-pairs-text');
         listContainer.innerHTML = '';
+
         if (selectedPairs.length === 0) {
+            const noPairsText = document.createElement('p');
+            noPairsText.id = 'no-pairs-text';
+            noPairsText.style.color = '#6b7280';
+            noPairsText.textContent = 'ここに追加されたペアが表示されます';
             listContainer.appendChild(noPairsText);
-            noPairsText.style.display = 'block';
         } else {
-            noPairsText.style.display = 'none';
             selectedPairs.forEach((pair, index) => {
                 const pairEl = document.createElement('div');
                 pairEl.className = 'selected-pair-item';
