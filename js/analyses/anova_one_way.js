@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createMultiSetSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
 import { calculateTukeyP, performHolmCorrection } from '../utils/stat_distributions.js';
 
 // Pairwise t-test helper for Between-Subjects (Independent)
@@ -245,16 +245,31 @@ function displayANOVASummaryStatistics(variables, currentData) {
     container.innerHTML = tableHtml;
 }
 
-function displayANOVAInterpretation(results, factorVar, testType) {
-    const container = document.getElementById('interpretation-section');
-    container.innerHTML = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-comment-dots"></i> 結果の解釈
-            </h4>
-            <div id="interpretation-content"></div>
-        </div>`;
-    const contentContainer = document.getElementById('interpretation-content');
+function displayANOVAInterpretation(results, factorVar, testType, targetContainer = null) {
+    let container;
+    let contentContainer;
+
+    if (targetContainer) {
+        container = targetContainer;
+        container.innerHTML = `
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-comment-dots"></i> 結果の解釈
+                </h4>
+                <div class="interpretation-content"></div>
+            </div>`;
+        contentContainer = container.querySelector('.interpretation-content');
+    } else {
+        container = document.getElementById('interpretation-section');
+        container.innerHTML = `
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-comment-dots"></i> 結果の解釈
+                </h4>
+                <div id="interpretation-content"></div>
+            </div>`;
+        contentContainer = document.getElementById('interpretation-content');
+    }
 
     let interpretationHtml = '<ul style="list-style-type: disc; padding-left: 1.5rem; line-height: 1.6;">';
 
@@ -645,169 +660,332 @@ function runOneWayIndependentANOVA(currentData) {
 }
 
 function runOneWayRepeatedANOVA(currentData) {
-    const dependentVarSelect = document.getElementById('rep-dependent-var');
-    const dependentVars = Array.from(dependentVarSelect.selectedOptions).map(o => o.value);
+    // 1. Get all variable sets
+    const variableSetContainers = document.querySelectorAll('.multi-set-vars');
+    const variableSets = [];
+
+    variableSetContainers.forEach(container => {
+        // Find the hidden select created by createCustomMultiSelect
+        const select = container.querySelector('select[multiple]');
+        if (select) {
+            const selectedVars = Array.from(select.selectedOptions).map(o => o.value);
+            if (selectedVars.length >= 3) {
+                variableSets.push(selectedVars);
+            }
+        }
+    });
+
+    if (variableSets.length === 0) {
+        alert('分析するセットが見つかりません。各セットに3つ以上の変数を選択してください。');
+        return;
+    }
+
     const methodSelect = document.getElementById('comparison-method');
     const method = methodSelect ? methodSelect.value : 'tukey';
 
-    if (dependentVars.length < 3) {
-        alert('対応あり分散分析には3つ以上の変数（条件）が必要です');
-        return;
-    }
+    // Clear previous results
+    const resultsContainer = document.getElementById('analysis-results');
+    resultsContainer.innerHTML = '';
+    resultsContainer.style.display = 'block';
 
-    document.getElementById('analysis-results').style.display = 'none';
+    // Helper for local summary stats
+    const displayLocalSummaryStats = (container, vars, data) => {
+        let tableHtml = `
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-table"></i> 要約統計量
+                </h4>
+                <div class="table-container" style="overflow-x: auto;">
+                    <table class="table">
+                        <thead style="background: #f8f9fa;">
+                            <tr>
+                                <th style="font-weight: bold; color: #495057;">変数名</th>
+                                <th>有効N</th>
+                                <th>平均値</th>
+                                <th>中央値</th>
+                                <th>標準偏差</th>
+                                <th>分散</th>
+                                <th>最小値</th>
+                                <th>最大値</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
 
-    // 1. Summary Statistics
-    displayANOVASummaryStatistics(dependentVars, currentData);
+        vars.forEach(varName => {
+            const values = data.map(row => row[varName]).filter(v => v != null && !isNaN(v));
+            if (values.length > 0) {
+                const jstat = jStat(values);
+                tableHtml += `
+                    <tr>
+                        <td style="font-weight: bold; color: #1e90ff;">${varName}</td>
+                        <td>${values.length}</td>
+                        <td>${jstat.mean().toFixed(2)}</td>
+                        <td>${jstat.median().toFixed(2)}</td>
+                        <td>${jstat.stdev(true).toFixed(2)}</td>
+                        <td>${jstat.variance(true).toFixed(2)}</td>
+                        <td>${jstat.min().toFixed(2)}</td>
+                        <td>${jstat.max().toFixed(2)}</td>
+                    </tr>`;
+            }
+        });
+        tableHtml += `</tbody></table></div></div>`;
+        container.innerHTML = tableHtml;
+    };
 
-    const validData = currentData.map(row => dependentVars.map(v => row[v])).filter(vals => vals.every(v => v != null && !isNaN(v)));
-    const N = validData.length;
-    const k = dependentVars.length;
 
-    if (N < 2) {
-        alert('有効なデータ（全条件が揃っている行）が不足しています');
-        return;
-    }
+    // Iterate and Process Each Set
+    variableSets.forEach((dependentVars, setIndex) => {
+        // Container for this set
+        const setContainer = document.createElement('div');
+        setContainer.id = `results-set-${setIndex}`;
+        setContainer.className = 'analysis-set-result';
+        setContainer.style.marginBottom = '3rem';
+        setContainer.style.borderBottom = '2px solid #e2e8f0';
+        setContainer.style.paddingBottom = '2rem';
+        setContainer.innerHTML = `<h3 style="color: #2d3748; border-left: 5px solid #1e90ff; padding-left: 1rem; margin-bottom: 1.5rem;">分析セット ${setIndex + 1}: ${dependentVars.join(', ')}</h3>`;
+        resultsContainer.appendChild(setContainer);
 
-    const grandMean = jStat.mean(validData.flat());
-    const ssTotal = jStat.sum(validData.flat().map(v => Math.pow(v - grandMean, 2)));
-    const ssSubjects = k * jStat.sum(validData.map(row => Math.pow(jStat.mean(row) - grandMean, 2)));
+        // Sub-containers
+        const summaryDiv = document.createElement('div');
+        setContainer.appendChild(summaryDiv);
 
-    const conditionMeans = Array.from({ length: k }, (_, i) => jStat.mean(validData.map(row => row[i])));
-    const ssConditions = N * jStat.sum(conditionMeans.map(mean => Math.pow(mean - grandMean, 2)));
+        const resultsDiv = document.createElement('div');
+        setContainer.appendChild(resultsDiv);
 
-    const ssError = ssTotal - ssSubjects - ssConditions;
-    const dfConditions = k - 1;
-    const dfError = (N - 1) * (k - 1);
-    if (dfError <= 0) { alert('誤差の自由度が0以下です。'); return; }
+        const interpretationDiv = document.createElement('div');
+        setContainer.appendChild(interpretationDiv);
 
-    const msConditions = ssConditions / dfConditions;
-    const msError = ssError / dfError;
-    const fValue = msConditions / msError;
-    const pValue = 1 - jStat.centralF.cdf(fValue, dfConditions, dfError);
+        const vizDiv = document.createElement('div'); // Visualization container
+        setContainer.appendChild(vizDiv);
 
-    // Greenhouse-Geisser epsilon from covariance matrix (k×k of conditions)
-    let ggEpsilon = 1;
-    let pValueGG = pValue;
-    let dfConditionsGG = dfConditions;
-    let dfErrorGG = dfError;
-    if (k >= 3 && N >= 2) {
-        const cov = Array(k).fill(0).map(() => Array(k).fill(0));
-        for (let i = 0; i < k; i++) {
-            for (let j = i; j < k; j++) {
-                let sum = 0;
-                for (let s = 0; s < N; s++) {
-                    sum += (validData[s][i] - conditionMeans[i]) * (validData[s][j] - conditionMeans[j]);
+
+        // 1. Summary Stats
+        displayLocalSummaryStats(summaryDiv, dependentVars, currentData);
+
+        // Filter Data
+        const validData = currentData.map(row => dependentVars.map(v => row[v])).filter(vals => vals.every(v => v != null && !isNaN(v)));
+        const N = validData.length;
+        const k = dependentVars.length;
+
+        if (N < 2) {
+            resultsDiv.innerHTML = `<div class="alert alert-warning">有効なデータが不足しています（N < 2）。</div>`;
+            return;
+        }
+        if (k < 3) {
+            resultsDiv.innerHTML = `<div class="alert alert-warning">対応あり分散分析には3つ以上の変数（条件）が必要です。</div>`;
+            return;
+        }
+
+        // ANOVA Calculation (Repeated Measures)
+        const grandMean = jStat.mean(validData.flat());
+        const ssTotal = jStat.sum(validData.flat().map(v => Math.pow(v - grandMean, 2)));
+        const ssSubjects = k * jStat.sum(validData.map(row => Math.pow(jStat.mean(row) - grandMean, 2)));
+        const conditionMeans = Array.from({ length: k }, (_, i) => jStat.mean(validData.map(row => row[i])));
+        const ssConditions = N * jStat.sum(conditionMeans.map(mean => Math.pow(mean - grandMean, 2)));
+        const ssError = ssTotal - ssSubjects - ssConditions;
+        const dfConditions = k - 1;
+        const dfError = (N - 1) * (k - 1);
+        if (dfError <= 0) {
+            resultsDiv.innerHTML = `<div class="alert alert-warning">誤差の自由度が0以下です。データが少なすぎるか、条件数が多すぎます。</div>`;
+            return;
+        }
+        const msConditions = ssConditions / dfConditions;
+        const msError = ssError / dfError;
+        const fValue = msConditions / msError;
+        const pValue = 1 - jStat.centralF.cdf(fValue, dfConditions, dfError);
+
+        // Mauchly's Test & Greenhouse-Geisser (Simplified logic adaptation from original)
+        let ggEpsilon = 1.0;
+        let pValueGG = pValue;
+        let dfConditionsGG = dfConditions;
+        let dfErrorGG = dfError;
+
+        if (k >= 3 && N > k) {
+            // Calculate Covariance Matrix
+            const cov = Array.from({ length: k }, () => Array(k).fill(0));
+            for (let i = 0; i < k; i++) {
+                for (let j = 0; j <= i; j++) {
+                    let sum = 0;
+                    for (let s = 0; s < N; s++) {
+                        sum += (validData[s][i] - conditionMeans[i]) * (validData[s][j] - conditionMeans[j]);
+                    }
+                    const sij = sum / (N - 1);
+                    cov[i][j] = sij;
+                    cov[j][i] = sij;
                 }
-                const sij = sum / (N - 1);
-                cov[i][j] = sij;
-                cov[j][i] = sij;
             }
-        }
-        const rowMeans = cov.map(row => jStat.mean(row));
-        const colMeans = Array(k).fill(0);
-        for (let j = 0; j < k; j++) {
-            for (let i = 0; i < k; i++) colMeans[j] += cov[i][j];
-            colMeans[j] /= k;
-        }
-        const grandMeanCov = cov.flat().reduce((a, b) => a + b, 0) / (k * k);
-        const numGG = Math.pow(rowMeans.reduce((s, m) => s + Math.pow(m - grandMeanCov, 2), 0), 2);
-        let denomGG = 0;
-        for (let i = 0; i < k; i++) {
+            // Greenhouse-Geisser Epsilon Calculation
+            const rowMeans = cov.map(row => jStat.mean(row));
+            const colMeans = Array(k).fill(0);
             for (let j = 0; j < k; j++) {
-                const dev = cov[i][j] - rowMeans[i] - colMeans[j] + grandMeanCov;
-                denomGG += dev * dev;
+                for (let i = 0; i < k; i++) colMeans[j] += cov[i][j];
+                colMeans[j] /= k;
+            }
+            const grandMeanCov = cov.flat().reduce((a, b) => a + b, 0) / (k * k);
+            const numGG = Math.pow(rowMeans.reduce((s, m) => s + Math.pow(m - grandMeanCov, 2), 0), 2);
+            let denomGG = 0;
+            for (let i = 0; i < k; i++) {
+                for (let j = 0; j < k; j++) {
+                    const dev = cov[i][j] - rowMeans[i] - colMeans[j] + grandMeanCov;
+                    denomGG += dev * dev;
+                }
+            }
+            denomGG *= (k - 1);
+            if (denomGG > 0) {
+                ggEpsilon = Math.max(1 / (k - 1), Math.min(1, numGG / denomGG));
+                dfConditionsGG = ggEpsilon * dfConditions;
+                dfErrorGG = ggEpsilon * dfError;
+                pValueGG = 1 - jStat.centralF.cdf(fValue, dfConditionsGG, dfErrorGG);
             }
         }
-        denomGG *= (k - 1);
-        if (denomGG > 0) {
-            ggEpsilon = Math.max(1 / (k - 1), Math.min(1, numGG / denomGG));
-            dfConditionsGG = ggEpsilon * dfConditions;
-            dfErrorGG = ggEpsilon * dfError;
-            pValueGG = 1 - jStat.centralF.cdf(fValue, dfConditionsGG, dfErrorGG);
+
+        const etaSquaredPartial = ssConditions / (ssConditions + ssError);
+        let omegaSquared = (ssConditions - (dfConditions * msError)) / (ssTotal + msError);
+        const omegaSquaredNegativeRep = omegaSquared < 0;
+        if (omegaSquared < 0) omegaSquared = 0;
+        let significance = pValue < 0.01 ? '**' : pValue < 0.05 ? '*' : pValue < 0.1 ? '†' : 'n.s.';
+
+        // Render Results Table
+        const headers = ['要因', '全体M', '全体S.D', ...dependentVars.map(v => `${v} M`), ...dependentVars.map(v => `${v} S.D`), '条件 df', '誤差 df', 'F', 'p', 'sign', 'ηp²', 'ω²'];
+        const conditionStds = dependentVars.map((v, i) => jStat.stdev(validData.map(row => row[i]), true));
+
+        let tableHtml = `
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                    <i class="fas fa-calculator"></i> 平均値の差の検定（対応あり）
+                </h4>
+                <div class="table-container">
+                    <table class="table">
+                        <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+                        <tbody>
+                            <tr>
+                                <td>条件</td>
+                                <td>${jStat.mean(validData.flat()).toFixed(2)}</td>
+                                <td>${jStat.stdev(validData.flat(), true).toFixed(2)}</td>
+                                ${conditionMeans.map(m => `<td>${m.toFixed(2)}</td>`).join('')}
+                                ${conditionStds.map(s => `<td>${s.toFixed(2)}</td>`).join('')}
+                                <td>${dfConditions}</td>
+                                <td>${dfError}</td>
+                                <td>${fValue.toFixed(2)}</td>
+                                <td style="${pValue < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${pValue < 0.001 ? '< .001' : pValue.toFixed(3)}</td>
+                                <td>${significance}</td>
+                                <td>${etaSquaredPartial.toFixed(3)}</td>
+                                <td>${omegaSquared.toFixed(3)}${omegaSquaredNegativeRep ? ' <small title="算出値が負のため0にクリップしました">※</small>' : ''}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+        `;
+
+        // Greenhouse-Geisser Table
+        if (k >= 3) {
+            tableHtml += `
+                <div style="margin-top: 1rem; background: #f8fafc; padding: 1rem; border-radius: 6px;">
+                    <h5 style="font-size: 1rem; color: #475569; margin-bottom: 0.5rem;">球面性の補正 (Greenhouse-Geisser)</h5>
+                    <table class="table table-sm" style="width: auto;">
+                        <thead><tr><th>ε (Epsilon)</th><th>補正後 df1</th><th>補正後 df2</th><th>補正後 p値</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td>${ggEpsilon.toFixed(3)}</td>
+                                <td>${dfConditionsGG.toFixed(2)}</td>
+                                <td>${dfErrorGG.toFixed(2)}</td>
+                                <td style="${pValueGG < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${pValueGG < 0.001 ? '< .001' : pValueGG.toFixed(3)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;">※ 球面性が仮定できない場合（Mauchly's test p < .05 など）、このp値を参照することを推奨します。</p>
+                </div>
+            `;
         }
-    }
+        tableHtml += `<p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p<0.01** p<0.05* p<0.1†</p></div>`;
+        resultsDiv.innerHTML = tableHtml;
 
-    const etaSquaredPartial = ssConditions / (ssConditions + ssError);
-    let omegaSquared = (ssConditions - (dfConditions * msError)) / (ssTotal + msError);
-    const omegaSquaredNegativeRep = omegaSquared < 0;
-    if (omegaSquared < 0) omegaSquared = 0;
-    let significance = pValue < 0.01 ? '**' : pValue < 0.05 ? '*' : pValue < 0.1 ? '†' : 'n.s.';
+        // Generate APA Source Table for Repeated Measures
+        const headersAPA = ["Source", "<em>SS</em>", "<em>df</em>", "<em>MS</em>", "<em>F</em>", "<em>p</em>", "&eta;<sub>p</sub><sup>2</sup>"];
+        const rowsAPA = [
+            ["Conditions", ssConditions.toFixed(2), dfConditions, msConditions.toFixed(2), fValue.toFixed(2), (pValue < 0.001 ? '< .001' : pValue.toFixed(3)), etaSquaredPartial.toFixed(2)],
+            ["Error", ssError.toFixed(2), dfError, msError.toFixed(2), "-", "-", "-"],
+            ["Total (excl. subj)", (ssConditions + ssError).toFixed(2), dfConditions + dfError, "-", "-", "-", "-"]
+        ];
 
-    // 2. Main Test Results Table
-    const resultsContainer = document.getElementById('test-results-section');
-    const headers = ['要因', '全体M', '全体S.D', ...dependentVars.map(v => `${v} M`), ...dependentVars.map(v => `${v} S.D`), '条件 df', '誤差 df', 'F', 'p', 'sign', 'ηp²', 'ω²'];
-    const conditionStds = dependentVars.map((v, i) => jStat.stdev(validData.map(row => row[i]), true));
-    const rowData = [dependentVars.join(' vs '), grandMean, jStat.stdev(validData.flat(), true), ...conditionMeans, ...conditionStds, dfConditions, dfError, fValue, pValue, significance, etaSquaredPartial, omegaSquared];
+        const noteAPA = `<em>Note</em>. 上段は球面性仮定下的な結果。Greenhouse–Geisser ε = ${ggEpsilon.toFixed(3)}; 補正後 p = ${pValueGG < 0.001 ? '< .001' : pValueGG.toFixed(3)}.`;
 
-    let tableHtml = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-calculator"></i> 平均値の差の検定（対応あり）
-            </h4>
-            <div class="table-container">
-                <table class="table">
-                    <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
-                    <tbody><tr>${rowData.map((d, i) => (i === 0 || i === headers.indexOf('sign')) ? `<td>${d}</td>` : `<td>${typeof d === 'number' ? d.toFixed(2) : d}</td>`).join('')}</tr></tbody>
-                </table>
-            </div>
-            <div style="margin-top: 1rem; padding: 0.75rem; background: #f0f9ff; border-radius: 6px; font-size: 0.9rem;">
-                <strong><i class="fas fa-info-circle"></i> Greenhouse–Geisser 補正（球面性が満たされない場合）:</strong><br>
-                ε = ${ggEpsilon.toFixed(3)}, 補正後 df（条件）= ${dfConditionsGG.toFixed(2)}, 補正後 df（誤差）= ${dfErrorGG.toFixed(2)}, p（GG補正）= ${pValueGG < 0.001 ? '< .001' : pValueGG.toFixed(3)}.
-                ${omegaSquaredNegativeRep ? '<br><strong>ω²</strong>: 算出値が負のため0にクリップして表示しています。' : ''}
-            </div>
-            <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p<0.01** p<0.05* p<0.1†</p>
-            
-            <div style="margin-top: 2rem;">
-                 <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
-                 <div id="reporting-table-container-anova-rep"></div>
-            </div>
-        </div>`;
-    resultsContainer.innerHTML = tableHtml;
+        const apaTableContainer = document.createElement('div');
+        apaTableContainer.style.marginTop = '2rem';
+        apaTableContainer.innerHTML = `
+            <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+            <div id="reporting-table-container-anova-rep-${setIndex}"></div>
+        `;
+        resultsDiv.appendChild(apaTableContainer);
 
-    // Generate APA Source Table for Repeated Measures
-    const headersAPA = ["Source", "<em>SS</em>", "<em>df</em>", "<em>MS</em>", "<em>F</em>", "<em>p</em>", "&eta;<sub>p</sub><sup>2</sup>"];
-    const rowsAPA = [
-        ["Conditions", ssConditions.toFixed(2), dfConditions, msConditions.toFixed(2), fValue.toFixed(2), (pValue < 0.001 ? '< .001' : pValue.toFixed(3)), etaSquaredPartial.toFixed(2)],
-        ["Error", ssError.toFixed(2), dfError, msError.toFixed(2), "-", "-", "-"],
-        ["Total (excl. subj)", (ssConditions + ssError).toFixed(2), dfConditions + dfError, "-", "-", "-", "-"]
-    ];
+        setTimeout(() => {
+            const container = document.getElementById(`reporting-table-container-anova-rep-${setIndex}`);
+            if (container)
+                container.innerHTML = generateAPATableHtml(`anova-rep-apa-${setIndex}`, `Table ${setIndex + 1}. One-Way Repeated Measures ANOVA (Set ${setIndex + 1})`, headersAPA, rowsAPA, noteAPA);
+        }, 0);
 
-    const noteAPA = `<em>Note</em>. 上段は球面性仮定下的な結果。Greenhouse–Geisser ε = ${ggEpsilon.toFixed(3)}; 補正後 p = ${pValueGG < 0.001 ? '< .001' : pValueGG.toFixed(3)}.`;
 
-    setTimeout(() => {
-        const container = document.getElementById('reporting-table-container-anova-rep');
-        if (container)
-            container.innerHTML = generateAPATableHtml('anova-rep-apa', 'Table 1. One-Way Repeated Measures ANOVA', headersAPA, rowsAPA, noteAPA);
-    }, 0);
+        // 3. Sample Size
+        renderSampleSizeInfo(resultsDiv, N); // Render into resultsDiv for this set
 
-    // 3. Sample Size
-    renderSampleSizeInfo(resultsContainer, N);
+        const conditionSEs = dependentVars.map((v, i) => jStat.stdev(validData.map(row => row[i]), true) / Math.sqrt(N));
+        const sigPairs = performRepeatedPostHocTests(dependentVars, validData, msError, dfError, N, method);
 
-    const conditionSEs = dependentVars.map((v, i) => jStat.stdev(validData.map(row => row[i]), true) / Math.sqrt(N));
-    const sigPairs = performRepeatedPostHocTests(dependentVars, currentData, msError, dfError, N, method);
+        const testResultsForInterpretation = [{
+            varName: `条件 (${dependentVars.join(', ')})`,
+            groups: dependentVars, groupMeans: conditionMeans, groupSEs: conditionSEs,
+            ssBetween: ssConditions, df1: dfConditions, msBetween: msConditions,
+            ssWithin: ssError, df2: dfError, msWithin: msError,
+            ssTotal: ssConditions + ssError, // Note: This is not the grand total SS
+            fValue, pValue, significance, etaSquared: etaSquaredPartial,
+            sigPairs: sigPairs.map(p => ({
+                ...p,
+                significance: p.p < 0.01 ? '**' : p.p < 0.05 ? '*' : p.p < 0.1 ? '†' : 'n.s.'
+            })),
+            method
+        }];
 
-    const testResults = [{
-        varName: `条件 (${dependentVars.join(', ')})`,
-        groups: dependentVars, groupMeans: conditionMeans, groupSEs: conditionSEs,
-        ssBetween: ssConditions, df1: dfConditions, msBetween: msConditions,
-        ssWithin: ssError, df2: dfError, msWithin: msError,
-        ssTotal: ssConditions + ssError, // Note: This is not the grand total SS
-        fValue, pValue, significance, etaSquared: etaSquaredPartial,
-        sigPairs: sigPairs.map(p => ({
-            ...p,
-            significance: p.p < 0.01 ? '**' : p.p < 0.05 ? '*' : p.p < 0.1 ? '†' : 'n.s.'
-        })),
-        method
-    }];
+        // 4. Interpretation
+        displayANOVAInterpretation(testResultsForInterpretation, null, 'repeated', interpretationDiv);
 
-    // 4. Interpretation
-    displayANOVAInterpretation(testResults, null, 'repeated');
+        // 5. Visualization
+        // Render Post-Hoc Table
+        vizDiv.innerHTML += renderPostHocTable(sigPairs, method);
 
-    // 5. Visualization
-    displayANOVAVisualization(testResults, 'repeated');
+        // Prepare Plot
+        const plotContainer = document.createElement('div');
+        plotContainer.id = `anova-plot-${setIndex}`;
+        plotContainer.style.height = '400px';
+        vizDiv.appendChild(plotContainer);
 
-    document.getElementById('analysis-results').style.display = 'block';
+        // Render Plot
+        const trace = {
+            x: dependentVars,
+            y: conditionMeans,
+            error_y: {
+                type: 'data',
+                array: conditionStds.map(s => s / Math.sqrt(N)), // SE
+                visible: true,
+                color: 'black'
+            },
+            type: 'bar',
+            marker: { color: 'rgba(30, 144, 255, 0.7)' }
+        };
+
+        const yMax = Math.max(...conditionMeans.map((m, i) => m + conditionStds[i] / Math.sqrt(N)));
+        const layout = {
+            title: `平均値の比較 (Set ${setIndex + 1})`,
+            xaxis: { title: '条件' },
+            yaxis: { title: '平均値 (+SEM)' },
+            margin: { t: 60, l: 60, b: 60, r: 20 },
+            annotations: []
+        };
+
+        // Add significance brackets
+        addSignificanceBrackets(layout, sigPairs, dependentVars, yMax, yMax * 0.2);
+
+        Plotly.newPlot(plotContainer.id, [trace], layout, createPlotlyConfig(`ANOVA_Set_${setIndex + 1}`, `anova_set_${setIndex + 1}`));
+    });
 }
 
 function createComparisonMethodSelector(containerId) {
@@ -939,10 +1117,7 @@ export function render(container, currentData, characteristics) {
     });
     createAnalysisButton('run-ind-btn-container', '分析を実行（対応なし）', () => runOneWayIndependentANOVA(currentData), { id: 'run-ind-anova-btn' });
 
-    createVariableSelector('rep-dependent-var-container', numericColumns, 'rep-dependent-var', {
-        label: '<i class="fas fa-list-ol"></i> 比較する変数（条件）を選択（3つ以上）:',
-        multiple: true
-    });
+    createMultiSetSelector('rep-dependent-var-container', numericColumns);
     createAnalysisButton('run-rep-btn-container', '分析を実行（対応あり）', () => runOneWayRepeatedANOVA(currentData), { id: 'run-rep-anova-btn' });
 
     document.querySelectorAll('input[name="anova-type"]').forEach(radio => {

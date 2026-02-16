@@ -742,6 +742,176 @@ export function createPairSelector(containerId, options, id, placeholder) {
 }
 
 /**
+ * Creates a specialized multi-pair selector component.
+ * Allows adding/removing rows of Pre/Post variable pairs.
+ * @param {string} containerId - Container ID to append to.
+ * @param {Array<string>} options - List of variable names.
+ */
+export function createMultiPairSelector(containerId, options) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Header
+    const header = document.createElement('div');
+    header.style.display = 'grid';
+    header.style.gridTemplateColumns = '1fr 1fr 40px';
+    header.style.gap = '0.5rem';
+    header.style.marginBottom = '0.5rem';
+    header.style.fontWeight = 'bold';
+    header.style.color = '#4b5563';
+    header.style.fontSize = '0.9rem';
+    header.innerHTML = `
+        <div>Pre (Time 1)</div>
+        <div>Post (Time 2)</div>
+        <div></div>
+    `;
+    container.appendChild(header);
+
+    // List Container
+    const listContainer = document.createElement('div');
+    listContainer.id = `${containerId}-list`;
+    listContainer.style.marginBottom = '0.5rem';
+    container.appendChild(listContainer);
+
+    // Add Button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn btn-secondary';
+    addBtn.style.fontSize = '0.85rem';
+    addBtn.style.padding = '0.25rem 0.75rem';
+    addBtn.innerHTML = '<i class="fas fa-plus"></i> ペアを追加';
+    addBtn.onclick = () => addPairRow(listContainer, options);
+    container.appendChild(addBtn);
+
+    // Helper to add a row
+    function addPairRow(parent, opts) {
+        const row = document.createElement('div');
+        row.className = 'pair-row';
+        row.style.display = 'grid';
+        row.style.gridTemplateColumns = '1fr 1fr 40px';
+        row.style.gap = '0.5rem';
+        row.style.marginBottom = '0.5rem';
+
+        const createSelect = (cls) => {
+            const sel = document.createElement('select');
+            sel.className = `form-select ${cls}`;
+            sel.style.width = '100%';
+            sel.style.fontSize = '0.9rem';
+            sel.style.padding = '0.4rem';
+
+            let html = '<option value="">選択...</option>';
+            opts.forEach(o => html += `<option value="${o}">${o}</option>`);
+            sel.innerHTML = html;
+            return sel;
+        };
+
+        const preSelect = createSelect('pre-select');
+        const postSelect = createSelect('post-select');
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn-icon';
+        removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        removeBtn.style.color = '#ef4444';
+        removeBtn.style.border = 'none';
+        removeBtn.style.background = 'none';
+        removeBtn.style.cursor = 'pointer';
+        removeBtn.title = '削除';
+        removeBtn.onclick = () => row.remove();
+
+        row.appendChild(preSelect);
+        row.appendChild(postSelect);
+        row.appendChild(removeBtn);
+        parent.appendChild(row);
+    }
+
+    // Add initial empty row
+    addPairRow(listContainer, options);
+}
+
+/**
+ * Creates a selector for multiple sets of variables (for One-Way Repeated ANOVA).
+ * Each set can have multiple variables (min 3).
+ * @param {string} containerId - Container ID.
+ * @param {Array<string>} options - List of variable names.
+ */
+export function createMultiSetSelector(containerId, options) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // List Container
+    const listContainer = document.createElement('div');
+    listContainer.id = `${containerId}-list`;
+    listContainer.style.marginBottom = '1rem';
+    container.appendChild(listContainer);
+
+    // Add Set Button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn btn-secondary';
+    addBtn.style.fontSize = '0.9rem';
+    addBtn.style.padding = '0.5rem 1rem';
+    addBtn.innerHTML = '<i class="fas fa-plus-circle"></i> 分析セットを追加 (変数3つ以上)';
+    addBtn.onclick = () => addSetRow(listContainer, options);
+    container.appendChild(addBtn);
+
+    // Helper to add a set row
+    function addSetRow(parent, opts) {
+        const row = document.createElement('div');
+        row.className = 'set-row';
+        row.style.background = '#f8fafc';
+        row.style.border = '1px solid #e2e8f0';
+        row.style.borderRadius = '8px';
+        row.style.padding = '1rem';
+        row.style.marginBottom = '1rem';
+        row.style.position = 'relative';
+
+        // Remove Button (Top Right)
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn-icon';
+        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        removeBtn.style.position = 'absolute';
+        removeBtn.style.top = '0.5rem';
+        removeBtn.style.right = '0.5rem';
+        removeBtn.style.color = '#94a3b8';
+        removeBtn.style.border = 'none';
+        removeBtn.style.background = 'none';
+        removeBtn.style.cursor = 'pointer';
+        removeBtn.onclick = () => row.remove();
+        row.appendChild(removeBtn);
+
+        // Title
+        const title = document.createElement('h5');
+        title.style.margin = '0 0 0.5rem 0';
+        title.style.fontSize = '0.95rem';
+        title.style.color = '#475569';
+        title.innerHTML = '<i class="fas fa-layer-group"></i> 分析セット';
+        row.appendChild(title);
+
+        // Variable Selector Area
+        const varSelectorContainer = document.createElement('div');
+        varSelectorContainer.className = 'multi-set-vars'; // Added class for querying
+        // Use a unique ID for the internal selector
+        const uniqueId = `set-selector-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        varSelectorContainer.id = uniqueId;
+        row.appendChild(varSelectorContainer);
+
+        // Append to parent first so it's in the DOM
+        parent.appendChild(row);
+
+        // Create the selector using the standard helper
+        createVariableSelector(uniqueId, opts, uniqueId + '-select', {
+            label: '変数を選択（3つ以上）:',
+            multiple: true
+        });
+    }
+
+    // Add initial empty set
+    addSetRow(listContainer, options);
+}
+
+/**
  * サンプルサイズ情報（全体N、グループ別N）のHTMLを生成して表示する
  * @param {HTMLElement|string} container - 表示先のコンテナ要素またはID
  * @param {number} totalN - 全体サンプルサイズ

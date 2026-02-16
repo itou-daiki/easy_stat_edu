@@ -1,0 +1,14 @@
+- [x] Code Analysis & Problem Identification
+- [x] Bug Fixes (Annotations & Brackets)
+- [x] Lint Verification
+- [x] Visual Verification in Browser (Pending)
+    - [x] Vertical annotations (Tategaki)
+    - [x] Bottom title annotations
+    - [x] Significance brackets
+    - [x] ANOVA / T-test / Mann-Whitney brackets
+    - [ ] Regression / PCA / Chi-square annotations
+- [x] Create walkthrough documentation
+- [x] Fix Two-way Mixed ANOVA UI
+    - [x] Implement proper pair selector (Pre/Post)
+    - [x] Support multiple pairs
+    - [x] Verify execution

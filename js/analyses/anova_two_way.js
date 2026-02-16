@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, createPairSelector, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, createPairSelector, createMultiPairSelector, addSignificanceBrackets } from '../utils.js';
 import { calculateTukeyP, performHolmCorrection } from '../utils/stat_distributions.js';
 // import { jStat } from 'jstat'; // Use global jStat
 
@@ -1535,7 +1535,7 @@ export function render(container, currentData, characteristics) {
         label: '<i class="fas fa-users"></i> 被験者間因子（グループ）:',
         multiple: false
     });
-    createPairSelector('pair-selector-container', numericColumns, 'mixed-within-pairs');
+    createMultiPairSelector('pair-selector-container', numericColumns);
     createAnalysisButton('run-mixed-btn-container', '分析を実行（混合）', () => {
         const pairs = [];
         document.querySelectorAll('.pair-row').forEach(row => {

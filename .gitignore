@@ -27,3 +27,4 @@ anova_log.txt
 # Agent config (machine-specific scripts/hooks)
 .agent/scripts/
 .agent/package-manager.json
+.git_backup/
