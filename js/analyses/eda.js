@@ -895,8 +895,8 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
-
-
+            <!-- データ概要 -->
+            <div id="eda-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
             <!-- 軸ラベル表示オプション -->
             <div id="viz-controls-container" style="margin-bottom: 2rem;"></div>
@@ -988,8 +988,8 @@ export function render(container, currentData, characteristics) {
     `;
     document.head.appendChild(style);
 
-    // 共通のデータプレビューと要約統計量を表示（折りたたみ可能）
-    // renderDataOverview('#eda-data-overview', currentData, characteristics, { initiallyCollapsed: true });
+    // 共通のデータプレビューを表示（折りたたみ可能）
+    renderDataOverview('#eda-data-overview', currentData, characteristics, { initiallyCollapsed: true });
 
     // 各セクションをレンダリング
     // 各セクションをレンダリング
