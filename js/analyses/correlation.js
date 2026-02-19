@@ -196,13 +196,14 @@ function renderCorrelationByMethod(selectedVars, currentData, matrixData) {
                     const p = pValues[i][j];
                     if (p < 0.01) rText += '**';
                     else if (p < 0.05) rText += '*';
+                    else if (p < 0.1) rText += '†';
                     row.push(rText);
                 }
             }
         }
         return row;
     });
-    const noteAPA = `*<em>p</em> < .05. **<em>p</em> < .01.`;
+    const noteAPA = `†<em>p</em> < .10. *<em>p</em> < .05. **<em>p</em> < .01.`;
     document.getElementById('reporting-table-container-corr').innerHTML =
         generateAPATableHtml('corr-apa-table', `Table 1. ${methodLabel} Correlation Matrix`, headersAPA, rowsAPA, noteAPA);
 }
@@ -297,13 +298,14 @@ function runCorrelationAnalysis(currentData) {
                     const p = pValues[i][j];
                     if (p < 0.01) rText += '**';
                     else if (p < 0.05) rText += '*';
+                    else if (p < 0.1) rText += '†';
                     row.push(rText);
                 }
             }
         }
         return row;
     });
-    const noteAPA = `*<em>p</em> < .05. **<em>p</em> < .01.`;
+    const noteAPA = `†<em>p</em> < .10. *<em>p</em> < .05. **<em>p</em> < .01.`;
     document.getElementById('reporting-table-container-corr').innerHTML =
         generateAPATableHtml('corr-apa-table', `Table 1. ${methodLabel} Correlation Matrix`, headersAPA, rowsAPA, noteAPA);
 

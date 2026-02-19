@@ -122,7 +122,7 @@ function runMannWhitneyTest(currentData) {
                         <th>${groups[0]} 平均順位</th>
                         <th>${groups[1]} 平均順位</th>
                         <th>U値</th>
-                        <th>Z値</th>
+                        <th>|Z|</th>
                         <th>p値</th>
                         <th>有意差</th>
                         <th>効果量 r</th>
@@ -249,7 +249,7 @@ function runMannWhitneyTest(currentData) {
         });
     });
 
-    resultsTableHtml += `</tbody></table></div><p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;"><strong>有意差</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†</p>`;
+    resultsTableHtml += `</tbody></table></div><p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;"><strong>有意差</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1† n.s.</p>`;
 
     if (skippedVars.length > 0) {
         resultsTableHtml += `<div class="warning-message" style="margin-top: 1rem; padding: 1rem; background-color: #fffbe6; border: 1px solid #fde68a; border-radius: 4px; color: #92400e;">
@@ -280,7 +280,7 @@ function generateReportingTable(testResults, groups) {
         "変数",
         `${groups[0]} (n=${testResults[0].n1})<br>Mean Rank`,
         `${groups[1]} (n=${testResults[0].n2})<br>Mean Rank`,
-        "<em>U</em>", "<em>Z</em>", "<em>p</em>", "<em>r</em>"
+        "<em>U</em>", "<em>|Z|</em>", "<em>p</em>", "<em>r</em>"
     ];
 
     const rows = testResults.map(res => {

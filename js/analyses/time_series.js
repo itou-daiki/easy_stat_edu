@@ -217,11 +217,10 @@ function renderTimeSeriesPlot(t, y, sma, window, label) {
     const layout = {
         title: { text: `<b>${label} の推移と傾向</b>`, font: { size: 18 } },
         xaxis: { title: '時間 / 順序' },
-        yaxis: { title: label },
-        ...createPlotlyConfig().layout
+        yaxis: { title: label }
     };
 
-    Plotly.newPlot('ts-plot-section', [traceOriginal, traceSMA], layout, createPlotlyConfig().config);
+    Plotly.newPlot('ts-plot-section', [traceOriginal, traceSMA], layout, createPlotlyConfig('時系列分析_推移', [label]));
 }
 
 function renderACFPlot(acf, maxLag) {
@@ -245,11 +244,10 @@ function renderACFPlot(acf, maxLag) {
         shapes: [
             // Zero line
             { type: 'line', x0: 0, x1: maxLag, y0: 0, y1: 0, line: { color: 'black', width: 1 } }
-        ],
-        ...createPlotlyConfig().layout
+        ]
     };
 
-    Plotly.newPlot('ts-acf-section', [trace], layout, createPlotlyConfig().config);
+    Plotly.newPlot('ts-acf-section', [trace], layout, createPlotlyConfig('時系列分析_ACF', []));
 }
 
 function renderInterpretation(acf, window, label) {

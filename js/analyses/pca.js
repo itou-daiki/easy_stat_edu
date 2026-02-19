@@ -114,7 +114,7 @@ export function render(container, currentData, characteristics) {
                 </div>
 
                 <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                    <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-table"></i> 因子負荷量</h4>
+                    <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-table"></i> 主成分負荷量</h4>
                     <div id="loadings-table"></div>
                 </div>
 

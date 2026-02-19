@@ -107,6 +107,10 @@ Tests run in Chromium via Playwright. For testing statistical logic:
 3. **ANOVA modules**: Only modify `anova_one_way.js` and `anova_two_way.js` (not the subfolder versions).
 4. **Dynamic imports**: Analysis modules are loaded lazily. Syntax errors are caught at runtime, not build time.
 5. **Effect size labeling**: Paired t-test uses d_z (not generic d). Independent t-test uses Cohen's d.
+6. **createPlotlyConfig()**: Returns a flat config object (not `{layout, config}`). Pass directly as 4th arg to `Plotly.newPlot()`.
+7. **PCA vs Factor Analysis terminology**: PCA uses "主成分負荷量" (component loadings), Factor Analysis uses "因子負荷量" (factor loadings).
+8. **Rotation labels**: Factor analysis supports varimax, promax, oblimin, geomin, none. Use lookup tables, not binary ternary.
+9. **Negative intercept display**: Use conditional sign `b0 >= 0 ? '+' : '-'` with `Math.abs(b0)` to avoid `+ -1.234`.
 
 ## Code Style
 

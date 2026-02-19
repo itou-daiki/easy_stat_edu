@@ -92,7 +92,14 @@ export function displayEigenvalues(eigenvalues, rotatedStats) {
 export function displayLoadings(variables, loadings, rotation) {
     const container = document.getElementById('loadings-table');
     const numFactors = loadings[0].length;
-    const rotationText = rotation === 'varimax' ? ' (バリマックス回転後)' : ' (回転なし)';
+    const rotationLabels = {
+        'varimax': 'バリマックス回転後',
+        'promax': 'プロマックス回転後',
+        'oblimin': 'オブリミン回転後',
+        'geomin': 'ジオミン回転後',
+        'none': '回転なし'
+    };
+    const rotationText = ` (${rotationLabels[rotation] || (rotation === 'none' ? '回転なし' : rotation + '回転後')})`;
 
     let html = `
         <div class="table-container">
@@ -214,7 +221,14 @@ export function plotScree(eigenvalues) {
  * @param {string} rotation - 回転方法
  */
 export function plotLoadingsHeatmap(variables, loadings, rotation) {
-    const rotationText = rotation === 'varimax' ? ' (Varimax)' : ' (None)';
+    const heatmapRotationLabels = {
+        'varimax': 'Varimax',
+        'promax': 'Promax',
+        'oblimin': 'Oblimin',
+        'geomin': 'Geomin',
+        'none': 'None'
+    };
+    const rotationText = ` (${heatmapRotationLabels[rotation] || rotation})`;
     const z = loadings[0].map((_, colIndex) => loadings.map(row => row[colIndex]));
     const components = Array.from({ length: loadings[0].length }, (_, i) => `第${i + 1}因子`);
 
