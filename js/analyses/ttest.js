@@ -373,7 +373,7 @@ function runPairedTTest(currentData, pairs) {
                 <td>${std2.toFixed(2)}</td>
                 <td>${df}</td>
                 <td>${Math.abs(t_stat).toFixed(2)}</td>
-                <td>${p_value.toFixed(3)}</td>
+                <td>${p_value < 0.001 ? '< .001' : p_value.toFixed(3)}</td>
                 <td><strong>${significance}</strong></td>
                 <td>${cohens_d.toFixed(2)}</td>
                 <td>${ci95Str}</td>
@@ -414,7 +414,7 @@ function runPairedTTest(currentData, pairs) {
             res.varName,
             `${res.mean1.toFixed(2)} (${res.std1.toFixed(2)})`,
             `${res.mean2.toFixed(2)} (${res.std2.toFixed(2)})`,
-            res.t_stat.toFixed(2),
+            Math.abs(res.t_stat).toFixed(2),
             res.df.toFixed(0),
             pText,
             res.cohens_d.toFixed(2)
@@ -488,8 +488,8 @@ function runOneSampleTTest(currentData) {
                             <td>${std.toFixed(2)}</td>
                             <td>${mu.toFixed(2)}</td>
                             <td>${df}</td>
-                            <td>${t_stat.toFixed(2)}</td>
-                            <td>${p_value.toFixed(3)}</td>
+                            <td>${Math.abs(t_stat).toFixed(2)}</td>
+                            <td>${p_value < 0.001 ? '< .001' : p_value.toFixed(3)}</td>
                             <td><strong>${significance}</strong></td>
                             <td>${cohens_d.toFixed(2)}</td>
                             <td>${ci95Str}</td>
@@ -520,7 +520,7 @@ function runOneSampleTTest(currentData) {
             res.varName,
             `${res.mean1.toFixed(2)} (${res.std1.toFixed(2)})`,
             res.mu.toFixed(2),
-            res.t_stat.toFixed(2),
+            Math.abs(res.t_stat).toFixed(2),
             res.df.toFixed(0),
             pText,
             res.cohens_d.toFixed(2)

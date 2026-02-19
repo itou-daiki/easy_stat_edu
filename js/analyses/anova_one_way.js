@@ -321,7 +321,7 @@ function displayANOVAVisualization(results, testType) {
                                 <td>${res.df1}</td>
                                 <td>${res.msBetween.toFixed(2)}</td>
                                 <td>${res.fValue.toFixed(2)}</td>
-                                <td style="${res.pValue < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${res.pValue.toFixed(3)} ${res.significance}</td>
+                                <td style="${res.pValue < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${res.pValue < 0.001 ? '< .001' : res.pValue.toFixed(3)} ${res.significance}</td>
                             </tr>
                              <tr>
                                 <td>${testType === 'independent' ? '要因内 (Error)' : '誤差 (Error)'}</td>
@@ -640,7 +640,7 @@ function runOneWayIndependentANOVA(currentData) {
         <i class="fas fa-info-circle"></i> <strong>Levene p</strong>: 等分散性の検定。p < .05 の場合、この通常のANOVAの結果は信頼性が低い可能性があります（分散が異なるため）。
         ${mainResultsTable.some(r => r.omegaSquaredNegative) ? '<br><strong>ω²</strong>: 算出値が負の場合は0にクリップし、表に※を表示しています。' : ''}
     </div>
-    <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p<0.01** p<0.05* p<0.1†</p></div>`;
+    <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p&lt;0.01** p&lt;0.05* p&lt;0.1†</p></div>`;
     resultsContainer.innerHTML = tableHtml;
 
     // 3. Sample Size
@@ -905,7 +905,7 @@ function runOneWayRepeatedANOVA(currentData) {
                 </div>
             `;
         }
-        tableHtml += `<p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p<0.01** p<0.05* p<0.1†</p></div>`;
+        tableHtml += `<p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p&lt;0.01** p&lt;0.05* p&lt;0.1†</p></div>`;
         resultsDiv.innerHTML = tableHtml;
 
         // Generate APA Source Table for Repeated Measures
@@ -916,7 +916,7 @@ function runOneWayRepeatedANOVA(currentData) {
             ["Total (excl. subj)", (ssConditions + ssError).toFixed(2), dfConditions + dfError, "-", "-", "-", "-"]
         ];
 
-        const noteAPA = `<em>Note</em>. 上段は球面性仮定下的な結果。Greenhouse–Geisser ε = ${ggEpsilon.toFixed(3)}; 補正後 p = ${pValueGG < 0.001 ? '< .001' : pValueGG.toFixed(3)}.`;
+        const noteAPA = `<em>Note</em>. 上段は球面性仮定下の結果。Greenhouse–Geisser ε = ${ggEpsilon.toFixed(3)}; 補正後 p = ${pValueGG < 0.001 ? '< .001' : pValueGG.toFixed(3)}.`;
 
         const apaTableContainer = document.createElement('div');
         apaTableContainer.style.marginTop = '2rem';

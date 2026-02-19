@@ -97,6 +97,8 @@ Tests run in Chromium via Playwright. For testing statistical logic:
 | Kurtosis | Excess kurtosis (Fisher's adjusted), requires n >= 4 |
 | Significance symbols | `** p<.01`, `* p<.05`, `† p<.10`, `n.s.` (consistent across all tests) |
 | Mann-Whitney Z | Reported as \|Z\| (absolute value for two-tailed test) |
+| t-stat display | Always report \|t\| (absolute value) for two-tailed tests (paired, one-sample) |
+| p-value display | Use `< .001` format when p < 0.001 (never show `0.000`) |
 | Regression intercept | Full statistics (SE, t, p) reported for both intercept and slope |
 | Yates' correction | Applied for 2x2 chi-square tables |
 
@@ -111,6 +113,8 @@ Tests run in Chromium via Playwright. For testing statistical logic:
 7. **PCA vs Factor Analysis terminology**: PCA uses "主成分負荷量" (component loadings), Factor Analysis uses "因子負荷量" (factor loadings).
 8. **Rotation labels**: Factor analysis supports varimax, promax, oblimin, geomin, none. Use lookup tables, not binary ternary.
 9. **Negative intercept display**: Use conditional sign `b0 >= 0 ? '+' : '-'` with `Math.abs(b0)` to avoid `+ -1.234`.
+10. **Null guards for p-value styling**: In ANOVA tables, always check `src.p !== null &&` before `src.p < 0.05` to avoid Error rows getting styled (JavaScript coerces `null` to `0` in comparisons).
+11. **HTML escaping in legends**: Use `&lt;` not `<` in significance legends within HTML template literals.
 
 ## Code Style
 
