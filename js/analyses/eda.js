@@ -7,6 +7,8 @@ import { renderDataOverview, createVariableSelector, createAnalysisButton, rende
 // 歪度（Skewness）の計算
 function calculateSkewness(data) {
     const n = data.length;
+    if (n < 3) return NaN; // n < 3 では (n-1)*(n-2) = 0 となり計算不能
+
     const mean = jStat.mean(data);
     const stdev = jStat.stdev(data, true); // sample standard deviation
 
@@ -19,6 +21,8 @@ function calculateSkewness(data) {
 // 尖度（Kurtosis）の計算（Excess Kurtosis）
 function calculateKurtosis(data) {
     const n = data.length;
+    if (n < 4) return NaN; // n < 4 では (n-2)*(n-3) = 0 となり計算不能
+
     const mean = jStat.mean(data);
     const stdev = jStat.stdev(data, true);
 
@@ -80,7 +84,7 @@ function displaySummaryStatistics(currentData, characteristics) {
                     count: dataVector.length,
                     mean: jstat.mean(),
                     median: jstat.median(),
-                    stdev: jstat.stdev(),
+                    stdev: jstat.stdev(true),
                     min: jstat.min(),
                     max: jstat.max(),
                     q1: jstat.quartiles()[0],
@@ -100,8 +104,8 @@ function displaySummaryStatistics(currentData, characteristics) {
                         <td>${stats.q1.toFixed(4)}</td>
                         <td>${stats.q3.toFixed(4)}</td>
                         <td>${stats.max.toFixed(4)}</td>
-                        <td>${stats.skewness.toFixed(4)}</td>
-                        <td>${stats.kurtosis.toFixed(4)}</td>
+                        <td>${isNaN(stats.skewness) ? '-' : stats.skewness.toFixed(4)}</td>
+                        <td>${isNaN(stats.kurtosis) ? '-' : stats.kurtosis.toFixed(4)}</td>
                     </tr>
                 `;
             }
@@ -320,7 +324,7 @@ function visualizeNumericVariables(currentData, characteristics) {
             count: dataVector.length,
             mean: jstat.mean(),
             median: jstat.median(),
-            stdev: jstat.stdev(),
+            stdev: jstat.stdev(true),
             min: jstat.min(),
             max: jstat.max(),
             q1: jstat.quartiles()[0],
@@ -343,8 +347,8 @@ function visualizeNumericVariables(currentData, characteristics) {
                         平均: <strong>${stats.mean.toFixed(4)}</strong>,
                         中央値: <strong>${stats.median.toFixed(4)}</strong>,
                         標準偏差: <strong>${stats.stdev.toFixed(4)}</strong><br>
-                        歪度: <strong>${stats.skewness.toFixed(4)}</strong>,
-                        尖度: <strong>${stats.kurtosis.toFixed(4)}</strong>
+                        歪度: <strong>${isNaN(stats.skewness) ? '-' : stats.skewness.toFixed(4)}</strong>,
+                        尖度: <strong>${isNaN(stats.kurtosis) ? '-' : stats.kurtosis.toFixed(4)}</strong>
                     </p>
                 </div>
                 <div id="${histId}" class="plot-container" style="margin-bottom: 1rem;"></div>

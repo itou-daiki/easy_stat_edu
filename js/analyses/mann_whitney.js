@@ -209,17 +209,19 @@ function runMannWhitneyTest(currentData) {
         // 連続性の補正は行わない（SPSS等のデフォルトに合わせる場合が多いが、細かい実装による）
         // ここでは単純な正規近似 Z = (U - meanU) / stdU
 
-        let z = 0;
+        let zRaw = 0;
         if (stdU > 0) {
-            z = (u - meanU) / stdU;
+            zRaw = (u - meanU) / stdU;
         }
+        // 報告用には |Z| を使用（両側検定のため符号は不要）
+        const z = Math.abs(zRaw);
 
         // P値 (両側検定): 2 * min(P(Z≤z), P(Z≥z)) で正しく両側にする
-        const pLower = jStat.normal.cdf(z, 0, 1);
+        const pLower = jStat.normal.cdf(zRaw, 0, 1);
         const p_value = 2 * Math.min(pLower, 1 - pLower);
 
-        // 効果量 r = Z / sqrt(N)
-        const r = Math.abs(z) / Math.sqrt(N);
+        // 効果量 r = |Z| / sqrt(N)
+        const r = z / Math.sqrt(N);
 
         // 有意差の判定
         let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.1 ? '†' : 'n.s.';

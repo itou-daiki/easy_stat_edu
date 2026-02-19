@@ -66,6 +66,11 @@ function runSimpleRegression(currentData) {
     const tStat = b1 / seB1;
     const pValue = (1 - jStat.studentt.cdf(Math.abs(tStat), df)) * 2;
 
+    // Intercept statistics: SE(b0) = seModel * sqrt(1/n + xMean^2 / Σ(xi-xMean)^2)
+    const seB0 = seModel * Math.sqrt(1 / n + (xMean * xMean) / denominator);
+    const tB0 = b0 / seB0;
+    const pB0 = (1 - jStat.studentt.cdf(Math.abs(tB0), df)) * 2;
+
     const outputContainer = document.getElementById('regression-results');
     outputContainer.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -103,9 +108,9 @@ function runSimpleRegression(currentData) {
                         <tr>
                             <td>切片 (Intercept)</td>
                             <td>${b0.toFixed(3)}</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>-</td>
+                            <td>${seB0.toFixed(3)}</td>
+                            <td>${tB0.toFixed(3)}</td>
+                            <td style="${pB0 < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${pB0.toFixed(4)} ${pB0 < 0.01 ? '**' : (pB0 < 0.05 ? '*' : '')}</td>
                         </tr>
                         <tr>
                             <td>傾き (${xVar})</td>
@@ -142,7 +147,7 @@ function runSimpleRegression(currentData) {
     // Generate APA Table
     const headersReg = ["Variable", "<em>B</em>", "<em>SE B</em>", "<em>t</em>", "<em>p</em>"];
     const rowsReg = [
-        ["Intercept", b0.toFixed(3), "-", "-", "-"],
+        ["Intercept", b0.toFixed(3), seB0.toFixed(3), tB0.toFixed(3), (pB0 < 0.001 ? '< .001' : pB0.toFixed(3))],
         [xVar, b1.toFixed(3), seB1.toFixed(3), tStat.toFixed(3), (pValue < 0.001 ? '< .001' : pValue.toFixed(3))]
     ];
 
