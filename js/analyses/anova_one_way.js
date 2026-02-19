@@ -815,6 +815,8 @@ function runOneWayRepeatedANOVA(currentData) {
                 }
             }
             // Greenhouse-Geisser Epsilon Calculation
+            // Correct formula: ε = [trace(S̃)]² / [(k-1) · trace(S̃²)]
+            // where S̃ is the double-centered covariance matrix
             const rowMeans = cov.map(row => jStat.mean(row));
             const colMeans = Array(k).fill(0);
             for (let j = 0; j < k; j++) {
@@ -822,7 +824,13 @@ function runOneWayRepeatedANOVA(currentData) {
                 colMeans[j] /= k;
             }
             const grandMeanCov = cov.flat().reduce((a, b) => a + b, 0) / (k * k);
-            const numGG = Math.pow(rowMeans.reduce((s, m) => s + Math.pow(m - grandMeanCov, 2), 0), 2);
+            // Compute trace of double-centered matrix S_tilde
+            let traceST = 0;
+            for (let i = 0; i < k; i++) {
+                traceST += cov[i][i] - rowMeans[i] - colMeans[i] + grandMeanCov;
+            }
+            const numGG = traceST * traceST;
+            // Compute sum of squared elements of S_tilde = trace(S̃²)
             let denomGG = 0;
             for (let i = 0; i < k; i++) {
                 for (let j = 0; j < k; j++) {

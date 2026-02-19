@@ -315,7 +315,7 @@ function runPairedTTest(currentData, pairs) {
                         <th>t</th>
                         <th>p</th>
                         <th>sign</th>
-                        <th>d</th>
+                        <th>d_z</th>
                         <th>95% CI<br><small>(差の平均)</small></th>
                     </tr>
                 </thead>
@@ -406,7 +406,7 @@ function runPairedTTest(currentData, pairs) {
     displayVisualization(testResults, 'paired');
 
     // Generate APA Table for Paired
-    const headersPaired = ["Pair", "Pre M (SD)", "Post M (SD)", "<em>t</em>", "<em>df</em>", "<em>p</em>", "<em>d</em>"];
+    const headersPaired = ["Pair", "Pre M (SD)", "Post M (SD)", "<em>t</em>", "<em>df</em>", "<em>p</em>", "<em>d<sub>z</sub></em>"];
     const rowsPaired = testResults.map(res => {
         let pText = res.p_value.toFixed(3);
         if (res.p_value < 0.001) pText = '< .001';
@@ -463,7 +463,7 @@ function runOneSampleTTest(currentData) {
     const df = n - 1;
     const p_value = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;
     const cohens_d = Math.abs(mean - mu) / std;
-    let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : 'n.s.';
+    let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.1 ? '†' : 'n.s.';
 
     const t_crit = jStat.studentt.inv(0.975, df);
     const meanDiff = mean - mu;

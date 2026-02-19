@@ -202,6 +202,7 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
             </h4>
             <div class="table-container">
                 <table class="table">
+                    <thead>
                         <tr>
                             <th>${rowVar} \\ ${colVar}</th>
                             ${colKeys.map(c => `<th>${c}</th>`).join('')}
@@ -358,7 +359,7 @@ export function render(container, currentData, characteristics) {
                             <li><strong>統計量:</strong> \( \chi^2 = \sum \frac{(O_{ij} - E_{ij})^2}{E_{ij}} \) （O:観測度数, E:期待度数）</li>
                             <li><strong>効果量 (Cramer's V):</strong> \( V = \sqrt{\frac{\chi^2}{N \times \min(r-1, c-1)}} \)</li>
                             <li><strong>残差分析:</strong> 調整済み標準化残差 (Adjusted Standardized Residuals) を算出。絶対値が1.96を超える場合、有意な偏りとみなします。</li>
-                            <li>※ イェーツの補正は適用していません（標準的な実装）。</li>
+                            <li>※ 2×2分割表の場合、イェーツの連続性補正を適用しています。</li>
                         </ul>
                     </div>
                 </div>

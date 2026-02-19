@@ -91,11 +91,11 @@ export function calculateLeveneTest(groups) {
         return { F: 0, p: 1, significant: false };
     }
 
-    // 1. Calculate means
-    const groupMeans = groupArrays.map(g => jStat.mean(g));
+    // 1. Calculate medians (Brown-Forsythe variant: more robust to non-normality)
+    const groupMedians = groupArrays.map(g => jStat.median(g));
 
-    // 2. Calculate absolute deviations
-    const deviations = groupArrays.map((g, i) => g.map(v => Math.abs(v - groupMeans[i])));
+    // 2. Calculate absolute deviations from group medians
+    const deviations = groupArrays.map((g, i) => g.map(v => Math.abs(v - groupMedians[i])));
 
     // 3. Perform One-Way ANOVA on deviations
     const allDevs = deviations.flat();
@@ -124,6 +124,11 @@ export function calculateLeveneTest(groups) {
     }
     const MSw = SSw / dfw;
     if (MSw === 0) {
+        // MSw=0 means all within-group deviations are identical
+        // If MSb is also 0, groups have equal variance → not significant
+        if (MSb === 0) {
+            return { F: 0, p: 1, significant: false };
+        }
         return { F: Infinity, p: 0, significant: true };
     }
 
