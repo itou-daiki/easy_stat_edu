@@ -596,7 +596,7 @@ function renderTwoWayANOVATable(results) {
 
         sources.forEach(src => {
             const sig = src.p !== null ? (src.p < 0.01 ? '**' : src.p < 0.05 ? '*' : src.p < 0.1 ? '†' : '') : '';
-            const pStr = src.p !== null ? `${src.p.toFixed(3)} ${sig}` : '-';
+            const pStr = src.p !== null ? `${src.p < 0.001 ? '< .001' : src.p.toFixed(3)} ${sig}` : '-';
             const fStr = src.f !== null ? src.f.toFixed(2) : '-';
             const etaStr = src.eta !== null ? src.eta.toFixed(2) : '-';
 
@@ -607,7 +607,7 @@ function renderTwoWayANOVATable(results) {
                     <td>${src.df}</td>
                     <td>${src.ms.toFixed(2)}</td>
                     <td>${fStr}</td>
-                    <td style="${src.p < 0.05 ? 'color: #e11d48; font-weight: bold;' : ''}">${pStr}</td>
+                    <td style="${src.p !== null && src.p < 0.05 ? 'color: #e11d48; font-weight: bold;' : ''}">${pStr}</td>
                     <td>${etaStr}</td>
                 </tr>
             `;
@@ -1010,6 +1010,7 @@ function renderTwoWayMixedResults(testResults) {
                 `;
             });
             html += `</tbody></table></div>
+                <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">p&lt;0.01** p&lt;0.05* p&lt;0.1†</p>
                 <p style="font-size: 0.9rem; color: #666; text-align: right;">※ 被験者内要因では球面性の仮定が必要です。満たされない場合は Greenhouse–Geisser 補正の利用を検討してください。本画面では Mauchly の検定・GG補正は未実装です。</p>
              </div>`;
 
@@ -1046,13 +1047,15 @@ function renderTwoWayMixedResults(testResults) {
                         <td>${src.ss.toFixed(2)}</td>
                         <td>${src.df}</td>
                         <td>${src.ms.toFixed(2)}</td>
-                        <td>${src.f ? src.f.toFixed(2) : '-'}</td>
-                        <td style="${src.p && src.p < 0.05 ? 'color:#e11d48;font-weight:bold;' : ''}">${src.p ? src.p.toFixed(3) + sig : '-'}</td>
-                         <td>${src.eta ? src.eta.toFixed(2) : '-'}</td>
+                        <td>${src.f !== null ? src.f.toFixed(2) : '-'}</td>
+                        <td style="${src.p !== null && src.p < 0.05 ? 'color:#e11d48;font-weight:bold;' : ''}">${src.p !== null ? (src.p < 0.001 ? '< .001' : src.p.toFixed(3)) + ' ' + sig : '-'}</td>
+                         <td>${src.eta !== null ? src.eta.toFixed(2) : '-'}</td>
                     </tr>`;
             });
 
-            html += `</tbody></table></div></div>`;
+            html += `</tbody></table>
+                <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">p&lt;0.01** p&lt;0.05* p&lt;0.1†</p>
+            </div></div>`;
         }
     });
 

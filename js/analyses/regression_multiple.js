@@ -110,7 +110,7 @@ function runMultipleRegression(currentData) {
                     <td>${tValConst.toFixed(3)}</td>
                     <td>${pValConst < 0.001 ? '< 0.001' : pValConst.toFixed(3)}</td>
                     <td>-</td> <!-- Const VIF -->
-                    <td>${pValConst < 0.05 ? '*' : ''}</td>
+                    <td>${pValConst < 0.01 ? '**' : (pValConst < 0.05 ? '*' : (pValConst < 0.1 ? '†' : 'n.s.'))}</td>
                 </tr>
             `;
 
@@ -123,7 +123,7 @@ function runMultipleRegression(currentData) {
                 const betaStd = standardizedBeta[i];
                 const { t, p } = calculateCoefStats(b, se, n - k - 1);
 
-                const sig = p < 0.01 ? '**' : (p < 0.05 ? '*' : (p < 0.1 ? '†' : ''));
+                const sig = p < 0.01 ? '**' : (p < 0.05 ? '*' : (p < 0.1 ? '†' : 'n.s.'));
                 const vif = vifs[i];
                 const vifStyle = vif > 10 ? 'color: #ef4444; font-weight: bold;' : (vif > 5 ? 'color: #d97706;' : '');
 

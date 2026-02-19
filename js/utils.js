@@ -739,9 +739,6 @@ export function createPairSelector(containerId, options, id, placeholder) {
     wrapper.appendChild(inputArea);
     wrapper.appendChild(dropdown);
     container.appendChild(wrapper);
-    wrapper.appendChild(inputArea);
-    wrapper.appendChild(dropdown);
-    container.appendChild(wrapper);
 
     return hiddenSelect;
 }
@@ -1377,7 +1374,7 @@ export const InterpretationHelper = {
      * @returns {object} { text, isSignificant, stars }
      */
     evaluatePValue(p) {
-        if (p < 0.001) return { text: "p < .001", isSignificant: true, stars: "***" };
+        if (p < 0.001) return { text: "p < .001", isSignificant: true, stars: "**" };
         if (p < 0.01) return { text: "p < .01", isSignificant: true, stars: "**" };
         if (p < 0.05) return { text: "p < .05", isSignificant: true, stars: "*" };
         if (p < 0.1) return { text: "p < .10", isSignificant: false, stars: "†" }; // 傾向
@@ -1397,7 +1394,7 @@ export const InterpretationHelper = {
         const pEval = this.evaluatePValue(p);
 
         let strength = "";
-        if (absR < 0.2) strength = "ほとんど相関がない";
+        if (absR < 0.2) strength = "非常に弱い";
         else if (absR < 0.4) strength = "弱い";
         else if (absR < 0.7) strength = "中程度の";
         else strength = "強い";

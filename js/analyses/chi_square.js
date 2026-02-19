@@ -152,7 +152,7 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
             <div class="data-stat-card" style="background: #f0f9ff; border: 1px solid #bae6fd;">
                 <div class="stat-label">Yates補正 χ² (2x2)</div>
                 <div class="stat-value">${yatesChi.toFixed(2)}</div>
-                <div class="stat-sub" style="font-size: 0.8rem; color: #666;">p = ${yatesP.toFixed(4)} ${yatesP < 0.05 ? '*' : ''}</div>
+                <div class="stat-sub" style="font-size: 0.8rem; color: #666;">p = ${yatesP.toFixed(4)} ${yatesP < 0.01 ? '**' : (yatesP < 0.05 ? '*' : (yatesP < 0.1 ? '†' : 'n.s.'))}</div>
             </div>
         `;
     }
@@ -172,7 +172,7 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
                 </div>
                 <div class="data-stat-card">
                     <div class="stat-label">p値</div>
-                    <div class="stat-value" style="${p < 0.05 ? 'color: #ef4444;' : ''}">${p.toFixed(4)} ${p < 0.05 ? '*' : ''}</div>
+                    <div class="stat-value" style="${p < 0.05 ? 'color: #ef4444;' : ''}">${p.toFixed(4)} ${p < 0.01 ? '**' : (p < 0.05 ? '*' : (p < 0.1 ? '†' : 'n.s.'))}</div>
                 </div>
                 <div class="data-stat-card">
                     <div class="stat-label">クラメールのV</div>

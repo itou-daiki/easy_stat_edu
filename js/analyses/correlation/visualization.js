@@ -247,9 +247,9 @@ export function createCorrelationTable(variables, matrix, pValues, nValues) {
             let cellContent = isNaN(r) ? '-' : r.toFixed(3);
             let stars = '';
             if (!isNaN(p)) {
-                if (p < 0.001) stars = '***';
-                else if (p < 0.01) stars = '**';
+                if (p < 0.01) stars = '**';
                 else if (p < 0.05) stars = '*';
+                else if (p < 0.1) stars = '†';
             }
 
             const bgColor = i === j ? '#f8f9fa' :
@@ -268,7 +268,7 @@ export function createCorrelationTable(variables, matrix, pValues, nValues) {
             </table>
         </div>
         <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
-            <em>* p < .05, ** p < .01, *** p < .001</em>
+            <em>†p < .10, *p < .05, **p < .01</em>
         </div>
     `;
 
