@@ -15,15 +15,12 @@ import { createVariableSelector, createAnalysisButton, showError, createPlotlyCo
 export function render(container, data, characteristics) {
     container.innerHTML = `
         <div class="time-series-container">
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h3 style="margin-bottom: 1.5rem; color: #2d3748;">
-                <i class="fas fa-chart-line" style="color: #1e90ff; margin-right: 0.5rem;"></i>
-                時系列データ分析
-            </h3>
-            <p style="color: #4a5568; margin-bottom: 1.5rem;">
-                時間の経過とともに変化するデータを分析します。「売上の推移」や「株価の変動」など、流れを見るのに適しています。<br>
-                <strong>移動平均</strong>を使ってギザギザしたグラフを滑らかにしたり、<strong>自己相関</strong>を使って「周期性（季節性）」を見つけることができます。
-            </p>
+            <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
+                    <i class="fas fa-chart-line"></i> 時系列データ分析
+                </h3>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">時間の経過とともに変化するデータを分析します</p>
+            </div>
 
             <!-- 分析の概要・方法 -->
             <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
@@ -34,6 +31,7 @@ export function render(container, data, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note-section">
                         <h4><i class="fas fa-chart-line"></i> 分析のアプローチ</h4>
+                        <p>「売上の推移」や「株価の変動」など、流れを見るのに適しています。<strong>移動平均</strong>を使ってギザギザしたグラフを滑らかにしたり、<strong>自己相関</strong>を使って「周期性（季節性）」を見つけることができます。</p>
                         <ul>
                             <li><strong>移動平均 (Moving Average):</strong> 短期的な変動（ノイズ）を平滑化し、長期的なトレンドを可視化します。</li>
                             <li><strong>自己相関 (Autocorrelation):</strong> 過去のデータと現在のデータの相関を調べ、周期性や季節性を発見します。</li>
@@ -53,7 +51,7 @@ export function render(container, data, characteristics) {
                         <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
                         <ul>
                             <li><strong>移動平均 (SMA):</strong> 単純移動平均 \( \frac{1}{k} \sum_{i=0}^{k-1} x_{t-i} \)</li>
-                            <li><strong>自己相関 (ACF):</strong> 
+                            <li><strong>自己相関 (ACF):</strong>
                                 \( r_k = \frac{\sum (x_t - \bar{x})(x_{t+k} - \bar{x})}{\sum (x_t - \bar{x})^2} \)
                             </li>
                             <li>※ 定常性の検定（ADF検定など）は実装されていません。視覚的確認を目的としています。</li>
@@ -62,39 +60,38 @@ export function render(container, data, characteristics) {
                 </div>
             </div>
 
-            <!-- データプレビュー -->
-            <div id="time_series-data-overview" style="margin-bottom: 2rem;"></div>
+            <!-- データ概要 -->
+            <div id="time_series-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
-            <div class="row">
-                <div class="col-md-6" style="margin-bottom: 1rem;">
-                    <div id="time-var-container" style="background: #f8fafc; padding: 1rem; border-radius: 8px; height: 100%;"></div>
+            <!-- 分析設定 -->
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+
+                <div class="row">
+                    <div class="col-md-6" style="margin-bottom: 1rem;">
+                        <div id="time-var-container" style="background: #fafbfc; padding: 1rem; border-radius: 8px; height: 100%;"></div>
+                    </div>
+                    <div class="col-md-6" style="margin-bottom: 1rem;">
+                        <div id="value-var-container" style="background: #fafbfc; padding: 1rem; border-radius: 8px; height: 100%;"></div>
+                    </div>
                 </div>
-                <div class="col-md-6" style="margin-bottom: 1rem;">
-                    <div id="value-var-container" style="background: #f8fafc; padding: 1rem; border-radius: 8px; height: 100%;"></div>
+
+                <div style="margin-top: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
+                    <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
+                        <i class="fas fa-sliders-h"></i> 設定:
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <label>移動平均区間 (Window): <input type="number" id="ma-window" value="5" min="2" max="100" style="padding: 0.25rem; border-radius: 4px; border: 1px solid #ddd; width: 60px;"></label>
+                    </div>
                 </div>
+
+                <div id="run-btn-container" style="margin-top: 1.5rem;"></div>
             </div>
 
-            <div class="row" style="margin-top: 1rem;">
-                <div class="col-12">
-                     <div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">
-                        <label style="font-weight: bold; color: #2d3748; display: block; margin-bottom: 0.5rem;">
-                            <i class="fas fa-sliders-h"></i> 設定:
-                        </label>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <label>移動平均区間 (Window): <input type="number" id="ma-window" value="5" min="2" max="100" style="padding: 0.25rem; border-radius: 4px; border: 1px solid #ddd; width: 60px;"></label>
-                        </div>
-                     </div>
-                </div>
+            <div id="ts-results-section" style="display: none;">
+                <div id="ts-plot-section"></div>
+                <div id="ts-acf-section" style="margin-top: 2rem;"></div>
+                <div id="ts-interpretation" style="margin-top: 2rem; background: white; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
             </div>
-
-            <div id="run-btn-container" style="margin-top: 1.5rem; text-align: center;"></div>
-        </div>
-
-        <div id="ts-results-section" style="display: none; margin-top: 2rem;">
-            <div id="ts-plot-section"></div>
-            <div id="ts-acf-section" style="margin-top: 2rem;"></div>
-            <div id="ts-interpretation" style="margin-top: 2rem; background: white; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
-        </div>
         </div>
     `;
 
@@ -117,7 +114,7 @@ export function render(container, data, characteristics) {
     createAnalysisButton('run-btn-container', '分析を実行', () => runTimeSeriesAnalysis(data), { id: 'run-ts-btn' });
 
     // データ概要の表示
-    renderDataOverview('#time_series-data-overview', data, characteristics);
+    renderDataOverview('#time_series-data-overview', data, characteristics, { initiallyCollapsed: true });
 }
 
 function runTimeSeriesAnalysis(data) {
