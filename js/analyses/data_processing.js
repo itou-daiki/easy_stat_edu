@@ -545,7 +545,11 @@ export function render(container, currentData, dataCharacteristics) {
                             <select id="compute-method-select" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
                                 <option value="mean">平均 (Mean)</option>
                                 <option value="sum">合計 (Sum)</option>
+                                <option value="diff">引き算 (差: A - B)</option>
+                                <option value="prod">掛け算 (積: A × B)</option>
+                                <option value="div">割り算 (商: A ÷ B)</option>
                             </select>
+                            <p style="font-size: 0.8rem; color: #666; margin-top: 0;">※引き算と割り算は、選択した順番（1つ目から2つ目を引く/割る）で2変数のみ計算します。</p>
                         </div>
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label style="font-weight: bold;">新しい変数名 (必須):</label>
@@ -1046,6 +1050,11 @@ function applyCompute() {
         return;
     }
 
+    if ((method === 'diff' || method === 'div') && selectedCols.length !== 2) {
+        alert('引き算および割り算は、変数をちょうど2つ選択してください。');
+        return;
+    }
+
     originalData.forEach(row => {
         const values = selectedCols.map(c => Number(row[c])).filter(v => !isNaN(v));
         let result = null;
@@ -1054,6 +1063,16 @@ function applyCompute() {
                 result = values.reduce((a, b) => a + b, 0);
             } else if (method === 'mean') {
                 result = values.reduce((a, b) => a + b, 0) / values.length;
+            } else if (method === 'prod') {
+                result = values.reduce((a, b) => a * b, 1);
+            } else if (method === 'diff') {
+                if (values.length === 2) {
+                    result = values[0] - values[1];
+                }
+            } else if (method === 'div') {
+                if (values.length === 2 && values[1] !== 0) {
+                    result = values[0] / values[1];
+                }
             }
         }
         row[newColName] = result; // null if no valid values

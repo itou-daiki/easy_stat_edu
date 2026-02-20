@@ -343,4 +343,72 @@ test.describe('Data Processing - Bulk Recode', () => {
         const newHeader = page.locator('th:has-text("数学_z")').first();
         await expect(newHeader).toBeVisible({ timeout: 10000 });
     });
+
+    test('Verify Compute Variables (変数の計算: 合計・引き算等) Functionality', async ({ page }: { page: Page }) => {
+        // 1. Load Application
+        await page.goto('/');
+        await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
+
+        // 2. Upload Data
+        const fileInput = page.locator('#main-data-file');
+        const filePath = path.join(__dirname, '../datasets/demo_all_analysis.csv');
+        const previewVisiblePromise = page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 30000 });
+        await fileInput.setInputFiles(filePath);
+        await previewVisiblePromise;
+
+        // 3. Open Data Processing Section
+        const processingCard = page.locator('.feature-card[data-analysis="data_processing"]');
+        if (await processingCard.count() > 0) {
+            await processingCard.click();
+        } else {
+            await page.locator('text=データ加工・整形').click();
+        }
+        await expect(page.locator('.cleansing-container')).toBeVisible({ timeout: 10000 });
+
+        // 4. Switch to Compute Tab
+        const computeTabBtn = page.locator('button:has-text("変数の計算")');
+        await expect(computeTabBtn).toBeVisible({ timeout: 5000 });
+        await computeTabBtn.click();
+        await expect(page.locator('#eng-tab-compute')).toBeVisible({ timeout: 10000 });
+
+        // 5. Select Variables (Math and Science)
+        const multiSelectInput = page.locator('#compute-col-select-container .multiselect-input');
+        const dropdown = page.locator('#compute-col-select-container .multiselect-dropdown');
+        await multiSelectInput.click();
+        await expect(dropdown).toBeVisible();
+        const optionMath = page.locator('#compute-col-select-container .multiselect-option').filter({ hasText: /^数学$/ }).first();
+        const optionSci = page.locator('#compute-col-select-container .multiselect-option').filter({ hasText: /^理科$/ }).first();
+
+        await expect(optionMath).toBeVisible();
+        await optionMath.click();
+        await expect(optionSci).toBeVisible();
+        await optionSci.click();
+        await page.locator('body').click({ position: { x: 0, y: 0 } });
+
+        // 6. Test 'sum' (合計)
+        await page.selectOption('#compute-method-select', 'sum');
+        await page.fill('#compute-new-col-name', 'Math_Sci_Sum');
+
+        page.on('dialog', async (dialog: any) => {
+            await dialog.accept();
+        });
+        await page.click('#apply-compute-btn');
+        const sumHeader = page.locator('th:has-text("Math_Sci_Sum")').first();
+        await expect(sumHeader).toBeVisible({ timeout: 10000 });
+
+        // 7. Test 'diff' (引き算)
+        // Note: applyCompute() calls updateDataAndUI() which resets the MultiSelect.
+        // Re-select the variables.
+        await multiSelectInput.click();
+        await expect(dropdown).toBeVisible();
+        await optionMath.click();
+        await optionSci.click();
+        await page.locator('body').click({ position: { x: 0, y: 0 } });
+
+        await page.selectOption('#compute-method-select', 'diff');
+        await page.fill('#compute-new-col-name', 'Math_Sci_Diff');
+        await page.click('#apply-compute-btn');
+        const diffHeader = page.locator('th:has-text("Math_Sci_Diff")').first();
+        await expect(diffHeader).toBeVisible({ timeout: 10000 });
+    });
 });
