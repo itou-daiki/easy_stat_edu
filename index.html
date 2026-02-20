@@ -255,6 +255,15 @@
                             <p class="feature-card-description">変数間の関係性を分析</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
                         </div>
+
+                        <div class="feature-card" data-analysis="cross_tabulation" data-requires="categorical:2">
+                            <h3 class="feature-card-title">
+                                <i class="fas fa-th feature-card-icon"></i>
+                                クロス集計
+                            </h3>
+                            <p class="feature-card-description">2つのカテゴリ変数の度数分布を集計</p>
+                            <p class="feature-card-requirement" style="display: none;">カテゴリカル変数が2つ以上必要です</p>
+                        </div>
                     </div>
                 </div>
 
@@ -302,8 +311,8 @@
                     <div class="category-header">
                         <div class="category-icon"><i class="fas fa-sort-amount-up"></i></div>
                         <div class="category-info">
-                            <h3>ノンパラメトリック検定</h3>
-                            <p>正規分布を仮定しない検定手法です（順位にもとづく比較）</p>
+                            <h3>順位の比較（ノンパラメトリック検定）</h3>
+                            <p>正規分布を仮定しない検定手法です（順位にもとづくグループ間の比較）</p>
                         </div>
                     </div>
                     <div class="category-cards">
@@ -337,16 +346,25 @@
                     </div>
                 </div>
 
-                <!-- 関連性・予測 -->
-                <div class="category-section category-relation">
+                <!-- 比率・関連性の検定 -->
+                <div class="category-section category-proportion">
                     <div class="category-header">
-                        <div class="category-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="category-icon"><i class="fas fa-percentage"></i></div>
                         <div class="category-info">
-                            <h3>関連性の検定・予測</h3>
-                            <p>カテゴリ変数の関連や、数値の予測モデルを構築します</p>
+                            <h3>比率・関連性の検定</h3>
+                            <p>カテゴリデータの関連や、比率の差を検定します</p>
                         </div>
                     </div>
                     <div class="category-cards">
+                        <div class="feature-card" data-analysis="mcnemar" data-requires="categorical:2">
+                            <h3 class="feature-card-title">
+                                <i class="fas fa-sync-alt feature-card-icon"></i>
+                                マクネマー検定
+                            </h3>
+                            <p class="feature-card-description">対応のある2値変数の比率変化を検定</p>
+                            <p class="feature-card-requirement" style="display: none;">カテゴリカル変数が2つ以上必要です</p>
+                        </div>
+
                         <div class="feature-card" data-analysis="chi_square" data-requires="categorical:2">
                             <h3 class="feature-card-title">
                                 <i class="fas fa-table feature-card-icon"></i>
@@ -364,7 +382,19 @@
                             <p class="feature-card-description">小標本・正確確率による独立性検定</p>
                             <p class="feature-card-requirement" style="display: none;">カテゴリカル変数が2つ以上必要です</p>
                         </div>
+                    </div>
+                </div>
 
+                <!-- 回帰分析・予測モデル -->
+                <div class="category-section category-prediction">
+                    <div class="category-header">
+                        <div class="category-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="category-info">
+                            <h3>回帰分析・予測モデル</h3>
+                            <p>変数からの予測や、影響を与える要因をモデル化します</p>
+                        </div>
+                    </div>
+                    <div class="category-cards">
                         <div class="feature-card" data-analysis="regression_simple" data-requires="numeric:2">
                             <h3 class="feature-card-title">
                                 <i class="fas fa-chart-line feature-card-icon"></i>

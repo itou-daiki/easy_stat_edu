@@ -93,8 +93,6 @@ function runMannWhitneyTest(currentData) {
         return;
     }
 
-    displaySummaryStatistics(selectedVars, currentData);
-
     const resultsContainer = document.getElementById('test-results-section');
     resultsContainer.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -112,24 +110,9 @@ function runMannWhitneyTest(currentData) {
 
     const group0Data = currentData.filter(row => row[groupVar] === groups[0]);
     const group1Data = currentData.filter(row => row[groupVar] === groups[1]);
-
-    let resultsTableHtml = `
-        <div class="table-container" style="overflow-x: auto;">
-            <table class="table">
-                <thead style="background: #f8f9fa;">
-                    <tr>
-                        <th style="font-weight: bold; color: #495057;">変数</th>
-                        <th>${groups[0]} 平均順位</th>
-                        <th>${groups[1]} 平均順位</th>
-                        <th>U値</th>
-                        <th>|Z|</th>
-                        <th>p値</th>
-                        <th>有意差</th>
-                        <th>効果量 r</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
+    const n1Total = group0Data.length;
+    const n2Total = group1Data.length;
+    const NTotal = n1Total + n2Total;
 
     const testResults = [];
     const skippedVars = [];
@@ -144,7 +127,19 @@ function runMannWhitneyTest(currentData) {
             return;
         }
 
-        // ランク計算のための準備: 全データを値と元の所属グループで持つ
+        // 群別記述統計量
+        const stats0 = {
+            mean: jStat.mean(group0Values),
+            sd: jStat.stdev(group0Values, true),
+            median: jStat.median(group0Values)
+        };
+        const stats1 = {
+            mean: jStat.mean(group1Values),
+            sd: jStat.stdev(group1Values, true),
+            median: jStat.median(group1Values)
+        };
+
+        // ランク計算
         const n1 = group0Values.length;
         const n2 = group1Values.length;
         const allData = [
@@ -152,104 +147,104 @@ function runMannWhitneyTest(currentData) {
             ...group1Values.map(v => ({ val: v, group: 1 }))
         ];
 
-        // 値でソート (昇順)
         allData.sort((a, b) => a.val - b.val);
 
         // ランク付け (同順位は平均ランク)
         let i = 0;
         while (i < allData.length) {
             let j = i + 1;
-            while (j < allData.length && allData[j].val === allData[i].val) {
-                j++;
-            }
-            // i から j-1 までが同順位
-            const rankSum = (i + 1 + j) * (j - i) / 2.0; // i+1は1-based rankの開始、jは終了+1
+            while (j < allData.length && allData[j].val === allData[i].val) j++;
+            const rankSum = (i + 1 + j) * (j - i) / 2.0;
             const avgRank = rankSum / (j - i);
-            for (let k = i; k < j; k++) {
-                allData[k].rank = avgRank;
-            }
+            for (let k = i; k < j; k++) allData[k].rank = avgRank;
             i = j;
         }
 
-        // ランク和の計算
-        let rankSum1 = 0;
-        let rankSum2 = 0;
-        allData.forEach(d => {
-            if (d.group === 0) rankSum1 += d.rank;
-            else rankSum2 += d.rank;
-        });
+        let rankSum1 = 0, rankSum2 = 0;
+        allData.forEach(d => { if (d.group === 0) rankSum1 += d.rank; else rankSum2 += d.rank; });
 
-        // U値の計算
         const u1 = rankSum1 - (n1 * (n1 + 1)) / 2;
         const u2 = rankSum2 - (n2 * (n2 + 1)) / 2;
-        const u = Math.min(u1, u2); // 通常、小さい方のU値を報告
+        const u = Math.min(u1, u2);
 
-        // Z値の計算 (正規近似)
         const meanU = (n1 * n2) / 2;
-
-        // タイ補正のためのシグマ計算
-        // 同順位のグループ(t_k)を見つける
         const ties = {};
-        allData.forEach(d => {
-            ties[d.val] = (ties[d.val] || 0) + 1;
-        });
-
+        allData.forEach(d => { ties[d.val] = (ties[d.val] || 0) + 1; });
         let tieCorrection = 0;
         const N = n1 + n2;
-        for (const val in ties) {
-            const t = ties[val];
-            if (t > 1) {
-                tieCorrection += (t * t * t - t);
-            }
-        }
-
+        for (const val in ties) { const t = ties[val]; if (t > 1) tieCorrection += (t * t * t - t); }
         const varianceU = (n1 * n2 * (N * N * N - N - tieCorrection)) / (12 * N * (N - 1));
         const stdU = Math.sqrt(varianceU);
 
-        // 連続性の補正は行わない（SPSS等のデフォルトに合わせる場合が多いが、細かい実装による）
-        // ここでは単純な正規近似 Z = (U - meanU) / stdU
-
         let zRaw = 0;
-        if (stdU > 0) {
-            zRaw = (u - meanU) / stdU;
-        }
-        // 報告用には |Z| を使用（両側検定のため符号は不要）
+        if (stdU > 0) zRaw = (u - meanU) / stdU;
         const z = Math.abs(zRaw);
-
-        // P値 (両側検定): 2 * min(P(Z≤z), P(Z≥z)) で正しく両側にする
         const pLower = jStat.normal.cdf(zRaw, 0, 1);
         const p_value = 2 * Math.min(pLower, 1 - pLower);
-
-        // 効果量 r = |Z| / sqrt(N)
         const r = z / Math.sqrt(N);
 
-        // 有意差の判定
-        let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.1 ? '†' : 'n.s.';
+        let significance = p_value < 0.001 ? '***' : p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : '';
 
-        // 結果表示用
         const meanRank1 = rankSum1 / n1;
         const meanRank2 = rankSum2 / n2;
 
-        resultsTableHtml += `
-            <tr>
-                <td style="font-weight: bold; color: #1e90ff;">${varName}</td>
-                <td>${meanRank1.toFixed(2)}</td>
-                <td>${meanRank2.toFixed(2)}</td>
-                <td>${u.toFixed(2)}</td>
-                <td>${z.toFixed(2)}</td>
-                <td>${p_value.toFixed(3)}</td>
-                <td><strong>${significance}</strong></td>
-                <td>${r.toFixed(2)}</td>
-            </tr>
-        `;
-
         testResults.push({
             varName, groups, meanRank1, meanRank2, u, z, p_value, r, significance,
-            group0Values, group1Values, n1, n2, rankSum1, rankSum2
+            group0Values, group1Values, n1, n2, rankSum1, rankSum2,
+            stats0, stats1
         });
     });
 
-    resultsTableHtml += `</tbody></table></div><p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;"><strong>有意差</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1† n.s.</p>`;
+    // === 学術論文形式の統合テーブル ===
+    let resultsTableHtml = `
+        <div class="table-container" style="overflow-x: auto;">
+            <table class="table" style="border-collapse: collapse; width: 100%;">
+                <thead style="background: #f8f9fa;">
+                    <tr style="border-top: 2px solid #333; border-bottom: 1px solid #999;">
+                        <th rowspan="2" style="font-weight: bold; color: #495057; vertical-align: bottom; padding: 0.5rem;"></th>
+                        <th colspan="3" style="text-align: center; font-weight: bold; padding: 0.5rem; border-left: 1px solid #dee2e6;">${groups[0]}（<em>n</em>=${n1Total}）</th>
+                        <th colspan="3" style="text-align: center; font-weight: bold; padding: 0.5rem; border-left: 1px solid #dee2e6;">${groups[1]}（<em>n</em>=${n2Total}）</th>
+                        <th colspan="2" style="text-align: center; font-weight: bold; padding: 0.5rem; border-left: 1px solid #dee2e6;">群間の差の検定</th>
+                    </tr>
+                    <tr style="border-bottom: 2px solid #333;">
+                        <th style="text-align: center; padding: 0.4rem; border-left: 1px solid #dee2e6;">平均</th>
+                        <th style="text-align: center; padding: 0.4rem;"><em>SD</em></th>
+                        <th style="text-align: center; padding: 0.4rem;">中央値</th>
+                        <th style="text-align: center; padding: 0.4rem; border-left: 1px solid #dee2e6;">平均</th>
+                        <th style="text-align: center; padding: 0.4rem;"><em>SD</em></th>
+                        <th style="text-align: center; padding: 0.4rem;">中央値</th>
+                        <th style="text-align: center; padding: 0.4rem; border-left: 1px solid #dee2e6;">統計量（<em>U</em>）</th>
+                        <th style="text-align: center; padding: 0.4rem;">効果量（<em>r</em>）</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    testResults.forEach(res => {
+        const uDisplay = Math.round(res.u);
+        resultsTableHtml += `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="font-weight: bold; color: #333; padding: 0.5rem; white-space: nowrap;">${res.varName}</td>
+                <td style="text-align: center; padding: 0.5rem; border-left: 1px solid #dee2e6;">${res.stats0.mean.toFixed(2)}</td>
+                <td style="text-align: center; padding: 0.5rem;">${res.stats0.sd.toFixed(2)}</td>
+                <td style="text-align: center; padding: 0.5rem;">${res.stats0.median.toFixed(2)}</td>
+                <td style="text-align: center; padding: 0.5rem; border-left: 1px solid #dee2e6;">${res.stats1.mean.toFixed(2)}</td>
+                <td style="text-align: center; padding: 0.5rem;">${res.stats1.sd.toFixed(2)}</td>
+                <td style="text-align: center; padding: 0.5rem;">${res.stats1.median.toFixed(2)}</td>
+                <td style="text-align: center; padding: 0.5rem; border-left: 1px solid #dee2e6; font-weight: ${res.significance ? 'bold' : 'normal'};">${uDisplay}${res.significance}</td>
+                <td style="text-align: center; padding: 0.5rem;">${res.r.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+
+    resultsTableHtml += `
+                </tbody>
+            </table>
+        </div>
+        <p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.85rem;">
+            <em>N</em>=${NTotal}　***<em>p</em>&lt;.001　**<em>p</em>&lt;.01　*<em>p</em>&lt;.05
+        </p>
+    `;
 
     if (skippedVars.length > 0) {
         resultsTableHtml += `<div class="warning-message" style="margin-top: 1rem; padding: 1rem; background-color: #fffbe6; border: 1px solid #fde68a; border-radius: 4px; color: #92400e;">
@@ -259,8 +254,8 @@ function runMannWhitneyTest(currentData) {
 
     document.getElementById('test-results-table').innerHTML = resultsTableHtml;
 
-    // Reporting Table (Hyoun) Generation
-    generateReportingTable(testResults, groups);
+    // APA Reporting Table
+    generateReportingTable(testResults, groups, n1Total, n2Total, NTotal);
 
     // サンプルサイズ情報
     renderSampleSizeInfo(resultsContainer, currentData.length, [
@@ -273,31 +268,61 @@ function runMannWhitneyTest(currentData) {
     document.getElementById('results-section').style.display = 'block';
 }
 
-function generateReportingTable(testResults, groups) {
+function generateReportingTable(testResults, groups, n1Total, n2Total, NTotal) {
     const tableDiv = document.getElementById('reporting-table-container');
+    if (!tableDiv || testResults.length === 0) return;
 
-    const headers = [
-        "変数",
-        `${groups[0]} (n=${testResults[0].n1})<br>Mean Rank`,
-        `${groups[1]} (n=${testResults[0].n2})<br>Mean Rank`,
-        "<em>U</em>", "<em>|Z|</em>", "<em>p</em>", "<em>r</em>"
-    ];
+    // APA style table with multi-level headers (rendered as custom HTML)
+    let html = `
+        <div id="mw-apa-table" style="font-family: 'Times New Roman', serif; margin: 1rem 0;">
+            <p style="font-style: italic; margin-bottom: 0.5rem;">Table 1. Results of Mann-Whitney U Test</p>
+            <table style="border-collapse: collapse; width: 100%; font-size: 0.9rem;">
+                <thead>
+                    <tr style="border-top: 2px solid #000; border-bottom: 1px solid #000;">
+                        <th rowspan="2" style="text-align: left; padding: 4px 8px; vertical-align: bottom;"></th>
+                        <th colspan="3" style="text-align: center; padding: 4px 8px; border-left: 1px solid #ccc;">${groups[0]} (<em>n</em>=${n1Total})</th>
+                        <th colspan="3" style="text-align: center; padding: 4px 8px; border-left: 1px solid #ccc;">${groups[1]} (<em>n</em>=${n2Total})</th>
+                        <th colspan="2" style="text-align: center; padding: 4px 8px; border-left: 1px solid #ccc;">Test</th>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #000;">
+                        <th style="text-align: center; padding: 4px 6px; border-left: 1px solid #ccc;"><em>M</em></th>
+                        <th style="text-align: center; padding: 4px 6px;"><em>SD</em></th>
+                        <th style="text-align: center; padding: 4px 6px;"><em>Mdn</em></th>
+                        <th style="text-align: center; padding: 4px 6px; border-left: 1px solid #ccc;"><em>M</em></th>
+                        <th style="text-align: center; padding: 4px 6px;"><em>SD</em></th>
+                        <th style="text-align: center; padding: 4px 6px;"><em>Mdn</em></th>
+                        <th style="text-align: center; padding: 4px 6px; border-left: 1px solid #ccc;"><em>U</em></th>
+                        <th style="text-align: center; padding: 4px 6px;"><em>r</em></th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
 
-    const rows = testResults.map(res => {
-        let pText = res.p_value.toFixed(3);
-        if (res.p_value < 0.001) pText = '< .001';
-        return [
-            res.varName,
-            res.meanRank1.toFixed(2),
-            res.meanRank2.toFixed(2),
-            res.u.toFixed(2),
-            res.z.toFixed(2),
-            pText,
-            res.r.toFixed(2)
-        ];
+    testResults.forEach(res => {
+        const uDisplay = Math.round(res.u);
+        html += `
+            <tr>
+                <td style="text-align: left; padding: 4px 8px;">${res.varName}</td>
+                <td style="text-align: center; padding: 4px 6px; border-left: 1px solid #ccc;">${res.stats0.mean.toFixed(2)}</td>
+                <td style="text-align: center; padding: 4px 6px;">${res.stats0.sd.toFixed(2)}</td>
+                <td style="text-align: center; padding: 4px 6px;">${res.stats0.median.toFixed(2)}</td>
+                <td style="text-align: center; padding: 4px 6px; border-left: 1px solid #ccc;">${res.stats1.mean.toFixed(2)}</td>
+                <td style="text-align: center; padding: 4px 6px;">${res.stats1.sd.toFixed(2)}</td>
+                <td style="text-align: center; padding: 4px 6px;">${res.stats1.median.toFixed(2)}</td>
+                <td style="text-align: center; padding: 4px 6px; border-left: 1px solid #ccc;">${uDisplay}${res.significance}</td>
+                <td style="text-align: center; padding: 4px 6px;">${res.r.toFixed(2)}</td>
+            </tr>
+        `;
     });
 
-    tableDiv.innerHTML = generateAPATableHtml('mw-apa-table', 'Table 1. Results of Mann-Whitney U Test', headers, rows, 'Mann-Whitney U test.');
+    html += `
+                </tbody>
+            </table>
+            <p style="font-size: 0.8rem; margin-top: 0.25rem;"><em>N</em>=${NTotal}　***<em>p</em>&lt;.001　**<em>p</em>&lt;.01　*<em>p</em>&lt;.05</p>
+        </div>
+    `;
+
+    tableDiv.innerHTML = html;
 }
 
 function displayInterpretation(testResults) {
