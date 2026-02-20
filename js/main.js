@@ -92,8 +92,17 @@ function setupEventListeners() {
     // 分析カードクリック時のデータ未ロードチェック
     featureGrid.addEventListener('click', (event) => {
         const card = event.target.closest('.feature-card');
-        // データがロードされていない、かつカードがクリックされた場合
-        if (card && !currentData) {
+        if (!card) return;
+
+        // data-requires="none" のカードはデータ未ロードでも遷移可能
+        const requires = card.dataset.requires;
+        if (requires === 'none') {
+            showAnalysisView(card.dataset.analysis);
+            return;
+        }
+
+        // データがロードされていない場合はエラー表示
+        if (!currentData) {
             showError('分析を開始するには、データをアップロードするかデモデータを試してください。');
         }
     });
