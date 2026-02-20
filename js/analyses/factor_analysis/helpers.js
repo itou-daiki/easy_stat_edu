@@ -83,7 +83,7 @@ export function exactFactors(variables, numFactors, currentData) {
         loadings.push(row);
     }
 
-    return { loadings, eigenvalues: sortedValues };
+    return { loadings, eigenvalues: sortedValues, corrMatrix };
 }
 
 /**

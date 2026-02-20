@@ -15,6 +15,103 @@ import {
     displayFactorCorrelations
 } from './factor_analysis/visualization.js';
 
+/**
+ * Cronbach's α を算出
+ * @param {Array<Object>} data - 全データ
+ * @param {Array<string>} itemNames - 対象項目名
+ * @returns {number|null} α 係数
+ */
+function computeCronbachAlpha(data, itemNames) {
+    if (itemNames.length < 2) return null;
+    const k = itemNames.length;
+    const validData = data.filter(row => itemNames.every(item => row[item] != null && !isNaN(row[item])));
+    if (validData.length < 2) return null;
+
+    let sumItemVar = 0;
+    itemNames.forEach(item => {
+        const values = validData.map(row => row[item]);
+        const sd = jStat.stdev(values, true);
+        sumItemVar += sd * sd;
+    });
+
+    const totals = validData.map(row => itemNames.reduce((s, item) => s + row[item], 0));
+    const totalSD = jStat.stdev(totals, true);
+    const totalVar = totalSD * totalSD;
+
+    if (totalVar === 0) return null;
+    return (k / (k - 1)) * (1 - sumItemVar / totalVar);
+}
+
+/**
+ * KMO (Kaiser-Meyer-Olkin) を算出
+ * @param {Array<Array<number>>} corrMatrix - 相関行列
+ * @returns {number} KMO 値
+ */
+function computeKMO(corrMatrix) {
+    try {
+        const p = corrMatrix.length;
+        const invR = math.inv(corrMatrix);
+        let sumR2 = 0, sumA2 = 0;
+        for (let i = 0; i < p; i++) {
+            for (let j = 0; j < p; j++) {
+                if (i === j) continue;
+                sumR2 += corrMatrix[i][j] ** 2;
+                const partial = -invR[i][j] / Math.sqrt(invR[i][i] * invR[j][j]);
+                sumA2 += partial ** 2;
+            }
+        }
+        return sumR2 / (sumR2 + sumA2);
+    } catch (e) { return null; }
+}
+
+/**
+ * Bartlett の球面性検定
+ * @param {Array<Array<number>>} corrMatrix - 相関行列
+ * @param {number} n - サンプルサイズ
+ * @returns {{chi2: number, df: number, p: number}}
+ */
+function computeBartlettTest(corrMatrix, n) {
+    try {
+        const p = corrMatrix.length;
+        const detR = math.det(corrMatrix);
+        if (detR <= 0) return { chi2: Infinity, df: p * (p - 1) / 2, p: 0 };
+        const chi2 = -((n - 1) - (2 * p + 5) / 6) * Math.log(detR);
+        const df = p * (p - 1) / 2;
+        const pValue = 1 - jStat.chisquare.cdf(chi2, df);
+        return { chi2, df, p: pValue };
+    } catch (e) { return null; }
+}
+
+/**
+ * RMSR (残差平方平均平方根) を算出
+ * @param {Array<Array<number>>} corrMatrix - 観測相関行列
+ * @param {Array<Array<number>>} loadings - 因子負荷量
+ * @param {Array<Array<number>>|null} factorCorrelations - 因子間相関
+ * @returns {number} RMSR 値
+ */
+function computeRMSR(corrMatrix, loadings, factorCorrelations) {
+    try {
+        const p = corrMatrix.length;
+        const L = math.matrix(loadings);
+        let reproduced;
+        if (factorCorrelations) {
+            const Phi = math.matrix(factorCorrelations);
+            reproduced = math.multiply(math.multiply(L, Phi), math.transpose(L));
+        } else {
+            reproduced = math.multiply(L, math.transpose(L));
+        }
+        let sumSq = 0, count = 0;
+        for (let i = 0; i < p; i++) {
+            for (let j = i + 1; j < p; j++) {
+                const resid = corrMatrix[i][j] - (reproduced.get ? reproduced.get([i, j]) : reproduced[i][j]);
+                sumSq += resid ** 2;
+                count++;
+            }
+        }
+        return Math.sqrt(sumSq / count);
+    } catch (e) { return null; }
+}
+
 function runFactorAnalysis(currentData) {
     const varsSelect = document.getElementById('factor-vars');
     const variables = Array.from(varsSelect.selectedOptions).map(o => o.value);
@@ -34,23 +131,22 @@ function runFactorAnalysis(currentData) {
         const result = exactFactors(variables, numFactors, currentData);
         let loadings = result.loadings;
         const eigenvalues = result.eigenvalues;
+        const corrMatrix = result.corrMatrix;
         let factorCorrelations = null;
 
         // 回転の適用
-        let rotatedStats = null;
-
         if (rotationMethod === 'varimax') {
             loadings = calculateVarimax(loadings);
         } else if (rotationMethod === 'promax') {
-            const res = calculatePromax(loadings, 4); // kappa=4
+            const res = calculatePromax(loadings, 4);
             loadings = res.loadings;
             factorCorrelations = res.correlations;
         } else if (rotationMethod === 'oblimin') {
-            const res = calculateDirectOblimin(loadings, 0); // gamma=0
+            const res = calculateDirectOblimin(loadings, 0);
             loadings = res.loadings;
             factorCorrelations = res.correlations;
         } else if (rotationMethod === 'geomin') {
-            const res = calculateGeomin(loadings, 0.01); // epsilon=0.01
+            const res = calculateGeomin(loadings, 0.01);
             loadings = res.loadings;
             factorCorrelations = res.correlations;
         }
@@ -58,36 +154,57 @@ function runFactorAnalysis(currentData) {
         // 回転後の負荷量二乗和 (SS Loadings)
         const numVars = variables.length;
         const colSS = Array(numFactors).fill(0);
-
         for (let i = 0; i < numVars; i++) {
             for (let j = 0; j < numFactors; j++) {
                 colSS[j] += loadings[i][j] ** 2;
             }
         }
-
         let cumulative = 0;
-        rotatedStats = colSS.map(val => {
+        const rotatedStats = colSS.map(val => {
             const contribution = (val / numVars) * 100;
             cumulative += contribution;
-            return {
-                eigenvalue: val,
-                contribution: contribution,
-                cumulative: cumulative
-            };
+            return { eigenvalue: val, contribution, cumulative };
         });
 
-        displayEigenvalues(eigenvalues, rotatedStats);
-        displayLoadings(variables, loadings, rotationMethod);
+        // 共通性 (communalities)
+        const communalities = variables.map((_, i) =>
+            loadings[i].reduce((s, l) => s + l * l, 0)
+        );
 
-        // 因子間相関行列の表示 (斜交回転のみ: promax, oblimin, geomin)
-        if (['promax', 'oblimin', 'geomin'].includes(rotationMethod) && factorCorrelations) {
-            displayFactorCorrelations(factorCorrelations);
-        } else {
-            const container = document.getElementById('factor-correlations');
-            if (container) container.innerHTML = '';
-            const wrapper = document.getElementById('factor-correlations-container');
-            if (wrapper) wrapper.style.display = 'none';
+        // 項目の因子割り当て → Cronbach's α
+        const itemFactors = variables.map((_, i) => {
+            let maxAbs = -1, factor = 0;
+            loadings[i].forEach((l, f) => {
+                if (Math.abs(l) > maxAbs) { maxAbs = Math.abs(l); factor = f; }
+            });
+            return factor;
+        });
+        const alphas = [];
+        for (let f = 0; f < numFactors; f++) {
+            const items = variables.filter((_, i) => itemFactors[i] === f);
+            alphas.push(computeCronbachAlpha(currentData, items));
         }
+
+        // 適合度指標
+        const validN = currentData.filter(row =>
+            variables.every(v => row[v] != null && !isNaN(row[v]))
+        ).length;
+        const kmo = computeKMO(corrMatrix);
+        const bartlett = computeBartlettTest(corrMatrix, validN);
+        const rmsr = computeRMSR(corrMatrix, loadings, factorCorrelations);
+
+        // --- 描画 ---
+        displayEigenvalues(eigenvalues, rotatedStats);
+        displayLoadings(variables, loadings, rotationMethod, {
+            communalities, alphas, rotatedStats, factorCorrelations,
+            fitIndices: { kmo, bartlett, rmsr, n: validN }
+        });
+
+        // 因子間相関は loadings テーブル内に統合 → 個別コンテナは非表示
+        const corrContainer = document.getElementById('factor-correlations');
+        if (corrContainer) corrContainer.innerHTML = '';
+        const corrWrapper = document.getElementById('factor-correlations-container');
+        if (corrWrapper) corrWrapper.style.display = 'none';
 
         displayFactorInterpretation(variables, loadings);
         plotScree(eigenvalues);

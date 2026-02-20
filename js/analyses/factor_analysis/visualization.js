@@ -84,14 +84,17 @@ export function displayEigenvalues(eigenvalues, rotatedStats) {
 }
 
 /**
- * 因子負荷量テーブルを表示
+ * 因子負荷量テーブルを表示（因子別グループ化・適合度指標付き）
  * @param {Array<string>} variables - 変数名配列
  * @param {Array<Array<number>>} loadings - 因子負荷量
  * @param {string} rotation - 回転方法
+ * @param {Object} extras - 追加統計量
  */
-export function displayLoadings(variables, loadings, rotation) {
+export function displayLoadings(variables, loadings, rotation, extras = {}) {
     const container = document.getElementById('loadings-table');
     const numFactors = loadings[0].length;
+    const { communalities, alphas, rotatedStats, factorCorrelations, fitIndices } = extras;
+
     const rotationLabels = {
         'varimax': 'バリマックス回転後',
         'promax': 'プロマックス回転後',
@@ -99,32 +102,161 @@ export function displayLoadings(variables, loadings, rotation) {
         'geomin': 'ジオミン回転後',
         'none': '回転なし'
     };
-    const rotationText = ` (${rotationLabels[rotation] || (rotation === 'none' ? '回転なし' : rotation + '回転後')})`;
+    const rotationText = rotationLabels[rotation] || rotation;
 
-    let html = `
-        <div class="table-container">
-            <p>※ 因子負荷量${rotationText}</p>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>変数</th>
-                        ${Array.from({ length: numFactors }, (_, i) => `<th>第${i + 1}因子</th>`).join('')}
-                    </tr>
-                </thead>
-                <tbody>
-    `;
+    // 負荷量フォーマット: APA式 (先頭ゼロ省略)
+    const fmtL = (v) => {
+        const s = v.toFixed(3);
+        return s.replace(/^(-?)0\./, '$1.');
+    };
 
-    variables.forEach((v, i) => {
-        html += `<tr><td><strong>${v}</strong></td>`;
-        loadings[i].forEach(l => {
-            const style = Math.abs(l) > 0.4 ? 'background: rgba(30, 144, 255, 0.1); font-weight: bold;' : '';
-            html += `<td style="${style}">${l.toFixed(3)}</td>`;
+    // 項目を主因子に割り当て（絶対値最大の因子）
+    const itemFactors = variables.map((_, i) => {
+        let maxAbs = -1, factor = 0;
+        loadings[i].forEach((l, f) => {
+            if (Math.abs(l) > maxAbs) { maxAbs = Math.abs(l); factor = f; }
         });
-        html += '</tr>';
+        return factor;
     });
 
-    html += '</tbody></table></div>';
-    container.innerHTML = html;
+    // 因子ごとにグループ化し、主負荷量の絶対値で降順ソート
+    const factorGroups = [];
+    for (let f = 0; f < numFactors; f++) {
+        const items = [];
+        variables.forEach((v, i) => {
+            if (itemFactors[i] === f) {
+                items.push({ name: v, index: i, absLoading: Math.abs(loadings[i][f]) });
+            }
+        });
+        items.sort((a, b) => b.absLoading - a.absLoading);
+        factorGroups.push(items);
+    }
+
+    const factorHeaders = Array.from({ length: numFactors }, (_, i) => `Factor${i + 1}`);
+    const tdC = 'text-align: center; padding: 0.4rem 0.5rem;';
+
+    // === 適合度指標セクション ===
+    let fitHtml = '';
+    if (fitIndices) {
+        const { kmo, bartlett, rmsr, n } = fitIndices;
+        const kmoLabel = kmo != null ? (kmo >= 0.9 ? '非常に良い' : kmo >= 0.8 ? '良い' : kmo >= 0.7 ? '普通' : kmo >= 0.6 ? 'やや低い' : kmo >= 0.5 ? '低い' : '不適') : '';
+
+        fitHtml = `
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1.2rem;">
+            <h5 style="margin: 0 0 0.6rem 0; color: #2d3748; font-size: 1rem;">
+                <i class="fas fa-check-circle" style="color: #38a169;"></i> 適合度指標
+            </h5>
+            <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; font-size: 0.95rem;">
+                ${kmo != null ? `<div><strong>KMO</strong> = ${kmo.toFixed(3)} <span style="color: #718096; font-size: 0.85em;">(${kmoLabel})</span></div>` : ''}
+                ${bartlett ? `<div><strong>Bartlett検定</strong>: χ²(${bartlett.df}) = ${bartlett.chi2.toFixed(2)}, <em>p</em> ${bartlett.p < 0.001 ? '&lt; .001' : '= ' + bartlett.p.toFixed(3)}</div>` : ''}
+                ${rmsr != null ? `<div><strong>RMSR</strong> = ${rmsr.toFixed(4)}</div>` : ''}
+                <div><strong>N</strong> = ${n || '-'}</div>
+            </div>
+        </div>`;
+    }
+
+    // === メインテーブル ===
+    let tableHtml = `
+        <div class="table-container" style="overflow-x: auto;">
+            <p style="margin-bottom: 0.5rem; color: #4a5568; font-size: 0.9rem;">※ 因子負荷量（${rotationText}）</p>
+            <table class="table" style="border-collapse: collapse; min-width: 500px;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="text-align: left; min-width: 200px; padding: 0.5rem 0.8rem;">質問項目</th>
+                        ${factorHeaders.map(h => `<th style="${tdC} min-width: 70px;">${h}</th>`).join('')}
+                        <th style="${tdC} min-width: 55px;">共通性</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    // --- 因子ごとのグループ ---
+    factorGroups.forEach((items, f) => {
+        const alpha = alphas && alphas[f] != null ? alphas[f] : null;
+        const alphaStr = alpha != null ? `α = ${alpha.toFixed(3)}` : '';
+
+        // 因子ヘッダー行
+        tableHtml += `
+                <tr style="background: #edf2f7;">
+                    <td colspan="${numFactors + 2}" style="font-weight: bold; color: #2d3748; padding: 0.6rem 0.8rem; border-top: 2px solid #cbd5e0;">
+                        第${f + 1}因子${alphaStr ? `（${alphaStr}）` : ''}
+                    </td>
+                </tr>`;
+
+        // 各項目行
+        items.forEach(item => {
+            tableHtml += '<tr>';
+            tableHtml += `<td style="padding-left: 2rem; padding-right: 0.5rem; color: #4a5568;">　　${item.name}</td>`;
+
+            loadings[item.index].forEach((l, fIdx) => {
+                const isHigh = Math.abs(l) >= 0.4;
+                let style = tdC;
+                if (isHigh) style += ' font-weight: bold;';
+                if (fIdx === f) style += ' color: #1a365d;';
+                tableHtml += `<td style="${style}">${fmtL(l)}</td>`;
+            });
+
+            // 共通性
+            const h2 = communalities ? communalities[item.index] : loadings[item.index].reduce((s, l) => s + l * l, 0);
+            tableHtml += `<td style="${tdC}">${h2.toFixed(3)}</td>`;
+            tableHtml += '</tr>';
+        });
+    });
+
+    // --- 統計量行（SS負荷量・寄与率・累積寄与率） ---
+    if (rotatedStats) {
+        tableHtml += `
+                <tr style="border-top: 2px solid #cbd5e0;">
+                    <td style="font-weight: bold; color: #2d3748; padding: 0.5rem 0.8rem;">SS負荷量</td>
+                    ${rotatedStats.map(s => `<td style="${tdC} font-weight: bold;">${s.eigenvalue.toFixed(3)}</td>`).join('')}
+                    <td></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold; color: #2d3748; padding: 0.5rem 0.8rem;">寄与率 (%)</td>
+                    ${rotatedStats.map(s => `<td style="${tdC}">${s.contribution.toFixed(2)}</td>`).join('')}
+                    <td></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold; color: #2d3748; padding: 0.5rem 0.8rem;">累積寄与率 (%)</td>
+                    ${rotatedStats.map(s => `<td style="${tdC}">${s.cumulative.toFixed(2)}</td>`).join('')}
+                    <td></td>
+                </tr>`;
+    }
+
+    tableHtml += '</tbody></table></div>';
+
+    // === 因子間相関行列（斜交回転時のみ） ===
+    let corrHtml = '';
+    if (factorCorrelations && factorCorrelations.length > 0) {
+        corrHtml = `
+        <div style="margin-top: 1.5rem;">
+            <div class="table-container" style="overflow-x: auto;">
+                <table class="table" style="border-collapse: collapse; max-width: 500px;">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="text-align: left; padding: 0.5rem 0.8rem;">因子間相関</th>
+                            ${factorHeaders.map(h => `<th style="${tdC}">${h}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+        factorCorrelations.forEach((row, i) => {
+            corrHtml += `<tr><td style="font-weight: bold; padding: 0.4rem 0.8rem;">${factorHeaders[i]}</td>`;
+            row.forEach((val, j) => {
+                let style = tdC;
+                if (i !== j && Math.abs(val) > 0.3) {
+                    style += ' font-weight: bold; background: rgba(236, 201, 75, 0.15);';
+                }
+                corrHtml += `<td style="${style}">${val.toFixed(3)}</td>`;
+            });
+            corrHtml += '</tr>';
+        });
+
+        corrHtml += `</tbody></table></div>
+            <p style="font-size: 0.85rem; color: #4a5568; margin-top: 0.5rem;">※ 因子の相関が高い場合、斜交回転が適しています。</p>
+        </div>`;
+    }
+
+    container.innerHTML = fitHtml + tableHtml + corrHtml;
 }
 
 /**
