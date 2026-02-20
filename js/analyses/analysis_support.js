@@ -199,6 +199,7 @@ function updateRecommendations(selectedVars, data, characteristics) {
             recommendations.push(createRecItem('mann_whitney', 'マン・ホイットニーのU検定', '2つのグループ間の分布（順位）の差を検定します。', `正規分布に従わない場合に適しています`));
         } else if (uniqueCount >= 3) {
             recommendations.push(createRecItem('anova_one_way', '一要因分散分析', '3つ以上のグループ間の平均値の差を検定します。', `カテゴリ変数「${catVar}」は${uniqueCount}グループです`));
+            recommendations.push(createRecItem('kruskal_wallis', 'クラスカル・ウォリス検定', '3つ以上のグループ間の分布（順位）の差を検定します。', `正規分布に従わない場合に適しています`));
         }
     }
 
