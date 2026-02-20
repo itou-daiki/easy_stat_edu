@@ -411,4 +411,60 @@ test.describe('Data Processing - Bulk Recode', () => {
         const diffHeader = page.locator('th:has-text("Math_Sci_Diff")').first();
         await expect(diffHeader).toBeVisible({ timeout: 10000 });
     });
+
+    test('Verify Data Merge (データの結合) Functionality', async ({ page }: { page: Page }) => {
+        // 1. Load Application
+        await page.goto('/');
+        await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
+
+        // 2. Upload Base Data (File 1)
+        const fileInput = page.locator('#main-data-file');
+        const filePath1 = path.join(__dirname, '../datasets/merge_test_1.csv'); // ID, Math, English
+        const previewVisiblePromise = page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 30000 });
+        await fileInput.setInputFiles(filePath1);
+        await previewVisiblePromise;
+
+        // 3. Open Data Processing Section
+        const processingCard = page.locator('.feature-card[data-analysis="data_processing"]');
+        if (await processingCard.count() > 0) {
+            await processingCard.click();
+        } else {
+            await page.locator('text=データ加工・整形').click();
+        }
+        await expect(page.locator('.cleansing-container')).toBeVisible({ timeout: 10000 });
+
+        // 4. Switch to Merge Tab
+        const mergeTabBtn = page.locator('button:has-text("データの結合")');
+        await expect(mergeTabBtn).toBeVisible({ timeout: 5000 });
+        await mergeTabBtn.click();
+        await expect(page.locator('#eng-tab-merge')).toBeVisible({ timeout: 10000 });
+
+        // 5. Upload Second File
+        const fileInput2 = page.locator('#merge-file-input');
+        const filePath2 = path.join(__dirname, '../datasets/merge_test_2.csv'); // ID, 名前, 英語
+
+        await fileInput2.setInputFiles(filePath2);
+
+        // Force trigger the change event
+        await fileInput2.evaluate(node => node.dispatchEvent(new Event('change', { bubbles: true })));
+
+        await page.waitForTimeout(1000); // Wait explicitly to see if it helps
+
+        // Wait for column selectors to be populated
+        await expect(page.locator('#merge-key-base')).toContainText('ID');
+        await expect(page.locator('#merge-key-new')).toContainText('ID');
+
+        // 6. Select Keys and Merge
+        await page.selectOption('#merge-key-base', 'ID');
+        await page.selectOption('#merge-key-new', 'ID');
+
+        page.on('dialog', async (dialog: any) => {
+            await dialog.accept();
+        });
+        await page.click('#apply-merge-btn');
+
+        // 7. Verify Result Header
+        const mergedHeader = page.locator('th:has-text("英語")').first();
+        await expect(mergedHeader).toBeVisible({ timeout: 10000 });
+    });
 });

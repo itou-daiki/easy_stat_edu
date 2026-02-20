@@ -386,6 +386,9 @@ export function render(container, currentData, dataCharacteristics) {
                     <button class="tab-btn" onclick="showEngineeringTab('compute')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
                         変数の計算 (合計・平均)
                     </button>
+                    <button class="tab-btn" onclick="showEngineeringTab('merge')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
+                        データの結合 (CSVマージ)
+                    </button>
                 </div>
 
                 <!-- Tab 1: Filtering (Subset) -->
@@ -560,6 +563,34 @@ export function render(container, currentData, dataCharacteristics) {
                         </button>
                     </div>
                 </div>
+                    </div>
+                </div>
+
+                <!-- Tab 7: Merge -->
+                <div id="eng-tab-merge" style="display: none;">
+                    <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
+                        <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
+                            <i class="fas fa-object-ungroup"></i> 別のファイル（CSV）を読み込み、共通のキー変数（IDなど）を元にして現在のデータに横結合します。
+                        </p>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">結合するファイルを選択 (CSV形式):</label>
+                            <input type="file" id="merge-file-input" accept=".csv" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                            <div class="form-group" style="flex: 1;">
+                                <label style="font-weight: bold;">現在のデータのキー変数:</label>
+                                <select id="merge-key-base" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;"></select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label style="font-weight: bold;">追加ファイルのキー変数:</label>
+                                <select id="merge-key-new" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;"></select>
+                            </div>
+                        </div>
+                        <button id="apply-merge-btn" class="btn-analysis" style="background: #805ad5; width: 100%;" disabled>
+                            <i class="fas fa-object-ungroup"></i> データを結合する
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!--処理オプション -->
@@ -651,6 +682,7 @@ function initEngineeringUI() {
         document.getElementById('eng-tab-standardize').style.display = tabName === 'standardize' ? 'block' : 'none';
         document.getElementById('eng-tab-recode').style.display = tabName === 'recode' ? 'block' : 'none';
         document.getElementById('eng-tab-compute').style.display = tabName === 'compute' ? 'block' : 'none';
+        document.getElementById('eng-tab-merge').style.display = tabName === 'merge' ? 'block' : 'none';
 
         // ボタンのスタイル更新
         const buttons = document.querySelectorAll('.tab-btn');
@@ -660,7 +692,8 @@ function initEngineeringUI() {
             'categorize': '数値のグループ化',
             'standardize': '標準化 (Zスコア)',
             'recode': '値の変換',
-            'compute': '変数の計算'
+            'compute': '変数の計算',
+            'merge': 'データの結合'
         };
         buttons.forEach(btn => {
             if (btn.textContent.includes(tabTitleMap[tabName])) {
@@ -691,6 +724,12 @@ function initEngineeringUI() {
     // Compute用マルチセレクトの更新
     updateComputeColumnSelect();
 
+    // Merge用変数セレクトボックスの初期更新
+    updateMergeBaseColumnSelect();
+
+    // 新規ファイル読み込み処理の設定
+    setupMergeFileListener();
+
     // イベントリスナー
     document.getElementById('apply-filter-btn').onclick = applyFilter;
     document.getElementById('apply-reverse-btn').onclick = applyReverse;
@@ -698,6 +737,7 @@ function initEngineeringUI() {
     document.getElementById('apply-standardize-btn').onclick = applyStandardize;
     document.getElementById('apply-recode-btn').onclick = applyRecode;
     document.getElementById('apply-compute-btn').onclick = applyCompute;
+    document.getElementById('apply-merge-btn').onclick = applyMerge;
 }
 
 function updateFilterColumnSelect() {
@@ -1081,6 +1121,137 @@ function applyCompute() {
     updateDataAndUI(`${newColName} を作成しました`);
 }
 
+let mergeNewData = null;
+
+function updateMergeBaseColumnSelect() {
+    const baseSelect = document.getElementById('merge-key-base');
+    if (!baseSelect) return;
+    baseSelect.innerHTML = '<option value="">ベースデータのキーを選択...</option>';
+
+    if (originalData && originalData[0]) {
+        const cols = Object.keys(originalData[0]);
+        cols.forEach(col => {
+            const option = document.createElement('option');
+            option.value = col;
+            option.textContent = col;
+            baseSelect.appendChild(option);
+        });
+    }
+}
+
+function setupMergeFileListener() {
+    const fileInput = document.getElementById('merge-file-input');
+    if (!fileInput) {
+        return;
+    }
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const data = evt.target.result;
+                let jsonData;
+
+                if (file.name.endsWith('.csv')) {
+                    const workbook = XLSX.read(data, { type: 'string', raw: true });
+                    jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                } else {
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                }
+
+                if (jsonData.length === 0) {
+                    alert('ファイルにデータが含まれていません。');
+                    return;
+                }
+
+                mergeNewData = jsonData;
+
+                const newSelect = document.getElementById('merge-key-new');
+                newSelect.innerHTML = '<option value="">追加データのキーを選択...</option>';
+
+                if (mergeNewData && mergeNewData[0]) {
+                    const cols = Object.keys(mergeNewData[0]);
+                    cols.forEach(col => {
+                        const option = document.createElement('option');
+                        option.value = col;
+                        option.textContent = col;
+                        newSelect.appendChild(option);
+                    });
+                }
+
+                // 有効化
+                document.getElementById('apply-merge-btn').disabled = false;
+
+            } catch (error) {
+                console.error(error);
+                alert('ファイルの読み込みに失敗しました。');
+            }
+        };
+
+        if (file.name.endsWith('.csv')) {
+            reader.readAsText(file);
+        } else {
+            reader.readAsArrayBuffer(file);
+        }
+    });
+}
+
+function applyMerge() {
+    const keyBase = document.getElementById('merge-key-base').value;
+    const keyNew = document.getElementById('merge-key-new').value;
+
+    if (!keyBase || !keyNew || !mergeNewData) {
+        alert('キー変数と結合するファイルが正しく選択されていません。');
+        return;
+    }
+
+    // 新しいデータをキーでマップ化（検索を高速にするため）
+    const newDataMap = {};
+    mergeNewData.forEach(row => {
+        const keyVal = row[keyNew];
+        if (keyVal !== undefined && keyVal !== null && keyVal !== '') {
+            newDataMap[keyVal] = row;
+        }
+    });
+
+    const newCols = Object.keys(mergeNewData[0] || {}).filter(c => c !== keyNew);
+    let matchedCount = 0;
+
+    originalData.forEach(row => {
+        const baseVal = row[keyBase];
+        if (baseVal !== undefined && baseVal !== null && newDataMap[baseVal]) {
+            const matchedRow = newDataMap[baseVal];
+            matchedCount++;
+            newCols.forEach(col => {
+                const finalColName = row.hasOwnProperty(col) ? `${col}_add` : col;
+                row[finalColName] = matchedRow[col];
+            });
+        } else {
+            // 一致しない場合は欠損（null等）として扱う
+            newCols.forEach(col => {
+                const finalColName = row.hasOwnProperty(col) ? `${col}_add` : col;
+                if (!row.hasOwnProperty(finalColName)) {
+                    row[finalColName] = null;
+                }
+            });
+        }
+    });
+
+    // 初期化と再描画
+    document.getElementById('merge-file-input').value = '';
+    mergeNewData = null;
+    document.getElementById('merge-key-new').innerHTML = '';
+    document.getElementById('apply-merge-btn').disabled = true;
+
+    updateDataAndUI(`${matchedCount} 行のデータに結合しました`);
+}
+
 function updateDataAndUI(message) {
     // データ特性の再分析
     originalCharacteristics = window.analyzeDataCharacteristics(originalData);
@@ -1096,6 +1267,7 @@ function updateDataAndUI(message) {
     updateStandardizeColumnSelect();
     updateRecodeColumnSelect();
     updateComputeColumnSelect();
+    updateMergeBaseColumnSelect();
 
     // データ品質情報の更新
     displayDataQualityInfo();
