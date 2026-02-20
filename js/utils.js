@@ -1582,5 +1582,39 @@ export const InterpretationHelper = {
             text += `効果量 r = ${r.toFixed(2)} (${effectSizeText}) です。`;
         }
         return text;
+    },
+
+    /**
+     * ウィルコクソンの符号付順位検定の解釈
+     * @param {number} p - P値
+     * @param {number} r - 効果量 r
+     * @param {string} var1 - 変数1の名前
+     * @param {string} var2 - 変数2の名前
+     * @param {number} median1 - 変数1の中央値
+     * @param {number} median2 - 変数2の中央値
+     * @returns {string} 解釈文
+     */
+    interpretWilcoxonSignedRank(p, r, var1, var2, median1, median2) {
+        const pEval = this.evaluatePValue(p);
+        let text = "";
+
+        let effectSizeText = "";
+        if (Math.abs(r) < 0.1) effectSizeText = "ほとんどない";
+        else if (Math.abs(r) < 0.3) effectSizeText = "小さい";
+        else if (Math.abs(r) < 0.5) effectSizeText = "中程度";
+        else effectSizeText = "大きい";
+
+        if (pEval.isSignificant) {
+            const higher = median1 > median2 ? var1 : var2;
+            const lower = median1 > median2 ? var2 : var1;
+            text += `「<strong>${var1}</strong>」と「<strong>${var2}</strong>」の間には、統計的に<strong>有意な差が認められました</strong> (${pEval.text})。<br>`;
+            text += `中央値を比較すると、<strong>${higher}</strong>の方が高い値を示しています。<br>`;
+            text += `効果量 r = ${r.toFixed(2)} であり、差の大きさは「<strong>${effectSizeText}</strong>」水準です。`;
+        } else {
+            text += `「<strong>${var1}</strong>」と「<strong>${var2}</strong>」の間には、統計的に有意な差は認められませんでした (${pEval.text})。<br>`;
+            text += `中央値: ${var1} = ${median1.toFixed(2)}, ${var2} = ${median2.toFixed(2)}。<br>`;
+            text += `効果量 r = ${r.toFixed(2)} (${effectSizeText}) です。`;
+        }
+        return text;
     }
 };
