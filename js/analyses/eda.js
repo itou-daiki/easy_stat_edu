@@ -895,6 +895,31 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>標準偏差:</strong> 標本標準偏差（不偏分散の平方根、n-1 で除算）を使用。<code>jStat.stdev(data, true)</code></li>
+                            <li><strong>歪度 (Skewness):</strong> Fisher の調整済み歪度。n ≥ 3 が必要。
+                                \( G_1 = \frac{n}{(n-1)(n-2)} \sum \left(\frac{x_i - \bar{x}}{s}\right)^3 \)
+                            </li>
+                            <li><strong>尖度 (Kurtosis):</strong> 過剰尖度（Fisher の調整済み）。n ≥ 4 が必要。
+                                \( G_2 = \frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum \left(\frac{x_i - \bar{x}}{s}\right)^4 - \frac{3(n-1)^2}{(n-2)(n-3)} \)
+                            </li>
+                            <li><strong>四分位数:</strong> jStat ライブラリの中央値補間法を使用。Q1 = 25th percentile, Q3 = 75th percentile。</li>
+                            <li><strong>相関係数 (散布図):</strong> ピアソンの積率相関係数。<code>jStat.corrcoeff(x, y)</code></li>
+                            <li>※ 本モジュールは記述統計・探索的分析のため、仮説検定は実施していません。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <!-- データ概要 -->
             <div id="eda-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 

@@ -279,7 +279,8 @@ export function render(container, currentData, characteristics) {
                             <li><strong>推定法:</strong> 最小二乗法 (OLS) - 行列演算による解析解</li>
                             <li><strong>自由度調整済み決定係数 (Adj R²):</strong> \( 1 - (1-R^2)\frac{n-1}{n-p-1} \) (p:説明変数の数)</li>
                             <li><strong>標準化係数 (Standardized Beta):</strong> 変数を標準化(Zスコア化)した場合の回帰係数。比較可能性のため算出。</li>
-                            <li><strong>多重共線性:</strong> VIF（分散拡大係数）の算出はhelpers.jsで実装されています。</li>
+                            <li><strong>モデル全体のF検定:</strong> \( F = \frac{R^2 / p}{(1 - R^2) / (n - p - 1)} \) (df1 = p, df2 = n-p-1)</li>
+                            <li><strong>多重共線性:</strong> VIF（分散拡大係数）= \( 1 / (1 - R_k^2) \)。\( R_k^2 \) は説明変数 k を他の説明変数で回帰した決定係数。</li>
                         </ul>
                     </div>
                 </div>

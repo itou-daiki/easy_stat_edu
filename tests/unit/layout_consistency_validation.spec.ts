@@ -4,7 +4,7 @@
  * Verifies that all analysis modules follow the standard layout pattern:
  * 1. Blue title banner (#1e90ff)
  * 2. Collapsible info section ("分析の概要・方法")
- * 3. [Optional] Collapsible logic section
+ * 3. Collapsible logic section ("分析ロジック・計算式詳説")
  * 4. Data overview (renderDataOverview with initiallyCollapsed: true)
  * 5. Settings panel (white card)
  * 6. Results section (display: none)
@@ -46,6 +46,34 @@ test.describe('Layout Consistency - Info Section', () => {
 
             expect(src).toContain('分析の概要・方法');
             expect(src).toContain('collapsible-section info-sections');
+        });
+    }
+});
+
+test.describe('Layout Consistency - Logic Section', () => {
+    for (const mod of analysisModules) {
+        test(`${mod.name} should have collapsible logic section`, async ({ page }) => {
+            const response = await page.goto(`/js/analyses/${mod.file}`);
+            const src = await response!.text();
+
+            expect(src).toContain('分析ロジック・計算式詳説');
+        });
+    }
+});
+
+test.describe('Layout Consistency - Logic Section Ordering', () => {
+    for (const mod of analysisModules) {
+        test(`${mod.name} logic section should come after info section and before data overview`, async ({ page }) => {
+            const response = await page.goto(`/js/analyses/${mod.file}`);
+            const src = await response!.text();
+
+            const infoPos = src.indexOf('分析の概要・方法');
+            const logicPos = src.indexOf('分析ロジック・計算式詳説');
+            const dataOverviewPos = src.indexOf('data-overview');
+
+            // Info -> Logic -> Data Overview
+            expect(infoPos).toBeLessThan(logicPos);
+            expect(logicPos).toBeLessThan(dataOverviewPos);
         });
     }
 });

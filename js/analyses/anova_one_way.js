@@ -1057,10 +1057,48 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>対応なし（独立測度）:</strong>
+                                <ul>
+                                    <li>平方和分解: \( SS_B = \sum n_g (\bar{X}_g - \bar{X})^2 \), \( SS_W = \sum\sum (X_{ij} - \bar{X}_g)^2 \)</li>
+                                    <li>F統計量: \( F = MS_B / MS_W \) (df1 = k-1, df2 = N-k)</li>
+                                    <li>効果量: \( \eta^2 = SS_B / SS_T \), \( \omega^2 = (SS_B - df_B \cdot MS_W) / (SS_T + MS_W) \) (負値は0に切り上げ)</li>
+                                    <li>等分散性の検定: Levene 検定 (Brown-Forsythe 変法, 中央値ベース)</li>
+                                </ul>
+                            </li>
+                            <li><strong>対応あり（反復測度）:</strong>
+                                <ul>
+                                    <li>平方和分解: \( SS_T = SS_{subjects} + SS_{conditions} + SS_{error} \)</li>
+                                    <li>Greenhouse-Geisser のイプシロン補正: \( \varepsilon = \frac{[\mathrm{tr}(\tilde{S})]^2}{(k-1)\,\mathrm{tr}(\tilde{S}^2)} \) (\(\tilde{S}\): 二重中心化共分散行列)</li>
+                                    <li>GG 補正済み自由度: df を \(\varepsilon\) 倍して p 値を再計算</li>
+                                    <li>効果量: 偏イータ二乗 \( \eta_p^2 = SS_{conditions} / (SS_{conditions} + SS_{error}) \)</li>
+                                </ul>
+                            </li>
+                            <li><strong>多重比較:</strong>
+                                <ul>
+                                    <li><strong>Tukey-Kramer法:</strong> \( q = \frac{|\bar{X}_i - \bar{X}_j|}{\sqrt{MS_W \cdot \frac{1}{2}(1/n_i + 1/n_j)}} \) (Studentized Range 分布)</li>
+                                    <li><strong>Holm法:</strong> Welch の t 検定を全ペアに実施し、Holm のステップダウン法で p 値を補正</li>
+                                    <li><strong>Bonferroni法:</strong> Welch の t 検定を全ペアに実施し、p 値 × 比較数</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
-            
+
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                
+
                 <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
                     <div style="display: flex; gap: 1rem;">

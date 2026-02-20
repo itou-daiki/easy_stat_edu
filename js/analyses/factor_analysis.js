@@ -132,6 +132,33 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>因子抽出:</strong> 相関行列の固有値分解 (eigendecomposition) を使用。因子負荷量 = 固有ベクトル × √固有値。<code>math.eigs()</code> で算出。</li>
+                            <li><strong>固有値・寄与率:</strong> 各因子の SS Loadings（負荷量の二乗和）、寄与率 = SS / 変数数、累積寄与率を算出。</li>
+                            <li><strong>回転方法:</strong>
+                                <ul>
+                                    <li><strong>バリマックス (Varimax):</strong> 直交回転。Kaiser 正規化後、負荷量の二乗の分散を最大化（最大50反復, ε=10⁻⁶）</li>
+                                    <li><strong>プロマックス (Promax):</strong> 斜交回転。Varimax 解を基に、要素を κ=4 乗してターゲットパターンを生成し、斜交変換を適用</li>
+                                    <li><strong>ダイレクト・オブリミン (Direct Oblimin):</strong> 斜交回転 (γ=0, Quartimin)。勾配射影法 (Gradient Projection) で最適化</li>
+                                    <li><strong>ジェオミン (Geomin):</strong> 斜交回転 (ε=0.01)。勾配射影法で最適化（最大500反復, ε=10⁻⁵）</li>
+                                </ul>
+                            </li>
+                            <li><strong>因子間相関:</strong> 斜交回転の場合、因子間相関行列を算出・表示</li>
+                            <li><strong>因子解釈:</strong> 負荷量の絶対値 ≥ 0.4 の項目を各因子にリストアップ</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <!-- データ概要 -->
             <div id="fa-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
