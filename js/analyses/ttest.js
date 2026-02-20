@@ -662,6 +662,12 @@ export function render(container, currentData, characteristics) {
                                     <li>効果量 (d): 差分の平均 / 差分の標準偏差 (\( d_z \))</li>
                                 </ul>
                             </li>
+                            <li><strong>1サンプル:</strong> 標本平均と検定値 \(\mu_0\) の比較
+                                <ul>
+                                    <li>統計量: \( t = \frac{\bar{X} - \mu_0}{s / \sqrt{n}} \) (df = n-1)</li>
+                                    <li>効果量: \( d = \frac{|\bar{X} - \mu_0|}{s} \)</li>
+                                </ul>
+                            </li>
                             <li><strong>p値:</strong> t分布の累積分布関数 (CDF) から算出 (両側検定)</li>
                         </ul>
                     </div>

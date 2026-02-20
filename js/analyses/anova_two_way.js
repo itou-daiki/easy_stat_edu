@@ -1425,10 +1425,48 @@ export function render(container, currentData, characteristics) {
                 </div>
             </div>
 
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <ul>
+                            <li><strong>対応なし（独立測度）:</strong>
+                                <ul>
+                                    <li>不均等データの場合、非加重平均法 (Unweighted Means Analysis) による Type III 近似の平方和分解を使用</li>
+                                    <li>主効果 (要因A, 要因B) と交互作用 (A×B) の F 検定</li>
+                                    <li>効果量: 偏イータ二乗 \( \eta_p^2 = SS_{effect} / (SS_{effect} + SS_{error}) \)</li>
+                                </ul>
+                            </li>
+                            <li><strong>混合計画 (Mixed Design):</strong>
+                                <ul>
+                                    <li>被験者間因子 × 被験者内因子の分解</li>
+                                    <li>被験者間効果: \( F = MS_{between} / MS_{S(between)} \)</li>
+                                    <li>被験者内効果・交互作用: \( F = MS_{within} / MS_{error} \)</li>
+                                    <li>※ 現在の実装では Mauchly の球面性検定・GG 補正は適用していません</li>
+                                </ul>
+                            </li>
+                            <li><strong>反復測定 (対応あり):</strong>
+                                <ul>
+                                    <li>被験者・要因A・要因B・交互作用・各誤差項の平方和を算出</li>
+                                    <li>\( F_A = MS_A / MS_{ErrorA} \), \( F_B = MS_B / MS_{ErrorB} \), \( F_{A \times B} = MS_{A \times B} / MS_{ErrorAB} \)</li>
+                                    <li>効果量: 偏イータ二乗</li>
+                                </ul>
+                            </li>
+                            <li><strong>単純主効果・多重比較:</strong> 交互作用が有意な場合、各水準での単純主効果検定を実施。Tukey-Kramer / Holm / Bonferroni 法を選択可能。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="anova-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
-            
+
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                
+
                <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
