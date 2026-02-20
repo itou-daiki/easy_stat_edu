@@ -6,65 +6,7 @@
 
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 
-/**
- * 要約統計量の計算と表示
- * @param {string} groupVar - グループ変数名
- * @param {Array<string>} depVars - 従属変数名配列
- * @param {Array<Object>} currentData - 分析対象データ
- */
-function displaySummaryStatistics(groupVar, depVars, currentData) {
-    const container = document.getElementById('summary-stats-section');
-    const groups = [...new Set(currentData.map(row => row[groupVar]).filter(v => v != null))];
-
-    let tableHtml = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-table"></i> 要約統計量
-            </h4>
-            <div class="table-container" style="overflow-x: auto;">
-                <table class="table">
-                    <thead style="background: #f8f9fa;">
-                        <tr>
-                            <th style="font-weight: bold; color: #495057;">変数名</th>
-                            <th>グループ</th>
-                            <th>有効N</th>
-                            <th>平均値</th>
-                            <th>中央値</th>
-                            <th>標準偏差</th>
-                            <th>最小値</th>
-                            <th>最大値</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-    `;
-
-    depVars.forEach(varName => {
-        groups.forEach((group, gi) => {
-            const values = currentData
-                .filter(row => row[groupVar] === group)
-                .map(row => Number(row[varName]))
-                .filter(v => !isNaN(v));
-            if (values.length > 0) {
-                const jstat = jStat(values);
-                tableHtml += `
-                    <tr${gi === 0 ? ' style="border-top: 2px solid #dee2e6;"' : ''}>
-                        ${gi === 0 ? `<td rowspan="${groups.length}" style="font-weight: bold; color: #1e90ff; vertical-align: middle;">${varName}</td>` : ''}
-                        <td>${group}</td>
-                        <td>${values.length}</td>
-                        <td>${jstat.mean().toFixed(2)}</td>
-                        <td>${jstat.median().toFixed(2)}</td>
-                        <td>${jStat.stdev(values, true).toFixed(2)}</td>
-                        <td>${jstat.min().toFixed(2)}</td>
-                        <td>${jstat.max().toFixed(2)}</td>
-                    </tr>
-                `;
-            }
-        });
-    });
-
-    tableHtml += `</tbody></table></div></div>`;
-    container.innerHTML = tableHtml;
-}
+// `displaySummaryStatistics` is no longer needed as we use an integrated table.
 
 /**
  * ランク付け（同順位は平均ランク）
@@ -132,23 +74,12 @@ function runKruskalWallisTest(currentData) {
         return;
     }
 
-    displaySummaryStatistics(groupVar, selectedVars, currentData);
+    // 統合テーブルの実装に寄せるため、要約統計量の個別表示は削除
+    // displaySummaryStatistics(groupVar, selectedVars, currentData);
 
     const resultsContainer = document.getElementById('test-results-section');
-    resultsContainer.innerHTML = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-calculator"></i> クラスカル・ウォリス検定の結果
-            </h4>
-            <div id="test-results-table"></div>
-            <div style="margin-top: 1.5rem;">
-               <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
-               <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 0.5rem;">以下のHTMLをコピーしてWord等に貼り付けると、論文作成に役立ちます。</p>
-               <div id="reporting-table-container"></div>
-            </div>
-            <div id="posthoc-results-container" style="margin-top: 1.5rem;"></div>
-        </div>
-    `;
+    resultsContainer.innerHTML = '';
+    document.getElementById('summary-stats-section').innerHTML = ''; // 統合したのでサマリー領域は空にする
 
     const groupDataMap = {};
     groups.forEach(g => {
@@ -156,20 +87,27 @@ function runKruskalWallisTest(currentData) {
     });
 
     let resultsTableHtml = `
-        <div class="table-container" style="overflow-x: auto;">
-            <table class="table">
-                <thead style="background: #f8f9fa;">
-                    <tr>
-                        <th style="font-weight: bold; color: #495057;">変数</th>
-                        ${groups.map(g => `<th>${g}<br>平均順位</th>`).join('')}
-                        <th>H</th>
-                        <th>df</th>
-                        <th>p値</th>
-                        <th>有意差</th>
-                        <th>η²<sub>H</sub></th>
-                    </tr>
-                </thead>
-                <tbody>
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                <i class="fas fa-calculator"></i> Kruskal-Wallis検定表
+            </h4>
+            <div class="table-container" style="overflow-x: auto;">
+                <table class="table">
+                    <thead style="background: #f8f9fa;">
+                        <tr>
+                            <th style="font-weight: bold; color: #495057;">変数</th>
+                            <th>全体N</th>
+                            <th>全体Mdn</th>
+                            <th>全体IQR</th>
+                            ${groups.map(g => `<th>${g}<br>Mdn</th><th>${g}<br>IQR</th><th>${g}<br>平均順位</th>`).join('')}
+                            <th>H</th>
+                            <th>df</th>
+                            <th>p</th>
+                            <th>sign</th>
+                            <th>η²<sub>H</sub></th>
+                        </tr>
+                    </thead>
+                    <tbody>
     `;
 
     const testResults = [];
@@ -178,17 +116,41 @@ function runKruskalWallisTest(currentData) {
     selectedVars.forEach(varName => {
         // 各群のデータを取得
         const groupValues = {};
+        const groupStats = {};
         let validGroups = 0;
+        let allValidValuesForVar = [];
+
         groups.forEach(g => {
             const vals = groupDataMap[g].map(row => Number(row[varName])).filter(v => !isNaN(v));
             groupValues[g] = vals;
+            allValidValuesForVar = allValidValuesForVar.concat(vals);
             if (vals.length >= 2) validGroups++;
+
+            // 各群の中央値とIQRを計算
+            if (vals.length > 0) {
+                const jstatG = jStat(vals);
+                const qG = jstatG.quartiles();
+                groupStats[g] = {
+                    n: vals.length,
+                    median: jstatG.median(),
+                    iqr: qG[2] - qG[0]
+                };
+            } else {
+                groupStats[g] = { n: 0, median: NaN, iqr: NaN };
+            }
         });
 
         if (validGroups < 3) {
             skippedVars.push(varName);
             return;
         }
+
+        // 全体の中央値とIQR
+        const jstatAll = jStat(allValidValuesForVar);
+        const qAll = jstatAll.quartiles();
+        const overallN = allValidValuesForVar.length;
+        const overallMedian = jstatAll.median();
+        const overallIqr = qAll[2] - qAll[0];
 
         // 全データを結合してランク付け
         const allData = [];
@@ -213,7 +175,6 @@ function runKruskalWallisTest(currentData) {
         });
 
         // H統計量の計算
-        // H = (12 / (N(N+1))) * Σ(Ri²/ni) - 3(N+1)
         let sumTerm = 0;
         groups.forEach(g => {
             if (groupNs[g] > 0) {
@@ -236,36 +197,43 @@ function runKruskalWallisTest(currentData) {
 
         // 効果量 η²H = (H - k + 1) / (N - k)
         const k = groups.length;
-        const eta2H = (H - k + 1) / (N - k);
-        const eta2HClamped = Math.max(0, eta2H); // 負の値はゼロにクランプ
+        const eta2H = Math.max(0, (H - k + 1) / (N - k));
 
         const significance = pValue < 0.01 ? '**' : pValue < 0.05 ? '*' : pValue < 0.1 ? '†' : 'n.s.';
-
         const pText = pValue < 0.001 ? '< .001' : pValue.toFixed(3);
 
         resultsTableHtml += `
             <tr>
                 <td style="font-weight: bold; color: #1e90ff;">${varName}</td>
-                ${groups.map(g => `<td>${meanRanks[g].toFixed(2)}</td>`).join('')}
+                <td>${overallN}</td>
+                <td>${overallMedian.toFixed(2)}</td>
+                <td>${overallIqr.toFixed(2)}</td>
+                ${groups.map(g => {
+            const st = groupStats[g];
+            return `<td>${st.n > 0 ? st.median.toFixed(2) : '-'}</td><td>${st.n > 0 ? st.iqr.toFixed(2) : '-'}</td><td>${meanRanks[g].toFixed(2)}</td>`;
+        }).join('')}
                 <td>${H.toFixed(2)}</td>
                 <td>${df}</td>
                 <td>${pText}</td>
                 <td><strong>${significance}</strong></td>
-                <td>${eta2HClamped.toFixed(3)}</td>
+                <td>${eta2H.toFixed(3)}</td>
             </tr>
         `;
 
         testResults.push({
             varName, groups, groupValues, meanRanks, rankSums, groupNs,
-            H, df, pValue, eta2H: eta2HClamped, significance, N
+            H, df, pValue, eta2H, significance, N
         });
     });
 
     resultsTableHtml += `</tbody></table></div>
-        <p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;">
-            <strong>有意差</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1† n.s.<br>
-            <strong>η²<sub>H</sub></strong>: クラスカル・ウォリスのイータ二乗 = (H − k + 1) / (N − k)
-        </p>`;
+        <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem;">
+            <i class="fas fa-info-circle"></i> <strong>解説</strong>: クラスカル・ウォリス検定は中央値や順位に注目するノンパラメトリック検定です。
+        </div>
+        <p style="color: #6b7280; text-align: right; margin-top: 0.5rem; font-size: 0.9rem;">
+            sign: p&lt;0.01** p&lt;0.05* p&lt;0.1† n.s.<br>
+            η²<sub>H</sub>: クラスカル・ウォリスのイータ二乗 = (H − k + 1) / (N − k)
+        </p></div>`;
 
     if (skippedVars.length > 0) {
         resultsTableHtml += `<div class="warning-message" style="margin-top: 1rem; padding: 1rem; background-color: #fffbe6; border: 1px solid #fde68a; border-radius: 4px; color: #92400e;">
@@ -273,7 +241,16 @@ function runKruskalWallisTest(currentData) {
         </div>`;
     }
 
-    document.getElementById('test-results-table').innerHTML = resultsTableHtml;
+    resultsTableHtml += `
+        <div style="margin-top: 1.5rem;">
+           <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+           <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 0.5rem;">以下のHTMLをコピーしてWord等に貼り付けると、論文作成に役立ちます。</p>
+           <div id="reporting-table-container"></div>
+        </div>
+        <div id="posthoc-results-container" style="margin-top: 1.5rem;"></div>
+    `;
+
+    resultsContainer.innerHTML = resultsTableHtml;
 
     // APA報告用テーブル
     generateReportingTable(testResults, groups);

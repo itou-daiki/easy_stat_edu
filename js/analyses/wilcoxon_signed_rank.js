@@ -193,54 +193,7 @@ function steelDwassPosthoc(pairResults) {
 // 要約統計量の表示
 // ==========================================
 
-/**
- * 選択された変数の要約統計量を表示
- */
-function displaySummaryStatistics(variables, currentData) {
-    const container = document.getElementById('summary-stats-section');
-
-    let tableHtml = `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-table"></i> 要約統計量
-            </h4>
-            <div class="table-container" style="overflow-x: auto;">
-                <table class="table">
-                    <thead style="background: #f8f9fa;">
-                        <tr>
-                            <th style="font-weight: bold; color: #495057;">変数名</th>
-                            <th>有効N</th>
-                            <th>平均値</th>
-                            <th>中央値</th>
-                            <th>標準偏差</th>
-                            <th>最小値</th>
-                            <th>最大値</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-    `;
-
-    variables.forEach(varName => {
-        const values = currentData.map(row => Number(row[varName])).filter(v => !isNaN(v));
-        if (values.length > 0) {
-            const jstat = jStat(values);
-            tableHtml += `
-                <tr>
-                    <td style="font-weight: bold; color: #1e90ff;">${varName}</td>
-                    <td>${values.length}</td>
-                    <td>${jstat.mean().toFixed(2)}</td>
-                    <td>${jstat.median().toFixed(2)}</td>
-                    <td>${jStat.stdev(values, true).toFixed(2)}</td>
-                    <td>${jstat.min().toFixed(2)}</td>
-                    <td>${jstat.max().toFixed(2)}</td>
-                </tr>
-            `;
-        }
-    });
-
-    tableHtml += `</tbody></table></div></div>`;
-    container.innerHTML = tableHtml;
-}
+// displaySummaryStatistics is no longer needed as we use an integrated table.
 
 // ==========================================
 // メインの検定実行
@@ -258,7 +211,9 @@ function runWilcoxonTest(currentData) {
         return;
     }
 
-    displaySummaryStatistics(selectedVars, currentData);
+    // 統合テーブルの実装に寄せるため、要約統計量の個別表示は削除
+    // displaySummaryStatistics(selectedVars, currentData);
+    document.getElementById('summary-stats-section').innerHTML = '';
 
     const resultsContainer = document.getElementById('test-results-section');
 
@@ -312,14 +267,20 @@ function runTwoSampleTest(selectedVars, currentData, resultsContainer) {
         </div>
     `;
 
+    // Median を計算
+    const median1 = jStat.median(values1);
+    const median2 = jStat.median(values2);
+
     // 結果テーブル
     document.getElementById('test-results-table').innerHTML = `
         <div class="table-container" style="overflow-x: auto;">
             <table class="table">
                 <thead style="background: #f8f9fa;">
                     <tr>
-                        <th style="font-weight: bold; color: #495057;">比較</th>
-                        <th>N (ペア)</th>
+                        <th style="font-weight: bold; color: #495057;">比較ペア</th>
+                        <th>N(ペア)</th>
+                        <th>${var1} Mdn</th>
+                        <th>${var2} Mdn</th>
                         <th>T+</th>
                         <th>T−</th>
                         <th>T</th>
@@ -333,6 +294,8 @@ function runTwoSampleTest(selectedVars, currentData, resultsContainer) {
                     <tr>
                         <td style="font-weight: bold; color: #1e90ff;">${var1} vs ${var2}</td>
                         <td>${result.n}</td>
+                        <td>${median1.toFixed(2)}</td>
+                        <td>${median2.toFixed(2)}</td>
                         <td>${result.tPlus.toFixed(1)}</td>
                         <td>${result.tMinus.toFixed(1)}</td>
                         <td>${result.T.toFixed(1)}</td>
@@ -435,7 +398,9 @@ function runMultipleSampleTest(selectedVars, currentData, resultsContainer) {
                 <thead style="background: #f8f9fa;">
                     <tr>
                         <th style="font-weight: bold; color: #495057;">比較ペア</th>
-                        <th>N (ペア)</th>
+                        <th>N(ペア)</th>
+                        <th>Mdn A</th>
+                        <th>Mdn B</th>
                         <th>T+</th>
                         <th>T−</th>
                         <th>T</th>
@@ -454,15 +419,19 @@ function runMultipleSampleTest(selectedVars, currentData, resultsContainer) {
             resultsTableHtml += `
                 <tr>
                     <td style="font-weight: bold; color: #1e90ff;">${pr.var1} vs ${pr.var2}</td>
-                    <td colspan="8" style="color: #92400e;">${r.error}</td>
+                    <td colspan="10" style="color: #92400e;">${r.error}</td>
                 </tr>
             `;
         } else {
             const pText = r.p_value < 0.001 ? '< .001' : r.p_value.toFixed(3);
+            const median1 = jStat.median(pr.values1);
+            const median2 = jStat.median(pr.values2);
             resultsTableHtml += `
                 <tr>
                     <td style="font-weight: bold; color: #1e90ff;">${pr.var1} vs ${pr.var2}</td>
                     <td>${r.n}</td>
+                    <td>${median1.toFixed(2)}</td>
+                    <td>${median2.toFixed(2)}</td>
                     <td>${r.tPlus.toFixed(1)}</td>
                     <td>${r.tMinus.toFixed(1)}</td>
                     <td>${r.T.toFixed(1)}</td>

@@ -88,9 +88,12 @@ function runChiSquare(currentData) {
     });
     const smallExpRate = (smallExpCount / cellsCount) * 100;
 
-    // Yates' Continuity Correction (Only for 2x2)
+    // Yates' Continuity Correction (Only for 2x2) and Odds Ratio
     let yatesChiSquare = null;
     let yatesPValue = null;
+    let oddsRatio = null;
+    let phiCoef = null;
+
     if (rowKeys.length === 2 && colKeys.length === 2) {
         let yatesSum = 0;
         expected.forEach((row, i) => {
@@ -102,9 +105,22 @@ function runChiSquare(currentData) {
         });
         yatesChiSquare = yatesSum;
         yatesPValue = 1 - jStat.chisquare.cdf(yatesChiSquare, df);
+
+        // オッズ比の計算 (O11 * O22) / (O12 * O21)
+        const a = observed[0][0];
+        const b = observed[0][1];
+        const c = observed[1][0];
+        const d = observed[1][1];
+
+        if (b * c !== 0) {
+            oddsRatio = (a * d) / (b * c);
+        }
+
+        // ファイ係数は2x2ではクラメールのVと同じ
+        phiCoef = cramersV;
     }
 
-    displayChiSquareResult(chiSquare, df, pValue, cramersV, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, smallExpRate, yatesChiSquare, yatesPValue);
+    displayChiSquareResult(chiSquare, df, pValue, cramersV, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, smallExpRate, yatesChiSquare, yatesPValue, oddsRatio, phiCoef);
 
     // Generate APA Table (Crosstab with Counts and %)
     // Header: [RowVar, ...ColKeys, Total]
@@ -131,7 +147,7 @@ function runChiSquare(currentData) {
     }, 0);
 }
 
-function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, smallExpRate, yatesChi, yatesP) {
+function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, smallExpRate, yatesChi, yatesP, oddsRatio, phiCoef) {
     const container = document.getElementById('chi-results');
 
     // Warning for Assumption
@@ -145,68 +161,19 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
             </div>`;
     }
 
-    // Yates Result HTML
-    let yatesHtml = '';
-    if (yatesChi !== null) {
-        yatesHtml = `
-            <div class="data-stat-card" style="background: #f0f9ff; border: 1px solid #bae6fd;">
-                <div class="stat-label">Yates補正 χ² (2x2)</div>
-                <div class="stat-value">${yatesChi.toFixed(2)}</div>
-                <div class="stat-sub" style="font-size: 0.8rem; color: #666;">p = ${yatesP.toFixed(4)} ${yatesP < 0.01 ? '**' : (yatesP < 0.05 ? '*' : (yatesP < 0.1 ? '†' : 'n.s.'))}</div>
-            </div>
-        `;
-    }
+    // 1. 記述統計（クロス集計表と残差分析）
     let html = warningHtml + `
-        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">
-                <i class="fas fa-clipboard-check"></i> 検定結果
-            </h4>
-            <div class="data-stats-grid">
-                <div class="data-stat-card">
-                    <div class="stat-label">カイ二乗値 (χ²)</div>
-                    <div class="stat-value">${chi2.toFixed(2)}</div>
-                </div>
-                <div class="data-stat-card">
-                    <div class="stat-label">自由度 (df)</div>
-                    <div class="stat-value">${df}</div>
-                </div>
-                <div class="data-stat-card">
-                    <div class="stat-label">p値</div>
-                    <div class="stat-value" style="${p < 0.05 ? 'color: #ef4444;' : ''}">${p.toFixed(4)} ${p < 0.01 ? '**' : (p < 0.05 ? '*' : (p < 0.1 ? '†' : 'n.s.'))}</div>
-                </div>
-                <div class="data-stat-card">
-                    <div class="stat-label">クラメールのV</div>
-                    <div class="stat-value">${v.toFixed(3)}</div>
-                </div>
-                ${yatesHtml}
-            </div>
-            
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
-                <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                    <i class="fas fa-comment-dots"></i> 結果の解釈
-                </h4>
-                <div style="line-height: 1.6;">
-                    ${(() => { try { return InterpretationHelper.interpretChiSquare(p, v, rowVar, colVar); } catch (e) { console.error('Interpretation Error:', e); return '結果の解釈中にエラーが発生しました。'; } })()}
-                </div>
-            </div>
-
-            <div style="margin-top: 1.5rem;">
-               <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
-               <div id="reporting-table-container-chi"></div>
-            </div>
-        </div>
-
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
              <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">
                 <i class="fas fa-table"></i> クロス集計表と残差分析
             </h4>
             <div class="table-container">
-                <table class="table">
+                <table class="table" style="text-align: center;">
                     <thead>
                         <tr>
-                            <th>${rowVar} \\ ${colVar}</th>
-                            ${colKeys.map(c => `<th>${c}</th>`).join('')}
-                            <th>合計</th>
+                            <th style="text-align: left;">${rowVar} \\ ${colVar}</th>
+                            ${colKeys.map(c => `<th style="text-align: center;">${c}</th>`).join('')}
+                            <th style="text-align: center;">合計</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -214,7 +181,7 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
 
     // テーブル本体
     rowKeys.forEach((r, i) => {
-        html += `<tr><td><strong>${r}</strong></td>`;
+        html += `<tr><td style="text-align: left;"><strong>${r}</strong></td>`;
         let rowSum = 0;
         colKeys.forEach((c, j) => {
             const obs = observed[i][j];
@@ -246,8 +213,84 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
                 z > 1.96 (青) は有意に多い、z < -1.96 (赤) は有意に少ない組み合わせを示します。
             </p>
         </div>
+    `;
 
-        <div id="heatmap-plot"></div>
+    // 2. 検定結果の統合テーブル・統計量一覧
+    let yatesHtml = '';
+    let orHtml = '';
+    if (rowKeys.length === 2 && colKeys.length === 2) {
+        if (yatesChi !== null) {
+            yatesHtml = `
+                <div class="data-stat-card" style="background: #f0f9ff; border: 1px solid #bae6fd; text-align: center;">
+                    <div class="stat-label">Yates補正 χ² (2x2)</div>
+                    <div class="stat-value">${yatesChi.toFixed(2)}</div>
+                    <div class="stat-sub" style="font-size: 0.8rem; color: #666;">p = ${yatesP.toFixed(4)} ${yatesP < 0.01 ? '**' : (yatesP < 0.05 ? '*' : (yatesP < 0.1 ? '†' : 'n.s.'))}</div>
+                </div>
+            `;
+        }
+        if (oddsRatio !== null) {
+            orHtml = `
+                <div class="data-stat-card" style="text-align: center;">
+                    <div class="stat-label">オッズ比 (OR)</div>
+                    <div class="stat-value">${oddsRatio.toFixed(3)}</div>
+                </div>
+            `;
+        }
+    }
+
+    html += `
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-weight: bold;">
+                <i class="fas fa-clipboard-check"></i> 検定結果
+            </h4>
+            <div class="data-stats-grid" style="justify-items: center;">
+                <div class="data-stat-card" style="text-align: center;">
+                    <div class="stat-label">カイ二乗値 (χ²)</div>
+                    <div class="stat-value">${chi2.toFixed(2)}</div>
+                </div>
+                <div class="data-stat-card" style="text-align: center;">
+                    <div class="stat-label">自由度 (df)</div>
+                    <div class="stat-value">${df}</div>
+                </div>
+                <div class="data-stat-card" style="text-align: center;">
+                    <div class="stat-label">p値</div>
+                    <div class="stat-value" style="${p < 0.05 ? 'color: #ef4444;' : ''}">${p.toFixed(4)} ${p < 0.01 ? '**' : (p < 0.05 ? '*' : (p < 0.1 ? '†' : 'n.s.'))}</div>
+                </div>
+                <div class="data-stat-card" style="text-align: center;">
+                    <div class="stat-label">${rowKeys.length === 2 && colKeys.length === 2 ? 'ファイ係数 (φ) / CramerのV' : 'クラメールのV'}</div>
+                    <div class="stat-value">${v.toFixed(3)}</div>
+                </div>
+                ${orHtml}
+                ${yatesHtml}
+            </div>
+        </div>
+    `;
+
+    // 3. 解釈のアシスト
+    html += `
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                <i class="fas fa-comment-dots"></i> 結果の解釈
+            </h4>
+            <div style="line-height: 1.6;">
+                ${(() => { try { return InterpretationHelper.interpretChiSquare(p, v, rowVar, colVar); } catch (e) { console.error('Interpretation Error:', e); return '結果の解釈中にエラーが発生しました。'; } })()}
+            </div>
+        </div>
+    `;
+
+    // 4. 詳細な図表
+    html += `
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+                <i class="fas fa-file-alt"></i> 結果の詳細テーブル・図
+            </h4>
+            <div style="margin-top: 1.5rem;">
+               <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+               <div id="reporting-table-container-chi"></div>
+            </div>
+            
+            <div id="heatmap-plot" style="margin-top: 2rem;"></div>
+        </div>
     `;
 
     container.innerHTML = html;

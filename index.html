@@ -189,52 +189,51 @@
                         <div class="category-icon"><i class="fas fa-tools"></i></div>
                         <div class="category-info">
                             <h3>ユーティリティ</h3>
-                            <p>分析の準備やデータの整理に使います</p>
+                            <p>分析前のデータ整形や特別な計算を行います</p>
                         </div>
                     </div>
                     <div class="category-cards">
-                        <div class="feature-card special-card" data-analysis="analysis_support" data-requires="none"
-                            style="border: 2px solid #805ad5; background: #faf5ff;">
-                            <h3 class="feature-card-title" style="color: #6b46c1;">
-                                <i class="fas fa-magic feature-card-icon" style="color: #805ad5;"></i>
+                        <div class="feature-card" data-analysis="support">
+                            <h3 class="feature-card-title">
+                                <i class="fas fa-magic feature-card-icon"></i>
                                 分析サポーター
                             </h3>
-                            <p class="feature-card-description">迷ったらここ！変数を選ぶだけで最適な分析手法を提案します。</p>
+                            <p class="feature-card-description">どの分析を使えばいいか迷った時は、ここから変数を選んでください</p>
                         </div>
 
-                        <div class="feature-card" data-analysis="data_processing" data-requires="none">
+                        <div class="feature-card" data-analysis="data_processing">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-broom feature-card-icon"></i>
+                                <i class="fas fa-filter feature-card-icon"></i>
                                 データ加工・整形
                             </h3>
-                            <p class="feature-card-description">変数の作成(計算・変換)とデータクレンジング</p>
+                            <p class="feature-card-description">新しい変数の計算や、分析前のデータのお手入れ（前処理）を行います</p>
                         </div>
 
-                        <div class="feature-card" data-analysis="data_merge" data-requires="none">
+                        <div class="feature-card" data-analysis="data_merge">
                             <h3 class="feature-card-title">
                                 <i class="fas fa-object-group feature-card-icon"></i>
-                                データ結合（マージ）
+                                データ結合
                             </h3>
-                            <p class="feature-card-description">2つのファイルを共通キーで結合</p>
+                            <p class="feature-card-description">2つのファイル（Excel/CSV）を、IDなどをキーにして1つにくっつけます</p>
                         </div>
 
-                        <div class="feature-card" data-analysis="factor_score" data-requires="none">
+                        <div class="feature-card" data-analysis="factor_score">
                             <h3 class="feature-card-title">
                                 <i class="fas fa-calculator feature-card-icon"></i>
                                 因子得点算出
                             </h3>
-                            <p class="feature-card-description">尺度情報から因子得点を自動算出</p>
+                            <p class="feature-card-description">質問項目を足し合わせて、合計点や平均点の新しい変数を作ります</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- データの探索・要約 -->
-                <div class="category-section category-explore">
+                <div class="category-section category-eda">
                     <div class="category-header">
                         <div class="category-icon"><i class="fas fa-search"></i></div>
                         <div class="category-info">
                             <h3>データの探索・要約</h3>
-                            <p>データの全体像や変数間の関係を把握します</p>
+                            <p>データの傾向を把握し、要約統計量を計算します</p>
                         </div>
                     </div>
                     <div class="category-cards">
@@ -243,8 +242,17 @@
                                 <i class="fas fa-search feature-card-icon"></i>
                                 探索的データ分析（EDA）
                             </h3>
-                            <p class="feature-card-description">データの特徴と傾向を視覚的に把握</p>
+                            <p class="feature-card-description">ヒストグラムや平均値などでデータの全体像を把握します</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数が1つ以上必要です</p>
+                        </div>
+
+                        <div class="feature-card" data-analysis="cross_tabulation" data-requires="categorical:2">
+                            <h3 class="feature-card-title">
+                                <i class="fas fa-border-all feature-card-icon"></i>
+                                クロス集計
+                            </h3>
+                            <p class="feature-card-description">アンケート回答などの人数の偏りや内訳をクロス表で集計します</p>
+                            <p class="feature-card-requirement" style="display: none;">カテゴリカル変数が2つ以上必要です</p>
                         </div>
 
                         <div class="feature-card" data-analysis="correlation" data-requires="numeric:2">
@@ -252,55 +260,46 @@
                                 <i class="fas fa-project-diagram feature-card-icon"></i>
                                 相関分析
                             </h3>
-                            <p class="feature-card-description">変数間の関係性を分析</p>
+                            <p class="feature-card-description">身長と体重のように、2つの数値の連動性（相関）を調べます</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
-                        </div>
-
-                        <div class="feature-card" data-analysis="cross_tabulation" data-requires="categorical:2">
-                            <h3 class="feature-card-title">
-                                <i class="fas fa-th feature-card-icon"></i>
-                                クロス集計
-                            </h3>
-                            <p class="feature-card-description">2つのカテゴリ変数の度数分布を集計</p>
-                            <p class="feature-card-requirement" style="display: none;">カテゴリカル変数が2つ以上必要です</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- 平均値の差の検定 -->
-                <div class="category-section category-mean-test">
+                <div class="category-section category-param">
                     <div class="category-header">
-                        <div class="category-icon"><i class="fas fa-balance-scale"></i></div>
+                        <div class="category-icon"><i class="fas fa-chart-bar"></i></div>
                         <div class="category-info">
-                            <h3>平均値の差の検定</h3>
-                            <p>グループ間の平均に有意な差があるかを調べます</p>
+                            <h3>平均値の比較（パラメトリック検定）</h3>
+                            <p>グループ間で「数値の平均」に確かな違いがあるか確かめます</p>
                         </div>
                     </div>
                     <div class="category-cards">
-                        <div class="feature-card" data-analysis="ttest" data-requires="numeric:2">
+                        <div class="feature-card" data-analysis="ttest" data-requires="numeric:1">
                             <h3 class="feature-card-title">
                                 <i class="fas fa-vial feature-card-icon"></i>
                                 t検定
                             </h3>
-                            <p class="feature-card-description">2群の平均値の差を検定</p>
-                            <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
+                            <p class="feature-card-description">2つのグループ（男女など）の平均点に違いがあるか調べます</p>
+                            <p class="feature-card-requirement" style="display: none;">数値変数が1つ以上必要です</p>
                         </div>
 
-                        <div class="feature-card" data-analysis="anova_one_way" data-requires="numeric:2">
+                        <div class="feature-card" data-analysis="anova_one_way" data-requires="numeric:1,categorical:1">
                             <h3 class="feature-card-title">
                                 <i class="fas fa-chart-bar feature-card-icon"></i>
-                                一要因分散分析
+                                一要因分散分析 (ANOVA)
                             </h3>
-                            <p class="feature-card-description">3群以上の平均値の差を検定</p>
-                            <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
+                            <p class="feature-card-description">3つ以上のグループ（3クラスなど）の平均点に違いがあるか調べます</p>
+                            <p class="feature-card-requirement" style="display: none;">数値変数1つ以上、カテゴリカル変数1つ以上必要です</p>
                         </div>
 
                         <div class="feature-card" data-analysis="anova_two_way" data-requires="numeric:1,categorical:2">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-chart-area feature-card-icon"></i>
-                                二要因分散分析
+                                <i class="fas fa-th-large feature-card-icon"></i>
+                                二要因分散分析 (Two-way ANOVA)
                             </h3>
-                            <p class="feature-card-description">2つの要因の効果を同時に分析</p>
+                            <p class="feature-card-description">「薬の有無」と「性別」のように、2つの条件の組み合わせ効果を調べます</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数1つ以上、カテゴリカル変数2つ以上必要です</p>
                         </div>
                     </div>
@@ -312,7 +311,7 @@
                         <div class="category-icon"><i class="fas fa-sort-amount-up"></i></div>
                         <div class="category-info">
                             <h3>順位の比較（ノンパラメトリック検定）</h3>
-                            <p>正規分布を仮定しない検定手法です（順位にもとづくグループ間の比較）</p>
+                            <p>データに偏りがある場合や、点数ではなく「順位」でグループを比べたい時に使います</p>
                         </div>
                     </div>
                     <div class="category-cards">
@@ -321,7 +320,7 @@
                                 <i class="fas fa-balance-scale feature-card-icon"></i>
                                 マン・ホイットニーのU検定
                             </h3>
-                            <p class="feature-card-description">2群の順位の差を検定（ノンパラメトリック）</p>
+                            <p class="feature-card-description">t検定の代わりに使える、2つのグループの違いを調べる手法です</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数1つ以上、カテゴリカル変数1つ以上必要です</p>
                         </div>
 
@@ -331,7 +330,7 @@
                                 <i class="fas fa-sort-amount-up feature-card-icon"></i>
                                 クラスカル・ウォリス検定
                             </h3>
-                            <p class="feature-card-description">3群以上の順位の差を検定（ノンパラメトリック）</p>
+                            <p class="feature-card-description">一要因分散分析の代わりに使える、3つ以上のグループの違いを調べる手法です</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数1つ以上、カテゴリカル変数1つ以上必要です</p>
                         </div>
 
@@ -340,7 +339,7 @@
                                 <i class="fas fa-exchange-alt feature-card-icon"></i>
                                 ウィルコクソンの符号付順位検定
                             </h3>
-                            <p class="feature-card-description">対応のある2群以上の順位の差を検定（ノンパラメトリック）</p>
+                            <p class="feature-card-description">対応ありt検定の代わりに使える、「事前・事後」の違いを調べる手法です</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
                         </div>
                     </div>
@@ -352,7 +351,7 @@
                         <div class="category-icon"><i class="fas fa-percentage"></i></div>
                         <div class="category-info">
                             <h3>比率・関連性の検定</h3>
-                            <p>カテゴリデータの関連や、比率の差を検定します</p>
+                            <p>「合格/不合格」のようなカテゴリ分けの割合に違いがあるか確かめます</p>
                         </div>
                     </div>
                     <div class="category-cards">
@@ -361,7 +360,7 @@
                                 <i class="fas fa-sync-alt feature-card-icon"></i>
                                 マクネマー検定
                             </h3>
-                            <p class="feature-card-description">対応のある2値変数の比率変化を検定</p>
+                            <p class="feature-card-description">同じ人の「事前・事後」で、賛成・反対などの比率が変化したか調べます</p>
                             <p class="feature-card-requirement" style="display: none;">カテゴリカル変数が2つ以上必要です</p>
                         </div>
 
@@ -370,7 +369,7 @@
                                 <i class="fas fa-table feature-card-icon"></i>
                                 カイ２乗検定
                             </h3>
-                            <p class="feature-card-description">カテゴリカルデータの独立性検定</p>
+                            <p class="feature-card-description">「男女」と「きのこ/たけのこ派」の間に偏り（関連性）があるか調べます</p>
                             <p class="feature-card-requirement" style="display: none;">カテゴリカル変数が2つ以上必要です</p>
                         </div>
 
@@ -379,7 +378,7 @@
                                 <i class="fas fa-bullseye feature-card-icon"></i>
                                 フィッシャーの正確確率検定
                             </h3>
-                            <p class="feature-card-description">小標本・正確確率による独立性検定</p>
+                            <p class="feature-card-description">データ数が少ない場合に、カイ2乗検定の代わりに使用します</p>
                             <p class="feature-card-requirement" style="display: none;">カテゴリカル変数が2つ以上必要です</p>
                         </div>
                     </div>
@@ -391,7 +390,7 @@
                         <div class="category-icon"><i class="fas fa-chart-line"></i></div>
                         <div class="category-info">
                             <h3>回帰分析・予測モデル</h3>
-                            <p>変数からの予測や、影響を与える要因をモデル化します</p>
+                            <p>何かの結果に対して、どの要因がどれくらい影響しているか予測・分析します</p>
                         </div>
                     </div>
                     <div class="category-cards">
@@ -400,7 +399,7 @@
                                 <i class="fas fa-chart-line feature-card-icon"></i>
                                 単回帰分析
                             </h3>
-                            <p class="feature-card-description">1つの説明変数で予測モデルを構築</p>
+                            <p class="feature-card-description">1つの要因（勉強時間など）から結果（テストの点数など）を予測します</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
                         </div>
 
@@ -409,7 +408,7 @@
                                 <i class="fas fa-layer-group feature-card-icon"></i>
                                 重回帰分析
                             </h3>
-                            <p class="feature-card-description">複数の説明変数で予測モデルを構築</p>
+                            <p class="feature-card-description">複数の要因から結果の数値を予測し、どの要因が最も重要か調べます</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数が3つ以上必要です</p>
                         </div>
 
@@ -419,7 +418,7 @@
                                 <i class="fas fa-sign-in-alt feature-card-icon"></i>
                                 ロジスティック回帰分析
                             </h3>
-                            <p class="feature-card-description">2値の結果を予測するモデルを構築</p>
+                            <p class="feature-card-description">「合格・不合格」のような2択の結果を複数の要因から予測します</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数1つ以上、カテゴリカル変数1つ以上必要です</p>
                         </div>
                     </div>
@@ -428,47 +427,47 @@
                 <!-- 多変量解析・その他 -->
                 <div class="category-section category-multivariate">
                     <div class="category-header">
-                        <div class="category-icon"><i class="fas fa-cubes"></i></div>
+                        <div class="category-icon"><i class="fas fa-network-wired"></i></div>
                         <div class="category-info">
                             <h3>多変量解析・その他</h3>
-                            <p>多数の変数をまとめて分析し、データの構造を明らかにします</p>
+                            <p>アンケートの質問項目をまとめたり、複雑なデータを整理する分析手法です</p>
                         </div>
                     </div>
                     <div class="category-cards">
                         <div class="feature-card" data-analysis="factor_analysis" data-requires="numeric:3">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-sitemap feature-card-icon"></i>
+                                <i class="fas fa-project-diagram feature-card-icon"></i>
                                 因子分析
                             </h3>
-                            <p class="feature-card-description">潜在的な因子構造を探索</p>
+                            <p class="feature-card-description">複数の質問項目から、背後にある共通のテーマ（因子）を見つけ出します</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数が3つ以上必要です</p>
                         </div>
 
-                        <div class="feature-card" data-analysis="pca" data-requires="numeric:2">
+                        <div class="feature-card" data-analysis="pca" data-requires="numeric:3">
                             <h3 class="feature-card-title">
                                 <i class="fas fa-compress-arrows-alt feature-card-icon"></i>
-                                主成分分析
+                                主成分分析 (PCA)
                             </h3>
-                            <p class="feature-card-description">データの次元削減と可視化</p>
-                            <p class="feature-card-requirement" style="display: none;">数値変数が2つ以上必要です</p>
+                            <p class="feature-card-description">たくさんの変数を少数の総合指標にまとめ、データを分かりやすくします</p>
+                            <p class="feature-card-requirement" style="display: none;">数値変数が3つ以上必要です</p>
                         </div>
 
                         <div class="feature-card" data-analysis="time_series" data-requires="numeric:1">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-chart-line feature-card-icon"></i>
+                                <i class="fas fa-chart-area feature-card-icon"></i>
                                 時系列データ分析
                             </h3>
-                            <p class="feature-card-description">時間の経過に伴う推移と周期性を分析</p>
+                            <p class="feature-card-description">売上や気温など、時間とともに変化するデータの傾向や周期を調べます</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数が1つ以上必要です</p>
                         </div>
 
-                        <div class="feature-card" data-analysis="text_mining" data-requires="text:1">
+                        <div class="feature-card" data-analysis="text_mining">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-file-alt feature-card-icon"></i>
+                                <i class="fas fa-font feature-card-icon"></i>
                                 テキストマイニング
                             </h3>
-                            <p class="feature-card-description">テキストデータの分析と可視化</p>
-                            <p class="feature-card-requirement" style="display: none;">テキスト列が1つ以上必要です</p>
+                            <p class="feature-card-description">自由記述のアンケートなど、文章の中でよく使われる単語や傾向を調べます</p>
+                            <p class="feature-card-requirement" style="display: none;">テキスト変数が1つ以上必要です</p>
                         </div>
                     </div>
                 </div>

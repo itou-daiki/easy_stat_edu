@@ -127,23 +127,24 @@ function runIndependentTTest(currentData) {
 
     let resultsTableHtml = `
         <div class="table-container" style="overflow-x: auto;">
-            <table class="table">
+            <table class="table analysis-table">
                 <thead style="background: #f8f9fa;">
                     <tr>
-                        <th style="font-weight: bold; color: #495057;">変数</th>
-                        <th>全体M</th>
-                        <th>全体S.D</th>
-                        <th>${groups[0]} M</th>
-                        <th>${groups[0]} S.D</th>
-                        <th>${groups[1]} M</th>
-                        <th>${groups[1]} S.D</th>
-                        <th style="background-color: #fff3cd;">Levene p<br><small>(等分散性)</small></th>
-                        <th>df</th>
+                        <th rowspan="2" style="font-weight: bold; color: #495057; vertical-align: middle;">変数</th>
+                        <th colspan="2">${groups[0]} (N=${group0Data.length})</th>
+                        <th colspan="2">${groups[1]} (N=${group1Data.length})</th>
+                        <th colspan="5">差の検定</th>
+                    </tr>
+                    <tr>
+                        <th>平均</th>
+                        <th>SD</th>
+                        <th>平均</th>
+                        <th>SD</th>
                         <th>t</th>
-                        <th>p</th>
-                        <th>sign</th>
-                        <th>d</th>
-                        <th>95% CI<br><small>(平均の差)</small></th>
+                        <th>df</th>
+                        <th>p<br><small>(Levene p)</small></th>
+                        <th>効果量(d)</th>
+                        <th>95% CI</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -198,19 +199,16 @@ function runIndependentTTest(currentData) {
         resultsTableHtml += `
             <tr>
                 <td style="font-weight: bold; color: #1e90ff;">${varName}</td>
-                <td>${jStat.mean(allValues).toFixed(2)}</td>
-                <td>${jStat.stdev(allValues, true).toFixed(2)}</td>
                 <td>${mean1.toFixed(2)}</td>
                 <td>${std1.toFixed(2)}</td>
                 <td>${mean2.toFixed(2)}</td>
                 <td>${std2.toFixed(2)}</td>
-                <td style="background-color: ${levenes.p < 0.05 ? '#fff3cd' : 'transparent'}; font-size: 0.9rem;">
-                    ${levenesPStr} ${levenesSign}
-                </td>
-                <td>${df_welch.toFixed(2)}</td>
                 <td>${Math.abs(t_stat).toFixed(2)}</td>
-                <td>${pValueStr}</td>
-                <td><strong>${significance}</strong></td>
+                <td>${df_welch.toFixed(2)}</td>
+                <td style="background-color: ${levenes.p < 0.05 ? '#fff3cd' : 'transparent'};">
+                    ${pValueStr} <strong>${significance}</strong><br>
+                    <small>(${levenesPStr} ${levenesSign})</small>
+                </td>
                 <td>${cohens_d.toFixed(2)}</td>
                 <td>${ci95Str}</td>
             </tr>
@@ -303,20 +301,24 @@ function runPairedTTest(currentData, pairs) {
 
     let resultsTableHtml = `
         <div class="table-container" style="overflow-x: auto;">
-            <table class="table">
+            <table class="table analysis-table">
                 <thead style="background: #f8f9fa;">
                     <tr>
-                        <th style="font-weight: bold; color: #495057;">変数ペア</th>
-                        <th>観測値M</th>
-                        <th>観測値S.D</th>
-                        <th>測定値M</th>
-                        <th>測定値S.D</th>
-                        <th>df</th>
+                        <th rowspan="2" style="font-weight: bold; color: #495057; vertical-align: middle;">ペア</th>
+                        <th colspan="2">事前 / 条件1</th>
+                        <th colspan="2">事後 / 条件2</th>
+                        <th colspan="5">差の検定</th>
+                    </tr>
+                    <tr>
+                        <th>平均</th>
+                        <th>SD</th>
+                        <th>平均</th>
+                        <th>SD</th>
                         <th>t</th>
+                        <th>df</th>
                         <th>p</th>
-                        <th>sign</th>
-                        <th>d_z</th>
-                        <th>95% CI<br><small>(差の平均)</small></th>
+                        <th>効果量(dz)</th>
+                        <th>95% CI</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -371,10 +373,9 @@ function runPairedTTest(currentData, pairs) {
                 <td>${std1.toFixed(2)}</td>
                 <td>${mean2.toFixed(2)}</td>
                 <td>${std2.toFixed(2)}</td>
-                <td>${df}</td>
                 <td>${Math.abs(t_stat).toFixed(2)}</td>
-                <td>${p_value < 0.001 ? '< .001' : p_value.toFixed(3)}</td>
-                <td><strong>${significance}</strong></td>
+                <td>${df}</td>
+                <td>${p_value < 0.001 ? '< .001' : p_value.toFixed(3)} <strong>${significance}</strong></td>
                 <td>${cohens_d.toFixed(2)}</td>
                 <td>${ci95Str}</td>
             </tr>
@@ -479,18 +480,33 @@ function runOneSampleTTest(currentData) {
                 <i class="fas fa-calculator"></i> 1サンプルのt検定
             </h4>
             <div class="table-container">
-                <table class="table">
-                    <thead><tr><th>変数</th><th>平均値</th><th>S.D.</th><th>検定値(μ)</th><th>df</th><th>t</th><th>p</th><th>sign</th><th>d</th><th>95% CI<br><small>(平均−μ)</small></th></tr></thead>
+                <table class="table analysis-table">
+                    <thead style="background: #f8f9fa;">
+                        <tr>
+                            <th rowspan="2" style="font-weight: bold; color: #495057; vertical-align: middle;">変数</th>
+                            <th colspan="2">データ</th>
+                            <th colspan="5">差の検定</th>
+                        </tr>
+                        <tr>
+                            <th>平均</th>
+                            <th>SD</th>
+                            <th>検定値(μ)</th>
+                            <th>t</th>
+                            <th>df</th>
+                            <th>p</th>
+                            <th>効果量(d)</th>
+                            <th>95% CI</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         <tr>
                             <td style="font-weight: bold; color: #1e90ff;">${varName}</td>
                             <td>${mean.toFixed(2)}</td>
                             <td>${std.toFixed(2)}</td>
                             <td>${mu.toFixed(2)}</td>
-                            <td>${df}</td>
                             <td>${Math.abs(t_stat).toFixed(2)}</td>
-                            <td>${p_value < 0.001 ? '< .001' : p_value.toFixed(3)}</td>
-                            <td><strong>${significance}</strong></td>
+                            <td>${df}</td>
+                            <td>${p_value < 0.001 ? '< .001' : p_value.toFixed(3)} <strong>${significance}</strong></td>
                             <td>${cohens_d.toFixed(2)}</td>
                             <td>${ci95Str}</td>
                         </tr>
@@ -875,4 +891,7 @@ export function render(container, currentData, characteristics) {
 
     renderSelectedPairs(); // Initial render
     updatePairedSelectors(); // Initial setup of selectors
+
+    // 初期状態の表示を「独立なサンプルのt検定」に設定
+    switchTestType('independent');
 }

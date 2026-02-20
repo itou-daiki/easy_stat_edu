@@ -20,27 +20,33 @@ test('Two-Way Mixed ANOVA Verification', async ({ page }) => {
     await expect(page.locator('.anova-container')).toBeVisible();
 
     // 4. Select "Mixed Design"
-    await checkRobust(page, 'input[name="anova2-type"][value="mixed"]');
+    await checkRobust(page, 'input[name="anova-2-type"][value="mixed"]');
     await expect(page.locator('#mixed-controls')).toBeVisible();
 
     // 5. Select Between-Subjects Factor
     // Utilizing robust selection for hidden elements
     await selectStandardOption(page, '#mixed-between-var', '1', 'index');
 
-    // 6. Add Pairs
-    await selectStandardOption(page, '#mixed-var-pre', '1', 'index');
-    await selectStandardOption(page, '#mixed-var-post', '2', 'index');
+    // 6. Add Pairs (First pair row is automatically generated)
+    await selectStandardOption(page, '.pair-row .pre-select', '1', 'index');
+    await selectStandardOption(page, '.pair-row .post-select', '2', 'index');
 
-    await page.locator('#add-mixed-pair-btn').click();
+    // Click 'ペアを追加' button (it doesn't have an ID, it's inside #pair-selector-container)
+    await page.locator('#pair-selector-container button.btn-secondary').click();
 
-    // Verify pair added to list
-    await expect(page.locator('#selected-mixed-pairs-list .selected-pair-item')).toHaveCount(1);
+    // Verify pair added to list (by checking number of .pair-row elements)
+    await expect(page.locator('.pair-row')).toHaveCount(2);
 
     // 7. Run Analysis
-    await page.locator('#run-mixed-btn button').click();
+    await page.locator('#run-mixed-anova-btn').click();
 
     // 8. Verify Results
     await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 30000 });
     await expect(page.locator('#test-results-section')).toBeVisible();
-    await expect(page.locator('#test-results-section')).toContainText('混合計画分散分析の結果');
+
+    // Check for standard summary stats section title
+    await expect(page.locator('#summary-stats-section')).toContainText('２要因分散分析 一括表（混合）');
+
+    // Check for standard result table section title
+    await expect(page.locator('#test-results-section')).toContainText('分散分析表');
 });
