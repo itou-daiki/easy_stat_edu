@@ -141,7 +141,7 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
             <div style="background-color: #fffbe6; border: 1px solid #fde68a; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; color: #92400e;">
                 <strong><i class="fas fa-exclamation-triangle"></i> 注意: 期待度数が5未満のセルが ${smallExpRate.toFixed(1)}% あります。</strong><br>
                 カイ二乗検定の前提条件（全体の20%以下）を満たしていません。結果の信頼性が低い可能性があります。<br>
-                サンプルサイズを増やすか、Fisherの正確確率検定（本ツール未実装）を検討してください。
+                サンプルサイズを増やすか、「フィッシャーの正確確率検定」の使用を検討してください。
             </div>`;
     }
 
