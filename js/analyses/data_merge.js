@@ -94,7 +94,7 @@ function findCommonColumns(data1, data2) {
 // ==========================================
 // Merge Logic
 // ==========================================
-function mergeDatasets(data1, data2, keyColumn, joinType) {
+function mergeDatasets(data1, data2, keyColumn, joinType, suffix1 = '_1', suffix2 = '_2') {
     if (!data1 || !data2 || !keyColumn) return [];
 
     const cols1 = Object.keys(data1[0]);
@@ -131,8 +131,8 @@ function mergeDatasets(data1, data2, keyColumn, joinType) {
                 const merged = { ...row1 };
                 uniqueCols2.forEach(c => { merged[c] = row2[c]; });
                 overlapCols.forEach(c => {
-                    merged[c + '_1'] = row1[c];
-                    merged[c + '_2'] = row2[c];
+                    merged[c + suffix1] = row1[c];
+                    merged[c + suffix2] = row2[c];
                     delete merged[c]; // Remove original overlap column
                 });
                 result.push(merged);
@@ -142,8 +142,8 @@ function mergeDatasets(data1, data2, keyColumn, joinType) {
             const merged = { ...row1 };
             uniqueCols2.forEach(c => { merged[c] = null; });
             overlapCols.forEach(c => {
-                merged[c + '_1'] = row1[c];
-                merged[c + '_2'] = null;
+                merged[c + suffix1] = row1[c];
+                merged[c + suffix2] = null;
                 delete merged[c];
             });
             result.push(merged);
@@ -160,8 +160,8 @@ function mergeDatasets(data1, data2, keyColumn, joinType) {
                 merged[keyColumn] = row2[keyColumn];
                 cols1.filter(c => c !== keyColumn).forEach(c => {
                     if (overlapCols.includes(c)) {
-                        merged[c + '_1'] = null;
-                        merged[c + '_2'] = row2[c];
+                        merged[c + suffix1] = null;
+                        merged[c + suffix2] = row2[c];
                     } else {
                         merged[c] = null;
                     }
@@ -271,6 +271,22 @@ function updateMergeControls() {
                         <option value="outer">外部結合（outer）: 全データを保持</option>
                     </select>
                 </div>
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">
+                        <i class="fas fa-tag"></i> 重複カラムのサフィックス
+                    </label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8rem; color: #64748b;">ファイル1</label>
+                            <input type="text" id="merge-suffix1" value="1" placeholder="1" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; box-sizing: border-box;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8rem; color: #64748b;">ファイル2</label>
+                            <input type="text" id="merge-suffix2" value="2" placeholder="2" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; box-sizing: border-box;">
+                        </div>
+                    </div>
+                    <p style="font-size: 0.75rem; color: #94a3b8; margin: 0.25rem 0 0 0;">例：「前」「後」→ 名前_前, 名前_後</p>
+                </div>
                 <div>
                     <button id="run-merge-btn" class="btn-analysis" style="padding: 0.75rem 2rem; font-size: 1rem; font-weight: bold;">
                         <i class="fas fa-object-group"></i> 結合を実行
@@ -295,13 +311,17 @@ function updateMergeControls() {
 function executeMerge() {
     const keyColumn = document.getElementById('merge-key-column').value;
     const joinType = document.getElementById('merge-join-type').value;
+    const suffix1Input = document.getElementById('merge-suffix1').value.trim();
+    const suffix2Input = document.getElementById('merge-suffix2').value.trim();
+    const suffix1 = '_' + (suffix1Input || '1');
+    const suffix2 = '_' + (suffix2Input || '2');
 
     if (!keyColumn) {
         alert('キーカラムを選択してください');
         return;
     }
 
-    mergedResult = mergeDatasets(mergeData1, mergeData2, keyColumn, joinType);
+    mergedResult = mergeDatasets(mergeData1, mergeData2, keyColumn, joinType, suffix1, suffix2);
 
     // Display result
     const resultSection = document.getElementById('merge-result-section');

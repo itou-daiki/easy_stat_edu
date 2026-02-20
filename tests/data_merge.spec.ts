@@ -122,4 +122,33 @@ test.describe('Data Merge Feature', () => {
         await expect(page.locator('#merge-result')).toContainText('高橋美咲');
         await expect(page.locator('#merge-result')).toContainText('山田次郎');
     });
+
+    test('should use custom suffixes for overlapping columns', async ({ page }) => {
+        // カードクリック
+        const card = page.locator('.feature-card[data-analysis="data_merge"]');
+        await card.click();
+        await expect(page.locator('#analysis-area')).toBeVisible({ timeout: 10000 });
+
+        // 2ファイルをアップロード
+        const file1Path = path.join(__dirname, '../datasets/merge_test_1.csv');
+        const file2Path = path.join(__dirname, '../datasets/merge_test_2.csv');
+        await page.locator('#merge-file1-input').setInputFiles(file1Path);
+        await expect(page.locator('#merge-preview1')).toBeVisible({ timeout: 10000 });
+
+        await page.locator('#merge-file2-input').setInputFiles(file2Path);
+        await expect(page.locator('#merge-preview2')).toBeVisible({ timeout: 10000 });
+
+        // カスタムサフィックスを入力
+        await page.locator('#merge-suffix1').fill('前');
+        await page.locator('#merge-suffix2').fill('後');
+
+        // inner結合を実行
+        await page.locator('#merge-key-column').selectOption('ID');
+        await page.locator('#run-merge-btn').click();
+
+        // 結果テーブルに「名前_前」「名前_後」が表示されること
+        await expect(page.locator('#merge-result')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('#merge-result')).toContainText('名前_前');
+        await expect(page.locator('#merge-result')).toContainText('名前_後');
+    });
 });
