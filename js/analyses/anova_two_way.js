@@ -476,11 +476,168 @@ function runTwoWayIndependentANOVA(currentData) {
         });
     });
 
+    renderTwoWayANOVASummaryTable(testResults, 'independent');
     renderTwoWayANOVATable(testResults);
     displayTwoWayANOVAInterpretation(testResults, 'independent');
     renderTwoWayANOVAVisualization(testResults);
 
     document.getElementById('analysis-results').style.display = 'block';
+}
+
+// ======================================================================
+// 一括表（サマリーテーブル）- 全従属変数の結果を1つの表にまとめる
+// ======================================================================
+
+function renderTwoWayANOVASummaryTable(results, designType) {
+    const container = document.getElementById('summary-stats-section');
+    if (!container || results.length === 0) return;
+
+    // 結果オブジェクトから要因名・F値・p値・効果量を統一的に抽出
+    function extractEffects(res) {
+        if (designType === 'independent') {
+            return {
+                depVar: res.depVar,
+                factorA: res.factor1,
+                factorB: res.factor2,
+                fA: res.fA, pA: res.pA, etaA: res.etaA, dfA: res.dfA, dfErrorA: res.dfError,
+                fB: res.fB, pB: res.pB, etaB: res.etaB, dfB: res.dfB, dfErrorB: res.dfError,
+                fAxB: res.fAxB, pAxB: res.pAxB, etaAxB: res.etaAxB, dfAxB: res.dfAxB, dfErrorAxB: res.dfError
+            };
+        } else if (designType === 'mixed') {
+            const srcA = res.sources.find(s => !s.name.includes('Error') && !s.name.includes('交互') && !s.name.includes('条件'));
+            const srcB = res.sources.find(s => s.name.includes('条件'));
+            const srcAxB = res.sources.find(s => s.name.includes('交互'));
+            const errA = res.sources.find(s => s.name.includes('Error') && s.name.includes('Group'));
+            const errB = res.sources.find(s => s.name.includes('Error') && s.name.includes('Time'));
+            return {
+                depVar: res.depVar,
+                factorA: res.factorBetween || (srcA ? srcA.name : '要因A'),
+                factorB: res.factorWithin || '条件',
+                fA: srcA?.f, pA: srcA?.p, etaA: srcA?.eta, dfA: srcA?.df, dfErrorA: errA?.df,
+                fB: srcB?.f, pB: srcB?.p, etaB: srcB?.eta, dfB: srcB?.df, dfErrorB: errB?.df,
+                fAxB: srcAxB?.f, pAxB: srcAxB?.p, etaAxB: srcAxB?.eta, dfAxB: srcAxB?.df, dfErrorAxB: errB?.df
+            };
+        } else {
+            // repeated
+            const effectSources = res.sources.filter(s => !s.name.includes('Error'));
+            const errorSources = res.sources.filter(s => s.name.includes('Error'));
+            const srcA = effectSources[0];
+            const srcB = effectSources[1];
+            const srcAxB = effectSources[2];
+            const errA = errorSources[0];
+            const errB = errorSources[1];
+            const errAxB = errorSources[2];
+            return {
+                depVar: res.depVar,
+                factorA: res.factor1 || (srcA ? srcA.name : '要因1'),
+                factorB: res.factor2 || (srcB ? srcB.name : '要因2'),
+                fA: srcA?.f, pA: srcA?.p, etaA: srcA?.eta, dfA: srcA?.df, dfErrorA: errA?.df,
+                fB: srcB?.f, pB: srcB?.p, etaB: srcB?.eta, dfB: srcB?.df, dfErrorB: errB?.df,
+                fAxB: srcAxB?.f, pAxB: srcAxB?.p, etaAxB: srcAxB?.eta, dfAxB: srcAxB?.df, dfErrorAxB: errAxB?.df
+            };
+        }
+    }
+
+    const allEffects = results.map(extractEffects);
+    const factorA = allEffects[0].factorA;
+    const factorB = allEffects[0].factorB;
+
+    const getStars = (p) => {
+        if (p == null) return '';
+        return p < 0.01 ? '**' : p < 0.05 ? '*' : p < 0.1 ? '†' : '';
+    };
+
+    const formatP = (p) => {
+        if (p == null) return '-';
+        return p < 0.001 ? '< .001' : p.toFixed(3);
+    };
+
+    const formatF = (f, df1, df2) => {
+        if (f == null) return '-';
+        const dfStr = (df1 != null && df2 != null) ? `(${df1}, ${df2})` : '';
+        return `${f.toFixed(2)} ${dfStr}`;
+    };
+
+    const designLabel = designType === 'independent' ? '対応なし' : designType === 'mixed' ? '混合' : '反復測定';
+
+    let html = `
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+        <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
+            <i class="fas fa-list"></i> ２要因分散分析 一括表（${designLabel}）
+        </h4>
+        <div class="table-container" style="overflow-x: auto;">
+            <table class="table" style="min-width: 700px;">
+                <thead style="background: #f8f9fa;">
+                    <tr>
+                        <th rowspan="2" style="font-weight: bold; color: #495057; vertical-align: middle;">従属変数</th>
+                        <th colspan="3" style="text-align: center; border-bottom: 1px solid #dee2e6;">${factorA}<br><small>(主効果A)</small></th>
+                        <th colspan="3" style="text-align: center; border-bottom: 1px solid #dee2e6;">${factorB}<br><small>(主効果B)</small></th>
+                        <th colspan="3" style="text-align: center; border-bottom: 1px solid #dee2e6;">${factorA} × ${factorB}<br><small>(交互作用)</small></th>
+                    </tr>
+                    <tr>
+                        <th><em>F</em></th><th><em>p</em></th><th>η<sub>p</sub>²</th>
+                        <th><em>F</em></th><th><em>p</em></th><th>η<sub>p</sub>²</th>
+                        <th><em>F</em></th><th><em>p</em></th><th>η<sub>p</sub>²</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    allEffects.forEach(eff => {
+        const sigA = getStars(eff.pA);
+        const sigB = getStars(eff.pB);
+        const sigAxB = getStars(eff.pAxB);
+
+        html += `
+                    <tr>
+                        <td style="font-weight: bold; color: #1e90ff;">${eff.depVar}</td>
+                        <td>${formatF(eff.fA, eff.dfA, eff.dfErrorA)}</td>
+                        <td style="${eff.pA != null && eff.pA < 0.05 ? 'color: #e11d48; font-weight: bold;' : ''}">${formatP(eff.pA)} <strong>${sigA}</strong></td>
+                        <td>${eff.etaA != null ? eff.etaA.toFixed(2) : '-'}</td>
+                        <td>${formatF(eff.fB, eff.dfB, eff.dfErrorB)}</td>
+                        <td style="${eff.pB != null && eff.pB < 0.05 ? 'color: #e11d48; font-weight: bold;' : ''}">${formatP(eff.pB)} <strong>${sigB}</strong></td>
+                        <td>${eff.etaB != null ? eff.etaB.toFixed(2) : '-'}</td>
+                        <td>${formatF(eff.fAxB, eff.dfAxB, eff.dfErrorAxB)}</td>
+                        <td style="${eff.pAxB != null && eff.pAxB < 0.05 ? 'color: #e11d48; font-weight: bold;' : ''}">${formatP(eff.pAxB)} <strong>${sigAxB}</strong></td>
+                        <td>${eff.etaAxB != null ? eff.etaAxB.toFixed(2) : '-'}</td>
+                    </tr>`;
+    });
+
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem; color: #6b7280;">
+            <strong>sign</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†　|　効果量: 偏η²（partial eta-squared）
+        </p>
+    </div>`;
+
+    // APA スタイル テーブル
+    const headersAPA = [
+        "Measure",
+        `<em>F</em> (${factorA})`, `<em>p</em>`, `η<sub>p</sub><sup>2</sup>`,
+        `<em>F</em> (${factorB})`, `<em>p</em>`, `η<sub>p</sub><sup>2</sup>`,
+        `<em>F</em> (A×B)`, `<em>p</em>`, `η<sub>p</sub><sup>2</sup>`
+    ];
+    const rowsAPA = allEffects.map(eff => [
+        eff.depVar,
+        eff.fA != null ? `${eff.fA.toFixed(2)}` : '-',
+        formatP(eff.pA),
+        eff.etaA != null ? eff.etaA.toFixed(2) : '-',
+        eff.fB != null ? `${eff.fB.toFixed(2)}` : '-',
+        formatP(eff.pB),
+        eff.etaB != null ? eff.etaB.toFixed(2) : '-',
+        eff.fAxB != null ? `${eff.fAxB.toFixed(2)}` : '-',
+        formatP(eff.pAxB),
+        eff.etaAxB != null ? eff.etaAxB.toFixed(2) : '-'
+    ]);
+
+    html += `
+        <div style="margin-bottom: 2rem;">
+            <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> 論文報告用テーブル (APAスタイル風)</h5>
+            <div>${generateAPATableHtml('anova-2way-summary-apa', `Table. Two-Way ANOVA Summary (${designLabel})`, headersAPA, rowsAPA, '<em>Note</em>. Effect size is partial eta-squared (η<sub>p</sub><sup>2</sup>).')}</div>
+        </div>`;
+
+    container.innerHTML = html;
 }
 
 function displayTwoWayANOVAInterpretation(results, designType) {
@@ -960,6 +1117,7 @@ function runTwoWayMixedANOVA(currentData, pairs) {
         });
     });
 
+    renderTwoWayANOVASummaryTable(testResults, 'mixed');
     renderTwoWayMixedResults(testResults);
     displayTwoWayANOVAInterpretation(testResults, 'mixed');
     renderTwoWayANOVAVisualization(testResults);
@@ -1384,6 +1542,7 @@ function runTwoWayRepeatedANOVA(currentData, factors, mapping) {
         designType: 'repeated'
     }];
 
+    renderTwoWayANOVASummaryTable(results, 'repeated');
     renderTwoWayMixedResults(results); // Reuse generic renderer
     displayTwoWayANOVAInterpretation(results, 'repeated');
     renderTwoWayANOVAVisualization(results);
