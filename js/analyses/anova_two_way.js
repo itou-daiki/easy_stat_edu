@@ -492,16 +492,32 @@ function renderTwoWayANOVASummaryTable(results, designType) {
     const container = document.getElementById('summary-stats-section');
     if (!container || results.length === 0) return;
 
-    // 結果オブジェクトから要因名・F値・p値・効果量を統一的に抽出
+    const res0 = results[0];
+
+    // --- 要因名の統一的な取得 ---
+    let factorA, factorB;
+    if (designType === 'independent') {
+        factorA = res0.factor1;
+        factorB = res0.factor2;
+    } else if (designType === 'mixed') {
+        factorA = res0.factorBetween;
+        factorB = res0.factorWithin || '条件';
+    } else {
+        factorA = res0.factor1;
+        factorB = res0.factor2;
+    }
+
+    // Factor1のレベル（列グループ: M, SD）
+    const levels1 = res0.levels1;
+    const numLevels1 = levels1.length;
+
+    // --- 効果の抽出 ---
     function extractEffects(res) {
         if (designType === 'independent') {
             return {
-                depVar: res.depVar,
-                factorA: res.factor1,
-                factorB: res.factor2,
-                fA: res.fA, pA: res.pA, etaA: res.etaA, dfA: res.dfA, dfErrorA: res.dfError,
-                fB: res.fB, pB: res.pB, etaB: res.etaB, dfB: res.dfB, dfErrorB: res.dfError,
-                fAxB: res.fAxB, pAxB: res.pAxB, etaAxB: res.etaAxB, dfAxB: res.dfAxB, dfErrorAxB: res.dfError
+                pA: res.pA, etaA: res.etaA, fA: res.fA, dfA: res.dfA, dfErrA: res.dfError,
+                pB: res.pB, etaB: res.etaB, fB: res.fB, dfB: res.dfB, dfErrB: res.dfError,
+                pAxB: res.pAxB, etaAxB: res.etaAxB, fAxB: res.fAxB, dfAxB: res.dfAxB, dfErrAxB: res.dfError
             };
         } else if (designType === 'mixed') {
             const srcA = res.sources.find(s => !s.name.includes('Error') && !s.name.includes('交互') && !s.name.includes('条件'));
@@ -510,108 +526,136 @@ function renderTwoWayANOVASummaryTable(results, designType) {
             const errA = res.sources.find(s => s.name.includes('Error') && s.name.includes('Group'));
             const errB = res.sources.find(s => s.name.includes('Error') && s.name.includes('Time'));
             return {
-                depVar: res.depVar,
-                factorA: res.factorBetween || (srcA ? srcA.name : '要因A'),
-                factorB: res.factorWithin || '条件',
-                fA: srcA?.f, pA: srcA?.p, etaA: srcA?.eta, dfA: srcA?.df, dfErrorA: errA?.df,
-                fB: srcB?.f, pB: srcB?.p, etaB: srcB?.eta, dfB: srcB?.df, dfErrorB: errB?.df,
-                fAxB: srcAxB?.f, pAxB: srcAxB?.p, etaAxB: srcAxB?.eta, dfAxB: srcAxB?.df, dfErrorAxB: errB?.df
+                pA: srcA?.p, etaA: srcA?.eta, fA: srcA?.f, dfA: srcA?.df, dfErrA: errA?.df,
+                pB: srcB?.p, etaB: srcB?.eta, fB: srcB?.f, dfB: srcB?.df, dfErrB: errB?.df,
+                pAxB: srcAxB?.p, etaAxB: srcAxB?.eta, fAxB: srcAxB?.f, dfAxB: srcAxB?.df, dfErrAxB: errB?.df
             };
         } else {
-            // repeated
-            const effectSources = res.sources.filter(s => !s.name.includes('Error'));
-            const errorSources = res.sources.filter(s => s.name.includes('Error'));
-            const srcA = effectSources[0];
-            const srcB = effectSources[1];
-            const srcAxB = effectSources[2];
-            const errA = errorSources[0];
-            const errB = errorSources[1];
-            const errAxB = errorSources[2];
+            const eff = res.sources.filter(s => !s.name.includes('Error'));
+            const err = res.sources.filter(s => s.name.includes('Error'));
             return {
-                depVar: res.depVar,
-                factorA: res.factor1 || (srcA ? srcA.name : '要因1'),
-                factorB: res.factor2 || (srcB ? srcB.name : '要因2'),
-                fA: srcA?.f, pA: srcA?.p, etaA: srcA?.eta, dfA: srcA?.df, dfErrorA: errA?.df,
-                fB: srcB?.f, pB: srcB?.p, etaB: srcB?.eta, dfB: srcB?.df, dfErrorB: errB?.df,
-                fAxB: srcAxB?.f, pAxB: srcAxB?.p, etaAxB: srcAxB?.eta, dfAxB: srcAxB?.df, dfErrorAxB: errAxB?.df
+                pA: eff[0]?.p, etaA: eff[0]?.eta, fA: eff[0]?.f, dfA: eff[0]?.df, dfErrA: err[0]?.df,
+                pB: eff[1]?.p, etaB: eff[1]?.eta, fB: eff[1]?.f, dfB: eff[1]?.df, dfErrB: err[1]?.df,
+                pAxB: eff[2]?.p, etaAxB: eff[2]?.eta, fAxB: eff[2]?.f, dfAxB: eff[2]?.df, dfErrAxB: err[2]?.df
             };
         }
     }
 
-    const allEffects = results.map(extractEffects);
-    const factorA = allEffects[0].factorA;
-    const factorB = allEffects[0].factorB;
-
+    // --- ヘルパー ---
     const getStars = (p) => {
-        if (p == null) return '';
-        return p < 0.01 ? '**' : p < 0.05 ? '*' : p < 0.1 ? '†' : '';
+        if (p == null) return '-';
+        return p < 0.01 ? '**' : p < 0.05 ? '*' : p < 0.1 ? '†' : 'n.s.';
     };
-
+    const getSigStyle = (p) => {
+        if (p == null) return 'color: #6b7280;';
+        if (p < 0.01) return 'color: #e11d48; font-weight: bold; font-size: 1.1em;';
+        if (p < 0.05) return 'color: #e11d48; font-weight: bold;';
+        if (p < 0.1) return 'color: #d97706; font-weight: bold;';
+        return 'color: #6b7280;';
+    };
+    const formatEta = (eta) => (eta != null ? `(${eta.toFixed(2)})` : '');
     const formatP = (p) => {
         if (p == null) return '-';
         return p < 0.001 ? '< .001' : p.toFixed(3);
     };
 
-    const formatF = (f, df1, df2) => {
-        if (f == null) return '-';
-        const dfStr = (df1 != null && df2 != null) ? `(${df1}, ${df2})` : '';
-        return `${f.toFixed(2)} ${dfStr}`;
-    };
-
     const designLabel = designType === 'independent' ? '対応なし' : designType === 'mixed' ? '混合' : '反復測定';
+    const thStyle = 'text-align: center; vertical-align: middle; padding: 0.5rem 0.6rem;';
+    const tdCenter = 'text-align: center; padding: 0.4rem 0.5rem;';
 
+    // === ヘッダー行1: Factor1レベルのグループヘッダー ===
+    let hRow1 = '';
+    let hRow2 = '';
+
+    // 従属変数列 + Factor2レベル列
+    hRow1 += `<th rowspan="2" style="${thStyle} text-align: left; font-weight: bold; color: #495057; min-width: 100px;"></th>`;
+    hRow1 += `<th rowspan="2" style="${thStyle} text-align: left; font-weight: bold; color: #495057;"></th>`;
+
+    // Factor1の各レベル列グループ
+    levels1.forEach((level, idx) => {
+        if (idx > 0) {
+            hRow1 += `<th rowspan="2" style="width: 6px; padding: 0; background: #f8f9fa; border-left: none; border-right: none;"></th>`;
+        }
+        hRow1 += `<th colspan="2" style="${thStyle} border-bottom: 2px solid #adb5bd; font-weight: bold;">${level}</th>`;
+        hRow2 += `<th style="${thStyle} font-weight: 600;">M</th><th style="${thStyle} font-weight: 600;">S.D</th>`;
+    });
+
+    // 主効果・交互作用列
+    hRow1 += `<th rowspan="2" style="${thStyle} min-width: 75px; font-size: 0.85rem; background: #f0f7ff;">${factorA}の<br>主効果</th>`;
+    hRow1 += `<th rowspan="2" style="${thStyle} min-width: 75px; font-size: 0.85rem; background: #f0f7ff;">${factorB}の<br>主効果</th>`;
+    hRow1 += `<th rowspan="2" style="${thStyle} min-width: 75px; font-size: 0.85rem; background: #f0f7ff;">交互作用</th>`;
+
+    // === ボディ: 従属変数ごとにFactor2レベルをサブ行で展開 ===
+    let bodyHtml = '';
+
+    results.forEach((res, resIdx) => {
+        const eff = extractEffects(res);
+        const depVar = res.depVar;
+        const levels2 = res.levels2;
+        const numLevels2 = levels2.length;
+        const needGroupBorder = resIdx < results.length - 1;
+        const groupBorder = needGroupBorder ? 'border-bottom: 2px solid #dee2e6;' : '';
+
+        levels2.forEach((l2, l2Idx) => {
+            const isFirst = l2Idx === 0;
+            const isLast = l2Idx === numLevels2 - 1;
+            const cellBorder = (needGroupBorder && isLast) ? groupBorder : '';
+
+            bodyHtml += '<tr>';
+
+            // 従属変数名（最初のサブ行のみ、rowspan）
+            if (isFirst) {
+                bodyHtml += `<td rowspan="${numLevels2}" style="font-weight: bold; color: #1e90ff; vertical-align: middle; text-align: left; padding: 0.5rem; ${groupBorder}">${depVar}</td>`;
+            }
+
+            // Factor2レベル名
+            bodyHtml += `<td style="text-align: left; padding: 0.4rem 0.5rem; color: #4a5568; ${cellBorder}">${l2}</td>`;
+
+            // 各Factor1レベルのM, SD
+            levels1.forEach((l1, l1Idx) => {
+                // スペーサー列（最初のサブ行でrowspan）
+                if (l1Idx > 0 && isFirst) {
+                    bodyHtml += `<td rowspan="${numLevels2}" style="width: 6px; padding: 0; border-left: none; border-right: none; ${groupBorder}"></td>`;
+                }
+                const cell = res.cellStats[l1]?.[l2] || { mean: 0, std: 0 };
+                bodyHtml += `<td style="${tdCenter} ${cellBorder}">${cell.mean.toFixed(2)}</td>`;
+                bodyHtml += `<td style="${tdCenter} ${cellBorder}">${cell.std.toFixed(2)}</td>`;
+            });
+
+            // 主効果・交互作用セル（最初のサブ行のみrowspan）
+            if (isFirst) {
+                const sigBase = `text-align: center; vertical-align: middle; padding: 0.5rem; ${groupBorder} background: #fafbfc;`;
+                bodyHtml += `<td rowspan="${numLevels2}" style="${sigBase} ${getSigStyle(eff.pA)}">${getStars(eff.pA)}<br><span style="font-size: 0.8em; color: #6b7280; font-weight: normal;">${formatEta(eff.etaA)}</span></td>`;
+                bodyHtml += `<td rowspan="${numLevels2}" style="${sigBase} ${getSigStyle(eff.pB)}">${getStars(eff.pB)}<br><span style="font-size: 0.8em; color: #6b7280; font-weight: normal;">${formatEta(eff.etaB)}</span></td>`;
+                bodyHtml += `<td rowspan="${numLevels2}" style="${sigBase} ${getSigStyle(eff.pAxB)}">${getStars(eff.pAxB)}<br><span style="font-size: 0.8em; color: #6b7280; font-weight: normal;">${formatEta(eff.etaAxB)}</span></td>`;
+            }
+
+            bodyHtml += '</tr>';
+        });
+    });
+
+    // === テーブル全体のHTML ===
     let html = `
     <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
         <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
             <i class="fas fa-list"></i> ２要因分散分析 一括表（${designLabel}）
         </h4>
         <div class="table-container" style="overflow-x: auto;">
-            <table class="table" style="min-width: 700px;">
+            <table class="table" style="min-width: 600px; border-collapse: collapse;">
                 <thead style="background: #f8f9fa;">
-                    <tr>
-                        <th rowspan="2" style="font-weight: bold; color: #495057; vertical-align: middle;">従属変数</th>
-                        <th colspan="3" style="text-align: center; border-bottom: 1px solid #dee2e6;">${factorA}<br><small>(主効果A)</small></th>
-                        <th colspan="3" style="text-align: center; border-bottom: 1px solid #dee2e6;">${factorB}<br><small>(主効果B)</small></th>
-                        <th colspan="3" style="text-align: center; border-bottom: 1px solid #dee2e6;">${factorA} × ${factorB}<br><small>(交互作用)</small></th>
-                    </tr>
-                    <tr>
-                        <th><em>F</em></th><th><em>p</em></th><th>η<sub>p</sub>²</th>
-                        <th><em>F</em></th><th><em>p</em></th><th>η<sub>p</sub>²</th>
-                        <th><em>F</em></th><th><em>p</em></th><th>η<sub>p</sub>²</th>
-                    </tr>
+                    <tr>${hRow1}</tr>
+                    <tr>${hRow2}</tr>
                 </thead>
-                <tbody>`;
-
-    allEffects.forEach(eff => {
-        const sigA = getStars(eff.pA);
-        const sigB = getStars(eff.pB);
-        const sigAxB = getStars(eff.pAxB);
-
-        html += `
-                    <tr>
-                        <td style="font-weight: bold; color: #1e90ff;">${eff.depVar}</td>
-                        <td>${formatF(eff.fA, eff.dfA, eff.dfErrorA)}</td>
-                        <td style="${eff.pA != null && eff.pA < 0.05 ? 'color: #e11d48; font-weight: bold;' : ''}">${formatP(eff.pA)} <strong>${sigA}</strong></td>
-                        <td>${eff.etaA != null ? eff.etaA.toFixed(2) : '-'}</td>
-                        <td>${formatF(eff.fB, eff.dfB, eff.dfErrorB)}</td>
-                        <td style="${eff.pB != null && eff.pB < 0.05 ? 'color: #e11d48; font-weight: bold;' : ''}">${formatP(eff.pB)} <strong>${sigB}</strong></td>
-                        <td>${eff.etaB != null ? eff.etaB.toFixed(2) : '-'}</td>
-                        <td>${formatF(eff.fAxB, eff.dfAxB, eff.dfErrorAxB)}</td>
-                        <td style="${eff.pAxB != null && eff.pAxB < 0.05 ? 'color: #e11d48; font-weight: bold;' : ''}">${formatP(eff.pAxB)} <strong>${sigAxB}</strong></td>
-                        <td>${eff.etaAxB != null ? eff.etaAxB.toFixed(2) : '-'}</td>
-                    </tr>`;
-    });
-
-    html += `
-                </tbody>
+                <tbody>${bodyHtml}</tbody>
             </table>
         </div>
         <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem; color: #6b7280;">
-            <strong>sign</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†　|　効果量: 偏η²（partial eta-squared）
+            p&lt;0.1† p&lt;0.05* p&lt;0.01**　|　括弧内: 偏η²
         </p>
     </div>`;
 
-    // APA スタイル テーブル
+    // === APA スタイル テーブル ===
+    const allEffects = results.map((res, idx) => ({ depVar: res.depVar, ...extractEffects(res) }));
     const headersAPA = [
         "Measure",
         `<em>F</em> (${factorA})`, `<em>p</em>`, `η<sub>p</sub><sup>2</sup>`,
@@ -620,13 +664,13 @@ function renderTwoWayANOVASummaryTable(results, designType) {
     ];
     const rowsAPA = allEffects.map(eff => [
         eff.depVar,
-        eff.fA != null ? `${eff.fA.toFixed(2)}` : '-',
+        eff.fA != null ? eff.fA.toFixed(2) : '-',
         formatP(eff.pA),
         eff.etaA != null ? eff.etaA.toFixed(2) : '-',
-        eff.fB != null ? `${eff.fB.toFixed(2)}` : '-',
+        eff.fB != null ? eff.fB.toFixed(2) : '-',
         formatP(eff.pB),
         eff.etaB != null ? eff.etaB.toFixed(2) : '-',
-        eff.fAxB != null ? `${eff.fAxB.toFixed(2)}` : '-',
+        eff.fAxB != null ? eff.fAxB.toFixed(2) : '-',
         formatP(eff.pAxB),
         eff.etaAxB != null ? eff.etaAxB.toFixed(2) : '-'
     ]);
