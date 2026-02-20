@@ -367,17 +367,149 @@ export function render(container, currentData, dataCharacteristics) {
                     <i class="fas fa-magic"></i> データ加工・変数作成 (Engineering)
                 </h4>
                 
-                <div class="tabs" style="display: flex; gap: 1rem; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0;">
-                    <button class="tab-btn active" onclick="showEngineeringTab('recode')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid #6b46c1; font-weight: bold; color: #6b46c1; cursor: pointer;">
-                        値の変換 (リッカート尺度など)
+                <div class="tabs" style="display: flex; gap: 1rem; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0; overflow-x: auto;">
+                    <button class="tab-btn active" onclick="showEngineeringTab('filter')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid #6b46c1; font-weight: bold; color: #6b46c1; cursor: pointer; white-space: nowrap;">
+                        データの絞り込み (条件抽出)
                     </button>
-                    <button class="tab-btn" onclick="showEngineeringTab('compute')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer;">
+                    <button class="tab-btn" onclick="showEngineeringTab('reverse')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
+                        逆転項目の処理 (自動反転)
+                    </button>
+                    <button class="tab-btn" onclick="showEngineeringTab('categorize')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
+                        数値のグループ化 (2値化)
+                    </button>
+                    <button class="tab-btn" onclick="showEngineeringTab('standardize')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
+                        標準化 (Zスコア)
+                    </button>
+                    <button class="tab-btn" onclick="showEngineeringTab('recode')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
+                        値の変換 (個別入力など)
+                    </button>
+                    <button class="tab-btn" onclick="showEngineeringTab('compute')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
                         変数の計算 (合計・平均)
                     </button>
                 </div>
 
-                <!-- Tab 1: Recoding -->
-                <div id="eng-tab-recode" style="display: block;">
+                <!-- Tab 1: Filtering (Subset) -->
+                <div id="eng-tab-filter" style="display: block;">
+                    <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
+                        <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
+                            <i class="fas fa-filter"></i> 変数に対して条件（「~に等しい」「~より大きい」など）を指定し、条件に一致するデータ（行）のみを残してプレビューします。
+                        </p>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">条件を指定する変数:</label>
+                            <select id="filter-var-select" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;"></select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">条件式:</label>
+                            <select id="filter-operator-select" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                                <option value="==">に等しい (==)</option>
+                                <option value="!=">に等しくない (!=)</option>
+                                <option value=">">より大きい (>)</option>
+                                <option value=">=">以上 (>=)</option>
+                                <option value="<">より小さい (<)</option>
+                                <option value="<=">以下 (<=)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">値 (数値 または テキスト):</label>
+                            <input type="text" id="filter-value-input" class="form-control" placeholder="例: 1 または 男" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        </div>
+                        <button id="apply-filter-btn" class="btn-analysis" style="background: #805ad5; width: 100%;">
+                            <i class="fas fa-filter"></i> 条件を適用して絞り込む
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Reverse Scoring -->
+                <div id="eng-tab-reverse" style="display: none;">
+                    <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
+                        <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
+                            <i class="fas fa-sync-alt"></i> アンケートの逆転項目などを対象に、指定した最大値・最小値を使ってスコアを反転させます。（例：1〜5段階の場合、1→5, 2→4, 3→3 に変換）<br>
+                            計算式: <code>(最大値 + 最小値) - 現在の値</code>
+                        </p>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">反転させる変数を選択 (複数選択可/Multiple Selection):</label>
+                            <div id="reverse-col-select-container"></div>
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                            <div class="form-group" style="flex: 1;">
+                                <label style="font-weight: bold;">尺度の最小値 (Min):</label>
+                                <input type="number" id="reverse-min-input" class="form-control" placeholder="例: 1" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label style="font-weight: bold;">尺度の最大値 (Max):</label>
+                                <input type="number" id="reverse-max-input" class="form-control" placeholder="例: 5" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">新しい変数名 (接尾辞/Suffix):</label>
+                            <p style="font-size: 0.8rem; color: #666; margin-top: 0;">※空欄の場合は上書き、入力した場合は「元の変数名 + 接尾辞」で作成されます</p>
+                            <input type="text" id="reverse-new-col-name" class="form-control" placeholder="例: _rev" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        </div>
+                        <button id="apply-reverse-btn" class="btn-analysis" style="background: #805ad5; width: 100%;">
+                            <i class="fas fa-sync-alt"></i> 逆転処理を実行
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Categorize -->
+                <div id="eng-tab-categorize" style="display: none;">
+                    <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
+                        <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
+                            <i class="fas fa-layer-group"></i> テストの点数などを基準値（閾値）で区切り、「合格／不合格」「高群／低群」といった2つのグループ（カテゴリデータ）に変換します。
+                        </p>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">グループ化する変数（数値）:</label>
+                            <select id="categorize-var-select" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;"></select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">基準値（閾値）:</label>
+                            <p style="font-size: 0.8rem; color: #666; margin-top: 0;">※この値「以上」が高群に含まれます。</p>
+                            <input type="number" id="categorize-threshold-input" class="form-control" placeholder="例: 50" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                            <div class="form-group" style="flex: 1;">
+                                <label style="font-weight: bold;">基準値以上のラベル:</label>
+                                <input type="text" id="categorize-label-high" class="form-control" placeholder="例: 合格" value="高群" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label style="font-weight: bold;">基準値未満のラベル:</label>
+                                <input type="text" id="categorize-label-low" class="form-control" placeholder="例: 不合格" value="低群" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">新しい変数名 (接尾辞/Suffix):</label>
+                            <p style="font-size: 0.8rem; color: #666; margin-top: 0;">※入力した場合は「元の変数名 + 接尾辞」で作成されます</p>
+                            <input type="text" id="categorize-new-col-name" class="form-control" placeholder="例: _cat" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        </div>
+                        <button id="apply-categorize-btn" class="btn-analysis" style="background: #805ad5; width: 100%;">
+                            <i class="fas fa-layer-group"></i> グループ変数を作成
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Standardize -->
+                <div id="eng-tab-standardize" style="display: none;">
+                    <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
+                        <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
+                            <i class="fas fa-arrows-alt-h"></i> 単位や満点の異なる変数を比較したり足し合わせたりするために、平均を0、標準偏差を1に揃える「標準化（Zスコア変換）」を行います。
+                        </p>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">標準化する変数を選択 (複数選択可/Multiple Selection):</label>
+                            <div id="standardize-col-select-container"></div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">新しい変数名 (接尾辞/Suffix):</label>
+                            <p style="font-size: 0.8rem; color: #666; margin-top: 0;">※入力した場合は「元の変数名 + 接尾辞」で作成されます</p>
+                            <input type="text" id="standardize-new-col-name" class="form-control" placeholder="例: _z" value="_z" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        </div>
+                        <button id="apply-standardize-btn" class="btn-analysis" style="background: #805ad5; width: 100%;">
+                            <i class="fas fa-arrows-alt-h"></i> 標準化（Zスコア）を実行
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 5: Recoding -->
+                <div id="eng-tab-recode" style="display: none;">
                     <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
                         <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
                             <i class="fas fa-info-circle"></i> テキストデータを数値に変換したり（例：「とてもそう思う」→ 5）、逆転項目の処理を行います。
@@ -398,7 +530,7 @@ export function render(container, currentData, dataCharacteristics) {
                     </div>
                 </div>
 
-                <!-- Tab 2: Compute -->
+                <!-- Tab 6: Compute -->
                 <div id="eng-tab-compute" style="display: none;">
                     <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
                         <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
@@ -509,13 +641,25 @@ let recodeMultiSelect = null; // MultiSelect instance for recode
 function initEngineeringUI() {
     // タブ切り替えロジック
     window.showEngineeringTab = function (tabName) {
+        document.getElementById('eng-tab-filter').style.display = tabName === 'filter' ? 'block' : 'none';
+        document.getElementById('eng-tab-reverse').style.display = tabName === 'reverse' ? 'block' : 'none';
+        document.getElementById('eng-tab-categorize').style.display = tabName === 'categorize' ? 'block' : 'none';
+        document.getElementById('eng-tab-standardize').style.display = tabName === 'standardize' ? 'block' : 'none';
         document.getElementById('eng-tab-recode').style.display = tabName === 'recode' ? 'block' : 'none';
         document.getElementById('eng-tab-compute').style.display = tabName === 'compute' ? 'block' : 'none';
 
         // ボタンのスタイル更新
         const buttons = document.querySelectorAll('.tab-btn');
+        const tabTitleMap = {
+            'filter': 'データの絞り込み',
+            'reverse': '逆転項目の処理',
+            'categorize': '数値のグループ化',
+            'standardize': '標準化 (Zスコア)',
+            'recode': '値の変換',
+            'compute': '変数の計算'
+        };
         buttons.forEach(btn => {
-            if (btn.textContent.includes(tabName === 'recode' ? '値の変換' : '変数の計算')) {
+            if (btn.textContent.includes(tabTitleMap[tabName])) {
                 btn.style.borderBottom = '3px solid #6b46c1';
                 btn.style.color = '#6b46c1';
             } else {
@@ -525,6 +669,18 @@ function initEngineeringUI() {
         });
     };
 
+    // Filter用変数セレクトボックスの更新
+    updateFilterColumnSelect();
+
+    // Reverse用マルチセレクトの更新
+    updateReverseColumnSelect();
+
+    // Categorize用変数セレクトボックスの更新
+    updateCategorizeColumnSelect();
+
+    // Standardize用マルチセレクトの更新
+    updateStandardizeColumnSelect();
+
     // Recode用変数セレクトボックスの更新
     updateRecodeColumnSelect();
 
@@ -532,11 +688,72 @@ function initEngineeringUI() {
     updateComputeColumnSelect();
 
     // イベントリスナー
-    // recodeSelectは削除され、MultiSelectのonChangeで処理するようになるため、ここでのイベントリスナー追加は不要
-    // 代わりにMultiSelectの初期化時にonChangeを設定する
-
+    document.getElementById('apply-filter-btn').onclick = applyFilter;
+    document.getElementById('apply-reverse-btn').onclick = applyReverse;
+    document.getElementById('apply-categorize-btn').onclick = applyCategorize;
+    document.getElementById('apply-standardize-btn').onclick = applyStandardize;
     document.getElementById('apply-recode-btn').onclick = applyRecode;
     document.getElementById('apply-compute-btn').onclick = applyCompute;
+}
+
+function updateFilterColumnSelect() {
+    const filterSelect = document.getElementById('filter-var-select');
+    if (!filterSelect) return;
+    filterSelect.innerHTML = '<option value="">変数を選択...</option>';
+
+    const cols = Object.keys(originalData[0] || {});
+    cols.forEach(col => {
+        const option = document.createElement('option');
+        option.value = col;
+        option.textContent = col;
+        filterSelect.appendChild(option);
+    });
+}
+
+let reverseMultiSelect = null;
+
+function updateReverseColumnSelect() {
+    const container = document.getElementById('reverse-col-select-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const cols = Object.keys(originalData[0] || {});
+
+    // Numeric columns only ideally, but we'll list all for now
+    import('../components/MultiSelect.js').then(module => {
+        const { MultiSelect } = module;
+        reverseMultiSelect = new MultiSelect(container, cols, []);
+    });
+}
+
+function updateCategorizeColumnSelect() {
+    const categorizeSelect = document.getElementById('categorize-var-select');
+    if (!categorizeSelect) return;
+    categorizeSelect.innerHTML = '<option value="">変数を選択...</option>';
+
+    const cols = Object.keys(originalData[0] || {});
+    cols.forEach(col => {
+        const option = document.createElement('option');
+        option.value = col;
+        option.textContent = col;
+        categorizeSelect.appendChild(option);
+    });
+}
+
+let standardizeMultiSelect = null;
+
+function updateStandardizeColumnSelect() {
+    const container = document.getElementById('standardize-col-select-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const cols = Object.keys(originalData[0] || {});
+
+    // Numeric columns only ideally
+    import('../components/MultiSelect.js').then(module => {
+        const { MultiSelect } = module;
+        standardizeMultiSelect = new MultiSelect(container, cols, []);
+    });
 }
 
 function updateRecodeColumnSelect() {
@@ -685,6 +902,136 @@ function applyRecode() {
     updateDataAndUI('変数変換を実行しました');
 }
 
+function applyReverse() {
+    if (!reverseMultiSelect) return;
+    const selectedCols = reverseMultiSelect.getValue();
+
+    if (selectedCols.length === 0) {
+        alert('反転させる変数を選択してください');
+        return;
+    }
+
+    const minValStr = document.getElementById('reverse-min-input').value;
+    const maxValStr = document.getElementById('reverse-max-input').value;
+
+    if (minValStr === '' || maxValStr === '') {
+        alert('尺度の最小値と最大値を両方入力してください。');
+        return;
+    }
+
+    const min = Number(minValStr);
+    const max = Number(maxValStr);
+
+    if (isNaN(min) || isNaN(max)) {
+        alert('最小値と最大値は数値で入力してください。');
+        return;
+    }
+
+    const suffix = document.getElementById('reverse-new-col-name').value.trim();
+
+    originalData.forEach(row => {
+        selectedCols.forEach(col => {
+            const oldVal = row[col];
+            const oldNum = Number(oldVal);
+
+            const newColName = suffix ? `${col}${suffix}` : col;
+
+            // 数値に変換可能な場合のみ反転処理
+            if (oldVal !== null && oldVal !== '' && !isNaN(oldNum)) {
+                row[newColName] = (max + min) - oldNum;
+            } else {
+                row[newColName] = oldVal; // 欠損値などはそのまま
+            }
+        });
+    });
+
+    updateDataAndUI(`${selectedCols.length}個の変数を反転しました`);
+}
+
+function applyCategorize() {
+    const varName = document.getElementById('categorize-var-select').value;
+    if (!varName) {
+        alert('グループ化する変数を選択してください');
+        return;
+    }
+
+    const thresholdStr = document.getElementById('categorize-threshold-input').value;
+    if (thresholdStr === '') {
+        alert('基準値（閾値）を入力してください');
+        return;
+    }
+
+    const threshold = Number(thresholdStr);
+    if (isNaN(threshold)) {
+        alert('基準値には数値を入力してください');
+        return;
+    }
+
+    const labelHigh = document.getElementById('categorize-label-high').value || '高群';
+    const labelLow = document.getElementById('categorize-label-low').value || '低群';
+    const suffix = document.getElementById('categorize-new-col-name').value.trim();
+    const newColName = suffix ? `${varName}${suffix}` : varName;
+
+    originalData.forEach(row => {
+        const val = row[varName];
+        if (val === null || val === undefined || val === '') {
+            row[newColName] = val; // 欠損はそのまま
+        } else {
+            const numVal = Number(val);
+            if (!isNaN(numVal)) {
+                row[newColName] = numVal >= threshold ? labelHigh : labelLow;
+            } else {
+                row[newColName] = val; // 数値以外はそのまま
+            }
+        }
+    });
+
+    updateDataAndUI(`変数 ${varName} を ${labelHigh}/${labelLow} にグループ化しました`);
+}
+
+function applyStandardize() {
+    if (!standardizeMultiSelect) return;
+    const selectedCols = standardizeMultiSelect.getValue();
+
+    if (selectedCols.length === 0) {
+        alert('標準化する変数を選択してください');
+        return;
+    }
+
+    const suffix = document.getElementById('standardize-new-col-name').value.trim();
+
+    // 各列の平均と標準偏差を計算する
+    const stats = {};
+    selectedCols.forEach(col => {
+        const values = originalData.map(d => Number(d[col])).filter(v => !isNaN(v));
+        if (values.length > 0) {
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (values.length - 1); // 標本分散（不偏）
+            const stdDev = Math.sqrt(variance);
+            stats[col] = { mean, stdDev };
+        } else {
+            stats[col] = { mean: 0, stdDev: 1 }; // fallback
+        }
+    });
+
+    // Zスコアの適用
+    originalData.forEach(row => {
+        selectedCols.forEach(col => {
+            const oldVal = row[col];
+            const newColName = suffix ? `${col}${suffix}` : col;
+
+            const oldNum = Number(oldVal);
+            if (oldVal !== null && oldVal !== '' && !isNaN(oldNum) && stats[col].stdDev !== 0) {
+                row[newColName] = (oldNum - stats[col].mean) / stats[col].stdDev;
+            } else {
+                row[newColName] = oldVal; // 計算不能または分散0の場合はそのまま
+            }
+        });
+    });
+
+    updateDataAndUI(`${selectedCols.length}個の変数をZスコアに標準化しました`);
+}
+
 function applyCompute() {
     const selectedCols = engMultiSelect.getValue();
     if (selectedCols.length === 0) {
@@ -722,7 +1069,12 @@ function updateDataAndUI(message) {
     // UI更新 (テーブルの再描画)
     renderDataOverview('#original-data-overview', originalData, originalCharacteristics, { initiallyCollapsed: false });
 
-    // セレクトボックス等の更新
+    renderDataOverview('#original-data-overview', originalData, originalCharacteristics, { initiallyCollapsed: false });
+
+    updateFilterColumnSelect();
+    updateReverseColumnSelect();
+    updateCategorizeColumnSelect();
+    updateStandardizeColumnSelect();
     updateRecodeColumnSelect();
     updateComputeColumnSelect();
 
@@ -730,6 +1082,67 @@ function updateDataAndUI(message) {
     displayDataQualityInfo();
 
     alert(message);
+}
+
+function applyFilter() {
+    const varName = document.getElementById('filter-var-select').value;
+    const operator = document.getElementById('filter-operator-select').value;
+    const inputValStr = document.getElementById('filter-value-input').value.trim();
+
+    if (!varName) {
+        alert('条件を指定する変数を選択してください');
+        return;
+    }
+    if (inputValStr === '') {
+        alert('条件の値を入力してください（空文字の場合はエラーになります）');
+        return;
+    }
+
+    const numVal = Number(inputValStr);
+    const isNumCompare = !isNaN(numVal);
+
+    const filteredData = originalData.filter(row => {
+        let val = row[varName];
+        if (val === null || val === undefined) return false;
+
+        let compVal = inputValStr;
+        if (isNumCompare && !isNaN(Number(val))) {
+            val = Number(val);
+            compVal = numVal;
+        } else {
+            val = String(val);
+        }
+
+        switch (operator) {
+            case '==': return val == compVal; // 意図的ゆるい一致（文字1と数値1）
+            case '!=': return val != compVal;
+            case '>': return val > compVal;
+            case '>=': return val >= compVal;
+            case '<': return val < compVal;
+            case '<=': return val <= compVal;
+            default: return false;
+        }
+    });
+
+    if (filteredData.length === 0) {
+        alert('指定された条件に一致するデータがありません。条件を見直してください。');
+        return;
+    }
+
+    const removedRows = originalData.length - filteredData.length;
+    originalData = filteredData;
+
+    document.getElementById('processing-summary').innerHTML = `
+        <div style="margin: 1rem 0; padding: 1rem; background: #f0f9ff; border-left: 4px solid #1e90ff; border-radius: 4px;">
+            <p style="margin: 0; font-weight: bold; color: #1e90ff;">絞り込み完了</p>
+            <p style="margin: 0.5rem 0 0 0; color: #2d3748;">
+                条件: <strong>${varName} ${operator} ${inputValStr}</strong><br>
+                除外された行数: ${removedRows}行 (残り: ${originalData.length}行)
+            </p>
+        </div>
+    `;
+
+    updateDataAndUI(`絞り込みを実行しました。${originalData.length}行が残りました。`);
 }
 
 

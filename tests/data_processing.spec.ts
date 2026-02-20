@@ -1,8 +1,8 @@
-const { test, expect } = require('@playwright/test');
+import { test, expect, Page, Dialog } from '@playwright/test';
 const path = require('path');
 
 test.describe('Data Processing - Bulk Recode', () => {
-    test('Verify Bulk Recode Functionality', async ({ page }) => {
+    test('Verify Bulk Recode Functionality', async ({ page }: { page: Page }) => {
         // 1. Load Application
         await page.goto('http://127.0.0.1:8081/');
         await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
@@ -73,9 +73,13 @@ test.describe('Data Processing - Bulk Recode', () => {
 
         // Setup console logging for debugging
         page.on('console', msg => console.log(`PAGE LOG: ${msg.text()}`));
-        page.on('pageerror', exception => console.log(`PAGE ERROR: ${exception}`));
+        page.on('pageerror', (exception: Error) => { console.log(`PAGE ERROR: ${exception}`) });
 
-        // Wait for the section to appear
+        // 4. Verify Engineering Tab (Wait for the Recode Tab to be visible after clicking the button)
+        const recodeTabBtn = page.locator('button:has-text("値の変換")');
+        await expect(recodeTabBtn).toBeVisible({ timeout: 5000 });
+        await recodeTabBtn.click();
+
         await expect(page.locator('#eng-tab-recode')).toBeVisible({ timeout: 10000 });
 
         // 5. Select Variables (Bulk)
@@ -121,7 +125,7 @@ test.describe('Data Processing - Bulk Recode', () => {
         await page.fill('#recode-new-col-name', '_recoded');
 
         // 9. Execute Recode
-        page.on('dialog', async dialog => {
+        page.on('dialog', async (dialog: any) => {
             await dialog.accept();
         });
         await page.click('#apply-recode-btn');
@@ -135,6 +139,208 @@ test.describe('Data Processing - Bulk Recode', () => {
         // Wait for table update (alert handled above)
         // Check for header containing "_recoded"
         const newHeader = page.locator('th:has-text("_recoded")').first();
+        await expect(newHeader).toBeVisible({ timeout: 10000 });
+    });
+
+    test('Verify Data Filter (絞り込み) Functionality', async ({ page }: { page: Page }) => {
+        // 1. Load Application
+        await page.goto('/');
+        await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
+
+        // 2. Upload Data (Using demo_all_analysis.csv)
+        const fileInput = page.locator('#main-data-file');
+        const filePath = path.join(__dirname, '../datasets/demo_all_analysis.csv');
+
+        // Wait for preview
+        const previewVisiblePromise = page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 30000 });
+        await fileInput.setInputFiles(filePath);
+        await previewVisiblePromise;
+
+        // 3. Open Data Processing Section
+        const processingCard = page.locator('.feature-card[data-analysis="data_processing"]');
+        if (await processingCard.count() > 0) {
+            await processingCard.click();
+        } else {
+            await page.locator('text=データ加工・整形').click();
+        }
+
+        // Wait for section to appear
+        await expect(page.locator('.cleansing-container')).toBeVisible({ timeout: 10000 });
+
+        // 4. Switch to Filtering Tab
+        // Assume we will add a new tab/button for filtering "データの絞り込み"
+        const filterTabBtn = page.locator('button:has-text("データの絞り込み")');
+        await expect(filterTabBtn).toBeVisible({ timeout: 5000 });
+        await filterTabBtn.click();
+
+        // 5. Specify Filter Condition
+        // e.g. "クラス" == "A"
+        await page.selectOption('#filter-var-select', 'クラス');
+        await page.selectOption('#filter-operator-select', '==');
+        await page.fill('#filter-value-input', 'A');
+
+        // 6. Execute Filter
+        page.on('dialog', async (dialog: any) => {
+            // Should say something like "絞り込みを実行しました。XX行が残りました。"
+            expect(dialog.message()).toContain('絞り込み');
+            await dialog.accept();
+        });
+        await page.click('#apply-filter-btn');
+
+        // 7. Verify Result
+        // Wait for processing summary to appear indicating success
+        const summaryLocator = page.locator('#processing-summary');
+        await expect(summaryLocator).toBeVisible({ timeout: 10000 });
+        const summaryText = await summaryLocator.textContent();
+        expect(summaryText).toContain('除外された行数');
+    });
+
+    test('Verify Reverse Scoring (自動反転) Functionality', async ({ page }: { page: Page }) => {
+        // 1. Load Application
+        await page.goto('/');
+        await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
+
+        // 2. Upload Data
+        const fileInput = page.locator('#main-data-file');
+        const filePath = path.join(__dirname, '../datasets/demo_all_analysis.csv');
+        const previewVisiblePromise = page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 30000 });
+        await fileInput.setInputFiles(filePath);
+        await previewVisiblePromise;
+
+        // 3. Open Data Processing Section
+        const processingCard = page.locator('.feature-card[data-analysis="data_processing"]');
+        if (await processingCard.count() > 0) {
+            await processingCard.click();
+        } else {
+            await page.locator('text=データ加工・整形').click();
+        }
+        await expect(page.locator('.cleansing-container')).toBeVisible({ timeout: 10000 });
+
+        // 4. Switch to Reverse Scoring Tab
+        const reverseTabBtn = page.locator('button:has-text("逆転項目の処理")');
+        await expect(reverseTabBtn).toBeVisible({ timeout: 5000 });
+        await reverseTabBtn.click();
+        await expect(page.locator('#eng-tab-reverse')).toBeVisible({ timeout: 10000 });
+
+        // 5. Select Variables (using MultiSelect)
+        const multiSelectInput = page.locator('#reverse-col-select-container .multiselect-input');
+        const dropdown = page.locator('#reverse-col-select-container .multiselect-dropdown');
+        await multiSelectInput.click();
+        await expect(dropdown).toBeVisible();
+        const optionMath = page.locator('#reverse-col-select-container .multiselect-option').filter({ hasText: '数学' }).first();
+        await expect(optionMath).toBeVisible();
+        await optionMath.click();
+        await page.locator('body').click({ position: { x: 0, y: 0 } });
+
+        // 6. Enter Min, Max and Suffix
+        await page.fill('#reverse-min-input', '0');
+        await page.fill('#reverse-max-input', '100');
+        await page.fill('#reverse-new-col-name', '_rev');
+
+        // 7. Execute Reverse Scoring
+        page.on('dialog', async (dialog: any) => {
+            await dialog.accept();
+        });
+        await page.click('#apply-reverse-btn');
+
+        // 8. Verify Result Header
+        const newHeader = page.locator('th:has-text("数学_rev")').first();
+        await expect(newHeader).toBeVisible({ timeout: 10000 });
+    });
+
+    test('Verify Categorization (数値のカテゴリ化) Functionality', async ({ page }: { page: Page }) => {
+        // 1. Load Application
+        await page.goto('/');
+        await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
+
+        // 2. Upload Data
+        const fileInput = page.locator('#main-data-file');
+        const filePath = path.join(__dirname, '../datasets/demo_all_analysis.csv');
+        const previewVisiblePromise = page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 30000 });
+        await fileInput.setInputFiles(filePath);
+        await previewVisiblePromise;
+
+        // 3. Open Data Processing Section
+        const processingCard = page.locator('.feature-card[data-analysis="data_processing"]');
+        if (await processingCard.count() > 0) {
+            await processingCard.click();
+        } else {
+            await page.locator('text=データ加工・整形').click();
+        }
+        await expect(page.locator('.cleansing-container')).toBeVisible({ timeout: 10000 });
+
+        // 4. Switch to Categorize Tab
+        const categorizeTabBtn = page.locator('button:has-text("数値のグループ化")');
+        await expect(categorizeTabBtn).toBeVisible({ timeout: 5000 });
+        await categorizeTabBtn.click();
+        await expect(page.locator('#eng-tab-categorize')).toBeVisible({ timeout: 10000 });
+
+        // 5. Select Variable and Parameters
+        await page.selectOption('#categorize-var-select', '数学');
+        await page.fill('#categorize-threshold-input', '50');
+        await page.fill('#categorize-label-high', '合格');
+        await page.fill('#categorize-label-low', '不合格');
+        await page.fill('#categorize-new-col-name', '_cat');
+
+        // 6. Execute Categorization
+        page.on('dialog', async (dialog: any) => {
+            await dialog.accept();
+        });
+        await page.click('#apply-categorize-btn');
+
+        // 7. Verify Result Header
+        const newHeader = page.locator('th:has-text("数学_cat")').first();
+        await expect(newHeader).toBeVisible({ timeout: 10000 });
+    });
+
+    test('Verify Standardization (Zスコア変換) Functionality', async ({ page }: { page: Page }) => {
+        // 1. Load Application
+        await page.goto('/');
+        await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
+
+        // 2. Upload Data
+        const fileInput = page.locator('#main-data-file');
+        const filePath = path.join(__dirname, '../datasets/demo_all_analysis.csv');
+        const previewVisiblePromise = page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 30000 });
+        await fileInput.setInputFiles(filePath);
+        await previewVisiblePromise;
+
+        // 3. Open Data Processing Section
+        const processingCard = page.locator('.feature-card[data-analysis="data_processing"]');
+        if (await processingCard.count() > 0) {
+            await processingCard.click();
+        } else {
+            await page.locator('text=データ加工・整形').click();
+        }
+        await expect(page.locator('.cleansing-container')).toBeVisible({ timeout: 10000 });
+
+        // 4. Switch to Standardize Tab
+        const standardizeTabBtn = page.locator('button:has-text("標準化 (Zスコア)")');
+        await expect(standardizeTabBtn).toBeVisible({ timeout: 5000 });
+        await standardizeTabBtn.click();
+        await expect(page.locator('#eng-tab-standardize')).toBeVisible({ timeout: 10000 });
+
+        // 5. Select Variables (using MultiSelect)
+        const multiSelectInput = page.locator('#standardize-col-select-container .multiselect-input');
+        const dropdown = page.locator('#standardize-col-select-container .multiselect-dropdown');
+        await multiSelectInput.click();
+        await expect(dropdown).toBeVisible();
+        const optionMath = page.locator('#standardize-col-select-container .multiselect-option').filter({ hasText: '数学' }).first();
+        await expect(optionMath).toBeVisible();
+        await optionMath.click();
+        await page.locator('body').click({ position: { x: 0, y: 0 } });
+
+        // 6. Enter Suffix
+        await page.fill('#standardize-new-col-name', '_z');
+
+        // 7. Execute Standardization
+        page.on('dialog', async (dialog: any) => {
+            await dialog.accept();
+        });
+        await page.click('#apply-standardize-btn');
+
+        // 8. Verify Result Header
+        const newHeader = page.locator('th:has-text("数学_z")').first();
         await expect(newHeader).toBeVisible({ timeout: 10000 });
     });
 });
