@@ -660,6 +660,7 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> ロジスティック回帰分析とは？</strong>
                         <p>「あるイベントが起こるかどうか」を予測する分析です。結果が2値（合格/不合格、購入する/しないなど）の場合に使います。</p>
+                        <img src="image/logistic_regression.png" alt="ロジスティック回帰分析の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

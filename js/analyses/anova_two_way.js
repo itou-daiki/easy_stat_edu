@@ -1620,6 +1620,7 @@ export function render(container, currentData, characteristics) {
                     <div class="note-section">
                         <h4><i class="fas fa-search"></i> どんな時に使う？</h4>
                         <p>ある結果（売上、テストの点数など）に対して、2つの要因（性別と年齢層、広告媒体と時間帯など）が影響しているかを検証したい場合に使用します。</p>
+                        <img src="image/anova_two_way.png" alt="二要因分散分析の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                         <ul>
                             <li><strong>主効果（Main Effect）:</strong> 個々の要因が結果に与える影響</li>
                             <li><strong>交互作用（Interaction）:</strong> 要因の組み合わせによって結果が変化するか（例：特定の薬は特定の年齢層にだけ効く、など）</li>

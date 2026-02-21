@@ -378,6 +378,7 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> マクネマー検定とは？</strong>
                         <p>同じ対象者の「前」と「後」の2値データ（はい/いいえ、合格/不合格など）を比較して、比率が有意に変化したかを調べる検定です。</p>
+                        <img src="image/mcnemar.png" alt="マクネマー検定の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

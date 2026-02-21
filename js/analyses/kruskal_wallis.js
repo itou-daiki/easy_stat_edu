@@ -604,6 +604,7 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> クラスカル・ウォリス検定とは？</strong>
                         <p>3つ以上のグループに差があるかを調べるノンパラメトリック検定です。一元配置分散分析（ANOVA）の「順位版」で、データの正規性を仮定しません。平均値ではなく、順位（ランキング）を使って比較します。</p>
+                        <img src="image/kruskal_wallis.png" alt="クラスカル・ウォリス検定の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

@@ -44,7 +44,7 @@ function logFact(n) {
  */
 function hypergeometricProb(a, b, c, d) {
     const logP = logFact(a + b) + logFact(c + d) + logFact(a + c) + logFact(b + d)
-               - logFact(a + b + c + d) - logFact(a) - logFact(b) - logFact(c) - logFact(d);
+        - logFact(a + b + c + d) - logFact(a) - logFact(b) - logFact(c) - logFact(d);
     return Math.exp(logP);
 }
 
@@ -328,8 +328,8 @@ function hypergeometricSample(n, K, N) {
 
     for (let k = kMin; k <= kMax; k++) {
         const logP = logFact(K) - logFact(k) - logFact(K - k)
-                   + logFact(N - K) - logFact(n - k) - logFact(N - K - (n - k))
-                   - logFact(N) + logFact(n) + logFact(N - n);
+            + logFact(N - K) - logFact(n - k) - logFact(N - K - (n - k))
+            - logFact(N) + logFact(n) + logFact(N - n);
         cumProb += Math.exp(logP);
         if (cumProb >= u) return k;
     }
@@ -649,7 +649,7 @@ function generateInterpretation(pValue, cramersV, rowVar, colVar, is2x2, fisherR
         } else if (or > 1) {
             text += `第1群は第2群に比べて ${or.toFixed(2)} 倍事象が起こりやすいことを示します。`;
         } else {
-            text += `第1群は第2群に比べて事象が起こりにくいことを示します（1/${(1/or).toFixed(2)} 倍）。`;
+            text += `第1群は第2群に比べて事象が起こりにくいことを示します（1/${(1 / or).toFixed(2)} 倍）。`;
         }
     }
 
@@ -724,6 +724,7 @@ export function render(container, currentData, characteristics) {
                         <p>カイ二乗検定と同様に、2つのカテゴリカル変数に関連があるかを調べる方法です。
                         カイ二乗検定が「近似」を使うのに対し、フィッシャーの正確確率検定は「正確な確率」を計算するため、
                         サンプルサイズが小さい場合や期待度数が5未満のセルがある場合に特に適しています。</p>
+                        <img src="image/fisher_exact.png" alt="フィッシャーの正確確率検定の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

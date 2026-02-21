@@ -825,6 +825,7 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> ウィルコクソンの符号付順位検定とは？</strong>
                         <p>同じ対象に対して2回測定した結果（事前・事後など）に差があるかを調べる方法です。対応ありt検定のノンパラメトリック版であり、データの正規性を仮定しません。差の「大きさ」と「方向」の両方を考慮して順位に基づいて検定します。</p>
+                        <img src="image/wilcoxon.png" alt="ウィルコクソンの符号付順位検定の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

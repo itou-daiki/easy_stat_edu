@@ -336,7 +336,7 @@ export function render(container, currentData, dataCharacteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> データ加工・整形 (Data Processing) とは？</strong>
                         <p>分析を行う前にデータを整える重要なステップです。「値の変換」や「変数の作成」などのエンジニアリング機能と、「欠損値・外れ値処理」などのクレンジング機能を含みます。</p>
-                        <img src="image/data_cleansing.png" alt="データ加工のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <img src="image/data_processing.png" alt="データ加工のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>何ができるの？</h4>
                     <ul>

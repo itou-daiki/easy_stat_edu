@@ -261,6 +261,7 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 重回帰分析 (Multiple Regression Analysis) とは？</strong>
                         <p>「複数の要因（説明変数）」が「1つの結果（目的変数）」にどう影響するかを調べる分析です。「美味しいカレーの味（結果）」は「スパイスの量」と「煮込み時間」（要因）で決まる、というようなイメージです。</p>
+                        <img src="image/regression_multiple.png" alt="重回帰分析の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                         <p><strong>パス図について:</strong> どの要因の影響が強いかを矢印の太さで図示します（影響が弱いものは表示されません）。</p>
                     </div>
                 </div>

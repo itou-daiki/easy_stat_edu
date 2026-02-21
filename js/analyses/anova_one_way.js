@@ -1042,7 +1042,7 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 一元配置分散分析 (One-way ANOVA) とは？</strong>
                         <p>3つ以上のグループがあるときに、その平均値に違いがあるかを一度に調べる方法です。「t検定の3グループ以上版」と考えると分かりやすいです。</p>
-                        <img src="image/anova_one.png" alt="分散分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <img src="image/anova_one_way.png" alt="分散分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
