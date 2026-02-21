@@ -244,11 +244,11 @@ body {
     background: #805ad5;
 }
 
-.category-explore .category-icon {
+.category-eda .category-icon {
     background: #3182ce;
 }
 
-.category-mean-test .category-icon {
+.category-param .category-icon {
     background: #dd6b20;
 }
 
@@ -256,8 +256,12 @@ body {
     background: #38a169;
 }
 
-.category-relation .category-icon {
+.category-proportion .category-icon {
     background: #e53e3e;
+}
+
+.category-prediction .category-icon {
+    background: #d97706;
 }
 
 .category-multivariate .category-icon {
