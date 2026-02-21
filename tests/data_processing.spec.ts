@@ -472,9 +472,6 @@ test.describe('Data Processing - Bulk Recode', () => {
         // 1. Load Application
         await page.goto('/');
 
-        page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
-        page.on('pageerror', err => console.log('BROWSER ERROR:', err.message));
-
         await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
 
         // 2. Upload Data (cleansing_test.csv)
