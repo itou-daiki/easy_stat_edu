@@ -389,6 +389,9 @@ export function render(container, currentData, dataCharacteristics) {
                     <button class="tab-btn" onclick="showEngineeringTab('merge')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
                         データの結合 (CSVマージ)
                     </button>
+                    <button class="tab-btn" onclick="showEngineeringTab('cleansing')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
+                        文字列の整形 (全角半角・空白除去)
+                    </button>
                 </div>
 
                 <!-- Tab 1: Filtering (Subset) -->
@@ -591,6 +594,22 @@ export function render(container, currentData, dataCharacteristics) {
                         </button>
                     </div>
                 </div>
+
+                <!-- Tab 8: Text Cleansing -->
+                <div id="eng-tab-cleansing" style="display: none;">
+                    <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
+                        <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
+                            <i class="fas fa-magic"></i> 選択した変数の「全角英数字・記号」を半角に変換し、前後の余分な空白（スペース）を削除します。
+                        </p>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="font-weight: bold;">整形する変数 (複数選択可):</label>
+                            <div id="cleansing-col-select-container"></div>
+                        </div>
+                        <button id="apply-cleansing-btn" class="btn-analysis" style="background: #805ad5; width: 100%;">
+                            <i class="fas fa-magic"></i> 文字列を整形する
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!--処理オプション -->
@@ -672,6 +691,7 @@ export function render(container, currentData, dataCharacteristics) {
 
 let engMultiSelect = null; // MultiSelect instance for compute
 let recodeMultiSelect = null; // MultiSelect instance for recode
+let cleansingMultiSelect = null; // MultiSelect instance for text cleansing
 
 function initEngineeringUI() {
     // タブ切り替えロジック
@@ -683,6 +703,7 @@ function initEngineeringUI() {
         document.getElementById('eng-tab-recode').style.display = tabName === 'recode' ? 'block' : 'none';
         document.getElementById('eng-tab-compute').style.display = tabName === 'compute' ? 'block' : 'none';
         document.getElementById('eng-tab-merge').style.display = tabName === 'merge' ? 'block' : 'none';
+        document.getElementById('eng-tab-cleansing').style.display = tabName === 'cleansing' ? 'block' : 'none';
 
         // ボタンのスタイル更新
         const buttons = document.querySelectorAll('.tab-btn');
@@ -693,7 +714,8 @@ function initEngineeringUI() {
             'standardize': '標準化 (Zスコア)',
             'recode': '値の変換',
             'compute': '変数の計算',
-            'merge': 'データの結合'
+            'merge': 'データの結合',
+            'cleansing': '文字列の整形'
         };
         buttons.forEach(btn => {
             if (btn.textContent.includes(tabTitleMap[tabName])) {
@@ -727,6 +749,9 @@ function initEngineeringUI() {
     // Merge用変数セレクトボックスの初期更新
     updateMergeBaseColumnSelect();
 
+    // Cleansing用マルチセレクトの更新
+    updateCleansingColumnSelect();
+
     // 新規ファイル読み込み処理の設定
     setupMergeFileListener();
 
@@ -738,6 +763,7 @@ function initEngineeringUI() {
     document.getElementById('apply-recode-btn').onclick = applyRecode;
     document.getElementById('apply-compute-btn').onclick = applyCompute;
     document.getElementById('apply-merge-btn').onclick = applyMerge;
+    document.getElementById('apply-cleansing-btn').onclick = applyCleansing;
 }
 
 function updateFilterColumnSelect() {
@@ -1252,6 +1278,52 @@ function applyMerge() {
     updateDataAndUI(`${matchedCount} 行のデータに結合しました`);
 }
 
+function updateCleansingColumnSelect() {
+    const container = document.getElementById('cleansing-col-select-container');
+    if (!container) return;
+    container.innerHTML = '';
+    const cols = Object.keys(originalData[0] || {});
+
+    import('../components/MultiSelect.js').then(module => {
+        const { MultiSelect } = module;
+        cleansingMultiSelect = new MultiSelect(container, cols, []);
+    }).catch(err => {
+        console.error('Failed to load MultiSelect:', err);
+    });
+}
+
+function applyCleansing() {
+    if (!cleansingMultiSelect) return;
+    const selectedCols = cleansingMultiSelect.getValue();
+
+    if (selectedCols.length === 0) {
+        alert('整形する変数を選択してください');
+        return;
+    }
+
+    // 全角英数字を半角にし、全角スペースを半角スペースにする関数
+    function toHalfWidth(str) {
+        return str.replace(/[！-～]/g, function (s) {
+            return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+        }).replace(/　/g, ' ');
+    }
+
+    let modifiedCount = 0;
+
+    originalData.forEach(row => {
+        selectedCols.forEach(col => {
+            const oldVal = row[col];
+            if (typeof oldVal === 'string') {
+                const newVal = toHalfWidth(oldVal).trim();
+                row[col] = newVal;
+                modifiedCount++;
+            }
+        });
+    });
+
+    updateDataAndUI(`${selectedCols.length}個の変数の文字列を整形しました`);
+}
+
 function updateDataAndUI(message) {
     // データ特性の再分析
     originalCharacteristics = window.analyzeDataCharacteristics(originalData);
@@ -1268,6 +1340,7 @@ function updateDataAndUI(message) {
     updateRecodeColumnSelect();
     updateComputeColumnSelect();
     updateMergeBaseColumnSelect();
+    updateCleansingColumnSelect();
 
     // データ品質情報の更新
     displayDataQualityInfo();

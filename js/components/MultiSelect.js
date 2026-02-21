@@ -74,7 +74,7 @@ export class MultiSelect {
     }
 
     attachEvents() {
-        const wrapper = document.getElementById(this.id);
+        const wrapper = this.container.querySelector('.multiselect-wrapper');
         const inputDiv = wrapper.querySelector('.multiselect-input');
         const dropdown = wrapper.querySelector('.multiselect-dropdown');
         const tagsContainer = wrapper.querySelector('.multiselect-tags');

@@ -467,4 +467,64 @@ test.describe('Data Processing - Bulk Recode', () => {
         const mergedHeader = page.locator('th:has-text("英語")').first();
         await expect(mergedHeader).toBeVisible({ timeout: 10000 });
     });
+
+    test('Verify Text Cleansing (テキストクレンジング) Functionality', async ({ page }: { page: Page }) => {
+        // 1. Load Application
+        await page.goto('/');
+
+        page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
+        page.on('pageerror', err => console.log('BROWSER ERROR:', err.message));
+
+        await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
+
+        // 2. Upload Data (cleansing_test.csv)
+        const fileInput = page.locator('#main-data-file');
+        const filePath = path.join(__dirname, '../datasets/cleansing_test.csv');
+        const previewVisiblePromise = page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 30000 });
+        await fileInput.setInputFiles(filePath);
+        await previewVisiblePromise;
+
+        // 3. Open Data Processing Section
+        const processingCard = page.locator('.feature-card[data-analysis="data_processing"]');
+        if (await processingCard.count() > 0) {
+            await processingCard.click();
+        } else {
+            await page.locator('text=データ加工・整形').click();
+        }
+
+        // Wait for the data processing UI to appear
+        await expect(page.locator('#eng-tab-filter')).toBeAttached({ timeout: 10000 });
+
+        // 4. Switch to Cleansing Tab
+        const cleansingTabBtn = page.locator('button:has-text("文字列の整形")');
+        await expect(cleansingTabBtn).toBeVisible({ timeout: 5000 });
+        await cleansingTabBtn.click();
+        await expect(page.locator('#eng-tab-cleansing')).toBeVisible({ timeout: 10000 });
+
+        // 5. Select Variable (テキスト)
+        const multiSelectInput = page.locator('#cleansing-col-select-container .multiselect-input');
+        const dropdown = page.locator('#cleansing-col-select-container .multiselect-dropdown');
+        await multiSelectInput.click();
+        await expect(dropdown).toBeVisible();
+        const optionText = page.locator('#cleansing-col-select-container .multiselect-option').filter({ hasText: /^テキスト$/ }).first();
+
+        await expect(optionText).toBeVisible();
+        await optionText.click();
+        await page.locator('body').click({ position: { x: 0, y: 0 } });
+
+        // 6. Execute Cleansing
+        page.on('dialog', async (dialog: any) => {
+            await dialog.accept();
+        });
+        await page.click('#apply-cleansing-btn');
+
+        // 7. Verify Resulting Data (Check if "１２３ ＡＢＣ " was converted to "123 ABC")
+        // Row 2 (index 1), Column "テキスト"
+        const cell = page.locator('#original-data-overview td:has-text("123 ABC")').first();
+        await expect(cell).toBeVisible({ timeout: 10000 });
+
+        // Also check trimmed spaces for "田中 太郎"
+        const cell2 = page.locator('#original-data-overview td:has-text("田中 太郎")').first();
+        await expect(cell2).toBeVisible({ timeout: 10000 });
+    });
 });
