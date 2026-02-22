@@ -1,4 +1,4 @@
-import { renderDataOverview } from '../utils.js';
+import { renderDataOverview, createVariableSelector } from '../utils.js';
 
 // 元のデータのコピーを保持
 let originalData = null;
@@ -384,10 +384,7 @@ export function render(container, currentData, dataCharacteristics) {
                         値の変換 (個別入力など)
                     </button>
                     <button class="tab-btn" onclick="showEngineeringTab('compute')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
-                        変数の計算 (合計・平均)
-                    </button>
-                    <button class="tab-btn" onclick="showEngineeringTab('merge')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
-                        データの結合 (CSVマージ)
+                        変数の手動計算 (合計・平均等)
                     </button>
                     <button class="tab-btn" onclick="showEngineeringTab('cleansing')" style="padding: 0.5rem 1rem; background: none; border: none; border-bottom: 3px solid transparent; font-weight: bold; color: #718096; cursor: pointer; white-space: nowrap;">
                         文字列の整形 (全角半角・空白除去)
@@ -540,7 +537,7 @@ export function render(container, currentData, dataCharacteristics) {
                 <div id="eng-tab-compute" style="display: none;">
                     <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
                         <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
-                            <i class="fas fa-calculator"></i> 複数の変数をまとめて、新しい変数（合計点や平均点）を作成します。因子得点の計算などに便利です。
+                            <i class="fas fa-calculator"></i> 複数の変数を手動でまとめて、新しい変数（合計点や平均点）を作成します。
                         </p>
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label style="font-weight: bold;">計算に使用する変数 (複数選択可):</label>
@@ -568,33 +565,6 @@ export function render(container, currentData, dataCharacteristics) {
                 </div>
                     </div>
                 </div>
-
-                <!-- Tab 7: Merge -->
-                <div id="eng-tab-merge" style="display: none;">
-                    <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
-                        <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
-                            <i class="fas fa-object-ungroup"></i> 別のファイル（CSV）を読み込み、共通のキー変数（IDなど）を元にして現在のデータに横結合します。
-                        </p>
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="font-weight: bold;">結合するファイルを選択 (CSV形式):</label>
-                            <input type="file" id="merge-file-input" accept=".csv" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;">
-                        </div>
-                        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                            <div class="form-group" style="flex: 1;">
-                                <label style="font-weight: bold;">現在のデータのキー変数:</label>
-                                <select id="merge-key-base" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;"></select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label style="font-weight: bold;">追加ファイルのキー変数:</label>
-                                <select id="merge-key-new" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #cbd5e1;"></select>
-                            </div>
-                        </div>
-                        <button id="apply-merge-btn" class="btn-analysis" style="background: #805ad5; width: 100%;" disabled>
-                            <i class="fas fa-object-ungroup"></i> データを結合する
-                        </button>
-                    </div>
-                </div>
-
                 <!-- Tab 8: Text Cleansing -->
                 <div id="eng-tab-cleansing" style="display: none;">
                     <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
@@ -702,7 +672,6 @@ function initEngineeringUI() {
         document.getElementById('eng-tab-standardize').style.display = tabName === 'standardize' ? 'block' : 'none';
         document.getElementById('eng-tab-recode').style.display = tabName === 'recode' ? 'block' : 'none';
         document.getElementById('eng-tab-compute').style.display = tabName === 'compute' ? 'block' : 'none';
-        document.getElementById('eng-tab-merge').style.display = tabName === 'merge' ? 'block' : 'none';
         document.getElementById('eng-tab-cleansing').style.display = tabName === 'cleansing' ? 'block' : 'none';
 
         // ボタンのスタイル更新
@@ -713,8 +682,7 @@ function initEngineeringUI() {
             'categorize': '数値のグループ化',
             'standardize': '標準化 (Zスコア)',
             'recode': '値の変換',
-            'compute': '変数の計算',
-            'merge': 'データの結合',
+            'compute': '変数の手動計算',
             'cleansing': '文字列の整形'
         };
         buttons.forEach(btn => {
@@ -746,14 +714,8 @@ function initEngineeringUI() {
     // Compute用マルチセレクトの更新
     updateComputeColumnSelect();
 
-    // Merge用変数セレクトボックスの初期更新
-    updateMergeBaseColumnSelect();
-
     // Cleansing用マルチセレクトの更新
     updateCleansingColumnSelect();
-
-    // 新規ファイル読み込み処理の設定
-    setupMergeFileListener();
 
     // イベントリスナー
     document.getElementById('apply-filter-btn').onclick = applyFilter;
@@ -762,7 +724,6 @@ function initEngineeringUI() {
     document.getElementById('apply-standardize-btn').onclick = applyStandardize;
     document.getElementById('apply-recode-btn').onclick = applyRecode;
     document.getElementById('apply-compute-btn').onclick = applyCompute;
-    document.getElementById('apply-merge-btn').onclick = applyMerge;
     document.getElementById('apply-cleansing-btn').onclick = applyCleansing;
 }
 
@@ -790,10 +751,17 @@ function updateReverseColumnSelect() {
     const cols = Object.keys(originalData[0] || {});
 
     // Numeric columns only ideally, but we'll list all for now
-    import('../components/MultiSelect.js').then(module => {
-        const { MultiSelect } = module;
-        reverseMultiSelect = new MultiSelect(container, cols, []);
+    reverseMultiSelect = createVariableSelector(container, cols, 'reverse-multi-select', {
+        multiple: true,
+        placeholder: '選択してください...'
     });
+}
+
+function getMultiSelectValues(selectElement) {
+    if (!selectElement) return [];
+    return Array.from(selectElement.options)
+        .filter(opt => opt.selected)
+        .map(opt => opt.value);
 }
 
 function updateCategorizeColumnSelect() {
@@ -820,9 +788,9 @@ function updateStandardizeColumnSelect() {
     const cols = Object.keys(originalData[0] || {});
 
     // Numeric columns only ideally
-    import('../components/MultiSelect.js').then(module => {
-        const { MultiSelect } = module;
-        standardizeMultiSelect = new MultiSelect(container, cols, []);
+    standardizeMultiSelect = createVariableSelector(container, cols, 'standardize-multi-select', {
+        multiple: true,
+        placeholder: '選択してください...'
     });
 }
 
@@ -836,14 +804,11 @@ function updateRecodeColumnSelect() {
 
     const cols = Object.keys(originalData[0] || {});
 
-    import('../components/MultiSelect.js').then(module => {
-        const { MultiSelect } = module;
-        recodeMultiSelect = new MultiSelect(container, cols, {
-            onChange: () => updateRecodeMappingTable()
-        });
-    }).catch(err => {
-        console.error('Failed to load MultiSelect:', err);
+    recodeMultiSelect = createVariableSelector(container, cols, 'recode-multi-select', {
+        multiple: true,
+        placeholder: '選択してください...'
     });
+    recodeMultiSelect.addEventListener('change', updateRecodeMappingTable);
 }
 
 function updateComputeColumnSelect() {
@@ -855,15 +820,15 @@ function updateComputeColumnSelect() {
     // いや、MultiSelectは全ての変数を出してよい
     const cols = Object.keys(originalData[0] || {});
 
-    import('../components/MultiSelect.js').then(module => {
-        const { MultiSelect } = module;
-        engMultiSelect = new MultiSelect(container, cols, []);
+    engMultiSelect = createVariableSelector(container, cols, 'compute-multi-select', {
+        multiple: true,
+        placeholder: '選択してください...'
     });
 }
 
 function updateRecodeMappingTable() {
     if (!recodeMultiSelect) return;
-    const selectedCols = recodeMultiSelect.getValue();
+    const selectedCols = getMultiSelectValues(recodeMultiSelect);
     const container = document.getElementById('recode-mapping-area');
 
     if (selectedCols.length === 0) {
@@ -929,7 +894,7 @@ function updateRecodeMappingTable() {
 
 function applyRecode() {
     if (!recodeMultiSelect) return;
-    const selectedCols = recodeMultiSelect.getValue();
+    const selectedCols = getMultiSelectValues(recodeMultiSelect);
 
     if (selectedCols.length === 0) {
         alert('変換する変数を選択してください');
@@ -974,7 +939,7 @@ function applyRecode() {
 
 function applyReverse() {
     if (!reverseMultiSelect) return;
-    const selectedCols = reverseMultiSelect.getValue();
+    const selectedCols = getMultiSelectValues(reverseMultiSelect);
 
     if (selectedCols.length === 0) {
         alert('反転させる変数を選択してください');
@@ -1061,7 +1026,7 @@ function applyCategorize() {
 
 function applyStandardize() {
     if (!standardizeMultiSelect) return;
-    const selectedCols = standardizeMultiSelect.getValue();
+    const selectedCols = getMultiSelectValues(standardizeMultiSelect);
 
     if (selectedCols.length === 0) {
         alert('標準化する変数を選択してください');
@@ -1103,7 +1068,7 @@ function applyStandardize() {
 }
 
 function applyCompute() {
-    const selectedCols = engMultiSelect.getValue();
+    const selectedCols = getMultiSelectValues(engMultiSelect);
     if (selectedCols.length === 0) {
         alert('計算に使用する変数を選択してください');
         return;
@@ -1147,154 +1112,21 @@ function applyCompute() {
     updateDataAndUI(`${newColName} を作成しました`);
 }
 
-let mergeNewData = null;
-
-function updateMergeBaseColumnSelect() {
-    const baseSelect = document.getElementById('merge-key-base');
-    if (!baseSelect) return;
-    baseSelect.innerHTML = '<option value="">ベースデータのキーを選択...</option>';
-
-    if (originalData && originalData[0]) {
-        const cols = Object.keys(originalData[0]);
-        cols.forEach(col => {
-            const option = document.createElement('option');
-            option.value = col;
-            option.textContent = col;
-            baseSelect.appendChild(option);
-        });
-    }
-}
-
-function setupMergeFileListener() {
-    const fileInput = document.getElementById('merge-file-input');
-    if (!fileInput) {
-        return;
-    }
-
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) {
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            try {
-                const data = evt.target.result;
-                let jsonData;
-
-                if (file.name.endsWith('.csv')) {
-                    const workbook = XLSX.read(data, { type: 'string', raw: true });
-                    jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                } else {
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                }
-
-                if (jsonData.length === 0) {
-                    alert('ファイルにデータが含まれていません。');
-                    return;
-                }
-
-                mergeNewData = jsonData;
-
-                const newSelect = document.getElementById('merge-key-new');
-                newSelect.innerHTML = '<option value="">追加データのキーを選択...</option>';
-
-                if (mergeNewData && mergeNewData[0]) {
-                    const cols = Object.keys(mergeNewData[0]);
-                    cols.forEach(col => {
-                        const option = document.createElement('option');
-                        option.value = col;
-                        option.textContent = col;
-                        newSelect.appendChild(option);
-                    });
-                }
-
-                // 有効化
-                document.getElementById('apply-merge-btn').disabled = false;
-
-            } catch (error) {
-                console.error(error);
-                alert('ファイルの読み込みに失敗しました。');
-            }
-        };
-
-        if (file.name.endsWith('.csv')) {
-            reader.readAsText(file);
-        } else {
-            reader.readAsArrayBuffer(file);
-        }
-    });
-}
-
-function applyMerge() {
-    const keyBase = document.getElementById('merge-key-base').value;
-    const keyNew = document.getElementById('merge-key-new').value;
-
-    if (!keyBase || !keyNew || !mergeNewData) {
-        alert('キー変数と結合するファイルが正しく選択されていません。');
-        return;
-    }
-
-    // 新しいデータをキーでマップ化（検索を高速にするため）
-    const newDataMap = {};
-    mergeNewData.forEach(row => {
-        const keyVal = row[keyNew];
-        if (keyVal !== undefined && keyVal !== null && keyVal !== '') {
-            newDataMap[keyVal] = row;
-        }
-    });
-
-    const newCols = Object.keys(mergeNewData[0] || {}).filter(c => c !== keyNew);
-    let matchedCount = 0;
-
-    originalData.forEach(row => {
-        const baseVal = row[keyBase];
-        if (baseVal !== undefined && baseVal !== null && newDataMap[baseVal]) {
-            const matchedRow = newDataMap[baseVal];
-            matchedCount++;
-            newCols.forEach(col => {
-                const finalColName = row.hasOwnProperty(col) ? `${col}_add` : col;
-                row[finalColName] = matchedRow[col];
-            });
-        } else {
-            // 一致しない場合は欠損（null等）として扱う
-            newCols.forEach(col => {
-                const finalColName = row.hasOwnProperty(col) ? `${col}_add` : col;
-                if (!row.hasOwnProperty(finalColName)) {
-                    row[finalColName] = null;
-                }
-            });
-        }
-    });
-
-    // 初期化と再描画
-    document.getElementById('merge-file-input').value = '';
-    mergeNewData = null;
-    document.getElementById('merge-key-new').innerHTML = '';
-    document.getElementById('apply-merge-btn').disabled = true;
-
-    updateDataAndUI(`${matchedCount} 行のデータに結合しました`);
-}
-
 function updateCleansingColumnSelect() {
     const container = document.getElementById('cleansing-col-select-container');
     if (!container) return;
     container.innerHTML = '';
     const cols = Object.keys(originalData[0] || {});
 
-    import('../components/MultiSelect.js').then(module => {
-        const { MultiSelect } = module;
-        cleansingMultiSelect = new MultiSelect(container, cols, []);
-    }).catch(err => {
-        console.error('Failed to load MultiSelect:', err);
+    cleansingMultiSelect = createVariableSelector(container, cols, 'cleansing-multi-select', {
+        multiple: true,
+        placeholder: '選択してください...'
     });
 }
 
 function applyCleansing() {
     if (!cleansingMultiSelect) return;
-    const selectedCols = cleansingMultiSelect.getValue();
+    const selectedCols = getMultiSelectValues(cleansingMultiSelect);
 
     if (selectedCols.length === 0) {
         alert('整形する変数を選択してください');
