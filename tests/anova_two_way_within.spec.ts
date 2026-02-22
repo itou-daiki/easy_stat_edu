@@ -26,7 +26,7 @@ test('Two-Way Within-Subjects ANOVA Verification', async ({ page }) => {
     await expect(page.locator('#analysis-area')).toBeVisible();
 
     // 4. Select Within Design
-    const withinLabel = page.locator('label').filter({ hasText: '対応あり (Within)' });
+    const withinLabel = page.locator('label').filter({ hasText: '反復測定（対応あり）' });
     await withinLabel.click();
 
     // Verify controls visible
@@ -71,6 +71,10 @@ test('Two-Way Within-Subjects ANOVA Verification', async ({ page }) => {
     console.log('ANOVA Table Text:', anovaText);
     await expect(anovaTable).toContainText('Time');
     await expect(anovaTable).toContainText('Time × Skill'); // Note: The x might be times symbol or x
+
+    // Check Data Preview Visibility
+    const dataPreview = page.locator('#anova-data-overview');
+    await expect(dataPreview).toBeVisible();
 
     // Check for Interaction Plot
     await expect(page.locator('#visualization-section .js-plotly-plot')).toBeVisible();

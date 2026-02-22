@@ -26,7 +26,7 @@ test('Two-Way Mixed ANOVA Multi-Pair Verification', async ({ page }) => {
     await expect(page.locator('#analysis-area')).toBeVisible();
 
     // 4. Select "Mixed Design"
-    const mixedLabel = page.locator('label').filter({ hasText: '混合計画 (Mixed)' });
+    const mixedLabel = page.locator('label').filter({ hasText: '混合計画（Mixed）' });
     await mixedLabel.click();
     await expect(page.locator('#mixed-controls')).toBeVisible();
 
@@ -41,6 +41,10 @@ test('Two-Way Mixed ANOVA Multi-Pair Verification', async ({ page }) => {
     await preContainer.locator('.pairs-select-input').click();
     await preContainer.locator('.pairs-select-option').nth(2).click(); // e.g. Pre_Score
     await page.locator('h1').click(); // Close dropdown
+
+    // Check Data Preview Visibility
+    const dataPreview = page.locator('#anova-data-overview');
+    await expect(dataPreview).toBeVisible();
 
     // Select Post
     const postContainer = page.locator('#mixed-var-post-container');

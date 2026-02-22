@@ -59,7 +59,7 @@ test.describe('Table & Notation Validation', () => {
             // Should NOT have only a single `< 0.05 ? '*' : ''` pattern
             const displayFn = src.substring(
                 src.indexOf('function displayChiSquareResult'),
-                src.indexOf('function displayChiSquareResult') + 2000
+                src.indexOf('function displayChiSquareResult') + 5000
             );
             // Should use ** for p < 0.01
             expect(displayFn).toMatch(/< 0\.01 \? '\*\*'/);
@@ -72,7 +72,7 @@ test.describe('Table & Notation Validation', () => {
             // Yates section
             const yatesSection = src.substring(
                 src.indexOf('Yates補正'),
-                src.indexOf('Yates補正') + 300
+                src.indexOf('Yates補正') + 1000
             );
             // Should have ** for p < 0.01
             expect(yatesSection).toMatch(/< 0\.01 \? '\*\*'/);

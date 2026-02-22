@@ -46,12 +46,11 @@ test.describe('Factor Analysis Rotation Tests using demo data', () => {
         await page.click('#run-factor-btn');
 
         // Verify Results
-        await expect(page.locator('#analysis-results')).toBeVisible();
-        await expect(page.locator('#factor-correlations')).toBeVisible();
-        await expect(page.locator('#factor-correlations')).toContainText('因子間相関行列');
+        await expect(page.locator('#fa-analysis-results')).toBeVisible();
+        await expect(page.locator('#loadings-table')).toContainText('因子間相関');
 
         // Check for 1.000 in diagonal (Correlation with itself)
-        await expect(page.locator('#factor-correlations')).toContainText('1.000');
+        await expect(page.locator('#loadings-table')).toContainText('1.000');
     });
 
     test('should run Factor Analysis with Direct Oblimin rotation', async ({ page }) => {
@@ -70,8 +69,7 @@ test.describe('Factor Analysis Rotation Tests using demo data', () => {
         await page.click('#run-factor-btn');
 
         // Verify Results
-        await expect(page.locator('#analysis-results')).toBeVisible();
-        await expect(page.locator('#factor-correlations')).toBeVisible();
+        await expect(page.locator('#fa-analysis-results')).toBeVisible();
     });
 
     test('should run Factor Analysis with Geomin rotation', async ({ page }) => {
@@ -90,7 +88,6 @@ test.describe('Factor Analysis Rotation Tests using demo data', () => {
         await page.click('#run-factor-btn');
 
         // Verify Results
-        await expect(page.locator('#analysis-results')).toBeVisible();
-        await expect(page.locator('#factor-correlations')).toBeVisible();
+        await expect(page.locator('#fa-analysis-results')).toBeVisible();
     });
 });

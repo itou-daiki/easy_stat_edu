@@ -35,9 +35,9 @@ test.describe('Statistical Accuracy Verification', () => {
         await expect(page.locator('#test-results-section')).toBeVisible();
 
         // Table in #test-results-table
-        // Row 1. T is col 10, P is col 11
-        const tText = await page.locator('#test-results-table table tbody tr:first-child td:nth-child(10)').innerText();
-        const pText = await page.locator('#test-results-table table tbody tr:first-child td:nth-child(11)').innerText();
+        // Row 1. T is col 6, P is col 8
+        const tText = await page.locator('#test-results-table table tbody tr:first-child td:nth-child(6)').innerText();
+        const pText = await page.locator('#test-results-table table tbody tr:first-child td:nth-child(8)').innerText();
 
         const tVal = parseFloat(tText);
         const pVal = parseFloat(pText.replace(/[^\d.-]/g, ''));
@@ -232,11 +232,12 @@ test.describe('Statistical Accuracy Verification', () => {
         await selectVariables(page, ['数学', '英語', '理科'], '#rep-dependent-var-container');
         await page.click('#run-rep-btn-container button');
 
-        await expect(page.locator('#test-results-section')).toBeVisible();
+        await expect(page.locator('#analysis-results')).toBeVisible();
 
-        // F and p are in result table (exclude APA table by using first)
-        const fText = await page.locator('#test-results-section table tbody tr:first-child td:nth-last-child(5)').first().innerText();
-        const pText = await page.locator('#test-results-section table tbody tr:first-child td:nth-last-child(4)').first().innerText();
+        // F and p are in result table
+        const resultTable = page.locator('#analysis-results h4', { hasText: '対応あり' }).locator('~ .table-container table').first();
+        const fText = await resultTable.locator('tbody tr:first-child td:nth-last-child(5)').innerText();
+        const pText = await resultTable.locator('tbody tr:first-child td:nth-last-child(4)').innerText();
 
         const fVal = parseFloat(fText);
         const pVal = parseFloat(pText.replace(/[^\d.-]/g, ''));
@@ -313,12 +314,16 @@ test.describe('Statistical Accuracy Verification', () => {
     test('Factor Analysis Accuracy', async ({ page }) => {
         await navigateToFeature(page, 'factor_analysis');
 
+        page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
         // Select numeric variables: 数学, 英語, 理科, 学習時間
         await selectVariables(page, ['数学', '英語', '理科', '学習時間'], '#factor-vars-container');
-        // Default factors = 2, Rotation = Varimax
+        // Default factors = 2, Rotation is promax by default so change to Varimax
+        await page.selectOption('#rotation-method', 'varimax');
         await page.click('#run-factor-btn');
 
-        await expect(page.locator('#analysis-results')).toBeVisible();
+        await expect(page.locator('#fa-analysis-results')).toBeVisible();
+        const htmlDump = await page.locator('#fa-analysis-results').innerHTML();
+        console.log('FA RESULTS HTML:', htmlDump);
 
         // 1. Check Initial Eigenvalues (Unrotated)
         // Table: #eigenvalues-table table
@@ -343,19 +348,30 @@ test.describe('Statistical Accuracy Verification', () => {
         // I'll add a comment that we suspect unrotated difference.
 
         // 2. Check Varimax Loadings
-        // Table: #loadings-table table
-        // Row 1: Variable "数学" (first selected)
-        // Col 2: Factor 1, Col 3: Factor 2
-        const loadTable = page.locator('#loadings-table table');
-        await expect(loadTable).toBeVisible();
+        const loadTable = page.locator('#loadings-table table tbody');
 
-        // Get loadings for first variable
-        const l1Text = await loadTable.locator('tbody tr:first-child td:nth-child(2)').innerText();
-        const l2Text = await loadTable.locator('tbody tr:first-child td:nth-child(3)').innerText();
-        const l1 = parseFloat(l1Text);
-        const l2 = parseFloat(l2Text);
+        // Get loadings for first variable (Math)
+        const mathRow = loadTable.locator('tr').filter({ hasText: '数学' }).first();
+        const mathL1Text = await mathRow.locator('td').nth(1).innerText();
+        const mathL2Text = await mathRow.locator('td').nth(2).innerText();
+        const l1 = parseFloat(mathL1Text);
+        const l2 = parseFloat(mathL2Text);
 
-        // Ground truth for first variable
+        console.log(`Math Loadings: L1=${l1}, L2=${l2}`);
+
+        // Math should have high loading on factor 1, low on factor 2
+        // Based on current data, Math is actually 0.829 on F1, -0.556 on F2
+        expect(Math.abs(l1)).toBeGreaterThan(0.7);
+
+        // Get loadings for Science
+        const sciRow = loadTable.locator('tr').filter({ hasText: '理科' }).first();
+        const sciL1Text = await sciRow.locator('td').nth(1).innerText();
+        const sciL2Text = await sciRow.locator('td').nth(2).innerText();
+        const sl1 = parseFloat(sciL1Text);
+        const sl2 = parseFloat(sciL2Text);
+        console.log(`Science Loadings: L1=${sl1}, L2=${sl2}`);
+
+        // Ground truth for first variable (Math)
         const gtLoadings = groundTruth.factor_analysis.varimax_loadings[0]; // [F1, F2]
 
         // Method to check if {l1, l2} is close to {gt1, gt2} allowing for sign flips and order swap

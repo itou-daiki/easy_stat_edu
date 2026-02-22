@@ -104,6 +104,7 @@ function setupEventListeners() {
         // データがロードされていない場合はエラー表示
         if (!currentData) {
             showError('分析を開始するには、データをアップロードするかデモデータを試してください。');
+            return;
         }
     });
 }
@@ -286,10 +287,19 @@ function updateFeatureCards() {
 
     featureGrid.querySelectorAll('.feature-card').forEach(card => {
         const req = card.dataset.requires;
-        if (!req || req === 'none') {
+
+        // data-requires="none" is special: works even without data (handled above in the click listener for no-data case, but here we just enable it)
+        if (req === 'none') {
             enableCard(card);
             return;
         }
+
+        // If there are no specific requirements (but it needs data, which is guaranteed here because dataCharacteristics exists)
+        if (!req) {
+            enableCard(card);
+            return;
+        }
+
         const meetsRequirements = req.split(',').every(r => {
             const [type, count] = r.split(':');
             return counts[type] >= parseInt(count, 10);

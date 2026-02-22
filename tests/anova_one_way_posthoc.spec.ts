@@ -29,7 +29,7 @@ test.describe('ANOVA One-Way Post-Hoc Verification', () => {
         await expect(postHocHeader).toBeVisible();
 
         // Check for 'q' statistic
-        const tableContent = await page.locator('#test-results-section').textContent();
+        const tableContent = await page.locator('#visualization-section').textContent();
         expect(tableContent).toContain('q=');
 
         // Check plot exists
@@ -55,7 +55,7 @@ test.describe('ANOVA One-Way Post-Hoc Verification', () => {
         await expect(postHocHeader).toBeVisible();
 
         // Check for 't' statistic (Holm uses t)
-        const tableContent = await page.locator('#test-results-section').textContent();
+        const tableContent = await page.locator('#visualization-section').textContent();
         expect(tableContent).toContain('t=');
     });
 });

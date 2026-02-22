@@ -1,0 +1,1166 @@
+
+Running 219 tests using 5 workers
+
+  ✘    1 [chromium] › tests/anova_one_way_posthoc.spec.ts:13:9 › ANOVA One-Way Post-Hoc Verification › should running Tukey post-hoc test by default (4.1s)
+  ✘    5 [chromium] › tests/anova_one_way_posthoc.spec.ts:39:9 › ANOVA One-Way Post-Hoc Verification › should switch to Holm method (4.2s)
+  ✘    2 [chromium] › tests/analysis_support.spec.ts:58:9 › Analysis Support Feature › should navigate to analysis when recommendation clicked (8.5s)
+  ✘    3 [chromium] › tests/analysis_support.spec.ts:14:9 › Analysis Support Feature › should recommend Correlation/Regression for 2 numeric variables (8.7s)
+  ✘    4 [chromium] › tests/analysis_support.spec.ts:43:9 › Analysis Support Feature › should recommend T-test/U-test for 1 numeric + 1 binary categorical (8.7s)
+  ✓    6 [chromium] › tests/anova_one_way.spec.ts:13:9 › ANOVA One-Way Verification › should run ANOVA One-Way successfully (4.1s)
+  ✓   10 [chromium] › tests/anova_two_way_posthoc.spec.ts:46:9 › ANOVA Two-Way Post-Hoc Verification › should run Independent Two-Way ANOVA with Holm post-hoc (3.3s)
+  ✓    8 [chromium] › tests/anova_two_way_posthoc.spec.ts:13:9 › ANOVA Two-Way Post-Hoc Verification › should run Independent Two-Way ANOVA with Tukey post-hoc (3.6s)
+  ✘    7 [chromium] › tests/anova_two_way_independent.spec.ts:5:1 › Two-Way Independent ANOVA Verification (8.4s)
+  ✓   12 [chromium] › tests/anova_two_way.spec.ts:5:5 › Two-Way Mixed ANOVA Verification (2.3s)
+  ✓   13 [chromium] › tests/chi_square.spec.ts:13:9 › Chi-Square Test Verification › should run Chi-Square test successfully (2.5s)
+  ✓   14 [chromium] › tests/cross_tabulation.spec.ts:18:9 › Cross Tabulation › should navigate to cross tabulation card (2.1s)
+  ✓   15 [chromium] › tests/cross_tabulation.spec.ts:25:9 › Cross Tabulation › should display cross tabulation table with counts (2.2s)
+  ✓   16 [chromium] › tests/correlation.spec.ts:5:1 › Correlation Analysis Heatmap Verification (2.5s)
+  ✓   17 [chromium] › tests/data_merge.spec.ts:18:5 › Data Merge Feature › should navigate to data merge without uploading data (1.7s)
+  ✓   18 [chromium] › tests/data_merge.spec.ts:32:5 › Data Merge Feature › should upload two files and show previews (1.8s)
+  ✓   19 [chromium] › tests/data_merge.spec.ts:55:5 › Data Merge Feature › should detect common columns and merge data (1.5s)
+  ✓   20 [chromium] › tests/data_merge.spec.ts:97:5 › Data Merge Feature › should perform outer join correctly (1.8s)
+  ✓   21 [chromium] › tests/data_merge.spec.ts:126:5 › Data Merge Feature › should use custom suffixes for overlapping columns (1.9s)
+  ✓   22 [chromium] › tests/data_processing.spec.ts:5:9 › Data Processing - Bulk Recode › Verify Bulk Recode Functionality (2.1s)
+  ✓   23 [chromium] › tests/data_processing.spec.ts:145:9 › Data Processing - Bulk Recode › Verify Data Filter (絞り込み) Functionality (1.6s)
+  ✓   24 [chromium] › tests/data_processing.spec.ts:198:9 › Data Processing - Bulk Recode › Verify Reverse Scoring (自動反転) Functionality (1.8s)
+  ✓   25 [chromium] › tests/data_processing.spec.ts:251:9 › Data Processing - Bulk Recode › Verify Categorization (数値のカテゴリ化) Functionality (1.7s)
+  ✓   26 [chromium] › tests/data_processing.spec.ts:296:9 › Data Processing - Bulk Recode › Verify Standardization (Zスコア変換) Functionality (1.4s)
+  ✓   27 [chromium] › tests/data_processing.spec.ts:347:9 › Data Processing - Bulk Recode › Verify Compute Variables (変数の計算: 合計・引き算等) Functionality (2.1s)
+  ✓   29 [chromium] › tests/data_processing.spec.ts:471:9 › Data Processing - Bulk Recode › Verify Text Cleansing (テキストクレンジング) Functionality (1.8s)
+  ✓   28 [chromium] › tests/data_processing.spec.ts:415:9 › Data Processing - Bulk Recode › Verify Data Merge (データの結合) Functionality (2.5s)
+Checking group-var element...
+Count: [33m1[39m
+IsVisible: [33mtrue[39m
+IsAttached: [33mtrue[39m
+HTML: <select id="group-var" style="width: 100%; padding: 0.75rem; border: 2px solid rgb(203, 213, 224); border-radius: 8px; font-size: 1rem;"><option value="">選択してください...</option><option value="組">組</option></select>
+  ✓   32 [chromium] › tests/debug3.spec.ts:4:5 › debug locate group-var (1.5s)
+HTML: 
+            <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
+                    <i class="fas fa-vial"></i> t検定
+                </h3>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">検定タイプを選択して分析を実行します</p>
+            </div>
+
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note">
+                        <strong><i class="fas fa-lightbulb"></i> t検定 (t-Test) とは？</strong>
+                        <p>「A組とB組のテストの平均点に違いがあるか？」のように、2つのグループの平均値を比較して、その差が偶然かどうかを調べる統計手法です。</p>
+                        <img src="image/ttest.png" alt="t検定のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                    </div>
+                    <h4>どういう時に使うの？</h4>
+                    <ul>
+                        <li><i class="fas fa-check"></i> <strong>独立な2群:</strong> 「薬を飲んだグループ」と「飲まなかったグループ」で効果を比較したいとき</li>
+                        <li><i class="fas fa-check"></i> <strong>対応あり:</strong> 同じ人で「ダイエット前」と「ダイエット後」の体重を比較したいとき</li>
+                        <li><i class="fas fa-check"></i> <strong>1サンプル:</strong> 「このクラスの平均点」が「全国平均（50点）」と違うか調べたいとき</li>
+                    </ul>
+                    <h4>結果の読み方</h4>
+                    <ul>
+                        <li><strong>p値 (有意確率):</strong> 「0.05 (5%)」より小さければ、「統計的に意味のある差がある（有意差あり）」と判断します。</li>
+                        <li><strong>効果量 (d):</strong> 差の「大きさ」を表します（データの数に関係ない指標）。0.2=小、0.5=中、0.8=大 が目安です。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- ロジック詳説 -->
+            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+                <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
+                    <h3><i class="fas fa-code"></i> 分析ロジック・計算式詳説 (専門家向け)</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="collapsible-content collapsed">
+                    <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
+                        <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
+                        <p>本ページでは、以下の標準的な統計ロジックに基づき計算を行っています（ソースコード準拠）。</p>
+                        <ul>
+                            <li><strong>独立な2群:</strong> ウェルチのt検定 (Welch's t-test)
+                                <ul>
+                                    <li>等分散を仮定しません。</li>
+                                    <li>統計量: ( t = rac{ar{X}_1 - ar{X}_2}{sqrt{s_1^2/n_1 + s_2^2/n_2}} )</li>
+                                    <li>自由度: ウェルチ・サタスウェイトの式で近似</li>
+                                    <li>効果量 (Cohens d): プールされた標準偏差を使用 (( d = rac{ar{X}_1 - ar{X}_2}{SD_{pooled}} ))</li>
+                                </ul>
+                            </li>
+                            <li><strong>対応のある2群:</strong> 差分の1標本t検定
+                                <ul>
+                                    <li>効果量 (d): 差分の平均 / 差分の標準偏差 (( d_z ))</li>
+                                </ul>
+                            </li>
+                            <li><strong>1サンプル:</strong> 標本平均と検定値 (mu_0) の比較
+                                <ul>
+                                    <li>統計量: ( t = rac{ar{X} - mu_0}{s / sqrt{n}} ) (df = n-1)</li>
+                                    <li>効果量: ( d = rac{|ar{X} - mu_0|}{s} )</li>
+                                </ul>
+                            </li>
+                            <li><strong>p値:</strong> t分布の累積分布関数 (CDF) から算出 (両側検定)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ttest-data-overview" class="info-sections" style="margin-bottom: 2rem;">
+        <div class="collapsible-section">
+            <div class="collapsible-header collapsed">
+                <h3><i class="fas fa-table"></i> データプレビュー</h3>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="collapsible-content collapsed">
+                <div id="_ttest_data_overview_dataframe" class="table-container">
+            <h5>データプレビュー (100行 × 4列)</h5>
+            <div class="table-container" style="overflow-x: auto; max-height: 600px; overflow-y: auto;">
+            <table class="table">
+                <thead>
+                    <tr style="position: sticky; top: 0; background: #f1f5f9; z-index: 10;">
+        <th data-column="組" style="cursor: pointer;">組</th><th data-column="英語" style="cursor: pointer;">英語</th><th data-column="国語" style="cursor: pointer;">国語</th><th data-column="数学" style="cursor: pointer;">数学</th>
+                    </tr>
+                </thead>
+                <tbody>
+        <tr><td>A組</td><td>40</td><td>59</td><td>64</td></tr><tr><td>B組</td><td>47</td><td>65</td><td>51</td></tr><tr><td>A組</td><td>32</td><td>76</td><td>41</td></tr><tr><td>B組</td><td>43</td><td>71</td><td>57</td></tr><tr><td>B組</td><td>53</td><td>52</td><td>60</td></tr><tr><td>A組</td><td>43</td><td>77</td><td>47</td></tr><tr><td>B組</td><td>63</td><td>58</td><td>45</td></tr><tr><td>A組</td><td>39</td><td>65</td><td>44</td></tr><tr><td>B組</td><td>61</td><td>56</td><td>30</td></tr><tr><td>B組</td><td>42</td><td>64</td><td>42</td></tr><tr><td>B組</td><td>40</td><td>67</td><td>42</td></tr><tr><td>A組</td><td>36</td><td>72</td><td>47</td></tr><tr><td>A組</td><td>30</td><td>48</td><td>40</td></tr><tr><td>B組</td><td>58</td><td>61</td><td>52</td></tr><tr><td>A組</td><td>33</td><td>80</td><td>54</td></tr><tr><td>A組</td><td>55</td><td>49</td><td>64</td></tr><tr><td>B組</td><td>56</td><td>43</td><td>39</td></tr><tr><td>B組</td><td>51</td><td>71</td><td>38</td></tr><tr><td>A組</td><td>43</td><td>44</td><td>56</td></tr><tr><td>B組</td><td>45</td><td>57</td><td>46</td></tr><tr><td>B組</td><td>59</td><td>45</td><td>40</td></tr><tr><td>B組</td><td>40</td><td>49</td><td>53</td></tr><tr><td>B組</td><td>47</td><td>67</td><td>52</td></tr><tr><td>B組</td><td>59</td><td>60</td><td>56</td></tr><tr><td>A組</td><td>47</td><td>69</td><td>40</td></tr><tr><td>A組</td><td>60</td><td>66</td><td>60</td></tr><tr><td>B組</td><td>58</td><td>67</td><td>60</td></tr><tr><td>A組</td><td>46</td><td>71</td><td>51</td></tr><tr><td>A組</td><td>33</td><td>57</td><td>47</td></tr><tr><td>B組</td><td>45</td><td>55</td><td>49</td></tr><tr><td>A組</td><td>51</td><td>47</td><td>60</td></tr><tr><td>A組</td><td>58</td><td>69</td><td>53</td></tr><tr><td>A組</td><td>58</td><td>40</td><td>64</td></tr><tr><td>A組</td><td>53</td><td>77</td><td>60</td></tr><tr><td>A組</td><td>31</td><td>73</td><td>53</td></tr><tr><td>B組</td><td>60</td><td>63</td><td>41</td></tr><tr><td>A組</td><td>44</td><td>61</td><td>45</td></tr><tr><td>B組</td><td>51</td><td>75</td><td>49</td></tr><tr><td>A組</td><td>31</td><td>62</td><td>46</td></tr><tr><td>A組</td><td>59</td><td>76</td><td>50</td></tr><tr><td>B組</td><td>46</td><td>59</td><td>40</td></tr><tr><td>B組</td><td>43</td><td>56</td><td>34</td></tr><tr><td>B組</td><td>61</td><td>41</td><td>34</td></tr><tr><td>A組</td><td>56</td><td>65</td><td>44</td></tr><tr><td>B組</td><td>60</td><td>57</td><td>56</td></tr><tr><td>A組</td><td>30</td><td>67</td><td>52</td></tr><tr><td>B組</td><td>64</td><td>72</td><td>58</td></tr><tr><td>B組</td><td>54</td><td>46</td><td>47</td></tr><tr><td>B組</td><td>58</td><td>41</td><td>35</td></tr><tr><td>B組</td><td>61</td><td>40</td><td>35</td></tr><tr><td>B組</td><td>57</td><td>62</td><td>54</td></tr><tr><td>A組</td><td>53</td><td>47</td><td>47</td></tr><tr><td>B組</td><td>58</td><td>48</td><td>33</td></tr><tr><td>B組</td><td>51</td><td>74</td><td>43</td></tr><tr><td>B組</td><td>49</td><td>52</td><td>52</td></tr><tr><td>A組</td><td>53</td><td>52</td><td>48</td></tr><tr><td>A組</td><td>33</td><td>51</td><td>56</td></tr><tr><td>B組</td><td>65</td><td>69</td><td>45</td></tr><tr><td>A組</td><td>58</td><td>57</td><td>63</td></tr><tr><td>A組</td><td>42</td><td>61</td><td>59</td></tr><tr><td>A組</td><td>31</td><td>51</td><td>45</td></tr><tr><td>A組</td><td>50</td><td>52</td><td>58</td></tr><tr><td>A組</td><td>31</td><td>72</td><td>44</td></tr><tr><td>A組</td><td>56</td><td>75</td><td>40</td></tr><tr><td>B組</td><td>53</td><td>46</td><td>48</td></tr><tr><td>A組</td><td>30</td><td>56</td><td>46</td></tr><tr><td>B組</td><td>51</td><td>60</td><td>45</td></tr><tr><td>B組</td><td>63</td><td>50</td><td>53</td></tr><tr><td>B組</td><td>65</td><td>60</td><td>49</td></tr><tr><td>B組</td><td>50</td><td>51</td><td>52</td></tr><tr><td>B組</td><td>44</td><td>54</td><td>48</td></tr><tr><td>A組</td><td>50</td><td>54</td><td>49</td></tr><tr><td>A組</td><td>34</td><td>43</td><td>51</td></tr><tr><td>B組</td><td>45</td><td>40</td><td>51</td></tr><tr><td>A組</td><td>33</td><td>60</td><td>49</td></tr><tr><td>B組</td><td>42</td><td>67</td><td>54</td></tr><tr><td>A組</td><td>51</td><td>51</td><td>54</td></tr><tr><td>A組</td><td>50</td><td>76</td><td>45</td></tr><tr><td>A組</td><td>31</td><td>75</td><td>52</td></tr><tr><td>B組</td><td>54</td><td>60</td><td>55</td></tr><tr><td>B組</td><td>40</td><td>48</td><td>45</td></tr><tr><td>B組</td><td>44</td><td>64</td><td>43</td></tr><tr><td>A組</td><td>59</td><td>47</td><td>47</td></tr><tr><td>B組</td><td>54</td><td>49</td><td>38</td></tr><tr><td>B組</td><td>65</td><td>80</td><td>43</td></tr><tr><td>B組</td><td>56</td><td>53</td><td>38</td></tr><tr><td>B組</td><td>40</td><td>65</td><td>44</td></tr><tr><td>B組</td><td>43</td><td>50</td><td>38</td></tr><tr><td>A組</td><td>32</td><td>68</td><td>65</td></tr><tr><td>B組</td><td>61</td><td>49</td><td>54</td></tr><tr><td>B組</td><td>44</td><td>59</td><td>53</td></tr><tr><td>B組</td><td>65</td><td>45</td><td>45</td></tr><tr><td>A組</td><td>35</td><td>42</td><td>63</td></tr><tr><td>B組</td><td>64</td><td>49</td><td>50</td></tr><tr><td>B組</td><td>46</td><td>48</td><td>46</td></tr><tr><td>B組</td><td>46</td><td>79</td><td>46</td></tr><tr><td>B組</td><td>40</td><td>73</td><td>37</td></tr><tr><td>B組</td><td>58</td><td>44</td><td>33</td></tr><tr><td>B組</td><td>41</td><td>80</td><td>56</td></tr><tr><td>A組</td><td>39</td><td>40</td><td>52</td></tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+            </div>
+        </div>
+
+        <div class="collapsible-section">
+            <div class="collapsible-header collapsed">
+                <h3><i class="fas fa-chart-bar"></i> 要約統計量</h3>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="collapsible-content collapsed">
+                <div id="_ttest_data_overview_summary" class="table-container">
+        <h5>要約統計量</h5>
+        <div class="table-container" style="overflow-x: auto; max-height: 600px; overflow-y: auto;">
+        <table class="table">
+            <thead>
+                <tr style="position: sticky; top: 0; background: #f1f5f9; z-index: 10;">
+                    <th>変数名</th>
+                    <th>型</th>
+                    <th>欠損値(%)</th>
+                    <th>平均</th>
+                    <th>標準偏差</th>
+                    <th>最小値</th>
+                    <th>中央値</th>
+                    <th>最大値</th>
+                    <th>ユニーク数</th>
+                </tr>
+            </thead>
+            <tbody>
+    
+            <tr>
+                <td><strong>組</strong></td>
+                <td>カテゴリ</td>
+                <td>0.0%</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>2</td>
+            </tr>
+        
+            <tr>
+                <td><strong>英語</strong></td>
+                <td>数値</td>
+                <td>0.0%</td>
+                <td>48.380</td>
+                <td>10.280</td>
+                <td>30.000</td>
+                <td>50.000</td>
+                <td>65.000</td>
+                <td>31</td>
+            </tr>
+        
+            <tr>
+                <td><strong>国語</strong></td>
+                <td>数値</td>
+                <td>0.0%</td>
+                <td>58.860</td>
+                <td>11.372</td>
+                <td>40.000</td>
+                <td>59.000</td>
+                <td>80.000</td>
+                <td>39</td>
+            </tr>
+        
+            <tr>
+                <td><strong>数学</strong></td>
+                <td>数値</td>
+                <td>0.0%</td>
+                <td>48.470</td>
+                <td>7.961</td>
+                <td>30.000</td>
+                <td>48.000</td>
+                <td>65.000</td>
+                <td>31</td>
+            </tr>
+        
+            </tbody>
+        </table>
+        </div>
+    </div>
+            </div>
+        </div>
+    </div>
+
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <label class="ttest-radio-label selected">
+                            <input type="radio" name="test-type" value="independent" checked="" style="margin-right: 0.5rem;">
+                            <strong>対応なしt検定</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">2つの独立したグループ間の平均値を比較</p>
+                        </label>
+                        <label class="ttest-radio-label">
+                            <input type="radio" name="test-type" value="paired" style="margin-right: 0.5rem;">
+                            <strong>対応ありt検定</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">同じ対象の2つの測定値を比較（前後比較など）</p>
+                        </label>
+                        <label class="ttest-radio-label">
+                            <input type="radio" name="test-type" value="one-sample" style="margin-right: 0.5rem;">
+                            <strong>1サンプルのt検定</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">標本の平均値を特定の値と比較</p>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="independent-controls" style="display: block;">
+                    <div id="group-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"><label style="font-weight: bold; color: rgb(45, 55, 72); display: block; margin-bottom: 0.5rem;"><i class="fas fa-layer-group"></i> グループ変数（カテゴリ変数、2群）を選択:</label><select id="group-var" style="width: 100%; padding: 0.75rem; border: 2px solid rgb(203, 213, 224); border-radius: 8px; font-size: 1rem;"><option value="">選択してください...</option><option value="組">組</option></select></div>
+                     <div id="dep-var-container" style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
+                          <div id="dep-var-multiselect"><label style="font-weight: bold; color: rgb(45, 55, 72); display: block; margin-bottom: 0.5rem;"><i class="fas fa-check-square"></i> 従属変数を選択（複数選択可）:</label><select id="dep-var-multiselect-hidden" multiple="" style="display: none;"><option value="英語">英語</option><option value="国語">国語</option><option value="数学">数学</option></select><div class="multiselect-wrapper"><div class="multiselect-input"><span class="multiselect-placeholder">変数を選択...</span></div><div class="multiselect-dropdown"><div class="multiselect-option">
+            <input type="checkbox" class="multiselect-checkbox" value="英語" style="">
+            <span class="multiselect-label">英語</span>
+        </div><div class="multiselect-option">
+            <input type="checkbox" class="multiselect-checkbox" value="国語" style="">
+            <span class="multiselect-label">国語</span>
+        </div><div class="multiselect-option">
+            <input type="checkbox" class="multiselect-checkbox" value="数学" style="">
+            <span class="multiselect-label">数学</span>
+        </div></div></div></div>
+                     </div>
+                    <div id="independent-btn-container"><button id="run-independent-btn" class="btn-analysis" style="background-color: rgb(30, 144, 255);"><i class="fas fa-play"></i> 対応なしt検定を実行</button></div>
+                </div>
+                <div id="paired-controls" style="display: none;">
+                    <div style="padding: 1rem; background: #fafbfc; border-radius: 8px;">
+                        <h5 style="color: #2d3748; margin-bottom: 1rem;">変数ペアを選択:</h5>
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem;">
+                            <div id="paired-var-pre-container" style="flex: 1; min-width: 200px;"><label style="font-weight: bold; color: rgb(45, 55, 72); display: block; margin-bottom: 0.5rem;"><i class="fas fa-list-ol"></i> 観測変数（変更前など）:</label><select id="paired-var-pre" style="width: 100%; padding: 0.75rem; border: 2px solid rgb(203, 213, 224); border-radius: 8px; font-size: 1rem;"><option value="">変数を選択...</option><option value="英語">英語</option><option value="国語">国語</option><option value="数学">数学</option></select></div>
+                            <span style="font-weight: bold; color: #1e90ff; font-size: 1.5rem;">→</span>
+                            <div id="paired-var-post-container" style="flex: 1; min-width: 200px;"><label style="font-weight: bold; color: rgb(45, 55, 72); display: block; margin-bottom: 0.5rem;"><i class="fas fa-list-ol"></i> 測定変数（変更後など）:</label><select id="paired-var-post" style="width: 100%; padding: 0.75rem; border: 2px solid rgb(203, 213, 224); border-radius: 8px; font-size: 1rem;"><option value="">変数を選択...</option><option value="英語">英語</option><option value="国語">国語</option><option value="数学">数学</option></select></div>
+                            <button id="add-pair-btn" class="analysis-button" style="background-color: #28a745; min-width: 120px;">
+                                <i class="fas fa-plus"></i> ペアを追加
+                            </button>
+                        </div>
+                        
+                        <h5 style="color: #2d3748; margin-top: 2rem; margin-bottom: 1rem;">
+                            <i class="fas fa-list-ul"></i> 選択された変数ペア
+                        </h5>
+                        <div id="selected-pairs-list" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; min-height: 50px; background: white;"><p id="no-pairs-text" style="color: rgb(107, 114, 128);">ここに追加されたペアが表示されます</p></div>
+                        
+                        <div id="paired-btn-container" style="margin-top: 1.5rem;"><button id="run-paired-btn" class="btn-analysis" style="background-color: rgb(30, 144, 255);"><i class="fas fa-play"></i> 対応ありt検定を実行</button></div>
+                    </div>
+                </div>
+                <div id="one-sample-controls" style="display: none;">
+                    <div id="one-sample-var-container" style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;"><label style="font-weight: bold; color: rgb(45, 55, 72); display: block; margin-bottom: 0.5rem;"><i class="fas fa-vial"></i> 検定する変数を選択:</label><select id="one-sample-var" style="width: 100%; padding: 0.75rem; border: 2px solid rgb(203, 213, 224); border-radius: 8px; font-size: 1rem;"><option value="">選択してください...</option><option value="英語">英語</option><option value="国語">国語</option><option value="数学">数学</option></select></div>
+                    <div style="margin-bottom: 1rem; padding: 1rem; background: #fafbfc; border-radius: 8px;">
+                        <label for="one-sample-mu" style="font-weight: 500;">検定値 (比較したい値):</label>
+                        <input type="number" id="one-sample-mu" value="0" style="padding: 0.5rem; border: 1px solid rgb(203, 213, 224); border-radius: 4px;">
+                    </div>
+                    <div id="one-sample-btn-container"><button id="run-one-sample-btn" class="btn-analysis" style="background-color: rgb(30, 144, 255);"><i class="fas fa-play"></i> 1サンプルのt検定を実行</button></div>
+                </div>
+            </div>
+            <div id="results-section" style="display: none;">
+                <div id="summary-stats-section"></div>
+                <div id="test-results-section"></div>
+                <div id="interpretation-section"></div>
+                <div id="visualization-section"></div>
+            </div>
+        
+  ✓   30 [chromium] › tests/debug.spec.ts:4:5 › debug t-test (3.6s)
+HISTORY:
+1771700536039: independent-controls DOES NOT EXIST
+1771700536380: independent-controls DOES NOT EXIST
+1771700536439: independent-controls exists! display = block
+1771700536539: independent-controls exists! display = block
+1771700536638: independent-controls exists! display = block
+1771700536739: independent-controls exists! display = block
+1771700536838: independent-controls exists! display = block
+1771700536938: independent-controls exists! display = block
+1771700537038: independent-controls exists! display = block
+1771700537138: independent-controls exists! display = block
+1771700537238: independent-controls exists! display = block
+1771700537338: independent-controls exists! display = block
+1771700537439: independent-controls exists! display = block
+1771700537538: independent-controls exists! display = block
+1771700537638: independent-controls exists! display = block
+1771700537738: independent-controls exists! display = block
+1771700537839: independent-controls exists! display = block
+1771700537938: independent-controls exists! display = block
+1771700538039: independent-controls exists! display = block
+1771700538138: independent-controls exists! display = block
+1771700538238: independent-controls exists! display = block
+1771700538338: independent-controls exists! display = block
+  ✓   31 [chromium] › tests/debug2.spec.ts:4:5 › debug t-test deep (3.7s)
+  ✓   33 [chromium] › tests/eda.spec.ts:12:9 › EDA Verification › should generate EDA summary successfully (2.2s)
+  ✓   34 [chromium] › tests/eda.spec.ts:24:9 › EDA Verification › should run 2-variable analysis (2.5s)
+  ✘   35 [chromium] › tests/factor_analysis_rotation.spec.ts:29:5 › Factor Analysis Rotation Tests using demo data › should run Factor Analysis with Promax rotation (7.1s)
+  ✘   36 [chromium] › tests/factor_analysis_rotation.spec.ts:57:5 › Factor Analysis Rotation Tests using demo data › should run Factor Analysis with Direct Oblimin rotation (7.2s)
+  ✘   37 [chromium] › tests/factor_analysis_rotation.spec.ts:77:5 › Factor Analysis Rotation Tests using demo data › should run Factor Analysis with Geomin rotation (7.0s)
+  ✘   11 [chromium] › tests/anova_two_way_within.spec.ts:4:1 › Two-Way Within-Subjects ANOVA Verification (30.1s)
+  ✘    9 [chromium] › tests/anova_two_way_mixed_multipair.spec.ts:5:1 › Two-Way Mixed ANOVA Multi-Pair Verification (30.1s)
+  ✓   38 [chromium] › tests/factor_analysis.spec.ts:26:5 › Factor Analysis Basic Feature Tests › should display eigenvalues and scree plot (1.9s)
+  ✓   39 [chromium] › tests/factor_analysis.spec.ts:49:5 › Factor Analysis Basic Feature Tests › should display factor loadings matrix (2.3s)
+  ✓   40 [chromium] › tests/factor_analysis.spec.ts:66:5 › Factor Analysis Basic Feature Tests › should display factor interpretation (1.4s)
+  ✓   41 [chromium] › tests/factor_score.spec.ts:26:9 › Factor Score Calculator › should upload scale info and data files and show previews (1.2s)
+  ✓   42 [chromium] › tests/factor_score.spec.ts:45:9 › Factor Score Calculator › should calculate factor scores correctly (1.4s)
+  ✓   43 [chromium] › tests/factor_analysis.spec.ts:83:5 › Factor Analysis Basic Feature Tests › should run with Varimax rotation (default) (1.5s)
+  ✓   44 [chromium] › tests/factor_score.spec.ts:13:9 › Factor Score Calculator › should navigate to factor score without uploading data (1.5s)
+  ✓   46 [chromium] › tests/logistic_regression.spec.ts:14:9 › Logistic Regression › should navigate to logistic regression after data upload (1.1s)
+  ✓   45 [chromium] › tests/kruskal_wallis.spec.ts:4:5 › Kruskal-Wallis Test Verification (1.6s)
+  ✓   47 [chromium] › tests/logistic_regression.spec.ts:29:9 › Logistic Regression › should run logistic regression and display results (1.6s)
+  ✓   48 [chromium] › tests/mann_whitney_table.spec.ts:23:9 › Mann-Whitney U Test - Academic Table Format › should display academic-style result table with group descriptive stats (1.7s)
+  ✓   51 [chromium] › tests/mcnemar.spec.ts:25:9 › McNemar Test › should run McNemar test and display results (1.4s)
+  ✓   50 [chromium] › tests/mcnemar.spec.ts:18:9 › McNemar Test › should navigate to McNemar test card (2.1s)
+  ✓   52 [chromium] › tests/pca.spec.ts:12:9 › PCA Verification › should run PCA successfully (1.9s)
+  ✓   53 [chromium] › tests/regression.spec.ts:12:9 › Regression Analysis Verification › should run Simple Regression successfully (1.7s)
+  ✓   54 [chromium] › tests/regression.spec.ts:31:9 › Regression Analysis Verification › should run Multiple Regression successfully (2.3s)
+  ✓   56 [chromium] › tests/smoke_tests.spec.ts:181:9 › Smoke Tests for all Analyses › Verify EDA Analysis (1.2s)
+  ✓   57 [chromium] › tests/smoke_tests.spec.ts:181:9 › Smoke Tests for all Analyses › Verify T-Test Analysis (1.1s)
+  ✓   58 [chromium] › tests/smoke_tests.spec.ts:181:9 › Smoke Tests for all Analyses › Verify ANOVA (One-way) Analysis (1.3s)
+  ✓   59 [chromium] › tests/smoke_tests.spec.ts:181:9 › Smoke Tests for all Analyses › Verify Regression (Multiple) Analysis (1.2s)
+  ✓   60 [chromium] › tests/smoke_tests.spec.ts:181:9 › Smoke Tests for all Analyses › Verify Chi-Square Analysis (1.3s)
+  ✓   61 [chromium] › tests/smoke_tests.spec.ts:181:9 › Smoke Tests for all Analyses › Verify Text Mining Analysis (1.2s)
+Category Options Found: ["選択なし（全体分析のみ）","学年","部活動"]
+  ✘   49 [chromium] › tests/mann_whitney.spec.ts:12:9 › Mann-Whitney U Test Feature › should run Mann-Whitney U Test and display Reporting Table (6.5s)
+  ✓   64 [chromium] › tests/ttest.spec.ts:13:9 › T-Test Feature › should run Independent T-Test successfully (1.1s)
+  ✓   66 [chromium] › tests/unit/layout_consistency_validation.spec.ts:31:13 › Layout Consistency - Blue Title Banner › EDA should have blue title banner (126ms)
+  ✓   67 [chromium] › tests/unit/layout_consistency_validation.spec.ts:31:13 › Layout Consistency - Blue Title Banner › t-test should have blue title banner (110ms)
+  ✓   68 [chromium] › tests/unit/layout_consistency_validation.spec.ts:31:13 › Layout Consistency - Blue Title Banner › ANOVA One-Way should have blue title banner (95ms)
+  ✓   69 [chromium] › tests/unit/layout_consistency_validation.spec.ts:31:13 › Layout Consistency - Blue Title Banner › ANOVA Two-Way should have blue title banner (109ms)
+  ✓   70 [chromium] › tests/unit/layout_consistency_validation.spec.ts:31:13 › Layout Consistency - Blue Title Banner › Correlation should have blue title banner (104ms)
+  ✓   71 [chromium] › tests/unit/layout_consistency_validation.spec.ts:31:13 › Layout Consistency - Blue Title Banner › Simple Regression should have blue title banner (95ms)
+  ✓   72 [chromium] › tests/unit/layout_consistency_validation.spec.ts:31:13 › Layout Consistency - Blue Title Banner › Multiple Regression should have blue title banner (94ms)
+  ✓   73 [chromium] › tests/unit/layout_consistency_validation.spec.ts:31:13 › Layout Consistency - Blue Title Banner › Chi-Square should have blue title banner (105ms)
+  ✓   74 [chromium] › tests/unit/layout_consistency_validation.spec.ts:31:13 › Layout Consistency - Blue Title Banner › Mann-Whitney should have blue title banner (107ms)
+  ✓   75 [chromium] › tests/unit/layout_consistency_validation.spec.ts:31:13 › Layout Consistency - Blue Title Banner › Factor Analysis should have blue title banner (130ms)
+  ✓   76 [chromium] › tests/unit/layout_consistency_validation.spec.ts:31:13 › Layout Consistency - Blue Title Banner › Time Series should have blue title banner (150ms)
+  ✓   77 [chromium] › tests/unit/layout_consistency_validation.spec.ts:43:13 › Layout Consistency - Info Section › EDA should have collapsible info section (124ms)
+  ✓   78 [chromium] › tests/unit/layout_consistency_validation.spec.ts:43:13 › Layout Consistency - Info Section › t-test should have collapsible info section (130ms)
+  ✓   79 [chromium] › tests/unit/layout_consistency_validation.spec.ts:43:13 › Layout Consistency - Info Section › ANOVA One-Way should have collapsible info section (162ms)
+  ✓   80 [chromium] › tests/unit/layout_consistency_validation.spec.ts:43:13 › Layout Consistency - Info Section › ANOVA Two-Way should have collapsible info section (157ms)
+  ✓   65 [chromium] › tests/ttest.spec.ts:59:9 › T-Test Feature › should run Paired T-Test successfully (2.0s)
+  ✓   81 [chromium] › tests/unit/layout_consistency_validation.spec.ts:43:13 › Layout Consistency - Info Section › Correlation should have collapsible info section (132ms)
+  ✓   82 [chromium] › tests/unit/layout_consistency_validation.spec.ts:43:13 › Layout Consistency - Info Section › Simple Regression should have collapsible info section (142ms)
+  ✓   83 [chromium] › tests/unit/layout_consistency_validation.spec.ts:43:13 › Layout Consistency - Info Section › Multiple Regression should have collapsible info section (131ms)
+  ✓   85 [chromium] › tests/unit/layout_consistency_validation.spec.ts:43:13 › Layout Consistency - Info Section › Mann-Whitney should have collapsible info section (109ms)
+  ✓   84 [chromium] › tests/unit/layout_consistency_validation.spec.ts:43:13 › Layout Consistency - Info Section › Chi-Square should have collapsible info section (131ms)
+  ✓   87 [chromium] › tests/unit/layout_consistency_validation.spec.ts:43:13 › Layout Consistency - Info Section › Time Series should have collapsible info section (108ms)
+Initial Category: ＜１年＞ (N=65)
+  ✓   86 [chromium] › tests/unit/layout_consistency_validation.spec.ts:43:13 › Layout Consistency - Info Section › Factor Analysis should have collapsible info section (120ms)
+  ✓   89 [chromium] › tests/unit/layout_consistency_validation.spec.ts:55:13 › Layout Consistency - Logic Section › t-test should have collapsible logic section (111ms)
+  ✓   88 [chromium] › tests/unit/layout_consistency_validation.spec.ts:55:13 › Layout Consistency - Logic Section › EDA should have collapsible logic section (133ms)
+  ✓   90 [chromium] › tests/unit/layout_consistency_validation.spec.ts:55:13 › Layout Consistency - Logic Section › ANOVA One-Way should have collapsible logic section (101ms)
+  ✓   91 [chromium] › tests/unit/layout_consistency_validation.spec.ts:55:13 › Layout Consistency - Logic Section › ANOVA Two-Way should have collapsible logic section (115ms)
+  ✓   93 [chromium] › tests/unit/layout_consistency_validation.spec.ts:55:13 › Layout Consistency - Logic Section › Simple Regression should have collapsible logic section (93ms)
+  ✓   92 [chromium] › tests/unit/layout_consistency_validation.spec.ts:55:13 › Layout Consistency - Logic Section › Correlation should have collapsible logic section (116ms)
+  ✓   94 [chromium] › tests/unit/layout_consistency_validation.spec.ts:55:13 › Layout Consistency - Logic Section › Multiple Regression should have collapsible logic section (101ms)
+  ✓   95 [chromium] › tests/unit/layout_consistency_validation.spec.ts:55:13 › Layout Consistency - Logic Section › Chi-Square should have collapsible logic section (104ms)
+  ✓   97 [chromium] › tests/unit/layout_consistency_validation.spec.ts:55:13 › Layout Consistency - Logic Section › Factor Analysis should have collapsible logic section (97ms)
+  ✓   96 [chromium] › tests/unit/layout_consistency_validation.spec.ts:55:13 › Layout Consistency - Logic Section › Mann-Whitney should have collapsible logic section (119ms)
+  ✓   98 [chromium] › tests/unit/layout_consistency_validation.spec.ts:55:13 › Layout Consistency - Logic Section › Time Series should have collapsible logic section (123ms)
+  ✓   99 [chromium] › tests/unit/layout_consistency_validation.spec.ts:66:13 › Layout Consistency - Logic Section Ordering › EDA logic section should come after info section and before data overview (115ms)
+  ✓  100 [chromium] › tests/unit/layout_consistency_validation.spec.ts:66:13 › Layout Consistency - Logic Section Ordering › t-test logic section should come after info section and before data overview (118ms)
+  ✓  101 [chromium] › tests/unit/layout_consistency_validation.spec.ts:66:13 › Layout Consistency - Logic Section Ordering › ANOVA One-Way logic section should come after info section and before data overview (124ms)
+  ✓  103 [chromium] › tests/unit/layout_consistency_validation.spec.ts:66:13 › Layout Consistency - Logic Section Ordering › Correlation logic section should come after info section and before data overview (121ms)
+  ✓  102 [chromium] › tests/unit/layout_consistency_validation.spec.ts:66:13 › Layout Consistency - Logic Section Ordering › ANOVA Two-Way logic section should come after info section and before data overview (155ms)
+  ✓  104 [chromium] › tests/unit/layout_consistency_validation.spec.ts:66:13 › Layout Consistency - Logic Section Ordering › Simple Regression logic section should come after info section and before data overview (128ms)
+  ✓  105 [chromium] › tests/unit/layout_consistency_validation.spec.ts:66:13 › Layout Consistency - Logic Section Ordering › Multiple Regression logic section should come after info section and before data overview (114ms)
+  ✓  107 [chromium] › tests/unit/layout_consistency_validation.spec.ts:66:13 › Layout Consistency - Logic Section Ordering › Mann-Whitney logic section should come after info section and before data overview (126ms)
+  ✓  106 [chromium] › tests/unit/layout_consistency_validation.spec.ts:66:13 › Layout Consistency - Logic Section Ordering › Chi-Square logic section should come after info section and before data overview (128ms)
+  ✘   62 [chromium] › tests/text_mining_verification.spec.ts:7:5 › Text Mining Advanced Verification › Verify KH Coder-style Features (Tabs, Category, KWIC) (6.0s)
+  ✓  108 [chromium] › tests/unit/layout_consistency_validation.spec.ts:66:13 › Layout Consistency - Logic Section Ordering › Factor Analysis logic section should come after info section and before data overview (102ms)
+  ✓  109 [chromium] › tests/unit/layout_consistency_validation.spec.ts:66:13 › Layout Consistency - Logic Section Ordering › Time Series logic section should come after info section and before data overview (108ms)
+  ✓  110 [chromium] › tests/unit/layout_consistency_validation.spec.ts:83:13 › Layout Consistency - Data Overview › t-test should call renderDataOverview with initiallyCollapsed (111ms)
+  ✓  111 [chromium] › tests/unit/layout_consistency_validation.spec.ts:83:13 › Layout Consistency - Data Overview › ANOVA One-Way should call renderDataOverview with initiallyCollapsed (103ms)
+  ✘   63 [chromium] › tests/time_series.spec.ts:18:9 › Time Series Analysis Feature › should run Time Series Analysis and display plots (6.0s)
+  ✓  112 [chromium] › tests/unit/layout_consistency_validation.spec.ts:83:13 › Layout Consistency - Data Overview › ANOVA Two-Way should call renderDataOverview with initiallyCollapsed (115ms)
+  ✓  113 [chromium] › tests/unit/layout_consistency_validation.spec.ts:83:13 › Layout Consistency - Data Overview › Correlation should call renderDataOverview with initiallyCollapsed (114ms)
+  ✓  114 [chromium] › tests/unit/layout_consistency_validation.spec.ts:83:13 › Layout Consistency - Data Overview › Multiple Regression should call renderDataOverview with initiallyCollapsed (94ms)
+  ✓  115 [chromium] › tests/unit/layout_consistency_validation.spec.ts:83:13 › Layout Consistency - Data Overview › Chi-Square should call renderDataOverview with initiallyCollapsed (93ms)
+  ✓  116 [chromium] › tests/unit/layout_consistency_validation.spec.ts:83:13 › Layout Consistency - Data Overview › Mann-Whitney should call renderDataOverview with initiallyCollapsed (91ms)
+  ✓  117 [chromium] › tests/unit/layout_consistency_validation.spec.ts:83:13 › Layout Consistency - Data Overview › Factor Analysis should call renderDataOverview with initiallyCollapsed (95ms)
+  ✓  118 [chromium] › tests/unit/layout_consistency_validation.spec.ts:83:13 › Layout Consistency - Data Overview › Time Series should call renderDataOverview with initiallyCollapsed (94ms)
+  ✓  119 [chromium] › tests/unit/layout_consistency_validation.spec.ts:98:13 › Layout Consistency - Data Overview has info-sections class › EDA data overview div should have class="info-sections" (98ms)
+  ✓  120 [chromium] › tests/unit/layout_consistency_validation.spec.ts:98:13 › Layout Consistency - Data Overview has info-sections class › t-test data overview div should have class="info-sections" (96ms)
+  ✓  121 [chromium] › tests/unit/layout_consistency_validation.spec.ts:98:13 › Layout Consistency - Data Overview has info-sections class › ANOVA One-Way data overview div should have class="info-sections" (99ms)
+  ✓  123 [chromium] › tests/unit/layout_consistency_validation.spec.ts:98:13 › Layout Consistency - Data Overview has info-sections class › ANOVA Two-Way data overview div should have class="info-sections" (101ms)
+  ✓  124 [chromium] › tests/unit/layout_consistency_validation.spec.ts:98:13 › Layout Consistency - Data Overview has info-sections class › Correlation data overview div should have class="info-sections" (99ms)
+  ✓  125 [chromium] › tests/unit/layout_consistency_validation.spec.ts:98:13 › Layout Consistency - Data Overview has info-sections class › Simple Regression data overview div should have class="info-sections" (100ms)
+  ✓  126 [chromium] › tests/unit/layout_consistency_validation.spec.ts:98:13 › Layout Consistency - Data Overview has info-sections class › Multiple Regression data overview div should have class="info-sections" (94ms)
+  ✓  122 [chromium] › tests/unit/layout_consistency_validation.spec.ts:83:13 › Layout Consistency - Data Overview › EDA should call renderDataOverview with initiallyCollapsed (141ms)
+  ✓  128 [chromium] › tests/unit/layout_consistency_validation.spec.ts:98:13 › Layout Consistency - Data Overview has info-sections class › Chi-Square data overview div should have class="info-sections" (94ms)
+  ✓  129 [chromium] › tests/unit/layout_consistency_validation.spec.ts:98:13 › Layout Consistency - Data Overview has info-sections class › Mann-Whitney data overview div should have class="info-sections" (99ms)
+  ✓  130 [chromium] › tests/unit/layout_consistency_validation.spec.ts:98:13 › Layout Consistency - Data Overview has info-sections class › Factor Analysis data overview div should have class="info-sections" (95ms)
+  ✓  131 [chromium] › tests/unit/layout_consistency_validation.spec.ts:98:13 › Layout Consistency - Data Overview has info-sections class › Time Series data overview div should have class="info-sections" (108ms)
+  ✓  132 [chromium] › tests/unit/layout_consistency_validation.spec.ts:113:13 › Layout Consistency - Element Ordering › EDA should have info section before data overview (111ms)
+  ✓  133 [chromium] › tests/unit/layout_consistency_validation.spec.ts:113:13 › Layout Consistency - Element Ordering › t-test should have info section before data overview (140ms)
+  ✓  127 [chromium] › tests/unit/layout_consistency_validation.spec.ts:83:13 › Layout Consistency - Data Overview › Simple Regression should call renderDataOverview with initiallyCollapsed (160ms)
+  ✓  134 [chromium] › tests/unit/layout_consistency_validation.spec.ts:113:13 › Layout Consistency - Element Ordering › ANOVA One-Way should have info section before data overview (106ms)
+  ✓  135 [chromium] › tests/unit/layout_consistency_validation.spec.ts:113:13 › Layout Consistency - Element Ordering › ANOVA Two-Way should have info section before data overview (128ms)
+  ✓  136 [chromium] › tests/unit/layout_consistency_validation.spec.ts:113:13 › Layout Consistency - Element Ordering › Correlation should have info section before data overview (107ms)
+  ✓  138 [chromium] › tests/unit/layout_consistency_validation.spec.ts:113:13 › Layout Consistency - Element Ordering › Simple Regression should have info section before data overview (110ms)
+  ✓  137 [chromium] › tests/unit/layout_consistency_validation.spec.ts:113:13 › Layout Consistency - Element Ordering › Multiple Regression should have info section before data overview (133ms)
+  ✓  139 [chromium] › tests/unit/layout_consistency_validation.spec.ts:113:13 › Layout Consistency - Element Ordering › Chi-Square should have info section before data overview (109ms)
+  ✓  140 [chromium] › tests/unit/layout_consistency_validation.spec.ts:113:13 › Layout Consistency - Element Ordering › Mann-Whitney should have info section before data overview (110ms)
+k=3, df=10, q=3.877 -> p=0.049987088753254305
+  ✓  144 [chromium] › tests/unit/stat_distributions.spec.ts:22:13 › Statistical Distributions Utils › calculateTukeyP (Studentized Range CDF Approximation) › should return p ~ 0.05 for k=3, df=10, q=3.88 (8ms)
+k=5, df=20, q=4.232 -> p=0.0499896395145033
+  ✓  145 [chromium] › tests/unit/stat_distributions.spec.ts:29:13 › Statistical Distributions Utils › calculateTukeyP (Studentized Range CDF Approximation) › should return p ~ 0.05 for k=5, df=20, q=4.23 (11ms)
+k=4, df=60, q=4.999 -> p=0.004299831683689748
+  ✓  146 [chromium] › tests/unit/stat_distributions.spec.ts:36:13 › Statistical Distributions Utils › calculateTukeyP (Studentized Range CDF Approximation) › should return p ~ 0.01 for k=4, df=60, q=5.00 (5ms)
+  ✓  141 [chromium] › tests/unit/layout_consistency_validation.spec.ts:113:13 › Layout Consistency - Element Ordering › Factor Analysis should have info section before data overview (134ms)
+  ✓  142 [chromium] › tests/unit/layout_consistency_validation.spec.ts:113:13 › Layout Consistency - Element Ordering › Time Series should have info section before data overview (117ms)
+  ✓  143 [chromium] › tests/unit/layout_consistency_validation.spec.ts:129:9 › Layout Consistency - Time Series Specific › time_series.js should NOT wrap everything in a single white card (115ms)
+  ✓  147 [chromium] › tests/unit/stat_distributions.spec.ts:44:13 › Statistical Distributions Utils › calculateTukeyP (Studentized Range CDF Approximation) › should behave correctly for extreme values (9ms)
+  ✓  148 [chromium] › tests/unit/stat_distributions.spec.ts:51:13 › Statistical Distributions Utils › performHolmCorrection › should correctly adjust p-values (2ms)
+  ✓  149 [chromium] › tests/unit/stat_distributions.spec.ts:80:13 › Statistical Distributions Utils › performHolmCorrection › should cap at 1.0 (2ms)
+  ✓  151 [chromium] › tests/unit/statistical_logic_validation.spec.ts:26:13 › Statistical Logic Validation › EDA - Standard Deviation › eda.js should call jstat.stdev(true) not jstat.stdev() (112ms)
+  ✓  150 [chromium] › tests/unit/statistical_logic_validation.spec.ts:47:13 › Statistical Logic Validation › ANOVA - Greenhouse-Geisser Epsilon › GG epsilon formula should use trace of S_tilde, not variance of marginal means (112ms)
+  ✓  155 [chromium] › tests/unit/statistical_logic_validation.spec.ts:166:13 › Statistical Logic Validation › Levene Test - Brown-Forsythe variant › Levene edge case: equal variance groups should return non-significant (92ms)
+  ✓  154 [chromium] › tests/unit/statistical_logic_validation.spec.ts:152:13 › Statistical Logic Validation › Levene Test - Brown-Forsythe variant › source code should use jStat.median instead of jStat.mean for deviations (109ms)
+  ✓  156 [chromium] › tests/unit/statistical_logic_validation.spec.ts:185:13 › Statistical Logic Validation › Mann-Whitney U Test - Z value convention › source code should report |Z| (absolute value) for display (90ms)
+  ✓  157 [chromium] › tests/unit/statistical_logic_validation.spec.ts:199:13 › Statistical Logic Validation › Simple Regression - Intercept Statistics › source code should compute SE, t-value, and p-value for the intercept (93ms)
+  ✓  158 [chromium] › tests/unit/statistical_logic_validation.spec.ts:218:13 › Statistical Logic Validation › t-test - Effect Size Labeling › paired t-test should label effect size as d_z (100ms)
+  ✓  159 [chromium] › tests/unit/statistical_logic_validation.spec.ts:232:13 › Statistical Logic Validation › t-test - Significance Consistency › one-sample t-test should include marginal significance (†) for p < 0.1 (100ms)
+  ✓  160 [chromium] › tests/unit/statistical_logic_validation.spec.ts:253:13 › Statistical Logic Validation › EDA - Skewness and Kurtosis Guards › calculateSkewness should guard against n < 3 (97ms)
+  ✓  161 [chromium] › tests/unit/statistical_logic_validation.spec.ts:266:13 › Statistical Logic Validation › EDA - Skewness and Kurtosis Guards › calculateKurtosis should guard against n < 4 (101ms)
+  ✓  163 [chromium] › tests/unit/statistical_logic_validation.spec.ts:292:13 › Statistical Logic Validation › Chi-square - Documentation Consistency › cross-tabulation table should have proper thead tag (102ms)
+  ✓  162 [chromium] › tests/unit/statistical_logic_validation.spec.ts:284:13 › Statistical Logic Validation › Chi-square - Documentation Consistency › documentation should correctly state Yates correction IS applied for 2x2 (108ms)
+  ✓  165 [chromium] › tests/unit/table_notation_validation.spec.ts:31:13 › Table & Notation Validation › Significance Symbol Consistency › regression_simple.js should use full significance chain in result table (100ms)
+  ✓  164 [chromium] › tests/unit/table_notation_validation.spec.ts:17:13 › Table & Notation Validation › Time Series - Plotly Config › should not use createPlotlyConfig().layout or createPlotlyConfig().config (114ms)
+  ✓  166 [chromium] › tests/unit/table_notation_validation.spec.ts:41:13 › Table & Notation Validation › Significance Symbol Consistency › regression_multiple.js intercept should use full significance chain (107ms)
+  ✘  167 [chromium] › tests/unit/table_notation_validation.spec.ts:54:13 › Table & Notation Validation › Significance Symbol Consistency › chi_square.js main p-value should use full significance chain (130ms)
+  ✓  168 [chromium] › tests/unit/table_notation_validation.spec.ts:68:13 › Table & Notation Validation › Significance Symbol Consistency › chi_square.js Yates p-value should use full significance chain (116ms)
+  ✓  169 [chromium] › tests/unit/table_notation_validation.spec.ts:97:13 › Table & Notation Validation › Correlation APA Table › APA table data cells should include dagger for p < 0.1 (120ms)
+  ✓  170 [chromium] › tests/unit/table_notation_validation.spec.ts:117:13 › Table & Notation Validation › Factor Analysis - Rotation Labels › should handle promax, oblimin, geomin rotation labels (89ms)
+  ✓  171 [chromium] › tests/unit/table_notation_validation.spec.ts:134:13 › Table & Notation Validation › PCA - Terminology › PCA section should use "主成分負荷量" not "因子負荷量" (89ms)
+  ✓  172 [chromium] › tests/unit/table_notation_validation.spec.ts:148:13 › Table & Notation Validation › Mann-Whitney - Z Header › column header should indicate absolute value |Z| (94ms)
+  ✓  173 [chromium] › tests/unit/table_notation_validation.spec.ts:161:13 › Table & Notation Validation › Regression - Negative Intercept › regression equation should handle negative intercept gracefully (87ms)
+  ✓  152 [chromium] › tests/unit/statistical_logic_validation.spec.ts:62:13 › Statistical Logic Validation › ANOVA - Greenhouse-Geisser Epsilon › GG epsilon should be 1.0 for compound symmetry matrix (1.6s)
+  ✓  153 [chromium] › tests/unit/statistical_logic_validation.spec.ts:105:13 › Statistical Logic Validation › ANOVA - Greenhouse-Geisser Epsilon › GG epsilon should be < 1 for non-spherical data (1.6s)
+  ✓  175 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:16:13 › T-test & ANOVA Table Validation › Two-Way ANOVA - Null Guard › p-value style should use null guard to prevent Error row styling (131ms)
+  ✓  176 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:36:13 › T-test & ANOVA Table Validation › P-value < .001 Formatting › paired t-test main table should format p < .001 (111ms)
+  ✘  177 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:52:13 › T-test & ANOVA Table Validation › P-value < .001 Formatting › one-sample t-test main table should format p < .001 (125ms)
+  ✓  178 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:66:13 › T-test & ANOVA Table Validation › P-value < .001 Formatting › anova_one_way visualization table should format p < .001 (111ms)
+  ✓  179 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:79:13 › T-test & ANOVA Table Validation › P-value < .001 Formatting › anova_two_way main table should format p < .001 (118ms)
+  ✓  174 [chromium] › tests/unit/table_notation_validation.spec.ts:86:13 › Table & Notation Validation › Correlation APA Table › APA table note should include dagger explanation (172ms)
+  ✓  181 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:125:13 › T-test & ANOVA Table Validation › T-stat Absolute Value › one-sample t-test APA table should use Math.abs for t-stat (115ms)
+  ✘  180 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:112:13 › T-test & ANOVA Table Validation › T-stat Absolute Value › one-sample t-test main table should use Math.abs for t-stat (151ms)
+  ✓  182 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:142:13 › T-test & ANOVA Table Validation › Significance Legend HTML Escaping › anova_one_way.js legends should use &lt; not raw < (123ms)
+  ✓  183 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:157:13 › T-test & ANOVA Table Validation › Two-Way ANOVA Mixed Path › mixed path should use !== null checks not truthiness (115ms)
+  ✓  184 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:193:13 › T-test & ANOVA Table Validation › Text Corrections › anova_one_way.js should use 的 → の in APA note (120ms)
+  ✓  185 [chromium] › tests/unit/utils_consistency_validation.spec.ts:16:13 › Utils & Cross-Module Consistency › createPairSelector - Duplicate DOM Append › should not have duplicate appendChild calls (125ms)
+  ✓  186 [chromium] › tests/unit/utils_consistency_validation.spec.ts:44:13 › Utils & Cross-Module Consistency › evaluatePValue - Significance Symbol Consistency › evaluatePValue should not return triple-star *** (125ms)
+  ✓  187 [chromium] › tests/unit/utils_consistency_validation.spec.ts:64:13 › Utils & Cross-Module Consistency › Correlation Visualization - Star System › correlation visualization should not use triple-star *** (121ms)
+  ✓  188 [chromium] › tests/unit/utils_consistency_validation.spec.ts:80:13 › Utils & Cross-Module Consistency › interpretCorrelation - Grammar › weak correlation label should be adjectival form (129ms)
+  ✓  190 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:98:13 › T-test & ANOVA Table Validation › T-stat Absolute Value › paired t-test APA table should use Math.abs for t-stat (139ms)
+  ✓  192 [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:173:13 › T-test & ANOVA Table Validation › Two-Way ANOVA Mixed Path › mixed/repeated paths should include significance legend (138ms)
+  ✓  193 [chromium] › tests/verification/accuracy_verification.spec.ts:74:9 › Statistical Accuracy Verification › Correlation Accuracy (1.7s)
+  ✓  194 [chromium] › tests/verification/accuracy_verification.spec.ts:90:9 › Statistical Accuracy Verification › Chi-Square Accuracy (1.5s)
+  ✓  191 [chromium] › tests/verification/accuracy_verification.spec.ts:53:9 › Statistical Accuracy Verification › ANOVA One-Way Accuracy (2.3s)
+  ✓  195 [chromium] › tests/verification/accuracy_verification.spec.ts:118:9 › Statistical Accuracy Verification › Two-Way ANOVA Independent Accuracy (1.6s)
+  ✓  196 [chromium] › tests/verification/accuracy_verification.spec.ts:157:9 › Statistical Accuracy Verification › Simple Regression Accuracy (1.7s)
+  -  199 [chromium] › tests/verification/accuracy_verification.spec.ts:249:10 › Statistical Accuracy Verification › Mixed ANOVA Accuracy
+  ✓  197 [chromium] › tests/verification/accuracy_verification.spec.ts:187:9 › Statistical Accuracy Verification › Multiple Regression Accuracy (2.0s)
+  ✓  200 [chromium] › tests/verification/accuracy_verification.spec.ts:287:9 › Statistical Accuracy Verification › PCA Accuracy (1.8s)
+  ✓  202 [chromium] › tests/verification/accuracy_verification.spec.ts:371:9 › Statistical Accuracy Verification › Text Mining Integration (2.0s)
+  ✓  203 [chromium] › tests/visual_verification_all.spec.ts:34:9 › Visual Verification: All Features › EDA: Visualization (3.3s)
+  ✘  198 [chromium] › tests/verification/accuracy_verification.spec.ts:225:9 › Statistical Accuracy Verification › One-Way Repeated ANOVA Accuracy (7.3s)
+  ✓  204 [chromium] › tests/visual_verification_all.spec.ts:50:9 › Visual Verification: All Features › Correlation Analysis (2.2s)
+  ✓  205 [chromium] › tests/visual_verification_all.spec.ts:60:9 › Visual Verification: All Features › Chi-Square Test (1.8s)
+  ✓  206 [chromium] › tests/visual_verification_all.spec.ts:73:9 › Visual Verification: All Features › T-Test (Independent) (1.8s)
+  ✓  207 [chromium] › tests/visual_verification_all.spec.ts:85:9 › Visual Verification: All Features › Mann-Whitney U Test (1.8s)
+  ✘   55 [chromium] › tests/scatter_matrix_labels.spec.ts:7:9 › Scatter Matrix Label Verification › Verify X-axis labels are at the bottom of the matrix (30.0s)
+  ✓  208 [chromium] › tests/visual_verification_all.spec.ts:101:9 › Visual Verification: All Features › ANOVA One-Way (1.9s)
+  ✓  209 [chromium] › tests/visual_verification_all.spec.ts:112:9 › Visual Verification: All Features › ANOVA Two-Way (2.0s)
+Using fallback for hidden select: #dependent-vars
+Using fallback for hidden select: #independent-vars
+Using fallback for hidden select: #independent-vars
+  ✓  210 [chromium] › tests/visual_verification_all.spec.ts:137:9 › Visual Verification: All Features › Multiple Regression (1.8s)
+  ✓  211 [chromium] › tests/visual_verification_all.spec.ts:124:9 › Visual Verification: All Features › Simple Regression (2.0s)
+  ✓  212 [chromium] › tests/visual_verification_all.spec.ts:161:9 › Visual Verification: All Features › Principal Component Analysis (2.2s)
+  ✓  213 [chromium] › tests/visual_verification_all.spec.ts:171:9 › Visual Verification: All Features › Factor Analysis (1.9s)
+  ✓  214 [chromium] › tests/visual_verification_all.spec.ts:181:9 › Visual Verification: All Features › Time Series (1.5s)
+  ✓  215 [chromium] › tests/visual_verification_all.spec.ts:192:9 › Visual Verification: All Features › Text Mining (2.1s)
+  ✓  216 [chromium] › tests/visual_verification_anova_two_way_repeated.spec.ts:12:9 › Visual Verification: Two-Way Repeated Measures ANOVA › Two-Way Repeated Measures ANOVA Flow (1.8s)
+Taken screenshot: one_way_tukey_full.png
+  ✓  219 [chromium] › tests/wilcoxon_signed_rank.spec.ts:4:5 › Wilcoxon Signed-Rank Test Verification (1.1s)
+Taken screenshot: one_way_holm_full.png
+  ✓  217 [chromium] › tests/visual_verification_anova.spec.ts:25:9 › Visual Verification: ANOVA Multiple Comparisons › One-Way ANOVA: Tukey vs Holm Visuals (3.9s)
+Taken screenshot: two_way_tukey_full.png
+Taken screenshot: two_way_holm_full.png
+  ✓  218 [chromium] › tests/visual_verification_anova.spec.ts:68:9 › Visual Verification: ANOVA Multiple Comparisons › Two-Way ANOVA: Method Switching Visuals (4.4s)
+  ✘  189 [chromium] › tests/verification/accuracy_verification.spec.ts:29:9 › Statistical Accuracy Verification › T-Test Independent Accuracy (30.1s)
+  ✘  201 [chromium] › tests/verification/accuracy_verification.spec.ts:313:9 › Statistical Accuracy Verification › Factor Analysis Accuracy (30.1s)
+
+
+  1) [chromium] › tests/analysis_support.spec.ts:14:9 › Analysis Support Feature › should recommend Correlation/Regression for 2 numeric variables 
+
+    TimeoutError: page.waitForSelector: Timeout 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('#dataframe-container') to be visible[22m
+    [2m    14 × locator resolved to hidden <div class="table-container" id="dataframe-container"></div>[22m
+
+
+       9 |         await page.waitForSelector('#load-demo-btn', { state: 'visible' });
+      10 |         await page.click('#load-demo-btn');
+    > 11 |         await page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 5000 });
+         |                    ^
+      12 |     });
+      13 |
+      14 |     test('should recommend Correlation/Regression for 2 numeric variables', async ({ page }) => {
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/analysis_support.spec.ts:11:20
+
+    Error Context: test-results/analysis_support-Analysis--71e20-ion-for-2-numeric-variables-chromium/error-context.md
+
+  2) [chromium] › tests/analysis_support.spec.ts:43:9 › Analysis Support Feature › should recommend T-test/U-test for 1 numeric + 1 binary categorical 
+
+    TimeoutError: page.waitForSelector: Timeout 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('#dataframe-container') to be visible[22m
+    [2m    14 × locator resolved to hidden <div class="table-container" id="dataframe-container"></div>[22m
+
+
+       9 |         await page.waitForSelector('#load-demo-btn', { state: 'visible' });
+      10 |         await page.click('#load-demo-btn');
+    > 11 |         await page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 5000 });
+         |                    ^
+      12 |     });
+      13 |
+      14 |     test('should recommend Correlation/Regression for 2 numeric variables', async ({ page }) => {
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/analysis_support.spec.ts:11:20
+
+    Error Context: test-results/analysis_support-Analysis--ab5e0-umeric-1-binary-categorical-chromium/error-context.md
+
+  3) [chromium] › tests/analysis_support.spec.ts:58:9 › Analysis Support Feature › should navigate to analysis when recommendation clicked 
+
+    TimeoutError: page.waitForSelector: Timeout 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('#dataframe-container') to be visible[22m
+    [2m    14 × locator resolved to hidden <div class="table-container" id="dataframe-container"></div>[22m
+
+
+       9 |         await page.waitForSelector('#load-demo-btn', { state: 'visible' });
+      10 |         await page.click('#load-demo-btn');
+    > 11 |         await page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 5000 });
+         |                    ^
+      12 |     });
+      13 |
+      14 |     test('should recommend Correlation/Regression for 2 numeric variables', async ({ page }) => {
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/analysis_support.spec.ts:11:20
+
+    Error Context: test-results/analysis_support-Analysis--41697-when-recommendation-clicked-chromium/error-context.md
+
+  4) [chromium] › tests/anova_one_way_posthoc.spec.ts:13:9 › ANOVA One-Way Post-Hoc Verification › should running Tukey post-hoc test by default 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"q="[39m
+    Received string:    [31m"······················[39m
+    [31m                 平均値の差の検定（対応なし）···········································[39m
+    [31m                    変数全体M全体S.DA MB MC MA S.DB S.DC S.DLevene p(等分散性)群間自由度群内自由度Fpsignη²ω²[39m
+    [31m                    数学75.3013.6481.7375.0067.7811.0613.9413.490.757 2272.940.070†0.180.115·····[39m
+    [31m         Levene p: 等分散性の検定。p < .05 の場合、この通常のANOVAの結果は信頼性が低い可能性があります（分散が異なるため）。··············[39m
+    [31m    sign: p<0.01** p<0.05* p<0.1†·········[39m
+    [31m             サンプルサイズ················································[39m
+    [31m                    全体··································[39m
+    [31m                   N = 30·································································[39m
+    [31m                A··························[39m
+    [31m               11·················································[39m
+    [31m                B··························[39m
+    [31m               10·················································[39m
+    [31m                C··························[39m
+    [31m               9····································[39m
+    [31m    "[39m
+
+      31 |         // Check for 'q' statistic
+      32 |         const tableContent = await page.locator('#test-results-section').textContent();
+    > 33 |         expect(tableContent).toContain('q=');
+         |                              ^
+      34 |
+      35 |         // Check plot exists
+      36 |         await expect(page.locator('#anova-plot-0')).toBeVisible();
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/anova_one_way_posthoc.spec.ts:33:30
+
+    Error Context: test-results/anova_one_way_posthoc-ANOV-73935-ey-post-hoc-test-by-default-chromium/error-context.md
+
+  5) [chromium] › tests/anova_one_way_posthoc.spec.ts:39:9 › ANOVA One-Way Post-Hoc Verification › should switch to Holm method 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"t="[39m
+    Received string:    [31m"······················[39m
+    [31m                 平均値の差の検定（対応なし）···········································[39m
+    [31m                    変数全体M全体S.DA MB MC MA S.DB S.DC S.DLevene p(等分散性)群間自由度群内自由度Fpsignη²ω²[39m
+    [31m                    数学75.3013.6481.7375.0067.7811.0613.9413.490.757 2272.940.070†0.180.115·····[39m
+    [31m         Levene p: 等分散性の検定。p < .05 の場合、この通常のANOVAの結果は信頼性が低い可能性があります（分散が異なるため）。··············[39m
+    [31m    sign: p<0.01** p<0.05* p<0.1†·········[39m
+    [31m             サンプルサイズ················································[39m
+    [31m                    全体··································[39m
+    [31m                   N = 30·································································[39m
+    [31m                A··························[39m
+    [31m               11·················································[39m
+    [31m                B··························[39m
+    [31m               10·················································[39m
+    [31m                C··························[39m
+    [31m               9····································[39m
+    [31m    "[39m
+
+      57 |         // Check for 't' statistic (Holm uses t)
+      58 |         const tableContent = await page.locator('#test-results-section').textContent();
+    > 59 |         expect(tableContent).toContain('t=');
+         |                              ^
+      60 |     });
+      61 | });
+      62 |
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/anova_one_way_posthoc.spec.ts:59:30
+
+    Error Context: test-results/anova_one_way_posthoc-ANOV-d0f3e-hould-switch-to-Holm-method-chromium/error-context.md
+
+  6) [chromium] › tests/anova_two_way_independent.spec.ts:5:1 › Two-Way Independent ANOVA Verification 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeChecked[2m([22m[2m)[22m failed
+
+    Locator: locator('input[name="anova2-type"][value="independent"]')
+    Expected: checked
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeChecked" with timeout 5000ms[22m
+    [2m  - waiting for locator('input[name="anova2-type"][value="independent"]')[22m
+
+
+      36 |     // 4. Ensure "Independent" is selected (default)
+      37 |     const independentRadio = page.locator('input[name="anova2-type"][value="independent"]');
+    > 38 |     await expect(independentRadio).toBeChecked();
+         |                                    ^
+      39 |     await expect(page.locator('#independent-controls')).toBeVisible();
+      40 |
+      41 |     // 5. Select Factors and Dependent Variable
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/anova_two_way_independent.spec.ts:38:36
+
+    Error Context: test-results/anova_two_way_independent--57da7-ependent-ANOVA-Verification-chromium/error-context.md
+
+  7) [chromium] › tests/anova_two_way_mixed_multipair.spec.ts:5:1 › Two-Way Mixed ANOVA Multi-Pair Verification 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('label').filter({ hasText: '混合計画 (Mixed)' })[22m
+
+
+      28 |     // 4. Select "Mixed Design"
+      29 |     const mixedLabel = page.locator('label').filter({ hasText: '混合計画 (Mixed)' });
+    > 30 |     await mixedLabel.click();
+         |                      ^
+      31 |     await expect(page.locator('#mixed-controls')).toBeVisible();
+      32 |
+      33 |     // 5. Select Between-Subjects Factor
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/anova_two_way_mixed_multipair.spec.ts:30:22
+
+    Error Context: test-results/anova_two_way_mixed_multip-1aa20-OVA-Multi-Pair-Verification-chromium/error-context.md
+
+  8) [chromium] › tests/anova_two_way_within.spec.ts:4:1 › Two-Way Within-Subjects ANOVA Verification 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('label').filter({ hasText: '対応あり (Within)' })[22m
+
+
+      28 |     // 4. Select Within Design
+      29 |     const withinLabel = page.locator('label').filter({ hasText: '対応あり (Within)' });
+    > 30 |     await withinLabel.click();
+         |                       ^
+      31 |
+      32 |     // Verify controls visible
+      33 |     await expect(page.locator('#within-controls')).toBeVisible();
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/anova_two_way_within.spec.ts:30:23
+
+    Error Context: test-results/anova_two_way_within-Two-W-ebd6b-Subjects-ANOVA-Verification-chromium/error-context.md
+
+  9) [chromium] › tests/factor_analysis_rotation.spec.ts:29:5 › Factor Analysis Rotation Tests using demo data › should run Factor Analysis with Promax rotation 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('#factor-correlations')
+    Expected: visible
+    Received: hidden
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('#factor-correlations')[22m
+    [2m    9 × locator resolved to <div id="factor-correlations"></div>[22m
+    [2m      - unexpected value "hidden"[22m
+
+
+      48 |         // Verify Results
+      49 |         await expect(page.locator('#analysis-results')).toBeVisible();
+    > 50 |         await expect(page.locator('#factor-correlations')).toBeVisible();
+         |                                                            ^
+      51 |         await expect(page.locator('#factor-correlations')).toContainText('因子間相関行列');
+      52 |
+      53 |         // Check for 1.000 in diagonal (Correlation with itself)
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/factor_analysis_rotation.spec.ts:50:60
+
+    Error Context: test-results/factor_analysis_rotation-F-847e6-alysis-with-Promax-rotation-chromium/error-context.md
+
+  10) [chromium] › tests/factor_analysis_rotation.spec.ts:57:5 › Factor Analysis Rotation Tests using demo data › should run Factor Analysis with Direct Oblimin rotation 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('#factor-correlations')
+    Expected: visible
+    Received: hidden
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('#factor-correlations')[22m
+    [2m    9 × locator resolved to <div id="factor-correlations"></div>[22m
+    [2m      - unexpected value "hidden"[22m
+
+
+      72 |         // Verify Results
+      73 |         await expect(page.locator('#analysis-results')).toBeVisible();
+    > 74 |         await expect(page.locator('#factor-correlations')).toBeVisible();
+         |                                                            ^
+      75 |     });
+      76 |
+      77 |     test('should run Factor Analysis with Geomin rotation', async ({ page }) => {
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/factor_analysis_rotation.spec.ts:74:60
+
+    Error Context: test-results/factor_analysis_rotation-F-0fb7e-ith-Direct-Oblimin-rotation-chromium/error-context.md
+
+  11) [chromium] › tests/factor_analysis_rotation.spec.ts:77:5 › Factor Analysis Rotation Tests using demo data › should run Factor Analysis with Geomin rotation 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('#factor-correlations')
+    Expected: visible
+    Received: hidden
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('#factor-correlations')[22m
+    [2m    9 × locator resolved to <div id="factor-correlations"></div>[22m
+    [2m      - unexpected value "hidden"[22m
+
+
+      92 |         // Verify Results
+      93 |         await expect(page.locator('#analysis-results')).toBeVisible();
+    > 94 |         await expect(page.locator('#factor-correlations')).toBeVisible();
+         |                                                            ^
+      95 |     });
+      96 | });
+      97 |
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/factor_analysis_rotation.spec.ts:94:60
+
+    Error Context: test-results/factor_analysis_rotation-F-251cc-alysis-with-Geomin-rotation-chromium/error-context.md
+
+  12) [chromium] › tests/mann_whitney.spec.ts:12:9 › Mann-Whitney U Test Feature › should run Mann-Whitney U Test and display Reporting Table 
+
+    TimeoutError: page.waitForSelector: Timeout 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('#dataframe-container') to be visible[22m
+    [2m    15 × locator resolved to hidden <div class="table-container" id="dataframe-container"></div>[22m
+
+
+      16 |         // データロード完了トーストまたはUIの活性化を待つ
+      17 |         // ここでは "summary-stats-container" が表示されるのを待つなどが確実
+    > 18 |         await page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 5000 });
+         |                    ^
+      19 |
+      20 |         // 2. マン・ホイットニーのU検定カードを探してクリック
+      21 |         // カードは data-analysis="mann_whitney" を持つ
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/mann_whitney.spec.ts:18:20
+
+    Error Context: test-results/mann_whitney-Mann-Whitney--72531-and-display-Reporting-Table-chromium/error-context.md
+
+  13) [chromium] › tests/scatter_matrix_labels.spec.ts:7:9 › Scatter Matrix Label Verification › Verify X-axis labels are at the bottom of the matrix 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('#dataframe-container')
+    Expected: visible
+    Received: hidden
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 30000ms[22m
+    [2m  - waiting for locator('#dataframe-container')[22m
+    [2m    33 × locator resolved to <div class="table-container" id="dataframe-container"></div>[22m
+    [2m       - unexpected value "hidden"[22m
+
+
+      14 |         await expect(loadDemoBtn).toBeVisible();
+      15 |         await loadDemoBtn.click();
+    > 16 |         await expect(page.locator('#dataframe-container')).toBeVisible({ timeout: 30000 });
+         |                                                            ^
+      17 |
+      18 |         // 3. Navigate to Correlation Analysis
+      19 |         await navigateToFeature(page, 'correlation');
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/scatter_matrix_labels.spec.ts:16:60
+
+    Error Context: test-results/scatter_matrix_labels-Scat-da767-at-the-bottom-of-the-matrix-chromium/error-context.md
+
+  14) [chromium] › tests/text_mining_verification.spec.ts:7:5 › Text Mining Advanced Verification › Verify KH Coder-style Features (Tabs, Category, KWIC) 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('#category-results canvas[id*="-wordcloud"]')
+    Expected: visible
+    Error: strict mode violation: locator('#category-results canvas[id*="-wordcloud"]') resolved to 2 elements:
+        1) <canvas width="3360" height="1200" id="cat-２年-wordcloud"></canvas> aka locator('[id="cat-２年-wordcloud"]')
+        2) <canvas width="3360" height="1200" id="cat-２年-wordcloud-tfidf"></canvas> aka locator('[id="cat-２年-wordcloud-tfidf"]')
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('#category-results canvas[id*="-wordcloud"]')[22m
+
+
+      109 |         // Note: The IDs are dynamically generated like `cat-CATEGORY_NAME-wordcloud`
+      110 |         // We look for any canvas inside the category results for Word Cloud
+    > 111 |         await expect(page.locator('#category-results canvas[id*="-wordcloud"]')).toBeVisible();
+          |                                                                                  ^
+      112 |         // And the network container
+      113 |         await expect(page.locator('#category-results div[id*="-network"] canvas')).toBeVisible();
+      114 |
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/text_mining_verification.spec.ts:111:82
+
+    Error Context: test-results/text_mining_verification-T-b7ef0-eatures-Tabs-Category-KWIC--chromium/error-context.md
+
+  15) [chromium] › tests/time_series.spec.ts:18:9 › Time Series Analysis Feature › should run Time Series Analysis and display plots 
+
+    TimeoutError: page.waitForSelector: Timeout 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('#dataframe-container') to be visible[22m
+    [2m    15 × locator resolved to hidden <div class="table-container" id="dataframe-container"></div>[22m
+
+
+      13 |         await page.waitForSelector('#load-demo-btn', { state: 'visible' });
+      14 |         await page.click('#load-demo-btn');
+    > 15 |         await page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 5000 });
+         |                    ^
+      16 |     });
+      17 |
+      18 |     test('should run Time Series Analysis and display plots', async ({ page }) => {
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/time_series.spec.ts:15:20
+
+    Error Context: test-results/time_series-Time-Series-An-0303d--Analysis-and-display-plots-chromium/error-context.md
+
+  16) [chromium] › tests/unit/table_notation_validation.spec.ts:54:13 › Table & Notation Validation › Significance Symbol Consistency › chi_square.js main p-value should use full significance chain 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected pattern: [32m/< 0\.01 \? '\*\*'/[39m
+    Received string:  [31m"function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, smallExpRate, yatesChi, yatesP, oddsRatio, phiCoef) {[39m
+    [31m    const container = document.getElementById('chi-results');·[39m
+    [31m    // Warning for Assumption[39m
+    [31m    let warningHtml = '';[39m
+    [31m    if (smallExpRate > 20) {[39m
+    [31m        warningHtml = `[39m
+    [31m            <div style=\"background-color: #fffbe6; border: 1px solid #fde68a; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; color: #92400e;\">[39m
+    [31m                <strong><i class=\"fas fa-exclamation-triangle\"></i> 注意: 期待度数が5未満のセルが ${smallExpRate.toFixed(1)}% あります。</strong><br>[39m
+    [31m                カイ二乗検定の前提条件（全体の20%以下）を満たしていません。結果の信頼性が低い可能性があります。<br>[39m
+    [31m                サンプルサイズを増やすか、「フィッシャーの正確確率検定」の使用を検討してください。[39m
+    [31m            </div>`;[39m
+    [31m    }·[39m
+    [31m    // 1. 記述統計（クロス集計表と残差分析）[39m
+    [31m    let html = warningHtml + `[39m
+    [31m        <div style=\"background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;\">[39m
+    [31m             <h4 style=\"color: #1e90ff; margin-bottom: 1rem; font-weight: bold;\">[39m
+    [31m                <i class=\"fas fa-table\"></i> クロス集計表と残差分析[39m
+    [31m            </h4>[39m
+    [31m            <div class=\"table-container\">[39m
+    [31m                <table class=\"table\" style=\"text-align: center;\">[39m
+    [31m                    <thead>[39m
+    [31m                        <tr>[39m
+    [31m                            <th style=\"text-align: left;\">${rowVar} \\\\ ${colVar}</th>[39m
+    [31m                            ${colKeys.map(c => `<th style=\"text-align: center;\">${c}</th>`).join('')}[39m
+    [31m                            <th style=\"text-align: center;\">合計</th>[39m
+    [31m                        </tr>[39m
+    [31m                    </thead>[39m
+    [31m                    <tbody>[39m
+    [31m    `;·[39m
+    [31m    // テーブル本体[39m
+    [31m    rowKeys.forEach((r, i) => {[39m
+    [31m        html += `<tr><td style=\"text-align: left;\"><strong>${r}</strong></td>`;[39m
+    [31m        let rowSum = 0;[39m
+    [31m        colKeys.forEach((c, j) => {[39m
+    [31m            const obs = observed[i][j];[39m
+    [31m            const exp = expected[i][j];[39m
+    [31m            const res = adjResiduals[i][j];[39m
+    [31m            rowSum += obs;·[39m
+    [31m          "[39m
+
+      63 |             );
+      64 |             // Should use ** for p < 0.01
+    > 65 |             expect(displayFn).toMatch(/< 0\.01 \? '\*\*'/);
+         |                               ^
+      66 |         });
+      67 |
+      68 |         test('chi_square.js Yates p-value should use full significance chain', async ({ page }) => {
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/unit/table_notation_validation.spec.ts:65:31
+
+    Error Context: test-results/unit-table_notation_valida-4123d-use-full-significance-chain-chromium/error-context.md
+
+  17) [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:52:13 › T-test & ANOVA Table Validation › P-value < .001 Formatting › one-sample t-test main table should format p < .001 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected pattern: [32m/p_value\s*<\s*0\.001\s*\?\s*'<\s*\.001'/[39m
+    Received string:  [31m"function runOneSampleTTest(currentData) {[39m
+    [31m    const varName = document.getElementById('one-sample-var').value;[39m
+    [31m    const mu = parseFloat(document.getElementById('one-sample-mu').value);·[39m
+    [31m    if (!varName) {[39m
+    [31m        alert('検定する変数を選択してください');[39m
+    [31m        return;[39m
+    [31m    }[39m
+    [31m    if (isNaN(mu)) {[39m
+    [31m        alert('検定値を正しく入力してください');[39m
+    [31m        return;[39m
+    [31m    }·[39m
+    [31m    displaySummaryStatistics([varName], currentData);·[39m
+    [31m    const values = currentData.map(row => row[varName]).filter(v => v != null && !isNaN(v));·[39m
+    [31m    if (values.length < 2) {[39m
+    [31m        alert('有効なデータが不足しています（最低2つ必要）');[39m
+    [31m        return;[39m
+    [31m    }·[39m
+    [31m    const n = values.length;[39m
+    [31m    const mean = jStat.mean(values);[39m
+    [31m    const std = jStat.stdev(values, true);[39m
+    [31m    const se = std / Math.sqrt(n);[39m
+    [31m    const t_stat = (mean - mu) / se;[39m
+    [31m    const df = n - 1;[39m
+    [31m    const p_value = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;[39m
+    [31m    const cohens_d = Math.abs(mean - mu) / std;[39m
+    [31m    let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.1 ? '†' : 'n.s.';·[39m
+    [31m    const t_crit = jStat.studentt.inv(0.975, df);[39m
+    [31m    const meanDiff = mean - mu;[39m
+    [31m    const margin = t_crit * se;[39m
+    [31m    const ci_95_low = meanDiff - margin;[39m
+    [31m    const ci_95_high = meanDiff + margin;[39m
+    [31m    const ci95Str = `[${ci_95_low.toFixed(2)}, ${ci_95_high.toFixed(2)}]`;·[39m
+    [31m    const resultsContainer = document.getElementById('test-results-section');[39m
+    [31m    resultsContainer.innerHTML = `[39m
+    [31m        <div style=\"background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;\">[39m
+    [31m            <h4 style=\"color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;\">[39m
+    [31m                <i class=\"fas fa-calculator\"></i> 1サンプルのt検定[39m
+    [31m            </h4>[39m
+    [31m            <div class=\"table-container\">[39m
+    [31m                <table class=\"table analysis-table\">[39m
+    [31m                    <thead style=\"background: #f8f9fa;\">[39m
+    [31m                        <tr>[39m
+    [31m                            <th rowspan=\"2\" style=\"font-weight: bold; color: #495057; vertical-align: middle;\">変数</th>[39m
+    [31m                            <th colspan=\"2\">データ</th>[39m
+    [31m                            <th colspan=\"5\">差の検定</th>[39m
+    [31m                        </tr>[39m
+    [31m                        <tr>[39m
+    [31m                            <th>平均</th>[39m
+    [31m                            <th>SD</th>[39m
+    [31m                            <th>検定値(μ)</th>[39m
+    [31m                            <th>t</th>[39m
+    [31m                            <th>df</th>[39m
+    [31m                            <th>p</th>[39m
+    [31m                            <th>効果量(d)</th>[39m
+    [31m                            <th>95% CI</th>[39m
+    [31m"[39m
+
+      61 |             // Look for the pattern in the HTML table generation (not the APA table)
+      62 |             const mainTableSection = oneSampleSection.substring(0, 2500);
+    > 63 |             expect(mainTableSection).toMatch(/p_value\s*<\s*0\.001\s*\?\s*'<\s*\.001'/);
+         |                                      ^
+      64 |         });
+      65 |
+      66 |         test('anova_one_way visualization table should format p < .001', async ({ page }) => {
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/unit/ttest_anova_table_validation.spec.ts:63:38
+
+    Error Context: test-results/unit-ttest_anova_table_val-a3bf3-n-table-should-format-p-001-chromium/error-context.md
+
+  18) [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:112:13 › T-test & ANOVA Table Validation › T-stat Absolute Value › one-sample t-test main table should use Math.abs for t-stat 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoMatch[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected pattern: [32m/Math\.abs\(t_stat\)\.toFixed/[39m
+    Received string:  [31m"function runOneSampleTTest(currentData) {[39m
+    [31m    const varName = document.getElementById('one-sample-var').value;[39m
+    [31m    const mu = parseFloat(document.getElementById('one-sample-mu').value);·[39m
+    [31m    if (!varName) {[39m
+    [31m        alert('検定する変数を選択してください');[39m
+    [31m        return;[39m
+    [31m    }[39m
+    [31m    if (isNaN(mu)) {[39m
+    [31m        alert('検定値を正しく入力してください');[39m
+    [31m        return;[39m
+    [31m    }·[39m
+    [31m    displaySummaryStatistics([varName], currentData);·[39m
+    [31m    const values = currentData.map(row => row[varName]).filter(v => v != null && !isNaN(v));·[39m
+    [31m    if (values.length < 2) {[39m
+    [31m        alert('有効なデータが不足しています（最低2つ必要）');[39m
+    [31m        return;[39m
+    [31m    }·[39m
+    [31m    const n = values.length;[39m
+    [31m    const mean = jStat.mean(values);[39m
+    [31m    const std = jStat.stdev(values, true);[39m
+    [31m    const se = std / Math.sqrt(n);[39m
+    [31m    const t_stat = (mean - mu) / se;[39m
+    [31m    const df = n - 1;[39m
+    [31m    const p_value = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;[39m
+    [31m    const cohens_d = Math.abs(mean - mu) / std;[39m
+    [31m    let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.1 ? '†' : 'n.s.';·[39m
+    [31m    const t_crit = jStat.studentt.inv(0.975, df);[39m
+    [31m    const meanDiff = mean - mu;[39m
+    [31m    const margin = t_crit * se;[39m
+    [31m    const ci_95_low = meanDiff - margin;[39m
+    [31m    const ci_95_high = meanDiff + margin;[39m
+    [31m    const ci95Str = `[${ci_95_low.toFixed(2)}, ${ci_95_high.toFixed(2)}]`;·[39m
+    [31m    const resultsContainer = document.getElementById('test-results-section');[39m
+    [31m    resultsContainer.innerHTML = `[39m
+    [31m        <div style=\"background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;\">[39m
+    [31m            <h4 style=\"color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;\">[39m
+    [31m                <i class=\"fas fa-calculator\"></i> 1サンプルのt検定[39m
+    [31m            </h4>[39m
+    [31m            <div class=\"table-container\">[39m
+    [31m                <table class=\"table analysis-table\">[39m
+    [31m                    <thead style=\"background: #f8f9fa;\">[39m
+    [31m                        <tr>[39m
+    [31m                            <th rowspan=\"2\" style=\"font-weight: bold; color: #495057; vertical-align: middle;\">変数</th>[39m
+    [31m                            <th colspan=\"2\">データ</th>[39m
+    [31m                            <th colspan=\"5\">差の検定</th>[39m
+    [31m                        </tr>[39m
+    [31m                        <tr>[39m
+    [31m                            <th>平均</th>[39m
+    [31m                            <th>SD</th>[39m
+    [31m                            <th>検定値(μ)</th>[39m
+    [31m                            <th>t</th>[39m
+    [31m                            <th>df</th>[39m
+    [31m                            <th>p</th>[39m
+    [31m                            <th>効果量(d)</th>[39m
+    [31m                            <th>95% CI</th>[39m
+    [31m"[39m
+
+      120 |
+      121 |             // Main results table should use Math.abs for t_stat display
+    > 122 |             expect(oneSampleSection).toMatch(/Math\.abs\(t_stat\)\.toFixed/);
+          |                                      ^
+      123 |         });
+      124 |
+      125 |         test('one-sample t-test APA table should use Math.abs for t-stat', async ({ page }) => {
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/unit/ttest_anova_table_validation.spec.ts:122:38
+
+    Error Context: test-results/unit-ttest_anova_table_val-71d7f-uld-use-Math-abs-for-t-stat-chromium/error-context.md
+
+  19) [chromium] › tests/verification/accuracy_verification.spec.ts:29:9 › Statistical Accuracy Verification › T-Test Independent Accuracy 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.innerText: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('#test-results-table table tbody tr:first-child td:nth-child(11)')[22m
+
+
+      38 |         // Row 1. T is col 10, P is col 11
+      39 |         const tText = await page.locator('#test-results-table table tbody tr:first-child td:nth-child(10)').innerText();
+    > 40 |         const pText = await page.locator('#test-results-table table tbody tr:first-child td:nth-child(11)').innerText();
+         |                                                                                                             ^
+      41 |
+      42 |         const tVal = parseFloat(tText);
+      43 |         const pVal = parseFloat(pText.replace(/[^\d.-]/g, ''));
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/verification/accuracy_verification.spec.ts:40:109
+
+    Error Context: test-results/verification-accuracy_veri-e84b6-T-Test-Independent-Accuracy-chromium/error-context.md
+
+  20) [chromium] › tests/verification/accuracy_verification.spec.ts:225:9 › Statistical Accuracy Verification › One-Way Repeated ANOVA Accuracy 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('#test-results-section')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('#test-results-section')[22m
+
+
+      233 |         await page.click('#run-rep-btn-container button');
+      234 |
+    > 235 |         await expect(page.locator('#test-results-section')).toBeVisible();
+          |                                                             ^
+      236 |
+      237 |         // F and p are in result table (exclude APA table by using first)
+      238 |         const fText = await page.locator('#test-results-section table tbody tr:first-child td:nth-last-child(5)').first().innerText();
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/verification/accuracy_verification.spec.ts:235:61
+
+    Error Context: test-results/verification-accuracy_veri-f7f68-Way-Repeated-ANOVA-Accuracy-chromium/error-context.md
+
+  21) [chromium] › tests/verification/accuracy_verification.spec.ts:313:9 › Statistical Accuracy Verification › Factor Analysis Accuracy 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.innerText: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('#loadings-table table').locator('tbody tr:first-child td:nth-child(2)')[22m
+
+
+      351 |
+      352 |         // Get loadings for first variable
+    > 353 |         const l1Text = await loadTable.locator('tbody tr:first-child td:nth-child(2)').innerText();
+          |                                                                                        ^
+      354 |         const l2Text = await loadTable.locator('tbody tr:first-child td:nth-child(3)').innerText();
+      355 |         const l1 = parseFloat(l1Text);
+      356 |         const l2 = parseFloat(l2Text);
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/verification/accuracy_verification.spec.ts:353:88
+
+    Error Context: test-results/verification-accuracy_veri-29b7d-on-Factor-Analysis-Accuracy-chromium/error-context.md
+
+  21 failed
+    [chromium] › tests/analysis_support.spec.ts:14:9 › Analysis Support Feature › should recommend Correlation/Regression for 2 numeric variables 
+    [chromium] › tests/analysis_support.spec.ts:43:9 › Analysis Support Feature › should recommend T-test/U-test for 1 numeric + 1 binary categorical 
+    [chromium] › tests/analysis_support.spec.ts:58:9 › Analysis Support Feature › should navigate to analysis when recommendation clicked 
+    [chromium] › tests/anova_one_way_posthoc.spec.ts:13:9 › ANOVA One-Way Post-Hoc Verification › should running Tukey post-hoc test by default 
+    [chromium] › tests/anova_one_way_posthoc.spec.ts:39:9 › ANOVA One-Way Post-Hoc Verification › should switch to Holm method 
+    [chromium] › tests/anova_two_way_independent.spec.ts:5:1 › Two-Way Independent ANOVA Verification 
+    [chromium] › tests/anova_two_way_mixed_multipair.spec.ts:5:1 › Two-Way Mixed ANOVA Multi-Pair Verification 
+    [chromium] › tests/anova_two_way_within.spec.ts:4:1 › Two-Way Within-Subjects ANOVA Verification 
+    [chromium] › tests/factor_analysis_rotation.spec.ts:29:5 › Factor Analysis Rotation Tests using demo data › should run Factor Analysis with Promax rotation 
+    [chromium] › tests/factor_analysis_rotation.spec.ts:57:5 › Factor Analysis Rotation Tests using demo data › should run Factor Analysis with Direct Oblimin rotation 
+    [chromium] › tests/factor_analysis_rotation.spec.ts:77:5 › Factor Analysis Rotation Tests using demo data › should run Factor Analysis with Geomin rotation 
+    [chromium] › tests/mann_whitney.spec.ts:12:9 › Mann-Whitney U Test Feature › should run Mann-Whitney U Test and display Reporting Table 
+    [chromium] › tests/scatter_matrix_labels.spec.ts:7:9 › Scatter Matrix Label Verification › Verify X-axis labels are at the bottom of the matrix 
+    [chromium] › tests/text_mining_verification.spec.ts:7:5 › Text Mining Advanced Verification › Verify KH Coder-style Features (Tabs, Category, KWIC) 
+    [chromium] › tests/time_series.spec.ts:18:9 › Time Series Analysis Feature › should run Time Series Analysis and display plots 
+    [chromium] › tests/unit/table_notation_validation.spec.ts:54:13 › Table & Notation Validation › Significance Symbol Consistency › chi_square.js main p-value should use full significance chain 
+    [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:52:13 › T-test & ANOVA Table Validation › P-value < .001 Formatting › one-sample t-test main table should format p < .001 
+    [chromium] › tests/unit/ttest_anova_table_validation.spec.ts:112:13 › T-test & ANOVA Table Validation › T-stat Absolute Value › one-sample t-test main table should use Math.abs for t-stat 
+    [chromium] › tests/verification/accuracy_verification.spec.ts:29:9 › Statistical Accuracy Verification › T-Test Independent Accuracy 
+    [chromium] › tests/verification/accuracy_verification.spec.ts:225:9 › Statistical Accuracy Verification › One-Way Repeated ANOVA Accuracy 
+    [chromium] › tests/verification/accuracy_verification.spec.ts:313:9 › Statistical Accuracy Verification › Factor Analysis Accuracy 
+  1 skipped
+  197 passed (1.6m)

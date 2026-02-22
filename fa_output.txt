@@ -1,0 +1,30 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] › tests/verification/accuracy_verification.spec.ts:314:9 › Statistical Accuracy Verification › Factor Analysis Accuracy
+[1A[2K  1) [chromium] › tests/verification/accuracy_verification.spec.ts:314:9 › Statistical Accuracy Verification › Factor Analysis Accuracy 
+
+    Test was interrupted.
+
+    Error: page.goto: Test ended.
+    Call log:
+    [2m  - navigating to "http://127.0.0.1:8081/", waiting until "load"[22m
+
+
+      21 | test.describe('Statistical Accuracy Verification', () => {
+      22 |     test.beforeEach(async ({ page }) => {
+    > 23 |         await page.goto('/');
+         |                    ^
+      24 |         await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
+      25 |         await uploadFile(page, 'datasets/demo_all_analysis.csv');
+      26 |     });
+        at /Users/itoudaiki/Library/CloudStorage/GoogleDrive-itou-daiki@oen.ed.jp/マイドライブ/07　Program/easy_stat_edu/tests/verification/accuracy_verification.spec.ts:23:20
+
+
+[1A[2K  1 interrupted
+    [chromium] › tests/verification/accuracy_verification.spec.ts:314:9 › Statistical Accuracy Verification › Factor Analysis Accuracy 
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m

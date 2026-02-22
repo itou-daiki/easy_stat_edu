@@ -8,6 +8,8 @@ test.describe('Analysis Support Feature', () => {
         await page.goto('http://127.0.0.1:8081/');
         await page.waitForSelector('#load-demo-btn', { state: 'visible' });
         await page.click('#load-demo-btn');
+        await page.waitForSelector('#demo-modal', { state: 'visible' });
+        await page.click('.demo-option-btn[data-demo="demo_all_analysis.csv"]');
         await page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 5000 });
     });
 

@@ -172,7 +172,7 @@ test.describe('Visual Verification: All Features', () => {
         await navigateToFeature(page, 'factor_analysis');
         await selectVariables(page, ['数学', '英語', '理科', '学習時間']);
         await page.click('#run-factor-btn-container button');
-        await expect(page.locator('#analysis-results')).toBeVisible();
+        await expect(page.locator('#fa-analysis-results')).toBeVisible();
         await page.screenshot({ path: 'test-results/visual_verification/factor_analysis.png', fullPage: true });
         assertNoErrors();
     });

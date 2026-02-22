@@ -36,7 +36,7 @@ test.describe('Factor Analysis Basic Feature Tests', () => {
         await page.click('#run-factor-btn');
 
         // 結果確認
-        await expect(page.locator('#analysis-results')).toBeVisible();
+        await expect(page.locator('#fa-analysis-results')).toBeVisible();
 
         // 固有値テーブル確認
         await expect(page.locator('#eigenvalues-table')).toBeVisible();
@@ -96,7 +96,7 @@ test.describe('Factor Analysis Basic Feature Tests', () => {
         await page.click('#run-factor-btn');
 
         // 結果確認（因子間相関は直交回転なので表示されないことを確認）
-        await expect(page.locator('#analysis-results')).toBeVisible();
+        await expect(page.locator('#fa-analysis-results')).toBeVisible();
         await expect(page.locator('#loadings-table')).toBeVisible();
     });
 });

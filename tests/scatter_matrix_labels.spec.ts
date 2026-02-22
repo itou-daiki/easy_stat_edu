@@ -13,6 +13,8 @@ test.describe('Scatter Matrix Label Verification', () => {
         const loadDemoBtn = page.locator('#load-demo-btn');
         await expect(loadDemoBtn).toBeVisible();
         await loadDemoBtn.click();
+        await page.waitForSelector('#demo-modal', { state: 'visible' });
+        await page.click('.demo-option-btn[data-demo="demo_all_analysis.csv"]');
         await expect(page.locator('#dataframe-container')).toBeVisible({ timeout: 30000 });
 
         // 3. Navigate to Correlation Analysis

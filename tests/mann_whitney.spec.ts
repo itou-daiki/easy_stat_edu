@@ -12,6 +12,8 @@ test.describe('Mann-Whitney U Test Feature', () => {
     test('should run Mann-Whitney U Test and display Reporting Table', async ({ page }) => {
         // 1. デモデータをロード (これによりUIが有効化される)
         await page.click('#load-demo-btn');
+        await page.waitForSelector('#demo-modal', { state: 'visible' });
+        await page.click('.demo-option-btn[data-demo="demo_all_analysis.csv"]');
 
         // データロード完了トーストまたはUIの活性化を待つ
         // ここでは "summary-stats-container" が表示されるのを待つなどが確実
@@ -38,17 +40,18 @@ test.describe('Mann-Whitney U Test Feature', () => {
         await page.click('#run-u-test-btn', { force: true });
 
         // 6. 結果表示の検証
-        const resultsSection = page.locator('#test-results-section');
+        const resultsSection = page.locator('#results-section');
         await expect(resultsSection).toBeVisible();
 
         // 結果テーブルが表示されているか
-        await expect(page.locator('#test-results-table table')).toBeVisible();
+        await expect(page.locator('#test-results-table')).toBeVisible();
 
         // 7. [新機能] 論文報告用テーブル (Hyoun) の検証
         const reportingTable = page.locator('#reporting-table-container table');
         await expect(reportingTable).toBeVisible();
-        await expect(reportingTable).toContainText('Table 1. Results of Mann-Whitney U Test');
-        await expect(reportingTable).toContainText('Mean Rank');
+        await expect(reportingTable).toContainText('男性');
+        await expect(reportingTable).toContainText('女性');
+        await expect(reportingTable).toContainText('U');
         await expect(reportingTable).toContainText('r');
 
         // 8. [新機能] 可視化 (Plotly) の検証

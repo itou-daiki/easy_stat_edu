@@ -108,9 +108,9 @@ test.describe('Text Mining Advanced Verification', () => {
         // 10. Verify Charts in Category View (NEW)
         // Note: The IDs are dynamically generated like `cat-CATEGORY_NAME-wordcloud`
         // We look for any canvas inside the category results for Word Cloud
-        await expect(page.locator('#category-results canvas[id*="-wordcloud"]')).toBeVisible();
+        await expect(page.locator('#category-results canvas[id*="-wordcloud"]').first()).toBeVisible();
         // And the network container
-        await expect(page.locator('#category-results div[id*="-network"] canvas')).toBeVisible();
+        await expect(page.locator('#category-results div[id*="-network"] canvas').first()).toBeVisible();
 
         // 11. Verify KWIC Panel Presence
         const kwicPanel = page.locator('#kwic-panel');

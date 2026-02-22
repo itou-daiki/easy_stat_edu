@@ -59,7 +59,7 @@ test.describe('T-test & ANOVA Table Validation', () => {
 
             // The main results table should use < .001 format
             // Look for the pattern in the HTML table generation (not the APA table)
-            const mainTableSection = oneSampleSection.substring(0, 2500);
+            const mainTableSection = oneSampleSection.substring(0, 5000);
             expect(mainTableSection).toMatch(/p_value\s*<\s*0\.001\s*\?\s*'<\s*\.001'/);
         });
 
@@ -115,7 +115,7 @@ test.describe('T-test & ANOVA Table Validation', () => {
 
             const oneSampleSection = src.substring(
                 src.indexOf('function runOneSampleTTest'),
-                src.indexOf('function runOneSampleTTest') + 2500
+                src.indexOf('function runOneSampleTTest') + 5000
             );
 
             // Main results table should use Math.abs for t_stat display

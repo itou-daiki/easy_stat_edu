@@ -376,8 +376,8 @@ test.describe('Data Processing - Bulk Recode', () => {
         const dropdown = page.locator('#compute-col-select-container .multiselect-dropdown');
         await multiSelectInput.click();
         await expect(dropdown).toBeVisible();
-        const optionMath = page.locator('#compute-col-select-container .multiselect-option').filter({ hasText: /^数学$/ }).first();
-        const optionSci = page.locator('#compute-col-select-container .multiselect-option').filter({ hasText: /^理科$/ }).first();
+        const optionMath = page.locator('#compute-col-select-container .multiselect-option').filter({ hasText: '数学' }).first();
+        const optionSci = page.locator('#compute-col-select-container .multiselect-option').filter({ hasText: '理科' }).first();
 
         await expect(optionMath).toBeVisible();
         await optionMath.click();
@@ -503,22 +503,30 @@ test.describe('Data Processing - Bulk Recode', () => {
         const dropdown = page.locator('#cleansing-col-select-container .multiselect-dropdown');
         await multiSelectInput.click();
         await expect(dropdown).toBeVisible();
-        const optionText = page.locator('#cleansing-col-select-container .multiselect-option').filter({ hasText: /^テキスト$/ }).first();
+        const optionText = page.locator('#cleansing-col-select-container .multiselect-option').filter({ hasText: 'テキスト' }).first();
 
         await expect(optionText).toBeVisible();
+        await page.waitForTimeout(200);
         await optionText.click();
+        await page.waitForTimeout(200);
         await page.locator('body').click({ position: { x: 0, y: 0 } });
 
         // 6. Execute Cleansing
         page.on('dialog', async (dialog: any) => {
+            console.log('DIALOG OPENED:', dialog.message());
             await dialog.accept();
         });
         await page.click('#apply-cleansing-btn');
 
         // 7. Verify Resulting Data (Check if "１２３ ＡＢＣ " was converted to "123 ABC")
-        // Row 2 (index 1), Column "テキスト"
-        const cell = page.locator('#original-data-overview td:has-text("123 ABC")').first();
+        // Debug to see what is actually in the table
+        const allCells = await page.locator('#original-data-overview td').allInnerTexts();
+        console.log('TABLE CELLS AFTER CLEANSING:', allCells);
+
+        const cell = page.locator('#original-data-overview td', { hasText: '123' }).first();
         await expect(cell).toBeVisible({ timeout: 10000 });
+        const cellText = await cell.innerText();
+        expect(cellText.trim()).toBe('123 ABC');
 
         // Also check trimmed spaces for "田中 太郎"
         const cell2 = page.locator('#original-data-overview td:has-text("田中 太郎")').first();

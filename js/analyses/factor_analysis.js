@@ -210,7 +210,7 @@ function runFactorAnalysis(currentData) {
         plotScree(eigenvalues);
         plotLoadingsHeatmap(variables, loadings, rotationMethod);
 
-        document.getElementById('analysis-results').style.display = 'block';
+        document.getElementById('fa-analysis-results').style.display = 'block';
 
     } catch (e) {
         console.error(e);
@@ -310,7 +310,7 @@ export function render(container, currentData, characteristics) {
             </div>
 
             <!-- 結果エリア -->
-            <div id="analysis-results" style="display: none;">
+            <div id="fa-analysis-results" style="display: none;">
                 <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                     <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-chart-line"></i> 固有値と寄与率</h4>
                     <div id="eigenvalues-table"></div>
