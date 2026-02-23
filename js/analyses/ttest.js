@@ -5,9 +5,9 @@
  */
 import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
 import { displayVisualization } from './ttest/visualization.js';
-// import { MultiSelect } from '../components/MultiSelect.js'; // REMOVED
 
-// let depVarMultiSelect = null; // REMOVED
+
+
 
 /**
  * 要約統計量の計算と表示

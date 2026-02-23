@@ -1,7 +1,7 @@
 import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
-// import { MultiSelect } from '../components/MultiSelect.js'; // REMOVED
 
-// let multiSelectInstance = null; // REMOVED
+
+
 
 /** Returns array of ranks (average rank for ties). */
 function rankData(arr) {

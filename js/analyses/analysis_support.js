@@ -168,20 +168,20 @@ function updateRecommendations(selectedVars, data, characteristics) {
             `現在の選択: ${texts.length}個のテキスト変数`));
     }
 
-    // Rule 2: Single Numeric -> EDA
-    if (numerics.length === 1 && categoricals.length === 0 && texts.length === 0) {
-        recommendations.push(createRecItem('eda', '探索的データ分析 (EDA)', 'ヒストグラムや箱ひげ図でデータの分布を確認します。', '数値変数が1つ選択されています'));
-        recommendations.push(createRecItem('time_series', '時系列データ分析', 'データの時間的な推移やトレンドを確認します。', '数値変数が1つ選択されています'));
+    // Rule 2: Numeric EDA (Independent)
+    if (numerics.length === 1) {
+        recommendations.push(createRecItem('eda', '探索的データ分析 (EDA)', 'ヒストグラムや箱ひげ図でデータの分布を確認します。', '数値変数が選択されています'));
+        recommendations.push(createRecItem('time_series', '時系列データ分析', 'データの時間的な推移やトレンドを確認します。', '数値変数が選択されています'));
     }
 
-    // Rule 3: Two Numerics -> Correlation, Regression
+    // Rule 3: Multiple Numerics
     if (numerics.length === 2 && categoricals.length === 0) {
         recommendations.push(createRecItem('correlation', '相関分析', '2つの変数間の関係性（相関係数）を調べます。', '数値変数が2つ選択されています'));
         recommendations.push(createRecItem('regression_simple', '単回帰分析', '一方の変数からもう一方の変数を予測するモデルを作ります。', '数値変数が2つ選択されています'));
         recommendations.push(createRecItem('ttest', '対応のあるt検定', '2つの変数の差（変化）を検定します。（例：Pre/Post）', '※対応のあるデータの場合に有効です'));
+        recommendations.push(createRecItem('wilcoxon_signed_rank', 'ウィルコクソンの符号付順位検定', '対応のある2変数の差（順位）を検定します。', '※正規分布に従わない場合に適しています'));
     }
 
-    // Rule 4: 3+ Numerics -> Correlation Matrix, Multiple Regression, Factor Analysis, PCA
     if (numerics.length >= 3 && categoricals.length === 0) {
         recommendations.push(createRecItem('correlation', '相関分析 (相関行列)', '多数の変数間の関係を一括で確認します。', '3つ以上の数値変数が選択されています'));
         recommendations.push(createRecItem('regression_multiple', '重回帰分析', '複数の変数でターゲット変数を予測・説明します。', '3つ以上の数値変数が選択されています'));
@@ -189,7 +189,7 @@ function updateRecommendations(selectedVars, data, characteristics) {
         recommendations.push(createRecItem('factor_analysis', '因子分析', '背後に潜む共通因子（構成概念）を抽出します。', 'アンケート分析などに適しています'));
     }
 
-    // Rule 5: 1 Numeric + 1 Categorical
+    // Rule 4: Numerics + Categoricals
     if (numerics.length === 1 && categoricals.length === 1) {
         const catVar = categoricals[0].value;
         const uniqueCount = getUniqueCount(data, catVar);
@@ -197,26 +197,37 @@ function updateRecommendations(selectedVars, data, characteristics) {
         if (uniqueCount === 2) {
             recommendations.push(createRecItem('ttest', 't検定 (独立2群)', '2つのグループ間の平均値の差を検定します。', `カテゴリ変数「${catVar}」は2グループです`));
             recommendations.push(createRecItem('mann_whitney', 'マン・ホイットニーのU検定', '2つのグループ間の分布（順位）の差を検定します。', `正規分布に従わない場合に適しています`));
+            recommendations.push(createRecItem('logistic_regression', 'ロジスティック回帰分析', '事象の発生確率（2値カテゴリ）を予測します。', `目的変数が2値の場合に適しています`));
         } else if (uniqueCount >= 3) {
             recommendations.push(createRecItem('anova_one_way', '一要因分散分析', '3つ以上のグループ間の平均値の差を検定します。', `カテゴリ変数「${catVar}」は${uniqueCount}グループです`));
             recommendations.push(createRecItem('kruskal_wallis', 'クラスカル・ウォリス検定', '3つ以上のグループ間の分布（順位）の差を検定します。', `正規分布に従わない場合に適しています`));
         }
     }
 
-    // Rule 6: 1 Numeric + 2 Categoricals
     if (numerics.length === 1 && categoricals.length === 2) {
         recommendations.push(createRecItem('anova_two_way', '二要因分散分析', '2つの要因（カテゴリ）が数値に与える影響と、交互作用を分析します。', '2つのカテゴリ変数と1つの数値変数が選択されています'));
     }
 
-    // Rule 7: 2+ Categoricals (No numeric)
+    // Rule 5: Pure Categoricals
     if (categoricals.length >= 2 && numerics.length === 0) {
+        recommendations.push(createRecItem('cross_tabulation', 'クロス集計表', 'カテゴリ変数同士の度数分布を表にまとめます。', 'カテゴリ変数の分布確認に基本です'));
         recommendations.push(createRecItem('chi_square', 'カイ二乗検定', '2つのカテゴリ変数に関連（連関）があるかを検定します。', 'クロス集計表の分析に適しています'));
+        recommendations.push(createRecItem('fisher_exact', 'フィッシャーの正確確率検定', 'サンプルサイズが小さい（期待度数5未満）場合の関連を検定します。', '小標本データに適しています'));
+        recommendations.push(createRecItem('mcnemar', 'マクネマー検定', '対応のある2つのカテゴリ変数の比率の差を検定します。（例:Pre/Post）', '※対応のあるデータの場合に有効です'));
     }
+
+    // Deduplicate recommendations just in case
+    const uniqueRecsMap = new Map();
+    recommendations.forEach(rec => {
+        // Extract analysisKey from the onclick string roughly
+        const html = rec.outerHTML;
+        uniqueRecsMap.set(html, rec);
+    });
+    recommendations = Array.from(uniqueRecsMap.values());
 
     // Fallback
     if (recommendations.length === 0) {
-        recList.innerHTML = `<div style="color: #718096;">現在選択されている組み合わせ（数値:${numerics.length}, カテゴリ:${categoricals.length}, テキスト:${texts.length}）に特定の分析手法がマッチしませんでしたが、EDA（探索的データ分析）で個別の分布を確認することをお勧めします。</div>`;
-        recList.appendChild(createRecItem('eda', '探索的データ分析 (EDA) へ移動', '個別の変数の分布を確認します。', 'まずはここから'));
+        recList.innerHTML = `<div style="color: #718096;">現在選択されている組み合わせ（数値:${numerics.length}, カテゴリ:${categoricals.length}, テキスト:${texts.length}）に特定の分析手法がマッチしませんでしたが、データ形式を確認してください。</div>`;
     } else {
         recList.innerHTML = '';
         recommendations.forEach(elem => recList.appendChild(elem));
