@@ -1149,6 +1149,7 @@ function runTwoWayMixedANOVA(currentData, pairs) {
         const sigPairs = performSimpleMainEffectTests(validData, betweenVar, 'Time', 'Value', 'mixed', method, null, null, withinVars);
 
         testResults.push({
+            designType: 'mixed',
             depVar: `Pair ${index + 1}`,
             factorBetween: betweenVar,
             factorWithin: '条件',

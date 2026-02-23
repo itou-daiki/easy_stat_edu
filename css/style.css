@@ -1133,6 +1133,124 @@ table tr:hover {
 
 
 
+/* MultiSelect Component Styles */
+.multiselect-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.multiselect-input {
+    min-height: 45px;
+    /* Match standard select height roughly */
+    border: 2px solid #cbd5e0;
+    /* Match t-test group var border */
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    /* Match padding */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.multiselect-wrapper.active .multiselect-input {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.1);
+}
+
+.multiselect-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.multiselect-tag {
+    background: #e0f2fe;
+    /* Light blue */
+    color: var(--primary-dark);
+    border: 1px solid #bae6fd;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.multiselect-tag i {
+    cursor: pointer;
+    font-size: 0.8rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.multiselect-tag i:hover {
+    opacity: 1;
+    color: #ef4444;
+}
+
+.multiselect-search {
+    border: none !important;
+    outline: none !important;
+    padding: 4px !important;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    flex-grow: 1;
+    min-width: 60px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.multiselect-chevron {
+    margin-left: auto;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    padding: 0 8px;
+}
+
+.multiselect-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-top: 4px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+}
+
+.multiselect-options {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.multiselect-options li {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 0.95rem;
+}
+
+.multiselect-options li:hover {
+    background: #f1f5f9;
+}
+
+.multiselect-options .no-options {
+    color: var(--text-secondary);
+    cursor: default;
+    padding: 12px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
 /* Analysis Button */
 .btn-analysis {
     margin-top: 1.5rem;

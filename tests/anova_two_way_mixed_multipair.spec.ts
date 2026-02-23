@@ -34,30 +34,21 @@ test('Two-Way Mixed ANOVA Multi-Pair Verification', async ({ page }) => {
     // Assuming 'Class' is a suitable factor (index 1)
     await page.selectOption('#mixed-between-var', { index: 1 });
 
-    // 6. Add First Pair (Pre -> Post)
-    // Select Pre
-    const preContainer = page.locator('#mixed-var-pre-container');
-    await preContainer.locator('.pairs-select-input').waitFor({ state: 'visible', timeout: 5000 });
-    await preContainer.locator('.pairs-select-input').click();
-    await preContainer.locator('.pairs-select-option').nth(2).click(); // e.g. Pre_Score
-    await page.locator('h1').click(); // Close dropdown
+    // 6. Map Variables for First Pair
+    const firstRow = page.locator('#pair-selector-container-list .pair-row').first();
+    const ops = await firstRow.locator('.pre-select').locator('option').allInnerTexts();
+    console.log('[DEBUG] pre-select options:', ops);
+
+    // Select the Pre_Score and Post_Score by label instead of index to be explicit
+    await firstRow.locator('.pre-select').selectOption({ label: 'リーディング力（前）' });
 
     // Check Data Preview Visibility
     const dataPreview = page.locator('#anova-data-overview');
     await expect(dataPreview).toBeVisible();
 
-    // Select Post
-    const postContainer = page.locator('#mixed-var-post-container');
-    await postContainer.locator('.pairs-select-input').waitFor({ state: 'visible', timeout: 5000 });
-    await postContainer.locator('.pairs-select-input').click();
-    await postContainer.locator('.pairs-select-option').nth(3).click(); // e.g. Post_Score
-    await page.locator('h1').click(); // Close dropdown
+    await firstRow.locator('.post-select').selectOption({ label: 'リーディング力（後）' });
 
-    // Click Add Pair
-    await page.locator('#add-mixed-pair-btn').click();
-
-    // Check first pair added
-    await expect(page.locator('#selected-mixed-pairs-list')).toContainText('リスニング力（前）');
+    // Check first pair added (Assuming results component gets updated, but logic removed to check pairs list explicitly as it doesn't exist anymore)
 
     // 7. Add Second Pair (Pre_2 -> Post_2) or reuse validation
     // Let's reuse for simplicity if file doesn't have 4 vars, or use other vars if available.
@@ -66,31 +57,32 @@ test('Two-Way Mixed ANOVA Multi-Pair Verification', async ({ page }) => {
     // Or ideally, the user meant different variables.
     // Let's assume we can add the same pair again for stress testing the loop.
 
-    await preContainer.locator('.pairs-select-input').click();
-    await preContainer.locator('.pairs-select-option').nth(0).click();
-    await page.locator('h1').click();
-
-    await postContainer.locator('.pairs-select-input').click();
-    await postContainer.locator('.pairs-select-option').nth(1).click();
-    await page.locator('h1').click();
-
-    await page.locator('#add-mixed-pair-btn').click();
+    await page.locator('button:has-text("ペアを追加")').click();
+    const secondRow = page.locator('#pair-selector-container-list .pair-row').nth(1);
+    await secondRow.locator('.pre-select').selectOption({ label: 'リスニング力（前）' });
+    await secondRow.locator('.post-select').selectOption({ label: 'リスニング力（後）' });
 
     // Check second pair added
-    await expect(page.locator('#selected-mixed-pairs-list .selected-pair-item')).toHaveCount(2);
+    await expect(page.locator('#pair-selector-container-list .pair-row')).toHaveCount(2);
 
     // 8. Run Analysis
-    // Listen for page errors
+    // Listen for page errors and dialogs
     page.on('pageerror', exception => {
         console.error(`[Page Error]: ${exception}`);
     });
+    page.on('dialog', async dialog => {
+        console.log(`[Dialog]: ${dialog.message()}`);
+        await dialog.dismiss();
+    });
 
-    const runBtn = page.locator('#run-mixed-anova');
+    const runBtn = page.locator('#run-mixed-anova-btn');
     await runBtn.click();
 
     // 9. Verify Results
     // Should see results for BOTH pairs
     await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 30000 });
+    const html = await page.locator('#analysis-results').innerHTML();
+    console.log(html);
     // Should have 2 result tables
-    await expect(page.locator('h4:has-text("混合計画分散分析の結果")')).toHaveCount(2);
+    await expect(page.locator('h4:has-text("混合要因分散分析表")')).toHaveCount(2);
 });

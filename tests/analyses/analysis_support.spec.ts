@@ -7,7 +7,11 @@ test.describe('Analysis Supporter', () => {
         // Upload dummy data to enable features
         const fs = require('fs');
         if (!fs.existsSync('dummy_support.csv')) {
-            fs.writeFileSync('dummy_support.csv', 'Num1,Num2,Num3,Cat2,Cat3,Cat4,Text1,Text2\n1,2,3,A,X,P,Test1,T1\n2,3,4,B,Y,Q,Test2,T2\n3,4,5,A,Z,R,Test3,T3\n4,5,6,B,X,S,Test4,T4');
+            let csvContent = 'Num1,Num2,Num3,Cat2,Cat3,Cat4,Text1,Text2\n';
+            for (let i = 1; i <= 15; i++) {
+                csvContent += `${i},${i + 1},${i + 2},${i % 2 === 0 ? 'A' : 'B'},${i % 3 === 0 ? 'X' : (i % 3 === 1 ? 'Y' : 'Z')},${i % 4 === 0 ? 'P' : 'Q'},Test${i},T${i}\n`;
+            }
+            fs.writeFileSync('dummy_support.csv', csvContent);
         }
         await page.setInputFiles('#main-data-file', 'dummy_support.csv');
         await page.waitForTimeout(1000); // wait for load

@@ -68,7 +68,7 @@ test('Two-Way Independent ANOVA Verification', async ({ page }) => {
     // The button has ID 'run-ind-anova' attached to it.
     // However, if the element with id 'run-ind-btn' is a div containing the button, 
     // we should target the button inside
-    const runBtn = page.locator('#run-ind-anova');
+    const runBtn = page.locator('#run-ind-anova-btn');
     await runBtn.click();
 
     // 7. Verify Results

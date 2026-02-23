@@ -1,6 +1,7 @@
 // ==========================================
 // UI Helpers
 // ==========================================
+import { MultiSelect } from './components/MultiSelect.js';
 
 /**
  * Toggles the visibility of a collapsible section.
@@ -502,115 +503,20 @@ function createCustomMultiSelect(container, options, id, placeholder, disabled) 
         return hiddenSelect;
     }
 
-    // Wrapper
-    const wrapper = document.createElement('div');
-    wrapper.className = 'multiselect-wrapper';
+    const msContainer = document.createElement('div');
+    container.appendChild(msContainer);
 
-    // Input Area (Display tags)
-    const inputArea = document.createElement('div');
-    inputArea.className = 'multiselect-input';
-
-    const placeholderEl = document.createElement('span');
-    placeholderEl.className = 'multiselect-placeholder';
-    placeholderEl.textContent = placeholder;
-    inputArea.appendChild(placeholderEl);
-
-    // Dropdown
-    const dropdown = document.createElement('div');
-    dropdown.className = 'multiselect-dropdown';
-
-    // State
-    const selectedValues = new Set();
-
-    // Render Dropdown Options
-    options.forEach(opt => {
-        const item = document.createElement('div');
-        item.className = 'multiselect-option';
-        item.innerHTML = `
-            <input type="checkbox" class="multiselect-checkbox" value="${opt}">
-            <span class="multiselect-label">${opt}</span>
-        `;
-
-        // Handle Click using toggle function
-        const toggleSelection = (e) => {
-            e.stopPropagation();
-
-            const checkbox = item.querySelector('input');
-            const target = e.target;
-
-            // Toggle check if click was not on checkbox itself
-            if (target !== checkbox && !target.classList.contains('multiselect-checkbox')) {
-                checkbox.checked = !checkbox.checked;
-            }
-
-            if (checkbox.checked) {
-                selectedValues.add(opt);
-                item.classList.add('selected');
-            } else {
-                selectedValues.delete(opt);
-                item.classList.remove('selected');
-            }
-
-            updateDisplay();
-            updateHiddenSelect();
-        };
-
-        item.addEventListener('click', toggleSelection);
-        dropdown.appendChild(item);
-    });
-
-    // Update Input Display (Tags)
-    const updateDisplay = () => {
-        inputArea.innerHTML = '';
-        if (selectedValues.size === 0) {
-            inputArea.appendChild(placeholderEl);
-        } else {
-            selectedValues.forEach(val => {
-                const tag = document.createElement('div');
-                tag.className = 'multiselect-tag';
-                tag.innerHTML = `
-                    ${val}
-                    <span class="multiselect-tag-remove" data-val="${val}">&times;</span>
-                `;
-                tag.querySelector('.multiselect-tag-remove').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    selectedValues.delete(val);
-                    const checkbox = dropdown.querySelector(`input[value="${val}"]`);
-                    if (checkbox) checkbox.checked = false;
-                    const optDiv = Array.from(dropdown.children).find(c => c.querySelector(`input[value="${val}"]`));
-                    if (optDiv) optDiv.classList.remove('selected');
-                    updateDisplay();
-                    updateHiddenSelect();
-                });
-                inputArea.appendChild(tag);
+    // Instantiate MultiSelect with compatibility wrapper
+    const ms = new MultiSelect(msContainer, options, {
+        placeholder: placeholder,
+        defaultSelected: [],
+        onChange: (selectedValues) => {
+            Array.from(hiddenSelect.options).forEach(opt => {
+                opt.selected = selectedValues.includes(opt.value);
             });
-        }
-    };
-
-    // Update Hidden Select
-    const updateHiddenSelect = () => {
-        Array.from(hiddenSelect.options).forEach(opt => {
-            opt.selected = selectedValues.has(opt.value);
-        });
-        hiddenSelect.dispatchEvent(new Event('change'));
-    };
-
-    // Toggle Dropdown
-    inputArea.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle('open');
-    });
-
-    // Close on outside click
-    document.addEventListener('click', (e) => {
-        if (!wrapper.contains(e.target)) {
-            dropdown.classList.remove('open');
+            hiddenSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
     });
-
-    wrapper.appendChild(inputArea);
-    wrapper.appendChild(dropdown);
-    container.appendChild(wrapper);
 
     return hiddenSelect;
 }

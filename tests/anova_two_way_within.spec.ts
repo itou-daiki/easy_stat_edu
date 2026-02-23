@@ -30,29 +30,26 @@ test('Two-Way Within-Subjects ANOVA Verification', async ({ page }) => {
     await withinLabel.click();
 
     // Verify controls visible
-    await expect(page.locator('#within-controls')).toBeVisible();
+    await expect(page.locator('#repeated-controls')).toBeVisible();
 
     // 5. Configure Design (Time x Skill)
-    await page.fill('#within-factor-a-name', 'Time');
-    await page.locator('#within-factor-a-name').blur();
+    await page.fill('#rm-f1-name', 'Time');
+    await page.fill('#rm-f1-levels', 'Pre,Post');
 
-    await page.fill('#within-factor-b-name', 'Skill');
-    await page.locator('#within-factor-b-name').blur();
+    await page.fill('#rm-f2-name', 'Skill');
+    await page.fill('#rm-f2-levels', 'Reading,Listening');
 
-    await page.fill('#within-level-a1', 'Pre');
-    await page.fill('#within-level-a2', 'Post');
+    // 6. Generate Grid and Map Variables
+    await page.click('#rm-generate-grid-btn');
+    await expect(page.locator('#rm-grid-area')).toBeVisible();
 
-    await page.fill('#within-level-b1', 'Reading');
-    await page.fill('#within-level-b2', 'Listening');
-
-    // 6. Map Variables
-    await page.selectOption('#within-cell-a1b1-container select', { label: 'リーディング力（前）' });
-    await page.selectOption('#within-cell-a1b2-container select', { label: 'リスニング力（前）' });
-    await page.selectOption('#within-cell-a2b1-container select', { label: 'リーディング力（後）' });
-    await page.selectOption('#within-cell-a2b2-container select', { label: 'リスニング力（後）' });
+    await page.selectOption('#rm-select-Pre-Reading', { label: 'リーディング力（前）' });
+    await page.selectOption('#rm-select-Pre-Listening', { label: 'リスニング力（前）' });
+    await page.selectOption('#rm-select-Post-Reading', { label: 'リーディング力（後）' });
+    await page.selectOption('#rm-select-Post-Listening', { label: 'リスニング力（後）' });
 
     // 7. Run Analysis
-    await page.click('#run-within-anova');
+    await page.click('#run-rm-btn');
 
     // 8. Verify Results
     await expect(page.locator('#analysis-results')).toBeVisible();

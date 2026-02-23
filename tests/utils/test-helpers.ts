@@ -70,14 +70,14 @@ export async function selectVariables(page: Page, variables: string[], container
         for (let i = 0; i < count; i++) {
             const container = allContainers.nth(i);
             if (await container.isVisible()) {
-                const hasOptionValue = await container.locator(`.multiselect-option input[value="${variable}"]`).count() > 0;
+                const hasOptionValue = await container.locator(`.multiselect-option[data-value="${variable}"]`).count() > 0;
                 const hasOptionText = await container.locator(`.multiselect-option`).filter({ hasText: variable }).count() > 0;
 
                 if (hasOptionValue || hasOptionText) {
                     const trigger = container.locator('.multiselect-input');
 
                     let option = hasOptionValue
-                        ? container.locator(`.multiselect-option input[value="${variable}"]`).locator('..')
+                        ? container.locator(`.multiselect-option[data-value="${variable}"]`)
                         : container.locator(`.multiselect-option`).filter({ hasText: variable }).first();
 
                     if (!await option.isVisible()) {

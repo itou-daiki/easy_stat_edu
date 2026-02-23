@@ -366,7 +366,7 @@ test.describe('Data Processing - Bulk Recode', () => {
         await expect(page.locator('.cleansing-container')).toBeVisible({ timeout: 10000 });
 
         // 4. Switch to Compute Tab
-        const computeTabBtn = page.locator('button:has-text("変数の計算")');
+        const computeTabBtn = page.locator('button:has-text("変数の手動計算")');
         await expect(computeTabBtn).toBeVisible({ timeout: 5000 });
         await computeTabBtn.click();
         await expect(page.locator('#eng-tab-compute')).toBeVisible({ timeout: 10000 });

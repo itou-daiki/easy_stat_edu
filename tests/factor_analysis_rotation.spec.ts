@@ -33,7 +33,7 @@ test.describe('Factor Analysis Rotation Tests using demo data', () => {
         // Select variables
         const variables = ['数学', '英語', '理科', '学習時間'];
         for (const v of variables) {
-            await page.locator(`.multiselect-option input[value="${v}"]`).check();
+            await page.locator(`.multiselect-option[data-value="${v}"]`).click();
         }
 
         // Close dropdown
@@ -58,7 +58,7 @@ test.describe('Factor Analysis Rotation Tests using demo data', () => {
         await page.locator('#factor-vars-container .multiselect-input').click();
         const variables = ['数学', '英語', '理科', '学習時間'];
         for (const v of variables) {
-            await page.locator(`.multiselect-option input[value="${v}"]`).check();
+            await page.locator(`.multiselect-option[data-value="${v}"]`).click();
         }
         await page.locator('#factor-vars-container .multiselect-input').click();
 
@@ -77,7 +77,7 @@ test.describe('Factor Analysis Rotation Tests using demo data', () => {
         await page.locator('#factor-vars-container .multiselect-input').click();
         const variables = ['数学', '英語', '理科', '学習時間'];
         for (const v of variables) {
-            await page.locator(`.multiselect-option input[value="${v}"]`).check();
+            await page.locator(`.multiselect-option[data-value="${v}"]`).click();
         }
         await page.locator('#factor-vars-container .multiselect-input').click();
 
