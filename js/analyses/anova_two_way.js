@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, createPairSelector, createMultiPairSelector, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 import { calculateTukeyP, performHolmCorrection } from '../utils/stat_distributions.js';
 // import { jStat } from 'jstat'; // Use global jStat
 
@@ -520,15 +520,13 @@ function renderTwoWayANOVASummaryTable(results, designType) {
                 pAxB: res.pAxB, etaAxB: res.etaAxB, fAxB: res.fAxB, dfAxB: res.dfAxB, dfErrAxB: res.dfError
             };
         } else if (designType === 'mixed') {
-            const srcA = res.sources.find(s => !s.name.includes('Error') && !s.name.includes('交互') && !s.name.includes('条件'));
-            const srcB = res.sources.find(s => s.name.includes('条件'));
-            const srcAxB = res.sources.find(s => s.name.includes('交互'));
-            const errA = res.sources.find(s => s.name.includes('Error') && s.name.includes('Group'));
-            const errB = res.sources.find(s => s.name.includes('Error') && s.name.includes('Time'));
+            // sources order: [Between, Error(Between), Within, Interaction, Error(Within)]
+            const eff = res.sources.filter(s => !s.name.includes('Error'));
+            const err = res.sources.filter(s => s.name.includes('Error'));
             return {
-                pA: srcA?.p, etaA: srcA?.eta, fA: srcA?.f, dfA: srcA?.df, dfErrA: errA?.df,
-                pB: srcB?.p, etaB: srcB?.eta, fB: srcB?.f, dfB: srcB?.df, dfErrB: errB?.df,
-                pAxB: srcAxB?.p, etaAxB: srcAxB?.eta, fAxB: srcAxB?.f, dfAxB: srcAxB?.df, dfErrAxB: errB?.df
+                pA: eff[0]?.p, etaA: eff[0]?.eta, fA: eff[0]?.f, dfA: eff[0]?.df, dfErrA: err[0]?.df,
+                pB: eff[1]?.p, etaB: eff[1]?.eta, fB: eff[1]?.f, dfB: eff[1]?.df, dfErrB: err[1]?.df,
+                pAxB: eff[2]?.p, etaAxB: eff[2]?.eta, fAxB: eff[2]?.f, dfAxB: eff[2]?.df, dfErrAxB: err[1]?.df
             };
         } else {
             const eff = res.sources.filter(s => !s.name.includes('Error'));
@@ -711,18 +709,20 @@ function displayTwoWayANOVAInterpretation(results, designType) {
             etaAxB = res.etaAxB;
             varName = res.depVar;
         } else {
-            factorA = res.factorBetween;
-            factorB = res.factorWithin;
-            const srcA = res.sources.find(s => s.name.includes(factorA));
-            const srcB = res.sources.find(s => s.name.includes(factorB) || s.name.includes('条件'));
-            const srcAxB = res.sources.find(s => s.name.includes('×'));
+            factorA = res.factorBetween || res.factor1;
+            factorB = res.factorWithin || res.factor2;
+            // sources order: [Between, Error(Between), Within, Interaction, Error(Within)]
+            const eff = res.sources.filter(s => !s.name.includes('Error'));
+            const srcA = eff[0];
+            const srcB = eff[1];
+            const srcAxB = eff[2];
             pA = srcA ? srcA.p : 1;
             pB = srcB ? srcB.p : 1;
             pAxB = srcAxB ? srcAxB.p : 1;
             etaA = srcA ? srcA.eta : 0;
             etaB = srcB ? srcB.eta : 0;
             etaAxB = srcAxB ? srcAxB.eta : 0;
-            varName = '測定値';
+            varName = res.depVar || '測定値';
         }
 
         const getSigText = (p) => p < 0.05 ? '有意な差（効果）が見られました。' : '有意な差（効果）は見られませんでした。';
@@ -1002,19 +1002,21 @@ function renderTwoWayANOVAVisualization(results) {
 }
 
 
-function runTwoWayMixedANOVA(currentData, pairs) {
+function runTwoWayMixedANOVA(currentData, withinFactor, mapping) {
+    // withinFactor: { name: string, levels: string[] }
+    // mapping: { levelName: columnName, ... }
     const betweenVar = document.getElementById('mixed-between-var').value;
     const methodSelect = document.getElementById('two-way-comparison-method');
-    const method = methodSelect ? methodSelect.value : 'holm'; // Default to Holm for Mixed for safety
+    const method = methodSelect ? methodSelect.value : 'holm';
 
     if (!betweenVar) {
-        alert('被験者間因子（グループ）を選択してください。');
+        alert('被験者間因子（グループ変数）を選択してください。');
         return;
     }
-    if (!pairs || pairs.length === 0) {
-        alert('分析する変数ペア（観測変数・測定変数）を1つ以上追加してください。');
-        return;
-    }
+
+    const withinLevels = withinFactor.levels;
+    const withinName = withinFactor.name;
+    const withinVars = withinLevels.map(l => mapping[l]); // column names in order
 
     const resultsContainer = document.getElementById('analysis-results');
     if (!document.getElementById('test-results-section')) {
@@ -1032,135 +1034,129 @@ function runTwoWayMixedANOVA(currentData, pairs) {
         });
     }
 
-    const testResults = [];
+    const validData = currentData.filter(d =>
+        d[betweenVar] != null &&
+        withinVars.every(v => d[v] != null && !isNaN(d[v]))
+    );
 
-    pairs.forEach((pair, index) => {
-        const withinVars = [pair.pre, pair.post];
-        // Note: Currently limited to 2 conditions (pre/post)? 
-        // Logic handles list of withinVars.
+    const nTotal = validData.length;
+    const groups = getLevels(validData, betweenVar);
+    const nGroups = groups.length;
+    const nConditions = withinLevels.length;
 
-        const validData = currentData.filter(d =>
-            d[betweenVar] != null &&
-            withinVars.every(v => d[v] != null && !isNaN(d[v]))
-        );
+    if (nGroups < 2) {
+        alert('被験者間因子のグループが2つ以上必要です。');
+        return;
+    }
+    if (nTotal < 2) {
+        alert('有効なデータ行が少なすぎます。');
+        return;
+    }
 
-        const nTotal = validData.length;
-        const groups = getLevels(validData, betweenVar);
-        const conditions = withinVars;
-        const nGroups = groups.length;
-        const nConditions = conditions.length;
+    const allValues = validData.flatMap(d => withinVars.map(v => d[v]));
+    const grandMean = jStat.mean(allValues);
+    const ssTotal = jStat.sum(allValues.map(v => Math.pow(v - grandMean, 2)));
 
-        if (nGroups < 2) {
-            console.warn(`Skipping pair ${pair.pre}-${pair.post}: Not enough groups.`);
-            return;
-        }
+    const groupData = {};
+    const groupMeans = {};
+    const groupNs = {};
 
-        const allValues = validData.flatMap(d => withinVars.map(v => d[v]));
-        const grandMean = jStat.mean(allValues);
-        const ssTotal = jStat.sum(allValues.map(v => Math.pow(v - grandMean, 2)));
+    groups.forEach(g => {
+        const gRows = validData.filter(d => d[betweenVar] === g);
+        const gValues = gRows.flatMap(d => withinVars.map(v => d[v]));
+        groupData[g] = gRows;
+        groupMeans[g] = jStat.mean(gValues);
+        groupNs[g] = gRows.length;
+    });
 
-        const groupData = {};
-        const groupMeans = {};
-        const groupNs = {};
+    let ssBetween = 0;
+    groups.forEach(g => {
+        ssBetween += groupNs[g] * nConditions * Math.pow(groupMeans[g] - grandMean, 2);
+    });
 
-        groups.forEach(g => {
-            const gRows = validData.filter(d => d[betweenVar] === g);
-            const gValues = gRows.flatMap(d => withinVars.map(v => d[v]));
-            groupData[g] = gRows;
-            groupMeans[g] = jStat.mean(gValues);
-            groupNs[g] = gRows.length;
-        });
+    const subjectMeans = validData.map(d => jStat.mean(withinVars.map(v => d[v])));
+    const ssSubjectsTotal = nConditions * jStat.sum(subjectMeans.map(m => Math.pow(m - grandMean, 2)));
+    const ssErrorBetween = ssSubjectsTotal - ssBetween;
 
-        let ssBetween = 0;
-        groups.forEach(g => {
-            ssBetween += groupNs[g] * nConditions * Math.pow(groupMeans[g] - grandMean, 2);
-        });
+    const conditionMeans = {};
+    withinVars.forEach(v => {
+        conditionMeans[v] = jStat.mean(validData.map(d => d[v]));
+    });
 
-        const subjectMeans = validData.map(d => jStat.mean(withinVars.map(v => d[v])));
-        const ssSubjectsTotal = nConditions * jStat.sum(subjectMeans.map(m => Math.pow(m - grandMean, 2)));
-        const ssErrorBetween = ssSubjectsTotal - ssBetween;
+    let ssWithin = 0;
+    withinVars.forEach(v => {
+        ssWithin += nTotal * Math.pow(conditionMeans[v] - grandMean, 2);
+    });
 
-        const conditionMeans = {};
-        withinVars.forEach(v => {
-            conditionMeans[v] = jStat.mean(validData.map(d => d[v]));
-        });
+    const cellStats = {};
+    let ssCells = 0;
 
-        let ssWithin = 0;
-        withinVars.forEach(v => {
-            ssWithin += nTotal * Math.pow(conditionMeans[v] - grandMean, 2);
-        });
+    groups.forEach(g => {
+        cellStats[g] = {};
+        withinVars.forEach((v, vi) => {
+            const cellValues = groupData[g].map(d => d[v]);
+            const mean = jStat.mean(cellValues);
+            const n = cellValues.length;
+            const std = jStat.stdev(cellValues, true);
+            cellStats[g][withinLevels[vi]] = { mean, n, std };
 
-        const cellStats = {};
-        let ssCells = 0;
-
-        groups.forEach(g => {
-            cellStats[g] = {};
-            withinVars.forEach(v => {
-                const cellValues = groupData[g].map(d => d[v]);
-                const mean = jStat.mean(cellValues);
-                const n = cellValues.length;
-                const std = jStat.stdev(cellValues, true);
-                cellStats[g][v] = { mean, n, std };
-
-                ssCells += n * Math.pow(mean - grandMean, 2);
-            });
-        });
-
-        const ssInteraction = ssCells - ssBetween - ssWithin;
-        const ssBroadWithin = ssTotal - ssSubjectsTotal;
-        const ssErrorWithin = ssBroadWithin - ssWithin - ssInteraction;
-
-        const dfBetween = nGroups - 1;
-        const dfErrorBetween = nTotal - nGroups;
-        const dfWithin = nConditions - 1;
-        const dfInteraction = dfBetween * dfWithin;
-        const dfErrorWithin = dfErrorBetween * dfWithin;
-
-        const msBetween = ssBetween / dfBetween;
-        const msErrorBetween = ssErrorBetween / dfErrorBetween;
-        const fBetween = msBetween / msErrorBetween;
-        const pBetween = 1 - jStat.centralF.cdf(fBetween, dfBetween, dfErrorBetween);
-        const etaBetween = ssBetween / (ssBetween + ssErrorBetween); // Partial eta
-
-        const msWithinVal = ssWithin / dfWithin;
-        const msInteraction = ssInteraction / dfInteraction;
-        const msErrorWithin = ssErrorWithin / dfErrorWithin;
-
-        const fWithin = msWithinVal / msErrorWithin;
-        const pWithin = 1 - jStat.centralF.cdf(fWithin, dfWithin, dfErrorWithin);
-        const etaWithin = ssWithin / (ssWithin + ssErrorWithin);
-
-        const fInteraction = msInteraction / msErrorWithin;
-        const pInteraction = 1 - jStat.centralF.cdf(fInteraction, dfInteraction, dfErrorWithin);
-        const etaInteraction = ssInteraction / (ssInteraction + ssErrorWithin);
-
-        const sources = [
-            { name: `${betweenVar} (Group)`, ss: ssBetween, df: dfBetween, ms: msBetween, f: fBetween, p: pBetween, eta: etaBetween },
-            { name: `Error (Group)`, ss: ssErrorBetween, df: dfErrorBetween, ms: msErrorBetween, f: null, p: null, eta: null },
-            { name: `条件 (Time)`, ss: ssWithin, df: dfWithin, ms: msWithinVal, f: fWithin, p: pWithin, eta: etaWithin },
-            { name: `交互作用 (Group x Time)`, ss: ssInteraction, df: dfInteraction, ms: msInteraction, f: fInteraction, p: pInteraction, eta: etaInteraction },
-            { name: `Error (Time)`, ss: ssErrorWithin, df: dfErrorWithin, ms: msErrorWithin, f: null, p: null, eta: null }
-        ];
-
-        // Post-hoc / Simple Main Effects
-        // Mixed Design: Compare Groups at each Level (Between-subjects test at each time)
-        // Passes 'mixed' type.
-        // We pass msErrorWithin? No, for Between comparison at fixed time, use local variance.
-        const sigPairs = performSimpleMainEffectTests(validData, betweenVar, 'Time', 'Value', 'mixed', method, null, null, withinVars);
-
-        testResults.push({
-            designType: 'mixed',
-            depVar: `Pair ${index + 1}`,
-            factorBetween: betweenVar,
-            factorWithin: '条件',
-            levels1: groups,
-            levels2: withinVars,
-            cellStats,
-            sources,
-            sigPairs,
-            method
+            ssCells += n * Math.pow(mean - grandMean, 2);
         });
     });
+
+    const ssInteraction = ssCells - ssBetween - ssWithin;
+    const ssBroadWithin = ssTotal - ssSubjectsTotal;
+    const ssErrorWithin = ssBroadWithin - ssWithin - ssInteraction;
+
+    const dfBetween = nGroups - 1;
+    const dfErrorBetween = nTotal - nGroups;
+    const dfWithin = nConditions - 1;
+    const dfInteraction = dfBetween * dfWithin;
+    const dfErrorWithin = dfErrorBetween * dfWithin;
+
+    const msBetween = ssBetween / dfBetween;
+    const msErrorBetween = ssErrorBetween / dfErrorBetween;
+    const fBetween = msBetween / msErrorBetween;
+    const pBetween = 1 - jStat.centralF.cdf(fBetween, dfBetween, dfErrorBetween);
+    const etaBetween = ssBetween / (ssBetween + ssErrorBetween);
+
+    const msWithinVal = ssWithin / dfWithin;
+    const msInteraction = ssInteraction / dfInteraction;
+    const msErrorWithin = ssErrorWithin / dfErrorWithin;
+
+    const fWithin = msWithinVal / msErrorWithin;
+    const pWithin = 1 - jStat.centralF.cdf(fWithin, dfWithin, dfErrorWithin);
+    const etaWithin = ssWithin / (ssWithin + ssErrorWithin);
+
+    const fInteraction = msInteraction / msErrorWithin;
+    const pInteraction = 1 - jStat.centralF.cdf(fInteraction, dfInteraction, dfErrorWithin);
+    const etaInteraction = ssInteraction / (ssInteraction + ssErrorWithin);
+
+    const sources = [
+        { name: `${betweenVar} (Group)`, ss: ssBetween, df: dfBetween, ms: msBetween, f: fBetween, p: pBetween, eta: etaBetween },
+        { name: `Error (Group)`, ss: ssErrorBetween, df: dfErrorBetween, ms: msErrorBetween, f: null, p: null, eta: null },
+        { name: `${withinName} (Within)`, ss: ssWithin, df: dfWithin, ms: msWithinVal, f: fWithin, p: pWithin, eta: etaWithin },
+        { name: `交互作用 (${betweenVar} × ${withinName})`, ss: ssInteraction, df: dfInteraction, ms: msInteraction, f: fInteraction, p: pInteraction, eta: etaInteraction },
+        { name: `Error (${withinName})`, ss: ssErrorWithin, df: dfErrorWithin, ms: msErrorWithin, f: null, p: null, eta: null }
+    ];
+
+    // Post-hoc / Simple Main Effects
+    const sigPairs = performSimpleMainEffectTests(validData, betweenVar, withinName, 'Value', 'mixed', method, null, null, withinVars);
+
+    const testResults = [{
+        designType: 'mixed',
+        depVar: withinName,
+        factorBetween: betweenVar,
+        factorWithin: withinName,
+        factor1: betweenVar,
+        factor2: withinName,
+        levels1: groups,
+        levels2: withinLevels,
+        cellStats,
+        sources,
+        sigPairs,
+        method
+    }];
 
     renderTwoWayANOVASummaryTable(testResults, 'mixed');
     renderTwoWayMixedResults(testResults);
@@ -1715,7 +1711,22 @@ export function render(container, currentData, characteristics) {
                 <!-- Mixed Controls -->
                 <div id="mixed-controls" style="display: none;">
                     <div id="mixed-between-container" style="margin-bottom: 1rem;"></div>
-                    <div id="pair-selector-container" style="margin-bottom: 1rem;"></div>
+                    <div style="margin-bottom: 1.5rem; padding: 1rem; background: #fffacd; border-radius: 8px; font-size: 0.9rem;">
+                        <i class="fas fa-info-circle" style="color: #d97706;"></i>
+                        被験者内因子の設定：<br>
+                        1. 被験者内因子の名前と水準名（カンマ区切り）を入力してください。<br>
+                        2. 「グリッドを生成」を押すと、各水準に対応する変数の割り当て表が表示されます。<br>
+                        3. 各セルに対応するデータの列（変数）を割り当ててください。
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="font-weight: bold;">被験者内因子</label>
+                        <input type="text" id="mixed-within-name" class="form-input" placeholder="例: 時間" value="条件" style="width:100%; padding:0.5rem; margin-bottom:0.5rem;">
+                        <input type="text" id="mixed-within-levels" class="form-input" placeholder="水準 (カンマ区切り) 例: Pre,Mid,Post" style="width:100%; padding:0.5rem;">
+                    </div>
+                    <button id="mixed-generate-grid-btn" class="btn btn-secondary" style="margin-bottom: 1.5rem; width: 100%;">
+                        <i class="fas fa-table"></i> グリッドを生成
+                    </button>
+                    <div id="mixed-grid-area" style="margin-bottom: 1.5rem;"></div>
                     <div id="run-mixed-btn-container"></div>
                 </div>
                 
@@ -1781,16 +1792,55 @@ export function render(container, currentData, characteristics) {
         label: '<i class="fas fa-users"></i> 被験者間因子（グループ）:',
         multiple: false
     });
-    createMultiPairSelector('pair-selector-container', numericColumns);
-    createAnalysisButton('run-mixed-btn-container', '分析を実行（混合）', () => {
-        const pairs = [];
-        document.querySelectorAll('.pair-row').forEach(row => {
-            const pre = row.querySelector('.pre-select').value;
-            const post = row.querySelector('.post-select').value;
-            if (pre && post) pairs.push({ pre, post });
+
+    document.getElementById('mixed-generate-grid-btn').addEventListener('click', () => {
+        const withinName = document.getElementById('mixed-within-name').value || '条件';
+        const withinLevels = document.getElementById('mixed-within-levels').value.split(',').map(s => s.trim()).filter(s => s);
+        const gridArea = document.getElementById('mixed-grid-area');
+
+        if (withinLevels.length < 2) {
+            alert('被験者内因子には少なくとも2つの水準が必要です');
+            return;
+        }
+
+        let tableHtml = `<table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>${withinName}</th>
+                    <th>対応する変数</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        withinLevels.forEach(level => {
+            tableHtml += `<tr><th>${level}</th><td id="mixed-cell-${level}"></td></tr>`;
         });
-        runTwoWayMixedANOVA(currentData, pairs);
-    }, { id: 'run-mixed-anova-btn' });
+        tableHtml += `</tbody></table>`;
+
+        gridArea.innerHTML = tableHtml;
+
+        withinLevels.forEach(level => {
+            createVariableSelector(`mixed-cell-${level}`, numericColumns, `mixed-select-${level}`, { placeholder: '変数を選択' });
+        });
+
+        // Remove old run button if any, then create new one
+        const runContainer = document.getElementById('run-mixed-btn-container');
+        runContainer.innerHTML = '';
+        createAnalysisButton('run-mixed-btn-container', '分析を実行（混合）', () => {
+            const mapping = {};
+            let missing = false;
+            withinLevels.forEach(level => {
+                const val = document.getElementById(`mixed-select-${level}`).value;
+                if (!val) missing = true;
+                mapping[level] = val;
+            });
+            if (missing) {
+                alert('すべての水準に変数を割り当ててください');
+                return;
+            }
+            runTwoWayMixedANOVA(currentData, { name: withinName, levels: withinLevels }, mapping);
+        }, { id: 'run-mixed-anova-btn' });
+    });
 
     // Repeated Measures Logic Setup
     const generateGridBtn = document.getElementById('rm-generate-grid-btn');
