@@ -908,9 +908,82 @@ export function createAnalysisButton(container, text, onClick, options = {}) {
 }
 
 /**
+ * 学術論文スタイルのPlotlyレイアウト設定を返す。
+ * 森山(2023)の図表スタイルに準拠: セリフフォント、白背景、控えめなグリッド線。
+ * 返り値はPlotly.newPlot()のlayout引数にスプレッド構文でマージして使用する。
+ * @param {Object} overrides - 上書きしたいレイアウトプロパティ
+ * @returns {Object} 学術的Plotlyレイアウト設定
+ */
+export function getAcademicLayout(overrides = {}) {
+    const baseFont = {
+        family: "'Times New Roman', 'Noto Serif JP', 'Yu Mincho', '游明朝', serif",
+        size: 13,
+        color: '#1a1a1a'
+    };
+    const base = {
+        font: baseFont,
+        paper_bgcolor: 'white',
+        plot_bgcolor: 'white',
+        xaxis: {
+            linecolor: '#333',
+            linewidth: 1,
+            mirror: true,
+            gridcolor: '#e0e0e0',
+            gridwidth: 1,
+            zeroline: false,
+            tickfont: { ...baseFont, size: 12 },
+            title: { font: { ...baseFont, size: 13 } }
+        },
+        yaxis: {
+            linecolor: '#333',
+            linewidth: 1,
+            mirror: true,
+            gridcolor: '#e0e0e0',
+            gridwidth: 1,
+            zeroline: false,
+            tickfont: { ...baseFont, size: 12 },
+            title: { font: { ...baseFont, size: 13 } }
+        },
+        margin: { t: 50, b: 80, l: 70, r: 30 }
+    };
+    return deepMergeLayout(base, overrides);
+}
+
+function deepMergeLayout(base, overrides) {
+    const result = { ...base };
+    for (const key of Object.keys(overrides)) {
+        if (overrides[key] && typeof overrides[key] === 'object' && !Array.isArray(overrides[key]) && base[key] && typeof base[key] === 'object') {
+            result[key] = deepMergeLayout(base[key], overrides[key]);
+        } else {
+            result[key] = overrides[key];
+        }
+    }
+    return result;
+}
+
+/**
+ * 学術論文向け配色パレット（森山スタイル準拠）。
+ * 控えめでモノクロ印刷にも対応しやすいカラーセット。
+ */
+export const academicColors = {
+    primary: '#2c5f8a',
+    secondary: '#6b9bc3',
+    tertiary: '#a3c4dc',
+    accent: '#d4544a',
+    neutral: '#7f8c8d',
+    palette: ['#2c5f8a', '#d4544a', '#6b9bc3', '#e8a838', '#7f8c8d', '#5b8c5a', '#9b6b9b', '#c97c5e'],
+    barFill: 'rgba(44, 95, 138, 0.7)',
+    barLine: 'rgba(44, 95, 138, 1.0)',
+    boxFill: 'rgba(107, 155, 195, 0.5)',
+    boxLine: 'rgba(44, 95, 138, 1.0)',
+    heatmapScale: [[0, '#f7fbff'], [0.25, '#c6dbef'], [0.5, '#6baed6'], [0.75, '#2171b5'], [1, '#08306b']],
+    divergingScale: [[0, '#b2182b'], [0.25, '#ef8a62'], [0.5, '#f7f7f7'], [0.75, '#67a9cf'], [1, '#2166ac']]
+};
+
+/**
  * Creates a standardized configuration object for Plotly charts.
  * Enables PNG download with a custom filename based on analysis name, variables, and timestamp.
- * 
+ *
  * @param {string} analysisName - The name of the analysis (e.g., 't検定', '相関分析').
  * @param {string|string[]} variables - Variable name(s) involved in the plot.
  * @returns {Object} The Plotly configuration object.
@@ -925,15 +998,12 @@ export function createPlotlyConfig(analysisName, variables) {
 
     let varStr = '';
     if (Array.isArray(variables)) {
-        // Use first 3 variables to keep filename reasonable
         varStr = variables.slice(0, 3).join('_');
         if (variables.length > 3) varStr += '_etc';
     } else {
         varStr = variables;
     }
 
-    // Sanitize filename (remove special chars if any, but usually var names are safe enough or we keep simple)
-    // Replace non-alphanumeric chars (except _ and -) could be good but let's trust variable names for now
     const filename = `${analysisName}_${varStr}_${dateStr}`;
 
     return {
@@ -945,9 +1015,9 @@ export function createPlotlyConfig(analysisName, variables) {
             filename: filename,
             height: 800,
             width: 1200,
-            scale: 2 // High resolution
+            scale: 2
         },
-        modeBarButtonsToRemove: ['lasso2d', 'select2d'] // Optional
+        modeBarButtonsToRemove: ['lasso2d', 'select2d']
     };
 }
 
@@ -1206,22 +1276,22 @@ export function getBottomTitleAnnotation(text) {
  * @returns {string} The complete HTML string for the table container.
  */
 export function generateAPATableHtml(tableId, title, headerRow, dataRows, note) {
-    const tableStyle = "border-collapse: collapse; width: 100%; font-family: 'Times New Roman', Times, serif; color: #000; margin-bottom: 1rem;";
-    const captionStyle = "text-align: left; font-style: italic; margin-bottom: 0.5em; font-weight: normal; font-size: 1.1em;";
+    const tableStyle = "border-collapse: collapse; width: 100%; font-family: 'Times New Roman', 'Noto Serif JP', 'Yu Mincho', '游明朝', serif; color: #000; margin-bottom: 0.5rem; font-size: 0.95rem; line-height: 1.5;";
+    const captionStyle = "text-align: center; font-weight: normal; margin-bottom: 0.6em; font-size: 1.05em; font-style: normal;";
     const theadStyle = "border-top: 2px solid #000; border-bottom: 1px solid #000;";
-    const thStyle = "padding: 0.5em; text-align: center; font-weight: normal;"; // APA headers are often not bold, but can be. standard is normal.
+    const thStyle = "padding: 0.4em 0.6em; text-align: center; font-weight: normal; white-space: nowrap;";
     const tbodyStyle = "border-bottom: 2px solid #000;";
-    const tdStyle = "padding: 0.5em; text-align: center;";
-    const firstColStyle = "padding: 0.5em; text-align: left;"; // First column often left-aligned
+    const tdStyle = "padding: 0.35em 0.6em; text-align: center;";
+    const firstColStyle = "padding: 0.35em 0.6em; text-align: left;";
 
-    let html = `<div id="${tableId}_container" class="apa-table-wrapper" style="background:white; padding:1rem; border: 1px solid #e2e8f0; border-radius: 4px;">
+    let html = `<div id="${tableId}_container" class="apa-table-wrapper" style="background:white; padding:1rem 1.2rem; border: 1px solid #e2e8f0; border-radius: 4px; overflow-x: auto;">
         <table id="${tableId}" style="${tableStyle}">
             <caption style="${captionStyle}">${title}</caption>
             <thead style="${theadStyle}">
                 <tr>`;
 
     headerRow.forEach((h, i) => {
-        html += `<th style="${i === 0 ? firstColStyle : thStyle}">${h}</th>`;
+        html += `<th style="${i === 0 ? firstColStyle + ' font-weight: normal;' : thStyle}">${h}</th>`;
     });
 
     html += `   </tr>
@@ -1240,12 +1310,11 @@ export function generateAPATableHtml(tableId, title, headerRow, dataRows, note) 
         </table>`;
 
     if (note) {
-        html += `<div style="font-size: 0.9em; margin-top: 0.5em; font-style: italic;">Note. ${note}</div>`;
+        html += `<div style="font-size: 0.85em; margin-top: 0.4em; font-family: 'Times New Roman', 'Noto Serif JP', serif; color: #333;">${note}</div>`;
     }
 
-    // Add Copy Button
     html += `
-        <button onclick="copyAPATable('${tableId}')" class="btn btn-sm btn-outline-secondary" style="margin-top: 0.5rem; font-family: sans-serif;">
+        <button onclick="copyAPATable('${tableId}')" class="btn btn-sm btn-outline-secondary" style="margin-top: 0.5rem; font-family: sans-serif; font-size: 0.8rem;">
             <i class="fas fa-copy"></i> 表をコピー
         </button>
     </div>
@@ -1255,7 +1324,7 @@ export function generateAPATableHtml(tableId, title, headerRow, dataRows, note) 
                 const table = document.getElementById(id);
                 const container = table.closest('.apa-table-wrapper');
                 const range = document.createRange();
-                range.selectNode(container); 
+                range.selectNode(container);
                 window.getSelection().removeAllRanges();
                 window.getSelection().addRange(range);
                 document.execCommand('copy');
@@ -1362,14 +1431,16 @@ export const InterpretationHelper = {
     /**
      * 分散分析 (ANOVA) の解釈
      * @param {number} p - P値
-     * @param {number} eta2 - 効果量 (Eta-squared)
+     * @param {number} eta2 - 効果量 (Eta-squared or Partial Eta-squared)
      * @param {string} factorName - 要因名
      * @param {string} varName - 従属変数名 (Optional)
+     * @param {object} options - オプション { isPartial: false }
      * @returns {string} 解釈文
      */
-    interpretANOVA(p, eta2, factorName, varName = "") {
+    interpretANOVA(p, eta2, factorName, varName = "", options = {}) {
         const pEval = this.evaluatePValue(p);
         const varText = varName ? `「<strong>${varName}</strong>」に対して、` : "";
+        const etaSymbol = options.isPartial ? 'η<sub>p</sub>²' : 'η²';
 
         let etaText = "";
         if (eta2 !== undefined && eta2 !== null) {
@@ -1378,7 +1449,7 @@ export const InterpretationHelper = {
             else if (eta2 < 0.06) size = "小";
             else if (eta2 < 0.14) size = "中程度";
             else size = "大";
-            etaText = `, <em>η²</em> = ${eta2.toFixed(2)} [${size}]`;
+            etaText = `, <em>${etaSymbol}</em> = ${eta2.toFixed(2)} [${size}]`;
         }
 
         if (pEval.isSignificant) {
