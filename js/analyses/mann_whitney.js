@@ -4,7 +4,7 @@
  * @description 2群間のノンパラメトリック検定（順序尺度・非正規分布用）
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, showError, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, getAcademicLayout, academicColors, InterpretationHelper, showError, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 
 /**
  * 要約統計量の計算と表示
@@ -183,7 +183,7 @@ function runMannWhitneyTest(currentData) {
         const p_value = 2 * Math.min(pLower, 1 - pLower);
         const r = z / Math.sqrt(N);
 
-        let significance = p_value < 0.001 ? '***' : p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : '';
+        let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.10 ? '†' : 'n.s.';
 
         const meanRank1 = rankSum1 / n1;
         const meanRank2 = rankSum2 / n2;
@@ -242,7 +242,7 @@ function runMannWhitneyTest(currentData) {
             </table>
         </div>
         <p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.85rem;">
-            <em>N</em>=${NTotal}　***<em>p</em>&lt;.001　**<em>p</em>&lt;.01　*<em>p</em>&lt;.05
+            <em>N</em>=${NTotal}　**<em>p</em>&lt;.01　*<em>p</em>&lt;.05　†<em>p</em>&lt;.10
         </p>
     `;
 
@@ -318,7 +318,7 @@ function generateReportingTable(testResults, groups, n1Total, n2Total, NTotal) {
     html += `
                 </tbody>
             </table>
-            <p style="font-size: 0.8rem; margin-top: 0.25rem;"><em>N</em>=${NTotal}　***<em>p</em>&lt;.001　**<em>p</em>&lt;.01　*<em>p</em>&lt;.05</p>
+            <p style="font-size: 0.8rem; margin-top: 0.25rem;"><em>N</em>=${NTotal}　**<em>p</em>&lt;.01　*<em>p</em>&lt;.05　†<em>p</em>&lt;.10</p>
         </div>
     `;
 
@@ -378,7 +378,9 @@ function displayVisualization(testResults) {
             y: result.group0Values,
             type: 'box',
             name: result.groups[0],
-            marker: { color: '#11b981' },
+            marker: { color: academicColors.palette[0] },
+            fillcolor: academicColors.boxFill,
+            line: { color: academicColors.boxLine },
             boxpoints: 'all',
             jitter: 0.3,
             pointpos: -1.8
@@ -388,7 +390,9 @@ function displayVisualization(testResults) {
             y: result.group1Values,
             type: 'box',
             name: result.groups[1],
-            marker: { color: '#f59e0b' },
+            marker: { color: academicColors.palette[1] },
+            fillcolor: academicColors.boxFill,
+            line: { color: academicColors.palette[1] },
             boxpoints: 'all',
             jitter: 0.3,
             pointpos: -1.8
@@ -398,7 +402,7 @@ function displayVisualization(testResults) {
 
         const title = titleControl.checked ? `分布の比較: ${result.varName}` : '';
 
-        const layout = {
+        const layout = getAcademicLayout({
             title: getBottomTitleAnnotation(title),
             yaxis: {
                 title: axisControl.checked ? result.varName : '',
@@ -409,7 +413,7 @@ function displayVisualization(testResults) {
             boxmode: 'group',
             shapes: [],
             annotations: []
-        };
+        });
 
         // Add significance brackets
         // For box plots, yMax is the max of the data (plus some whiskers, outliers)

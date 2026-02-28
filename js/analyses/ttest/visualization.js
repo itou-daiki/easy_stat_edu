@@ -4,7 +4,7 @@
  * @module ttest/visualization
  */
 
-import { createPlotlyConfig, createVisualizationControls, getBottomTitleAnnotation, addSignificanceBrackets } from '../../utils.js';
+import { createPlotlyConfig, createVisualizationControls, getBottomTitleAnnotation, addSignificanceBrackets, getAcademicLayout, academicColors } from '../../utils.js';
 
 // ======================================================================
 // 可視化
@@ -54,7 +54,7 @@ export function displayVisualization(testResults, testType) {
                 y: meanValues,
                 error_y: { type: 'data', array: errorValues, visible: true },
                 type: 'bar',
-                marker: { color: ['#11b981', '#f59e0b'] }
+                marker: { color: [academicColors.palette[0], academicColors.palette[1]] }
             }];
 
             title = titleControl.checked ? `平均値の比較: ${result.varName}` : '';
@@ -86,14 +86,14 @@ export function displayVisualization(testResults, testType) {
                 xAxisTitle = result.varName;
             }
 
-            layout = {
+            layout = getAcademicLayout({
                 title: getBottomTitleAnnotation(title),
                 xaxis: { title: xAxisTitle },
                 yaxis: { title: yAxisTitle },
                 shapes: shapes,
                 annotations: annotations,
                 margin: { t: 60, b: 80, l: 60, r: 20 }
-            };
+            });
 
             addSignificanceBrackets(layout, pairs, groupNames, yMax, yRange);
             config = createPlotlyConfig('t-test_bar', result.varName);
@@ -105,26 +105,26 @@ export function displayVisualization(testResults, testType) {
                 y: [result.mean1],
                 error_y: { type: 'data', array: [result.std1 / Math.sqrt(result.n1)], visible: true },
                 type: 'bar',
-                marker: { color: '#1e90ff' },
+                marker: { color: academicColors.primary },
                 name: 'サンプル平均'
             }, {
                 x: [result.varName],
                 y: [result.mu],
                 type: 'scatter',
                 mode: 'lines',
-                line: { color: '#e41a1c', dash: 'dash', width: 2 },
+                line: { color: academicColors.accent, dash: 'dash', width: 2 },
                 name: `検定値 (μ=${result.mu})`
             }];
 
             title = titleControl.checked ? `1サンプルt検定: ${result.varName}` : '';
 
-            layout = {
+            layout = getAcademicLayout({
                 title: getBottomTitleAnnotation(title),
                 xaxis: { title: result.varName },
                 yaxis: { title: 'Value' },
                 showlegend: true,
                 margin: { t: 60, b: 80, l: 60, r: 20 }
-            };
+            });
 
             config = createPlotlyConfig('t-test_one-sample', result.varName);
         }

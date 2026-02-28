@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createMultiSetSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createMultiSetSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets, getAcademicLayout, academicColors } from '../utils.js';
 import { calculateTukeyP, performHolmCorrection } from '../utils/stat_distributions.js';
 
 // Pairwise t-test helper for Between-Subjects (Independent)
@@ -278,7 +278,8 @@ function displayANOVAInterpretation(results, factorVar, testType, targetContaine
         // Check if etaSquared or partialEtaSquared exists
         let effectSize = res.etaSquared !== undefined ? res.etaSquared : res.partialEtaSquared;
 
-        let text = InterpretationHelper.interpretANOVA(res.pValue, effectSize, factor, res.varName);
+        const isPartial = (testType === 'repeated');
+        let text = InterpretationHelper.interpretANOVA(res.pValue, effectSize, factor, res.varName, { isPartial });
 
         interpretationHtml += `<li style="margin-bottom: 0.5rem;">${text}</li>`;
     });
@@ -359,7 +360,7 @@ function displayANOVAVisualization(results, testType) {
                 color: 'black'
             },
             type: 'bar',
-            marker: { color: 'rgba(30, 144, 255, 0.7)' }
+            marker: { color: academicColors.barFill, line: { color: academicColors.barLine, width: 1 } }
         };
 
         const plotAnnotations = [...(res.plotAnnotations || [])]; // Start with existing annotations (brackets)
@@ -370,14 +371,14 @@ function displayANOVAVisualization(results, testType) {
         if (tategakiTitle) plotAnnotations.push(tategakiTitle);
         if (bottomTitle) plotAnnotations.push(bottomTitle);
 
-        const layout = {
+        const layout = getAcademicLayout({
             title: '', // Disable default title
             xaxis: { title: 'Group' },
             yaxis: { title: '' }, // Disable standard title
             shapes: [],
             annotations: plotAnnotations,
             margin: { t: 60, l: 100, b: 100 } // Add left and bottom margin, initial top margin
-        };
+        });
 
         // Add significance brackets using the standardized helper
         // We need to calculate yMax and yRange for the helper
@@ -645,8 +646,7 @@ function runOneWayIndependentANOVA(currentData) {
 
     // 3. Sample Size
     const groupSampleSizes = groups.map((g, i) => {
-        const colors = ['#11b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'];
-        return { label: g, count: currentData.filter(row => row[factorVar] === g).length, color: colors[i % colors.length] };
+        return { label: g, count: currentData.filter(row => row[factorVar] === g).length, color: academicColors.palette[i % academicColors.palette.length] };
     });
     renderSampleSizeInfo(resultsContainer, currentData.length, groupSampleSizes);
 
@@ -848,7 +848,8 @@ function runOneWayRepeatedANOVA(currentData) {
         }
 
         const etaSquaredPartial = ssConditions / (ssConditions + ssError);
-        let omegaSquared = (ssConditions - (dfConditions * msError)) / (ssTotal + msError);
+        // Partial omega-squared for repeated measures: (SS_cond - df_cond * MS_error) / (SS_cond + SS_error + MS_error)
+        let omegaSquared = (ssConditions - (dfConditions * msError)) / (ssConditions + ssError + msError);
         const omegaSquaredNegativeRep = omegaSquared < 0;
         if (omegaSquared < 0) omegaSquared = 0;
         let significance = pValue < 0.01 ? '**' : pValue < 0.05 ? '*' : pValue < 0.1 ? '†' : 'n.s.';
@@ -977,17 +978,17 @@ function runOneWayRepeatedANOVA(currentData) {
                 color: 'black'
             },
             type: 'bar',
-            marker: { color: 'rgba(30, 144, 255, 0.7)' }
+            marker: { color: academicColors.barFill, line: { color: academicColors.barLine, width: 1 } }
         };
 
         const yMax = Math.max(...conditionMeans.map((m, i) => m + conditionStds[i] / Math.sqrt(N)));
-        const layout = {
+        const layout = getAcademicLayout({
             title: `平均値の比較 (Set ${setIndex + 1})`,
             xaxis: { title: '条件' },
             yaxis: { title: '平均値 (+SEM)' },
             margin: { t: 60, l: 60, b: 60, r: 20 },
             annotations: []
-        };
+        });
 
         // Add significance brackets
         addSignificanceBrackets(layout, sigPairs, dependentVars, yMax, yMax * 0.2);

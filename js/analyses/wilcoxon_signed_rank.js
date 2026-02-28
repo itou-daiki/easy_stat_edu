@@ -2,10 +2,10 @@
  * @fileoverview ウィルコクソンの符号付順位検定
  * @module wilcoxon_signed_rank
  * @description 対応のある2群以上のノンパラメトリック検定（対応ありt検定の順位版）
- *              3群以上の場合はSteel-Dwass法（Holm補正）による事後検定を実施
+ *              3群以上の場合はペアワイズWilcoxon検定（Holm補正）による事後検定を実施
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getBottomTitleAnnotation, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 import { performHolmCorrection } from '../utils/stat_distributions.js';
 
 // ==========================================
@@ -154,16 +154,16 @@ function wilcoxonSignedRankTest(values1, values2) {
 }
 
 // ==========================================
-// Steel-Dwass法（事後検定）
+// ペアワイズWilcoxon検定（Holm補正・事後検定）
 // ==========================================
 
 /**
- * Steel-Dwass法による事後多重比較検定
+ * ペアワイズWilcoxon検定（Holm補正）による事後多重比較
  * 3群以上の対応のある条件間で全ペアワイズ比較を実施し、Holm補正を適用
  * @param {Array<Object>} pairResults - 各ペアの検定結果
  * @returns {Array<Object>} Holm補正済みの事後検定結果
  */
-function steelDwassPosthoc(pairResults) {
+function pairwiseWilcoxonPosthoc(pairResults) {
     const comparisons = pairResults.map(pr => ({
         var1: pr.var1,
         var2: pr.var2,
@@ -373,8 +373,8 @@ function runMultipleSampleTest(selectedVars, currentData, resultsContainer) {
         }
     }
 
-    // Steel-Dwass法（Holm補正による事後検定）
-    const posthocResults = steelDwassPosthoc(pairResults);
+    // ペアワイズWilcoxon検定（Holm補正による事後検定）
+    const posthocResults = pairwiseWilcoxonPosthoc(pairResults);
 
     resultsContainer.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
@@ -451,7 +451,7 @@ function runMultipleSampleTest(selectedVars, currentData, resultsContainer) {
         <p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;">
             <strong>有意差</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1† n.s.（未補正p値）<br>
             <strong>T</strong>: T = min(T+, T−)、<strong>r</strong>: 効果量 r = |Z| / &radic;n<br>
-            ※ 多重比較を行う場合は、下の事後検定（Steel-Dwass法）の調整済みp値を参照してください。
+            ※ 多重比較を行う場合は、下の事後検定（Holm補正）の調整済みp値を参照してください。
         </p>
     `;
     document.getElementById('test-results-table').innerHTML = resultsTableHtml;
@@ -459,7 +459,7 @@ function runMultipleSampleTest(selectedVars, currentData, resultsContainer) {
     // APA報告用テーブル（Holm補正済み）
     generateMultipleReportingTable(posthocResults);
 
-    // Steel-Dwass事後検定結果の表示
+    // ペアワイズ事後検定結果の表示
     displayPosthocResults(posthocResults);
 
     // サンプルサイズ情報
@@ -493,14 +493,14 @@ function runMultipleSampleTest(selectedVars, currentData, resultsContainer) {
 // ==========================================
 
 /**
- * Steel-Dwass法の事後検定結果を表示
+ * ペアワイズWilcoxon事後検定結果を表示
  */
 function displayPosthocResults(posthocResults) {
     const container = document.getElementById('posthoc-results-container');
 
     let html = `
         <h5 style="font-size: 1.1rem; color: #4b5563; margin-bottom: 0.5rem;">
-            <i class="fas fa-exchange-alt"></i> 事後検定（Steel-Dwass法・Holm補正）
+            <i class="fas fa-exchange-alt"></i> 事後検定（ペアワイズWilcoxon検定・Holm補正）
         </h5>
         <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 1rem;">
             全ペアワイズ比較に対してHolm法による多重比較補正を適用しました。
@@ -590,7 +590,7 @@ function generateMultipleReportingTable(posthocResults) {
         'wilcoxon-multi-apa-table',
         'Table 1. Results of Wilcoxon Signed-Rank Test with Holm Correction',
         headers, rows,
-        'Wilcoxon signed-rank test with Holm correction for multiple comparisons (Steel-Dwass method).'
+        'Pairwise Wilcoxon signed-rank tests with Holm correction for multiple comparisons.'
     );
 }
 
@@ -687,7 +687,9 @@ function displayVisualization(vizResults) {
             y: vr.values1,
             type: 'box',
             name: vr.var1,
-            marker: { color: '#11b981' },
+            marker: { color: academicColors.palette[0] },
+            fillcolor: academicColors.boxFill,
+            line: { color: academicColors.boxLine },
             boxpoints: 'all',
             jitter: 0.3,
             pointpos: -1.8
@@ -697,7 +699,9 @@ function displayVisualization(vizResults) {
             y: vr.values2,
             type: 'box',
             name: vr.var2,
-            marker: { color: '#f59e0b' },
+            marker: { color: academicColors.palette[1] },
+            fillcolor: academicColors.boxFill,
+            line: { color: academicColors.palette[1] },
             boxpoints: 'all',
             jitter: 0.3,
             pointpos: -1.8
@@ -710,7 +714,7 @@ function displayVisualization(vizResults) {
 
         const title = titleControl.checked ? `分布の比較: ${vr.var1} vs ${vr.var2}` : '';
 
-        const layout = {
+        const layout = getAcademicLayout({
             title: getBottomTitleAnnotation(title),
             yaxis: {
                 title: axisControl.checked ? '値' : '',
@@ -721,7 +725,7 @@ function displayVisualization(vizResults) {
             boxmode: 'group',
             shapes: [],
             annotations: []
-        };
+        });
 
         const pairs = [{
             g1: vr.var1,
@@ -751,13 +755,13 @@ function displayVisualization(vizResults) {
         const diffTrace = {
             x: diffs,
             type: 'histogram',
-            marker: { color: '#8b5cf6', opacity: 0.7 },
+            marker: { color: academicColors.barFill, line: { color: academicColors.barLine, width: 1 } },
             name: '差分布'
         };
 
         const diffTitle = titleControl.checked ? `差の分布: ${vr.var1} - ${vr.var2}` : '';
 
-        const diffLayout = {
+        const diffLayout = getAcademicLayout({
             title: getBottomTitleAnnotation(diffTitle),
             xaxis: {
                 title: axisControl.checked ? `差 (${vr.var1} - ${vr.var2})` : '',
@@ -773,9 +777,9 @@ function displayVisualization(vizResults) {
                 x0: 0, x1: 0,
                 y0: 0, y1: 1,
                 yref: 'paper',
-                line: { color: '#ef4444', width: 2, dash: 'dash' }
+                line: { color: academicColors.accent, width: 2, dash: 'dash' }
             }]
-        };
+        });
 
         const diffConfig = createPlotlyConfig('Wilcoxon_Diff', `${vr.var1}_minus_${vr.var2}`);
         Plotly.newPlot(diffPlotId, [diffTrace], diffLayout, diffConfig);
@@ -835,7 +839,7 @@ export function render(container, currentData, characteristics) {
                         <li><i class="fas fa-check"></i> <strong>サンプルサイズが小さい:</strong> ペア数が少ないとき</li>
                     </ul>
                     <h4>3群以上を選択した場合</h4>
-                    <p>3つ以上の変数を選択すると、すべてのペアに対してウィルコクソンの符号付順位検定を実施し、<strong>Steel-Dwass法（Holm補正）</strong>による多重比較補正を行います。</p>
+                    <p>3つ以上の変数を選択すると、すべてのペアに対してウィルコクソンの符号付順位検定を実施し、<strong>Holm補正</strong>による多重比較補正を行います。</p>
                     <h4>結果の読み方</h4>
                     <ul>
                         <li><strong>T値:</strong> 正負の順位和のうち小さい方。T+は正の差の順位和、T−は負の差の順位和です。</li>
@@ -862,7 +866,7 @@ export function render(container, currentData, characteristics) {
                             <li><strong>正規近似 (Z):</strong> \\( Z = \\frac{|T - \\mu_T| - 0.5}{\\sigma_T} \\)（連続性補正付き）</li>
                             <li><strong>期待値と分散:</strong> \\( \\mu_T = \\frac{n(n+1)}{4} \\), \\( \\sigma^2_T = \\frac{n(n+1)(2n+1)}{24} - \\frac{\\sum(t^3-t)}{48} \\)</li>
                             <li><strong>効果量 (r):</strong> \\( r = \\frac{|Z|}{\\sqrt{n}} \\)</li>
-                            <li><strong>事後検定 (3群以上):</strong> Steel-Dwass法 = 全ペアワイズWilcoxon検定 + Holm補正</li>
+                            <li><strong>事後検定 (3群以上):</strong> 全ペアワイズWilcoxon符号付順位検定 + Holm補正</li>
                         </ul>
                     </div>
                 </div>

@@ -4,7 +4,7 @@
  * @description 3群以上のノンパラメトリック検定（一元配置分散分析の順位版）
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getBottomTitleAnnotation, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 
 // `displaySummaryStatistics` is no longer needed as we use an integrated table.
 
@@ -104,7 +104,7 @@ function runKruskalWallisTest(currentData) {
                             <th>df</th>
                             <th>p</th>
                             <th>sign</th>
-                            <th>η²<sub>H</sub></th>
+                            <th>ε²</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -195,9 +195,9 @@ function runKruskalWallisTest(currentData) {
         const df = groups.length - 1;
         const pValue = 1 - jStat.chisquare.cdf(H, df);
 
-        // 効果量 η²H = (H - k + 1) / (N - k)
+        // 効果量 ε² (epsilon-squared) = (H - k + 1) / (N - 1)
         const k = groups.length;
-        const eta2H = Math.max(0, (H - k + 1) / (N - k));
+        const epsilon2 = Math.max(0, (H - k + 1) / (N - 1));
 
         const significance = pValue < 0.01 ? '**' : pValue < 0.05 ? '*' : pValue < 0.1 ? '†' : 'n.s.';
         const pText = pValue < 0.001 ? '< .001' : pValue.toFixed(3);
@@ -216,13 +216,13 @@ function runKruskalWallisTest(currentData) {
                 <td>${df}</td>
                 <td>${pText}</td>
                 <td><strong>${significance}</strong></td>
-                <td>${eta2H.toFixed(3)}</td>
+                <td>${epsilon2.toFixed(3)}</td>
             </tr>
         `;
 
         testResults.push({
             varName, groups, groupValues, meanRanks, rankSums, groupNs,
-            H, df, pValue, eta2H, significance, N
+            H, df, pValue, epsilon2, significance, N
         });
     });
 
@@ -232,7 +232,7 @@ function runKruskalWallisTest(currentData) {
         </div>
         <p style="color: #6b7280; text-align: right; margin-top: 0.5rem; font-size: 0.9rem;">
             sign: p&lt;0.01** p&lt;0.05* p&lt;0.1† n.s.<br>
-            η²<sub>H</sub>: クラスカル・ウォリスのイータ二乗 = (H − k + 1) / (N − k)
+            ε²: イプシロン二乗 = (H − k + 1) / (N − 1)
         </p></div>`;
 
     if (skippedVars.length > 0) {
@@ -287,7 +287,7 @@ function generateReportingTable(testResults, groups) {
             const n = testResults[0]?.groupNs[g] ?? '';
             return `${g} (n=${n})<br>Mean Rank`;
         }),
-        "<em>H</em>", "<em>df</em>", "<em>p</em>", "<em>η²<sub>H</sub></em>"
+        "<em>H</em>", "<em>df</em>", "<em>p</em>", "<em>ε²</em>"
     ];
 
     const rows = testResults.map(res => {
@@ -299,7 +299,7 @@ function generateReportingTable(testResults, groups) {
             res.H.toFixed(2),
             String(res.df),
             pText,
-            res.eta2H.toFixed(3)
+            res.epsilon2.toFixed(3)
         ];
     });
 
@@ -427,9 +427,9 @@ function displayInterpretation(testResults) {
 
         // 効果量の判定
         let eta2Text = '';
-        if (result.eta2H < 0.01) eta2Text = 'ごくわずか';
-        else if (result.eta2H < 0.06) eta2Text = '小';
-        else if (result.eta2H < 0.14) eta2Text = '中程度';
+        if (result.epsilon2 < 0.01) eta2Text = 'ごくわずか';
+        else if (result.epsilon2 < 0.06) eta2Text = '小';
+        else if (result.epsilon2 < 0.14) eta2Text = '中程度';
         else eta2Text = '大';
 
         // 最高・最低順位の群を特定
@@ -443,11 +443,11 @@ function displayInterpretation(testResults) {
         if (pEval.isSignificant) {
             text += `群間に統計的に<strong>有意な差が認められました</strong> (H(${result.df}) = ${result.H.toFixed(2)}, ${pEval.text})。`;
             text += `<br>平均順位が最も高いのは「<strong>${maxGroup}</strong>」、最も低いのは「<strong>${minGroup}</strong>」です。`;
-            text += `<br>効果量 η²<sub>H</sub> = ${result.eta2H.toFixed(3)} [${eta2Text}]`;
+            text += `<br>効果量 ε² = ${result.epsilon2.toFixed(3)} [${eta2Text}]`;
             text += `<br>どの群間に差があるかは、事後検定（Dunn検定）の結果を参照してください。`;
         } else {
             text += `群間に統計的に有意な差は認められませんでした (H(${result.df}) = ${result.H.toFixed(2)}, <em>p</em> = ${result.pValue.toFixed(3)})。`;
-            text += `<br>効果量 η²<sub>H</sub> = ${result.eta2H.toFixed(3)} [${eta2Text}]`;
+            text += `<br>効果量 ε² = ${result.epsilon2.toFixed(3)} [${eta2Text}]`;
         }
 
         interpretationHtml += `<li style="margin-bottom: 0.5rem;">${text}</li>`;
@@ -478,8 +478,6 @@ function displayVisualization(testResults, groupVar) {
     const plotsContainer = document.getElementById('plots-container');
     plotsContainer.innerHTML = '';
 
-    const groupColors = ['#11b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#f97316'];
-
     testResults.forEach((result, index) => {
         const plotId = `plot-${index}`;
         const plotDiv = document.createElement('div');
@@ -491,7 +489,9 @@ function displayVisualization(testResults, groupVar) {
             y: result.groupValues[g],
             type: 'box',
             name: g,
-            marker: { color: groupColors[gi % groupColors.length] },
+            marker: { color: academicColors.palette[gi % academicColors.palette.length] },
+            fillcolor: academicColors.boxFill,
+            line: { color: academicColors.palette[gi % academicColors.palette.length] },
             boxpoints: 'all',
             jitter: 0.3,
             pointpos: -1.8
@@ -505,7 +505,7 @@ function displayVisualization(testResults, groupVar) {
         const yMin = Math.min(...allValues);
         const yRange = yMax - yMin;
 
-        const layout = {
+        const layout = getAcademicLayout({
             title: getBottomTitleAnnotation(title),
             yaxis: {
                 title: axisControl.checked ? result.varName : '',
@@ -519,7 +519,7 @@ function displayVisualization(testResults, groupVar) {
             boxmode: 'group',
             shapes: [],
             annotations: []
-        };
+        });
 
         // 有意なペアにブラケットを追加
         if (result.pValue < 0.05) {
@@ -635,7 +635,7 @@ export function render(container, currentData, characteristics) {
                             <li><strong>検定統計量 (H):</strong> \\( H = \\frac{12}{N(N+1)} \\sum_{i=1}^{k} \\frac{R_i^2}{n_i} - 3(N+1) \\)</li>
                             <li><strong>タイ補正:</strong> 同順位がある場合、\\( H_{corrected} = H / (1 - \\sum(t^3 - t) / (N^3 - N)) \\)</li>
                             <li><strong>p値:</strong> カイ二乗分布 (df = k-1) を使用した近似</li>
-                            <li><strong>効果量 (η²<sub>H</sub>):</strong> \\( \\eta^2_H = (H - k + 1) / (N - k) \\)</li>
+                            <li><strong>効果量 (ε²):</strong> \\( \\varepsilon^2 = (H - k + 1) / (N - 1) \\)</li>
                             <li><strong>事後検定:</strong> Dunn検定（Bonferroni補正）</li>
                         </ul>
                     </div>

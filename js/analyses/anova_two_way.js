@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, createPairSelector, createMultiPairSelector, addSignificanceBrackets, getAcademicLayout, academicColors } from '../utils.js';
 import { calculateTukeyP, performHolmCorrection } from '../utils/stat_distributions.js';
 // import { jStat } from 'jstat'; // Use global jStat
 
@@ -903,17 +903,19 @@ function renderTwoWayANOVAVisualization(results) {
             const plotDiv = document.getElementById(plotId);
             if (plotDiv) {
                 const traces = [];
-                res.levels1.forEach(l1 => {
+                res.levels1.forEach((l1, l1Index) => {
                     const yData = res.levels2.map(l2 => res.cellStats[l1][l2].mean);
                     const errorData = res.levels2.map(l2 => {
                         const n = res.cellStats[l1][l2].n;
                         return n > 0 ? res.cellStats[l1][l2].std / Math.sqrt(n) : 0;
                     });
+                    const paletteColor = academicColors.palette[l1Index % academicColors.palette.length];
                     traces.push({
                         x: res.levels2,
                         y: yData,
                         name: l1,
                         type: 'bar',
+                        marker: { color: paletteColor + 'B3', line: { color: paletteColor, width: 1 } },
                         error_y: {
                             type: 'data',
                             array: errorData,
@@ -941,7 +943,7 @@ function renderTwoWayANOVAVisualization(results) {
                     yaxisConfig.range = [0, recommendedMaxY];
                 }
 
-                const layout = {
+                const layout = getAcademicLayout({
                     title: '',
                     xaxis: { title: res.factor2 },
                     yaxis: yaxisConfig,
@@ -950,7 +952,7 @@ function renderTwoWayANOVAVisualization(results) {
                     shapes: shapes,
                     annotations: annotations,
                     margin: { l: 100, b: 100 }
-                };
+                });
 
                 const showAxisLabels = axisControl?.checked ?? true;
                 const showBottomTitle = titleControl?.checked ?? true;
@@ -1540,16 +1542,12 @@ function runTwoWayRepeatedANOVA(currentData, factors, mapping) {
                 if (c.p_holm < 0.1) sigPairs.push({ ...c, p: c.p_holm });
             });
         } else {
-            // Tukey not standard for Repeated Measures simple main effect on Paired T?
-            // Usually just Bonferroni or Holm. If Tukey selected, fallback to Bonferroni or Raw?
-            // Let's use Raw for 'tukey' if forced, or just alias to Bonferroni?
-            // Currently UI says 'Tukey (Recommended)'. 
-            // Ideally implement Tukey-Kramer for Repeated Measures (requiring q-dist).
-            // Fallback to Bonferroni for specific Repeated case simplicity/robustness.
+            // Tukey HSD is not standard for repeated measures (requires independent error terms).
+            // Use Bonferroni correction as a conservative fallback.
             const m = family.length;
             family.forEach(c => {
-                const pAdj = Math.min(1, c.p * m); // Fallback
-                if (pAdj < 0.1) sigPairs.push({ ...c, p: pAdj });
+                const pAdj = Math.min(1, c.p * m); // Bonferroni correction
+                if (pAdj < 0.1) sigPairs.push({ ...c, p: pAdj, method: 'bonferroni' });
             });
         }
     });
