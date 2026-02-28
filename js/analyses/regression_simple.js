@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
 
 function runSimpleRegression(currentData) {
     const xVar = document.getElementById('independent-var').value;
@@ -192,7 +192,7 @@ function plotRegression(x, y, b0, b1, xVar, yVar) {
         mode: 'markers',
         type: 'scatter',
         name: 'データ',
-        marker: { color: 'rgba(30, 144, 255, 0.6)' }
+        marker: { color: academicColors.primary }
     };
 
     const xRange = [Math.min(...x), Math.max(...x)];
@@ -204,17 +204,17 @@ function plotRegression(x, y, b0, b1, xVar, yVar) {
         mode: 'lines',
         type: 'scatter',
         name: '回帰直線',
-        line: { color: '#ef4444', width: 2 }
+        line: { color: academicColors.accent, width: 2 }
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         xaxis: { title: xVar },
         yaxis: { title: '' },
         showlegend: true,
         margin: { l: 100, b: 150 },
         annotations: []
-    };
+    });
 
     // 軸ラベルとタイトルの表示切り替え
     const axisControl = document.getElementById('show-axis-labels');
@@ -243,11 +243,11 @@ function plotResidualsVsFitted(fitted, residuals) {
         y: residuals,
         mode: 'markers',
         type: 'scatter',
-        marker: { color: '#ef4444', size: 8, opacity: 0.7 },
+        marker: { color: academicColors.accent, size: 8, opacity: 0.7 },
         name: '残差'
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         xaxis: { title: '予測値 (Fitted values)', zeroline: false },
         yaxis: { title: '残差 (Residuals)', zeroline: true, zerolinecolor: '#9ca3af', zerolinewidth: 2 },
@@ -261,14 +261,14 @@ function plotResidualsVsFitted(fitted, residuals) {
                 x1: Math.max(...fitted),
                 y1: 0,
                 line: {
-                    color: 'gray',
+                    color: academicColors.neutral,
                     width: 2,
                     dash: 'dashdot'
                 }
             }
         ],
         annotations: []
-    };
+    });
 
     // Visualization Controls
     const axisControl = document.getElementById('show-axis-labels');

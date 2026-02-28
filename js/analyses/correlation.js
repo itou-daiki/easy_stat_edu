@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
 
 
 
@@ -406,7 +406,7 @@ function plotHeatmap(variables, matrix, methodLabel) {
         x: variables,
         y: variables,
         type: 'heatmap',
-        colorscale: 'RdBu',
+        colorscale: academicColors.divergingScale,
         zmin: -1,
         zmax: 1,
         showscale: true,
@@ -428,7 +428,7 @@ function plotHeatmap(variables, matrix, methodLabel) {
     // フォントサイズも変数の数に応じて調整
     const fontSize = Math.max(10, Math.min(16, 18 - n));
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         height: calculatedSize,
         width: calculatedSize + 100, // カラーバー分の余白
@@ -443,7 +443,7 @@ function plotHeatmap(variables, matrix, methodLabel) {
             tickfont: { size: Math.max(10, 14 - Math.floor(n / 3)) }
         },
         annotations: []
-    };
+    });
 
     // セル内に相関係数の値をアノテーションとして追加
     for (let i = 0; i < variables.length; i++) {
@@ -504,16 +504,15 @@ function plotScatterMatrix(variables, currentData, matrixData) {
     const width = Math.max(700, 280 * n);
     const height = Math.max(700, 280 * n);
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         height: height,
         width: width,
         showlegend: false,
-        plot_bgcolor: '#f8fafc',
         // 最下行の横軸ラベルと変数名の両方を表示するため下余白を確保
         margin: { l: 100, r: 40, t: 40, b: 120 },
         annotations: []
-    };
+    });
 
     // ドメイン計算 (目盛りラベル表示のためギャップ拡大)
     const gap = 0.07;
@@ -577,7 +576,7 @@ function plotScatterMatrix(variables, currentData, matrixData) {
                     type: 'histogram',
                     xaxis: xaxis,
                     yaxis: yaxis,
-                    marker: { color: '#87CEEB' }, // light blue
+                    marker: { color: academicColors.barFill, line: { color: academicColors.barLine, width: 1 } },
                     showlegend: false
                 });
             } else if (i < j) {
@@ -592,8 +591,8 @@ function plotScatterMatrix(variables, currentData, matrixData) {
                 const absCorr = Math.abs(r);
                 let textColor = 'black';
                 let weight = 'normal';
-                if (absCorr >= 0.7) { textColor = '#dc2626'; weight = 'bold'; }
-                else if (absCorr >= 0.4) { textColor = '#ea580c'; }
+                if (absCorr >= 0.7) { textColor = academicColors.accent; weight = 'bold'; }
+                else if (absCorr >= 0.4) { textColor = academicColors.secondary; }
 
                 traces.push({
                     x: [0.5],
@@ -632,7 +631,7 @@ function plotScatterMatrix(variables, currentData, matrixData) {
                     yaxis: yaxis,
                     marker: {
                         size: 4,
-                        color: '#1e90ff',
+                        color: academicColors.primary,
                         opacity: 0.6
                     },
                     hoverinfo: 'text',
@@ -765,7 +764,7 @@ export function render(container, currentData, characteristics) {
                             <li><strong>ピアソン:</strong> 積率相関係数 \( r = \frac{\sum(x - \bar{x})(y - \bar{y})}{\sqrt{\sum(x-\bar{x})^2 \sum(y-\bar{y})^2}} \)。無相関検定: \( t = \frac{r\sqrt{n-2}}{\sqrt{1-r^2}} \) (df = n-2)。</li>
                             <li><strong>スピアマン:</strong> 順位相関。データを順位に変換し、順位についてピアソン r を計算。</li>
                             <li><strong>95%信頼区間:</strong> Fisher z 変換。\( z = 0.5\ln\frac{1+r}{1-r} \), \( \mathrm{SE} = 1/\sqrt{n-3} \), CI = \( \tanh(z \pm 1.96\,\mathrm{SE}) \)。</li>
-                            <li>※ リストワイズ削除（欠損値がある行は除外）を適用しています。</li>
+                            <li>※ ペアワイズ削除（各変数ペアごとに欠損値を除外）を適用しています。</li>
                         </ul>
                     </div>
                 </div>

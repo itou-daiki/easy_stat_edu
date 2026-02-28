@@ -3,7 +3,7 @@
  * @module regression_multiple/visualization
  */
 
-import { createPlotlyConfig, getBottomTitleAnnotation } from '../../utils.js';
+import { createPlotlyConfig, getBottomTitleAnnotation, getAcademicLayout, academicColors } from '../../utils.js';
 
 /**
  * パス図を描画
@@ -146,17 +146,15 @@ export function plotCombinedPathDiagram(independentVars, allResults) {
     }];
 
     // --- レイアウト ---
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         showlegend: false,
-        xaxis: { showgrid: false, zeroline: false, showticklabels: false, range: [-0.05, 1.15] },
-        yaxis: { showgrid: false, zeroline: false, showticklabels: false, range: [-0.05, 1.05] },
+        xaxis: { showgrid: false, zeroline: false, showticklabels: false, range: [-0.05, 1.15], linecolor: 'transparent', mirror: false },
+        yaxis: { showgrid: false, zeroline: false, showticklabels: false, range: [-0.05, 1.05], linecolor: 'transparent', mirror: false },
         annotations: annotations,
         height: height,
-        margin: { l: 10, r: 10, t: 30, b: 80 },
-        plot_bgcolor: 'white',
-        paper_bgcolor: 'white'
-    };
+        margin: { l: 10, r: 10, t: 30, b: 80 }
+    });
 
     // グラフタイトル
     const titleControl = document.getElementById('show-graph-title');
@@ -181,11 +179,11 @@ export function plotResidualsVsFitted(containerId, fitted, residuals) {
         y: residuals,
         mode: 'markers',
         type: 'scatter',
-        marker: { color: '#ef4444', size: 8, opacity: 0.7 },
+        marker: { color: academicColors.accent, size: 8, opacity: 0.7 },
         name: '残差'
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: { text: '残差プロット (Residuals vs Fitted)', font: { size: 14 } },
         xaxis: { title: '予測値 (Fitted values)', zeroline: false },
         yaxis: { title: '残差 (Residuals)', zeroline: true, zerolinecolor: '#9ca3af', zerolinewidth: 2 },
@@ -197,9 +195,9 @@ export function plotResidualsVsFitted(containerId, fitted, residuals) {
             y0: 0,
             x1: Math.max(...fitted),
             y1: 0,
-            line: { color: 'gray', width: 2, dash: 'dashdot' }
+            line: { color: academicColors.neutral, width: 2, dash: 'dashdot' }
         }]
-    };
+    });
 
     Plotly.newPlot(containerId, [trace], layout, { displayModeBar: false, responsive: true });
 }

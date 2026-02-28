@@ -4,7 +4,7 @@
  * @module correlation/visualization
  */
 
-import { createPlotlyConfig, getBottomTitleAnnotation } from '../../utils.js';
+import { createPlotlyConfig, getBottomTitleAnnotation, getAcademicLayout, academicColors } from '../../utils.js';
 
 // ======================================================================
 // ヒートマップ
@@ -21,7 +21,7 @@ export function plotHeatmap(variables, matrix) {
         x: variables,
         y: variables,
         type: 'heatmap',
-        colorscale: 'RdBu',
+        colorscale: academicColors.divergingScale,
         zmin: -1,
         zmax: 1,
         showscale: true,
@@ -40,7 +40,8 @@ export function plotHeatmap(variables, matrix) {
     const calculatedSize = Math.max(minSize, Math.min(maxSize, n * baseCellSize + 200));
     const fontSize = Math.max(10, Math.min(16, 18 - n));
 
-    const layout = {
+    const academicFont = "'Times New Roman', 'Noto Serif JP', 'Yu Mincho', '游明朝', serif";
+    const layout = getAcademicLayout({
         title: '',
         height: calculatedSize,
         width: calculatedSize + 100,
@@ -54,7 +55,7 @@ export function plotHeatmap(variables, matrix) {
             tickfont: { size: Math.max(10, 14 - Math.floor(n / 3)) }
         },
         annotations: []
-    };
+    });
 
     // セル内に相関係数の値をアノテーションとして追加
     for (let i = 0; i < variables.length; i++) {
@@ -70,7 +71,7 @@ export function plotHeatmap(variables, matrix) {
                 y: variables[i],
                 text: isNaN(value) ? '-' : value.toFixed(2),
                 font: {
-                    family: 'Arial',
+                    family: academicFont,
                     size: fontSize,
                     color: textColor,
                     weight: absValue >= 0.7 ? 'bold' : 'normal'
@@ -138,7 +139,7 @@ export function plotScatterMatrix(variables, currentData, matrixData) {
                     x: values,
                     xaxis: xaxis,
                     yaxis: yaxis,
-                    marker: { color: '#1e90ff', opacity: 0.7 },
+                    marker: { color: academicColors.primary, opacity: 0.7 },
                     showlegend: false
                 });
             } else {
@@ -149,7 +150,7 @@ export function plotScatterMatrix(variables, currentData, matrixData) {
 
                 const r = matrixData.matrix[row][col];
                 const p = matrixData.pValues[row][col];
-                const color = r > 0 ? '#1e90ff' : '#e41a1c';
+                const color = r > 0 ? academicColors.primary : academicColors.accent;
 
                 subplotData.push({
                     type: 'scatter',
@@ -171,20 +172,20 @@ export function plotScatterMatrix(variables, currentData, matrixData) {
                     xref: 'paper',
                     yref: 'paper',
                     text: `r=${r.toFixed(2)}${p < 0.05 ? '*' : ''}`,
-                    font: { size: 10, color: '#333' },
+                    font: { size: 10, color: '#1a1a1a' },
                     showarrow: false
                 });
             }
         }
     }
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         height: Math.min(totalSize, 800),
         width: Math.min(totalSize, 800),
         annotations: annotations,
         showlegend: false
-    };
+    });
 
     // グリッドレイアウトを設定
     for (let row = 0; row < n; row++) {
