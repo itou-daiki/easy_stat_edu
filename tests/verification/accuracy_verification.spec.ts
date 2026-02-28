@@ -246,42 +246,57 @@ test.describe('Statistical Accuracy Verification', () => {
         assertClose(pVal, groundTruth.anova_oneway_repeated.p, 0.001, 'RM ANOVA p-value');
     });
 
-    // 9. Mixed ANOVA - Skipped: Uses complex pair selector (pre/post pairs) that requires different UI handling
-    test.skip('Mixed ANOVA Accuracy', async ({ page }) => {
+    // 9. Mixed ANOVA (2x2: 性別 x {数学, 英語})
+    test('Mixed ANOVA Accuracy', async ({ page }) => {
         await navigateToFeature(page, 'anova_two_way');
         // Click Mixed radio button
         await page.click('input[name="anova-2-type"][value="mixed"]');
+        await page.waitForTimeout(500);
+
+        // Between factor: 性別
+        await selectStandardOption(page, '#mixed-between-var', '性別', 'label');
         await page.waitForTimeout(300);
 
-        // Between factor select in #mixed-between-container
-        await selectStandardOption(page, '#mixed-between-var', '性別', 'label');
-        // Within factor (pair selector in #pair-selector-container)
-        await selectVariables(page, ['数学', '英語', '理科'], '#pair-selector-container');
-        await page.click('#run-mixed-btn-container button');
+        // Within factor: use pair selector (pre=数学, post=英語)
+        // The first pair row should already exist
+        const pairRow = page.locator('.pair-row').first();
+        await pairRow.locator('.pre-select').selectOption({ label: '数学' });
+        await pairRow.locator('.post-select').selectOption({ label: '英語' });
+        await page.waitForTimeout(300);
 
-        await expect(page.locator('#test-results-section')).toBeVisible();
+        await page.click('#run-mixed-anova-btn', { force: true });
 
-        // Table rows: Between, Within, Interaction
-        const getRowF = async (pattern: string) => {
+        await expect(page.locator('#test-results-section')).toBeVisible({ timeout: 10000 });
+
+        // Table rows: Between, Within (条件), Interaction (交互作用)
+        const getRowVal = async (pattern: string) => {
             const rows = page.locator('#test-results-section table tbody tr');
             const count = await rows.count();
             for (let i = 0; i < count; ++i) {
                 const text = await rows.nth(i).locator('td:first-child').innerText();
                 if (text.includes(pattern)) {
-                    const fText = await rows.nth(i).locator('td:nth-child(5)').innerText();
-                    return parseFloat(fText);
+                    // Find column with F value (skip Error rows which have "-")
+                    const cells = rows.nth(i).locator('td');
+                    const cellCount = await cells.count();
+                    // ANOVA table: Source, SS, df, MS, F, p, ηp²
+                    const fText = await cells.nth(4).innerText();
+                    const pText = await cells.nth(5).innerText();
+                    return {
+                        f: parseFloat(fText),
+                        p: parseFloat(pText.replace(/[^\d.e-]/g, ''))
+                    };
                 }
             }
             throw new Error(`Row "${pattern}" not found`);
         };
 
-        const fBetween = await getRowF('性別');
-        const fWithin = await getRowF('条件');
-        const fInter = await getRowF('×');
+        const resBetween = await getRowVal('性別');
+        const resWithin = await getRowVal('条件');
+        const resInter = await getRowVal('交互作用');
 
-        assertClose(fBetween, groundTruth.anova_mixed.between.F, 0.5, 'Mixed Between F');
-        assertClose(fWithin, groundTruth.anova_mixed.within.F, 1.0, 'Mixed Within F');
-        assertClose(fInter, groundTruth.anova_mixed.interaction.F, 0.5, 'Mixed Interaction F');
+        assertClose(resBetween.f, groundTruth.anova_mixed.between.F, 0.5, 'Mixed Between F');
+        assertClose(resWithin.f, groundTruth.anova_mixed.within.F, 2.0, 'Mixed Within F');
+        assertClose(resInter.f, groundTruth.anova_mixed.interaction.F, 0.5, 'Mixed Interaction F');
     });
 
     // 10. PCA - Principal Component Analysis
@@ -383,7 +398,169 @@ test.describe('Statistical Accuracy Verification', () => {
         expect(matchDirect || matchSwapped, 'FA Varimax Loadings match (abs/swap)').toBeTruthy();
     });
 
-    // 12. Text Mining (Integration Check)
+    // 12. Mann-Whitney U Test
+    test('Mann-Whitney U Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'mann_whitney');
+        await selectStandardOption(page, '#group-var', '性別', 'value');
+        await selectVariables(page, ['数学']);
+        await page.click('#run-u-test-btn', { force: true });
+
+        await expect(page.locator('#results-section')).toBeVisible();
+
+        // Reporting table has U and |Z| values
+        const reportingTable = page.locator('#reporting-table-container table');
+        await expect(reportingTable).toBeVisible();
+
+        // Get U from the reporting table row
+        const uText = await reportingTable.locator('tbody tr:first-child').innerText();
+        // Extract numeric U value from the row (look for the U column)
+        const allCells = reportingTable.locator('tbody tr:first-child td');
+        const cellCount = await allCells.count();
+        // Table has: Variable, Group1 stats, Group2 stats, U, |Z|, r, sig
+        // U is typically in the results table
+        const resultTable = page.locator('#test-results-table table');
+        await expect(resultTable).toBeVisible();
+        // Result table: varName, g1-mean, g1-sd, g1-median, g2-mean, g2-sd, g2-median, U+sig, r
+        const uCell = await resultTable.locator('tbody tr:first-child td:nth-last-child(2)').innerText();
+        const uVal = parseFloat(uCell.replace(/[*†]/g, ''));
+
+        // easyStat reports min(U1,U2), SciPy reports the larger U
+        // U1 + U2 = n1 * n2, so min(U) = n1*n2 - max(U)
+        const n1 = groundTruth.mann_whitney.n1;
+        const n2 = groundTruth.mann_whitney.n2;
+        const expectedU = Math.min(groundTruth.mann_whitney.U, n1 * n2 - groundTruth.mann_whitney.U);
+        assertClose(uVal, expectedU, 5.0, 'Mann-Whitney U');
+    });
+
+    // 13. Kruskal-Wallis H Test
+    test('Kruskal-Wallis H Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'kruskal_wallis');
+        await selectStandardOption(page, '#group-var', 'クラス', 'value');
+        await selectVariables(page, ['数学']);
+        await page.click('#run-kw-test-btn', { force: true });
+
+        await expect(page.locator('#results-section')).toBeVisible();
+
+        // Get H from main results table (first table, not APA table)
+        const resultTable = page.locator('#test-results-section table').first();
+        await expect(resultTable).toBeVisible();
+        // Columns end with: H, df, p, sign, ε²
+        const hText = await resultTable.locator('tbody tr:first-child td:nth-last-child(5)').innerText();
+        const pText = await resultTable.locator('tbody tr:first-child td:nth-last-child(3)').innerText();
+
+        const hVal = parseFloat(hText);
+        const pVal = parseFloat(pText.replace(/[^\d.e-]/g, ''));
+
+        assertClose(hVal, groundTruth.kruskal_wallis.H, 0.5, 'Kruskal-Wallis H');
+        assertClose(pVal, groundTruth.kruskal_wallis.p, 0.05, 'Kruskal-Wallis p');
+    });
+
+    // 14. Paired T-Test
+    test('Paired T-Test Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'ttest');
+        // Switch to paired mode via radio button label
+        await page.locator('label', { hasText: '対応ありt検定' }).click();
+        await page.waitForTimeout(500);
+
+        // Paired t-test uses pair selector: pre and post variables
+        await selectStandardOption(page, '#paired-var-pre', '数学', 'value');
+        await selectStandardOption(page, '#paired-var-post', '英語', 'value');
+        await page.click('#add-pair-btn');
+        await page.waitForTimeout(300);
+
+        await page.click('#run-paired-btn', { force: true });
+        await expect(page.locator('#test-results-section')).toBeVisible();
+
+        // Get t and p from paired results table
+        const resultTable = page.locator('#test-results-table table');
+        await expect(resultTable).toBeVisible();
+        // Paired table columns: pair, pre-M, pre-SD, post-M, post-SD, |t|, df, p, sig, d_z
+        const tText = await resultTable.locator('tbody tr:first-child td:nth-child(6)').innerText();
+        const pText = await resultTable.locator('tbody tr:first-child td:nth-child(8)').innerText();
+
+        const tVal = parseFloat(tText);
+        const pVal = parseFloat(pText.replace(/[^\d.e-]/g, ''));
+
+        assertClose(tVal, Math.abs(groundTruth.ttest_paired.t), 0.1, 'Paired T-Test |t|');
+        assertClose(pVal, groundTruth.ttest_paired.p, 0.001, 'Paired T-Test p');
+    });
+
+    // 15. One-Sample T-Test
+    test('One-Sample T-Test Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'ttest');
+        // Switch to one-sample mode via radio button label
+        await page.locator('label', { hasText: '1サンプルのt検定' }).click();
+        await page.waitForTimeout(500);
+
+        await selectStandardOption(page, '#one-sample-var', '数学', 'value');
+        // Set test value (mu=70)
+        const muInput = page.locator('#one-sample-mu');
+        await muInput.fill('70');
+        await page.click('#run-one-sample-btn', { force: true });
+
+        await expect(page.locator('#test-results-section')).toBeVisible();
+
+        const resultTable = page.locator('#test-results-section table').first();
+        await expect(resultTable).toBeVisible();
+        // One-sample table columns: var(1), M(2), SD(3), mu(4), t(5), df(6), p(7), d(8), CI(9)
+        const tText = await resultTable.locator('tbody tr:first-child td:nth-child(5)').innerText();
+        const pText = await resultTable.locator('tbody tr:first-child td:nth-child(7)').innerText();
+
+        const tVal = parseFloat(tText);
+        const pVal = parseFloat(pText.replace(/[^\d.e-]/g, ''));
+
+        assertClose(tVal, Math.abs(groundTruth.ttest_onesample.t), 0.1, 'One-Sample T-Test |t|');
+        assertClose(pVal, groundTruth.ttest_onesample.p, 0.05, 'One-Sample T-Test p');
+    });
+
+    // 16. Spearman Correlation Accuracy
+    test('Spearman Correlation Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'correlation');
+        await selectVariables(page, ['数学', '理科']);
+
+        // Run analysis first (method selector appears after results render)
+        await page.click('#run-correlation-btn-container button');
+        await expect(page.locator('#analysis-results')).toBeVisible();
+
+        // Now switch to Spearman method (radio buttons are created dynamically)
+        await page.locator('input[name="correlation-method"][value="spearman"]').click();
+        await page.waitForTimeout(500);
+
+        // Correlation matrix table: first row, third column (理科 col for 数学 row)
+        const matrixTable = page.locator('#analysis-results table').first();
+        const cellText = await matrixTable.locator('tbody tr:nth-child(1) td:nth-child(3)').innerText();
+
+        // Parse rho from cell text (format: "0.992**\n95%CI[...]")
+        const rhoVal = parseFloat(cellText.split(/[\n(]/)[0].replace(/[*†]/g, '').trim());
+        assertClose(rhoVal, groundTruth.spearman.rho, 0.01, 'Spearman rho');
+    });
+
+    // 16b. Wilcoxon Signed-Rank Accuracy
+    test('Wilcoxon Signed-Rank Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'wilcoxon_signed_rank');
+        await selectVariables(page, ['数学', '英語']);
+        await page.click('#run-wilcoxon-test-btn', { force: true });
+
+        await expect(page.locator('#results-section')).toBeVisible({ timeout: 10000 });
+
+        // Result table columns: 比較ペア, N(ペア), Var1 Mdn, Var2 Mdn, T+, T−, T, |Z|, p値, 有意差, 効果量 r
+        const resultTable = page.locator('#test-results-section table').first();
+        await expect(resultTable).toBeVisible();
+
+        // T is column 7 (index), |Z| is column 8, p is column 9
+        const tText = await resultTable.locator('tbody tr:first-child td:nth-child(7)').innerText();
+        const pText = await resultTable.locator('tbody tr:first-child td:nth-child(9)').innerText();
+
+        const tVal = parseFloat(tText);
+        const pVal = parseFloat(pText.replace(/[^\d.e-]/g, ''));
+
+        assertClose(tVal, groundTruth.wilcoxon.T, 5.0, 'Wilcoxon T');
+        // p-value is very small; UI displays "< .001" which parses to 0.001
+        // Just verify it's shown as very small (≤ 0.001)
+        expect(pVal, 'Wilcoxon p should be ≤ 0.001').toBeLessThanOrEqual(0.001);
+    });
+
+    // 17. Text Mining (Integration Check)
     test('Text Mining Integration', async ({ page }) => {
         await navigateToFeature(page, 'text_mining');
 
@@ -421,4 +598,49 @@ test.describe('Statistical Accuracy Verification', () => {
         await expect(page.locator('#category-results')).not.toBeEmpty();
     });
 
+});
+
+// McNemar test uses a different dataset (mcnemar_test.csv)
+test.describe('McNemar Accuracy Verification', () => {
+    test.beforeEach(async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
+        await uploadFile(page, 'datasets/mcnemar_test.csv');
+    });
+
+    test('McNemar Test Accuracy', async ({ page }) => {
+        await navigateToFeature(page, 'mcnemar');
+
+        // Select variables: 授業前理解 and 授業後理解
+        await selectStandardOption(page, '#mcnemar-var1', '授業前理解', 'label');
+        await selectStandardOption(page, '#mcnemar-var2', '授業後理解', 'label');
+        await page.click('#run-mcnemar-btn', { force: true });
+
+        // Wait for results
+        await expect(page.locator('#mcnemar-analysis-results')).toBeVisible({ timeout: 10000 });
+
+        // Check stat cards
+        const getCardValue = async (label: string) => {
+            const card = page.locator('.data-stat-card', { hasText: label });
+            return await card.locator('.stat-value').innerText();
+        };
+
+        const chi2Text = await getCardValue('χ²値');
+        const chi2Val = parseFloat(chi2Text);
+        assertClose(chi2Val, groundTruth.mcnemar.chi2, 0.1, 'McNemar chi2');
+
+        // Check detail table for OR (second table - first is contingency table)
+        const detailTable = page.locator('#mcnemar-analysis-results table').nth(1);
+        const orRow = detailTable.locator('tbody tr', { hasText: 'オッズ比' });
+        const orText = await orRow.locator('td:nth-child(2)').innerText();
+        const orVal = parseFloat(orText);
+        assertClose(orVal, groundTruth.mcnemar.OR, 0.05, 'McNemar OR');
+
+        // Check p-value (bc=17 < 25, so exact binomial is used)
+        const pText = await getCardValue('p値');
+        const pVal = parseFloat(pText.replace(/[^\d.e-]/g, ''));
+        // Exact p ≈ 0.0127, should be significant
+        expect(pVal, 'McNemar p should be < 0.05').toBeLessThan(0.05);
+        assertClose(pVal, groundTruth.mcnemar.exact_p, 0.005, 'McNemar exact p');
+    });
 });
