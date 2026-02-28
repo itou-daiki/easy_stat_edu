@@ -97,7 +97,10 @@ function setupEventListeners() {
         // data-requires="none" のカードはデータ未ロードでも遷移可能
         const requires = card.dataset.requires;
         if (requires === 'none') {
-            showAnalysisView(card.dataset.analysis);
+            // enableCard の onclick と二重発火しないよう、onclick が未設定の場合のみ実行
+            if (!card.onclick) {
+                showAnalysisView(card.dataset.analysis);
+            }
             return;
         }
 
