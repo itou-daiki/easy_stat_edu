@@ -504,7 +504,9 @@ function plotScatterMatrix(variables, currentData, matrixData) {
     const width = Math.max(700, 280 * n);
     const height = Math.max(700, 280 * n);
 
-    const layout = getAcademicLayout({
+    // 散布図行列は動的に xaxis1〜xaxisN*N を生成するため、
+    // getAcademicLayout() のベース xaxis/yaxis を除外し、font等のみ適用
+    const baseLayout = getAcademicLayout({
         title: '',
         height: height,
         width: width,
@@ -513,6 +515,10 @@ function plotScatterMatrix(variables, currentData, matrixData) {
         margin: { l: 100, r: 40, t: 40, b: 120 },
         annotations: []
     });
+    // ベースの xaxis/yaxis を削除（個別セルの軸設定と干渉するため）
+    delete baseLayout.xaxis;
+    delete baseLayout.yaxis;
+    const layout = baseLayout;
 
     // ドメイン計算 (目盛りラベル表示のためギャップ拡大)
     const gap = 0.07;
