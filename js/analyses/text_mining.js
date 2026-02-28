@@ -696,8 +696,8 @@ export function render(container, currentData, characteristics) {
                         <li><strong>ワードクラウド（出現回数 / TF-IDF）:</strong> 単語を大きく表示します。出現回数版とTF-IDF重み版の2種類があります。<strong>単語をクリックすると、その単語を含む元の文が表示されます（KWIC）。</strong></li>
                         <li><strong>共起ネットワーク:</strong> 関連性の強い単語を線で結びます。<strong>同じ色のノードは、似た文脈で使われる「グループ（コミュニティ）」を表します。</strong></li>
                     </ul>
-                    <h4>対象となる品詞</h4>
-                    <p>分析では<strong>2文字以上の主要な単語</strong>を抽出します（一般的な助詞や記号は自動的に除外されます）。</p>
+                    <h4>対象となる単語</h4>
+                    <p>分析では<strong>2文字以上の主要な単語</strong>を抽出します（一般的なストップワードや記号は自動的に除外されます）。</p>
                 </div>
             </div>
 
@@ -710,11 +710,11 @@ export function render(container, currentData, characteristics) {
                 <div id="run-text-btn-container"></div>
             </div>
 
+            <!-- データ概要 -->
+            <div id="tm-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
+
             <!-- 結果エリア -->
             <div id="analysis-results" style="display: none;"></div>
-            
-             <!-- データ概要 -->
-            <div id="tm-data-overview" class="info-sections" style="margin-top: 3rem;"></div>
         </div>
     `;
 

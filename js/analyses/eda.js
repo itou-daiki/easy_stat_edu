@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, getAcademicLayout, academicColors } from '../utils.js';
 // Keep for now if needed later, or remove. Instructions say remove.
 // Actually, let's just remove the line if it's the only import.
 // Checking previous view... it is `import { renderDataOverview } from '../utils.js';`
@@ -263,7 +263,7 @@ function renderCategoricalPlot(col, valueCounts, plotId, sortOrder) {
         x: labels,
         y: values,
         type: 'bar',
-        marker: { color: 'rgba(30, 144, 255, 0.7)' }
+        marker: { color: academicColors.barFill, line: { color: academicColors.barLine, width: 1 } }
     };
 
     // Check global control state
@@ -274,27 +274,24 @@ function renderCategoricalPlot(col, valueCounts, plotId, sortOrder) {
 
     const graphTitleText = `【${col}】の度数分布（${sortOrder === 'frequency' ? '度数順' : '名前順'}）`;
 
-    const barLayout = {
-        title: '', // Disable standard title
-        xaxis: { title: col },
-        yaxis: { title: '' }, // Disable standard title
-        bargap: 0.2,
-        annotations: [],
-        margin: { l: 100, b: 100 } // Add margins
-    };
-
-    // Annotations
+    const barAnnotations = [];
     if (showAxisLabels) {
         const tategakiTitle = getTategakiAnnotation('度数');
-        if (tategakiTitle) barLayout.annotations.push(tategakiTitle);
-    } else {
-        barLayout.xaxis.title = '';
+        if (tategakiTitle) barAnnotations.push(tategakiTitle);
     }
-
     if (showGraphTitle) {
         const bottomTitle = getBottomTitleAnnotation(graphTitleText);
-        if (bottomTitle) barLayout.annotations.push(bottomTitle);
+        if (bottomTitle) barAnnotations.push(bottomTitle);
     }
+
+    const barLayout = getAcademicLayout({
+        title: '', // Disable standard title
+        xaxis: { title: showAxisLabels ? col : '' },
+        yaxis: { title: '' }, // Disable standard title
+        bargap: 0.2,
+        annotations: barAnnotations,
+        margin: { l: 100, b: 100 } // Add margins
+    });
 
     Plotly.newPlot(plotId, [barTrace], barLayout);
 }
@@ -366,30 +363,28 @@ function visualizeNumericVariables(currentData, characteristics) {
         const histTrace = {
             x: dataVector,
             type: 'histogram',
-            marker: { color: 'rgba(30, 144, 255, 0.7)' }
+            marker: { color: academicColors.barFill, line: { color: academicColors.barLine, width: 1 } }
         };
 
         const histGraphTitle = `【${col}】のヒストグラム`;
-        const histLayout = {
-            title: '', // Disable default
-            xaxis: { title: col },
-            yaxis: { title: '' },
-            bargap: 0.2,
-            annotations: [],
-            margin: { l: 100, b: 100 }
-        };
-
+        const histAnnotations = [];
         if (showAxisLabels) {
             const tategakiTitle = getTategakiAnnotation('度数');
-            if (tategakiTitle) histLayout.annotations.push(tategakiTitle);
-        } else {
-            histLayout.xaxis.title = '';
+            if (tategakiTitle) histAnnotations.push(tategakiTitle);
         }
-
         if (showGraphTitle) {
             const bottomTitle = getBottomTitleAnnotation(histGraphTitle);
-            if (bottomTitle) histLayout.annotations.push(bottomTitle);
+            if (bottomTitle) histAnnotations.push(bottomTitle);
         }
+
+        const histLayout = getAcademicLayout({
+            title: '', // Disable default
+            xaxis: { title: showAxisLabels ? col : '' },
+            yaxis: { title: '' },
+            bargap: 0.2,
+            annotations: histAnnotations,
+            margin: { l: 100, b: 100 }
+        });
 
         Plotly.newPlot(histId, [histTrace], histLayout, createPlotlyConfig('EDA_ヒストグラム', col));
 
@@ -398,24 +393,23 @@ function visualizeNumericVariables(currentData, characteristics) {
             y: dataVector,
             type: 'box',
             name: col,
-            marker: { color: 'rgba(30, 144, 255, 0.7)' }
+            marker: { color: academicColors.boxLine },
+            fillcolor: academicColors.boxFill,
+            line: { color: academicColors.boxLine }
         };
         const boxGraphTitle = `【${col}】の箱ひげ図`;
-        const boxLayout = {
-            title: '',
-            yaxis: { title: col },
-            margin: { b: 100 },
-            annotations: []
-        };
-
-        if (!showAxisLabels) {
-            if (boxLayout.yaxis) boxLayout.yaxis.title = '';
-        }
-
+        const boxAnnotations = [];
         if (showGraphTitle) {
             const bottomTitle = getBottomTitleAnnotation(boxGraphTitle);
-            if (bottomTitle) boxLayout.annotations.push(bottomTitle);
+            if (bottomTitle) boxAnnotations.push(bottomTitle);
         }
+
+        const boxLayout = getAcademicLayout({
+            title: '',
+            yaxis: { title: showAxisLabels ? col : '' },
+            margin: { b: 100 },
+            annotations: boxAnnotations
+        });
 
         Plotly.newPlot(boxId, [boxTrace], boxLayout, createPlotlyConfig('EDA_箱ひげ図', col));
     });
@@ -441,40 +435,39 @@ function visualizeMultipleNumericVariables(currentData, characteristics) {
     `;
 
     // 自動的に全ての数値変数の箱ひげ図を表示
-    const traces = numericColumns.map(col => {
+    const traces = numericColumns.map((col, idx) => {
         const dataVector = currentData.map(row => row[col]).filter(v => v !== null && v !== undefined && !isNaN(v));
+        const colorIdx = idx % academicColors.palette.length;
         return {
             y: dataVector,
             type: 'box',
             name: col,
             boxpoints: 'outliers',
             jitter: 0.3,
-            pointpos: -1.8
+            pointpos: -1.8,
+            marker: { color: academicColors.palette[colorIdx] },
+            line: { color: academicColors.palette[colorIdx] }
         };
     });
 
     const graphTitleText = '全数値変数の箱ひげ図による比較';
-    const layout = {
-        title: '',
-        yaxis: { title: '値' },
-        showlegend: true,
-        height: 500,
-        annotations: [],
-        margin: { b: 100 }
-    };
-
     const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
     const showGraphTitle = document.getElementById('show-graph-title')?.checked ?? true;
 
-    if (!showAxisLabels) {
-        if (layout.yaxis) layout.yaxis.title = '';
-    }
-
+    const multiAnnotations = [];
     if (showGraphTitle) {
         const bottomTitle = getBottomTitleAnnotation(graphTitleText);
-        if (bottomTitle) layout.annotations.push(bottomTitle);
+        if (bottomTitle) multiAnnotations.push(bottomTitle);
     }
 
+    const layout = getAcademicLayout({
+        title: '',
+        yaxis: { title: showAxisLabels ? '値' : '' },
+        showlegend: true,
+        height: 500,
+        annotations: multiAnnotations,
+        margin: { b: 100 }
+    });
 
     Plotly.newPlot('multiple-numeric-plot', traces, layout, createPlotlyConfig('EDA_数値変数一括', numericColumns));
 }
@@ -575,22 +568,19 @@ function plotNumericVsNumeric(currentData, var1, var2, container) {
         mode: 'markers',
         type: 'scatter',
         marker: {
-            color: 'rgba(30, 144, 255, 0.6)',
-            size: 8
+            color: academicColors.primary,
+            size: 8,
+            opacity: 0.6
         }
     };
 
-    const layout = {
-        title: `散布図：【${var1}】×【${var2}】`,
-        xaxis: { title: var1 },
-        yaxis: { title: var2 }
-    };
-
     const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
-    if (!showAxisLabels) {
-        if (layout.xaxis) layout.xaxis.title = '';
-        if (layout.yaxis) layout.yaxis.title = '';
-    }
+
+    const layout = getAcademicLayout({
+        title: `散布図：【${var1}】×【${var2}】`,
+        xaxis: { title: showAxisLabels ? var1 : '' },
+        yaxis: { title: showAxisLabels ? var2 : '' }
+    });
 
     Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig('EDA_散布図', [var1, var2]));
 }
@@ -637,21 +627,17 @@ function plotCategoricalVsCategorical(currentData, var1, var2, container) {
         x: var2Array,
         y: var1Array,
         type: 'heatmap',
-        colorscale: 'Blues',
+        colorscale: academicColors.heatmapScale,
         showscale: true
     };
 
-    const layout = {
-        title: `度数：【${var1}】×【${var2}】`,
-        xaxis: { title: var2 },
-        yaxis: { title: var1 }
-    };
-
     const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
-    if (!showAxisLabels) {
-        if (layout.xaxis) layout.xaxis.title = '';
-        if (layout.yaxis) layout.yaxis.title = '';
-    }
+
+    const layout = getAcademicLayout({
+        title: `度数：【${var1}】×【${var2}】`,
+        xaxis: { title: showAxisLabels ? var2 : '' },
+        yaxis: { title: showAxisLabels ? var1 : '' }
+    });
 
     Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig('EDA_クロス集計', [var1, var2]));
 }
@@ -671,13 +657,15 @@ function plotCategoricalVsNumeric(currentData, catVar, numVar, container) {
     });
 
     const categories = Object.keys(categoryData).sort();
-    const traces = categories.map(cat => ({
+    const traces = categories.map((cat, idx) => ({
         y: categoryData[cat],
         type: 'box',
         name: cat,
         boxpoints: 'all',
         jitter: 0.3,
-        pointpos: -1.8
+        pointpos: -1.8,
+        marker: { color: academicColors.palette[idx % academicColors.palette.length] },
+        line: { color: academicColors.palette[idx % academicColors.palette.length] }
     }));
 
     const plotId = 'two-vars-plot';
@@ -690,17 +678,13 @@ function plotCategoricalVsNumeric(currentData, catVar, numVar, container) {
         </div>
     `;
 
-    const layout = {
-        title: `箱ひげ図：【${catVar}】×【${numVar}】`,
-        xaxis: { title: catVar },
-        yaxis: { title: numVar }
-    };
-
     const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
-    if (!showAxisLabels) {
-        if (layout.xaxis) layout.xaxis.title = '';
-        if (layout.yaxis) layout.yaxis.title = '';
-    }
+
+    const layout = getAcademicLayout({
+        title: `箱ひげ図：【${catVar}】×【${numVar}】`,
+        xaxis: { title: showAxisLabels ? catVar : '' },
+        yaxis: { title: showAxisLabels ? numVar : '' }
+    });
 
     Plotly.newPlot(plotId, traces, layout, createPlotlyConfig('EDA_箱ひげ図_層別', [catVar, numVar]));
 }
@@ -791,7 +775,7 @@ function plotGroupedBarChart(currentData, cat1, cat2, numVar) {
     // カテゴリ2の値ごとにトレースを作成
     const cat2Values = [...new Set(aggregated.map(item => item.cat2))].sort();
 
-    const traces = cat2Values.map(c2Val => {
+    const traces = cat2Values.map((c2Val, idx) => {
         const filteredData = aggregated.filter(item => item.cat2 === c2Val);
         const cat1Values = filteredData.map(item => item.cat1);
         const meanValues = filteredData.map(item => item.mean);
@@ -800,7 +784,8 @@ function plotGroupedBarChart(currentData, cat1, cat2, numVar) {
             x: cat1Values,
             y: meanValues,
             type: 'bar',
-            name: c2Val
+            name: c2Val,
+            marker: { color: academicColors.palette[idx % academicColors.palette.length] }
         };
     });
 
@@ -815,31 +800,30 @@ function plotGroupedBarChart(currentData, cat1, cat2, numVar) {
     `;
 
     const graphTitleText = `【${cat1}】と【${cat2}】による【${numVar}】の比較`;
-    const layout = {
-        title: '',
-        xaxis: { title: cat1 },
-        yaxis: { title: '' },
-        barmode: 'group',
-        annotations: [],
-        margin: { l: 100, b: 100 }
-    };
 
     const axisControl = document.getElementById('show-axis-labels');
     const titleControl = document.getElementById('show-graph-title');
     const showAxisLabels = axisControl?.checked ?? true;
     const showGraphTitle = titleControl?.checked ?? true;
 
+    const groupedAnnotations = [];
     if (showAxisLabels) {
         const tategakiTitle = getTategakiAnnotation(`平均: ${numVar}`);
-        if (tategakiTitle) layout.annotations.push(tategakiTitle);
-    } else {
-        layout.xaxis.title = '';
+        if (tategakiTitle) groupedAnnotations.push(tategakiTitle);
     }
-
     if (showGraphTitle) {
         const bottomTitle = getBottomTitleAnnotation(graphTitleText);
-        if (bottomTitle) layout.annotations.push(bottomTitle);
+        if (bottomTitle) groupedAnnotations.push(bottomTitle);
     }
+
+    const layout = getAcademicLayout({
+        title: '',
+        xaxis: { title: showAxisLabels ? cat1 : '' },
+        yaxis: { title: '' },
+        barmode: 'group',
+        annotations: groupedAnnotations,
+        margin: { l: 100, b: 100 }
+    });
 
     Plotly.newPlot(plotId, traces, layout, createPlotlyConfig('EDA_グループ化棒グラフ', [cat1, cat2, numVar]));
 }

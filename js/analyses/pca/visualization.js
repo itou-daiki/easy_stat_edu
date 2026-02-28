@@ -3,7 +3,7 @@
  * @module pca/visualization
  */
 
-import { createPlotlyConfig } from '../../utils.js';
+import { createPlotlyConfig, getAcademicLayout, academicColors } from '../../utils.js';
 
 /**
  * 固有値と寄与率テーブルを表示
@@ -31,7 +31,7 @@ export function displayEigenvalues(eigenvalues) {
     eigenvalues.forEach((val, i) => {
         const contribution = (val / total) * 100;
         cumulative += contribution;
-        const style = val >= 1.0 ? 'font-weight: bold; color: #1e90ff;' : '';
+        const style = val >= 1.0 ? 'font-weight: bold; color: #2c5f8a;' : '';
 
         html += `
             <tr style="${style}">
@@ -57,7 +57,7 @@ export function plotScree(eigenvalues) {
         y: eigenvalues,
         type: 'bar',
         name: '固有値',
-        marker: { color: '#1e90ff' }
+        marker: { color: academicColors.barFill }
     };
 
     const traceLine = {
@@ -70,11 +70,11 @@ export function plotScree(eigenvalues) {
         line: { color: '#2d3748' }
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: 'スクリープロット（固有値の推移）',
         yaxis: { title: '固有値' },
         showlegend: false
-    };
+    });
 
     Plotly.newPlot('scree-plot', [trace, traceLine], layout, createPlotlyConfig('主成分分析_スクリープロット', []));
 }
@@ -95,7 +95,7 @@ export function displayLoadings(variables, vectors, values) {
                 <thead>
                     <tr>
                         <th>変数</th>
-                        ${Array.from({ length: nComp }, (_, i) => `<th>PC${i + 1} (固有ベクトル)</th>`).join('')}
+                        ${Array.from({ length: nComp }, (_, i) => `<th>PC${i + 1} (主成分負荷量)</th>`).join('')}
                     </tr>
                 </thead>
                 <tbody>
@@ -106,14 +106,14 @@ export function displayLoadings(variables, vectors, values) {
         for (let j = 0; j < nComp; j++) {
             const val = vectors[j][i];
             const loading = val * Math.sqrt(values[j]);
-            const style = Math.abs(loading) > 0.4 ? 'background: rgba(30, 144, 255, 0.1); font-weight: bold;' : '';
+            const style = Math.abs(loading) > 0.4 ? 'background: rgba(44, 95, 138, 0.08); font-weight: bold;' : '';
             html += `<td style="${style}">${loading.toFixed(3)}</td>`;
         }
         html += '</tr>';
     });
 
     html += '</tbody></table></div>';
-    html += '<p style="color: #666; font-size: 0.9rem; margin-top: 5px;">※表の値は因子負荷量（固有ベクトル × √固有値）を表示しています。</p>';
+    html += '<p style="color: #666; font-size: 0.9rem; margin-top: 5px;">※表の値は主成分負荷量（固有ベクトル × √固有値）を表示しています。</p>';
     container.innerHTML = html;
 }
 
@@ -133,7 +133,7 @@ export function plotBiplot(scores, vectors, variables) {
         mode: 'markers',
         type: 'scatter',
         name: '観測データ',
-        marker: { color: 'rgba(30, 144, 255, 0.5)', size: 8 }
+        marker: { color: academicColors.secondary + '80', size: 8 }
     };
 
     const annotations = [];
@@ -148,19 +148,19 @@ export function plotBiplot(scores, vectors, variables) {
             type: 'line',
             x0: 0, y0: 0,
             x1: x, y1: y,
-            line: { color: '#ef4444', width: 2 }
+            line: { color: academicColors.accent, width: 2 }
         });
 
         annotations.push({
             x: x, y: y,
             text: v,
             showarrow: false,
-            font: { color: '#ef4444', weight: 'bold' },
+            font: { color: academicColors.accent, weight: 'bold' },
             bgcolor: 'rgba(255,255,255,0.7)'
         });
     });
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: 'バイプロット (PC1 vs PC2)',
         xaxis: { title: '第一主成分' },
         yaxis: { title: '第二主成分' },
@@ -168,7 +168,7 @@ export function plotBiplot(scores, vectors, variables) {
         annotations: annotations,
         hovermode: 'closest',
         height: 600
-    };
+    });
 
     Plotly.newPlot('biplot', [tracePoints], layout, createPlotlyConfig('主成分分析_バイプロット', variables));
 }

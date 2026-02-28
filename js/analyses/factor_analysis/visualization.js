@@ -3,7 +3,7 @@
  * @module factor_analysis/visualization
  */
 
-import { createPlotlyConfig } from '../../utils.js';
+import { createPlotlyConfig, getAcademicLayout, academicColors } from '../../utils.js';
 
 /**
  * 固有値と寄与率テーブルを表示
@@ -78,7 +78,7 @@ export function displayEigenvalues(eigenvalues, rotatedStats) {
 
     html += '</tbody></table></div>';
     if (rotatedStats) {
-        html += `<p style="font-size: 0.85rem; color: #4a5568; margin-top: 0.5rem;">※ 回転を行うと、因子の分散（固有値に相当）が再配分されますが、累積寄与率の合計は変わりません。</p>`;
+        html += `<p style="font-size: 0.85rem; color: #4a5568; margin-top: 0.5rem;">※ 回転を行うと、因子の分散（固有値に相当）が再配分されます。直交回転では累積寄与率の合計は変わりませんが、斜交回転（Promax, Oblimin, Geomin）では因子間の相関により寄与率の解釈が異なります。</p>`;
     }
     container.innerHTML = html;
 }
@@ -325,23 +325,23 @@ export function plotScree(eigenvalues) {
         y: eigenvalues,
         type: 'scatter',
         mode: 'lines+markers',
-        line: { color: '#1e90ff', width: 2 },
-        marker: { size: 8 }
+        line: { color: academicColors.primary, width: 2 },
+        marker: { size: 8, color: academicColors.primary }
     };
 
     const shape = {
         type: 'line',
         x0: 1, y0: 1,
         x1: eigenvalues.length, y1: 1,
-        line: { color: '#ef4444', width: 2, dash: 'dash' }
+        line: { color: academicColors.accent, width: 2, dash: 'dash' }
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: 'スクリープロット',
         xaxis: { title: '成分番号' },
         yaxis: { title: '固有値' },
         shapes: [shape]
-    };
+    });
 
     Plotly.newPlot('scree-plot', [trace], layout, createPlotlyConfig('因子分析_スクリープロット', []));
 }
@@ -369,16 +369,16 @@ export function plotLoadingsHeatmap(variables, loadings, rotation) {
         x: variables,
         y: components,
         type: 'heatmap',
-        colorscale: 'RdBu',
+        colorscale: academicColors.divergingScale,
         zmin: -1,
         zmax: 1
     }];
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: `因子負荷量ヒートマップ${rotationText}`,
         height: 300 + (components.length * 30),
         xaxis: { side: 'bottom' }
-    };
+    });
 
     Plotly.newPlot('loadings-heatmap', data, layout, createPlotlyConfig('因子分析_負荷量', variables));
 }

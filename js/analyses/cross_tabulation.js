@@ -1,7 +1,7 @@
 // ==========================================
 // クロス集計 (Cross Tabulation)
 // ==========================================
-import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, getAcademicLayout, academicColors } from '../utils.js';
 
 // ==========================================
 // Core Calculation
@@ -182,19 +182,19 @@ function plotHeatmap(tableData) {
     const trace = {
         z: z, x: colKeys, y: rowKeys,
         type: 'heatmap',
-        colorscale: [[0, '#f0f9ff'], [1, '#1e90ff']],
+        colorscale: academicColors.heatmapScale,
         showscale: true,
         colorbar: { title: '度数' },
         hovertemplate: `${rowVar}: %{y}<br>${colVar}: %{x}<br>度数: %{z}<extra></extra>`
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: { text: `${rowVar} × ${colVar}`, font: { size: 14 } },
         xaxis: { title: colVar, side: 'bottom' },
         yaxis: { title: rowVar, autorange: 'reversed' },
         margin: { l: 100, b: 80, r: 80, t: 50 },
         annotations: annotations
-    };
+    });
 
     Plotly.newPlot('crosstab-heatmap', [trace], layout, createPlotlyConfig('クロス集計', [rowVar, colVar]));
 }

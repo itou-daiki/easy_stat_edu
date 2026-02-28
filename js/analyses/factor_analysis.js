@@ -245,6 +245,9 @@ export function render(container, currentData, characteristics) {
                     <ul>
                         <li><strong>なし (None):</strong> 初期解のまま。解釈しにくいことが多いです。</li>
                         <li><strong>バリマックス (Varimax):</strong> 直交回転の一種。因子ごとの負荷量の分散を最大化し、「単純構造」を目指します。各因子が明確に一部の変数と強く関係するようになります。</li>
+                        <li><strong>プロマックス (Promax):</strong> 斜交回転の一種。Varimax解を基に、因子間の相関を許容する斜交解を求めます。心理学でよく使用されます。</li>
+                        <li><strong>ダイレクト・オブリミン (Direct Oblimin):</strong> 斜交回転。因子間の相関を直接最小化する方法で、γ=0 (Quartimin) を使用します。</li>
+                        <li><strong>ジェオミン (Geomin):</strong> 斜交回転。各項目ができるだけ少数の因子にのみ高い負荷量を持つ解を求めます。</li>
                     </ul>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 // ==========================================
 // Logistic Regression Module
 // ==========================================
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
 
 // ==========================================
 // Logistic Regression Core (IRLS)
@@ -463,9 +463,9 @@ function interpretLogistic(result, varNames, oddsRatios, cm, r2, modelP, label0,
             const or = oddsRatios[realIdx];
             html += `<li><strong>${name}</strong>: `;
             if (or > 1) {
-                html += `この変数が1単位増加すると、「${label1}」になる確率が<strong>${((or - 1) * 100).toFixed(1)}%</strong>増加します（オッズ比 = ${or.toFixed(3)}）。`;
+                html += `この変数が1単位増加すると、「${label1}」になるオッズが<strong>${or.toFixed(3)}倍</strong>になります（オッズ比 = ${or.toFixed(3)}）。`;
             } else {
-                html += `この変数が1単位増加すると、「${label1}」になる確率が<strong>${((1 - or) * 100).toFixed(1)}%</strong>減少します（オッズ比 = ${or.toFixed(3)}）。`;
+                html += `この変数が1単位増加すると、「${label1}」になるオッズが<strong>${or.toFixed(3)}倍</strong>に減少します（オッズ比 = ${or.toFixed(3)}）。`;
             }
             html += '</li>';
         });
@@ -492,7 +492,7 @@ function plotPredictedProbabilities(data, xVar, y, predictions, label0, label1) 
         mode: 'markers',
         type: 'scatter',
         name: label0,
-        marker: { color: '#3b82f6', size: 8, opacity: 0.7 }
+        marker: { color: academicColors.primary, size: 8, opacity: 0.7 }
     };
 
     const traceActual1 = {
@@ -501,7 +501,7 @@ function plotPredictedProbabilities(data, xVar, y, predictions, label0, label1) 
         mode: 'markers',
         type: 'scatter',
         name: label1,
-        marker: { color: '#ef4444', size: 8, opacity: 0.7 }
+        marker: { color: academicColors.accent, size: 8, opacity: 0.7 }
     };
 
     const traceCurve = {
@@ -510,17 +510,17 @@ function plotPredictedProbabilities(data, xVar, y, predictions, label0, label1) 
         mode: 'lines',
         type: 'scatter',
         name: '予測確率',
-        line: { color: '#22c55e', width: 3 }
+        line: { color: academicColors.palette[3], width: 3 }
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         xaxis: { title: xVar },
         yaxis: { title: '', range: [-0.05, 1.05] },
         showlegend: true,
         margin: { l: 60, b: 80, r: 20, t: 40 },
         annotations: []
-    };
+    });
 
     const axisControl = document.getElementById('show-axis-labels');
     const titleControl = document.getElementById('show-graph-title');
@@ -551,23 +551,23 @@ function plotPredictedProbabilitiesMulti(y, predictions, label0, label1) {
         y: prob0,
         type: 'box',
         name: `実測: ${label0}`,
-        marker: { color: '#3b82f6' }
+        marker: { color: academicColors.primary }
     };
 
     const trace1 = {
         y: prob1,
         type: 'box',
         name: `実測: ${label1}`,
-        marker: { color: '#ef4444' }
+        marker: { color: academicColors.accent }
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         yaxis: { title: '予測確率 P(Y=1)', range: [-0.05, 1.05] },
         showlegend: true,
         margin: { l: 60, b: 60, r: 20, t: 40 },
         annotations: []
-    };
+    });
 
     const titleControl = document.getElementById('show-graph-title');
     if (titleControl?.checked ?? true) {
@@ -593,13 +593,13 @@ function plotConfusionMatrixHeatmap(cm, label0, label1) {
         hoverinfo: 'none'
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         xaxis: { title: '予測値', side: 'bottom' },
         yaxis: { title: '実測値', autorange: 'reversed' },
         margin: { l: 80, b: 80, r: 20, t: 40 },
         annotations: []
-    };
+    });
 
     const titleControl = document.getElementById('show-graph-title');
     if (titleControl?.checked ?? true) {

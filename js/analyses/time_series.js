@@ -4,7 +4,7 @@
  * @description 時系列データの可視化と移動平均計算
  */
 
-import { createVariableSelector, createAnalysisButton, showError, createPlotlyConfig, createVisualizationControls, renderDataOverview } from '../utils.js';
+import { createVariableSelector, createAnalysisButton, showError, createPlotlyConfig, createVisualizationControls, renderDataOverview, getAcademicLayout, academicColors } from '../utils.js';
 
 /**
  * 時系列分析UIをレンダリング
@@ -200,22 +200,22 @@ function renderTimeSeriesPlot(t, y, sma, window, label) {
         x: t, y: y,
         mode: 'lines+markers',
         name: '実測値',
-        line: { color: '#e2e8f0', width: 2 },
-        marker: { color: '#94a3b8', size: 4 }
+        line: { color: academicColors.secondary, width: 2 },
+        marker: { color: academicColors.neutral, size: 4 }
     };
 
     const traceSMA = {
         x: t, y: sma,
         mode: 'lines',
         name: `${window}項移動平均`,
-        line: { color: '#1e90ff', width: 3 }
+        line: { color: academicColors.primary, width: 3 }
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: { text: `<b>${label} の推移と傾向</b>`, font: { size: 18 } },
         xaxis: { title: '時間 / 順序' },
         yaxis: { title: label }
-    };
+    });
 
     Plotly.newPlot('ts-plot-section', [traceOriginal, traceSMA], layout, createPlotlyConfig('時系列分析_推移', [label]));
 }
@@ -230,11 +230,11 @@ function renderACFPlot(acf, maxLag) {
         x: lags,
         y: acf,
         type: 'bar',
-        marker: { color: '#1e90ff' },
+        marker: { color: academicColors.barFill, line: { color: academicColors.barLine, width: 1 } },
         name: '自己相関'
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: { text: '<b>自己相関関数 (ACF)</b> - 周期性の確認', font: { size: 18 } },
         xaxis: { title: 'ラグ (Lag)' },
         yaxis: { title: '自己相関係数', range: [-1.1, 1.1] },
@@ -242,7 +242,7 @@ function renderACFPlot(acf, maxLag) {
             // Zero line
             { type: 'line', x0: 0, x1: maxLag, y0: 0, y1: 0, line: { color: 'black', width: 1 } }
         ]
-    };
+    });
 
     Plotly.newPlot('ts-acf-section', [trace], layout, createPlotlyConfig('時系列分析_ACF', []));
 }

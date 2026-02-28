@@ -6,7 +6,7 @@
  *              R×C分割表: 全観測確率の正確計算（中小規模テーブル対応）
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
 
 // ==========================================
 // 数学ユーティリティ
@@ -268,29 +268,6 @@ function generateRandomTable(R, C, rowTotals, colTotals, total) {
 
     for (let i = 0; i < R - 1; i++) {
         let rowRem = rowTotals[i];
-        let colTotalRem = totalRem;
-
-        for (let j = 0; j < C - 1; j++) {
-            // 超幾何分布からサンプリング
-            const val = hypergeometricSample(rowRem, colRem[j], colTotalRem);
-            table[i][j] = val;
-            rowRem -= val;
-            colRem[j] -= val;
-            colTotalRem -= colRem[j] + val; // adjust: remaining total minus this column's remaining
-            colTotalRem = totalRem - rowTotals[i]; // simpler: remaining rows' total
-            // 再計算
-            colTotalRem = 0;
-            for (let jj = j + 1; jj < C; jj++) colTotalRem += colRem[jj];
-            colTotalRem += rowRem; // Actually we need "remaining pool"
-            // Simpler approach: use conditional hypergeometric
-            colTotalRem = rowRem;
-            for (let ii = i + 1; ii < R; ii++) colTotalRem += rowTotals[ii];
-            // Adjust: total remaining after fixing previous columns
-            break; // Fall through to simpler method
-        }
-
-        // Simple sequential method for this row
-        rowRem = rowTotals[i];
         let poolSize = totalRem;
         for (let j = 0; j < C - 1; j++) {
             const val = hypergeometricSample(rowRem, colRem[j], poolSize);
@@ -666,16 +643,16 @@ function plotHeatmap(observed, colKeys, rowKeys, rowVar, colVar) {
         x: colKeys,
         y: rowKeys,
         type: 'heatmap',
-        colorscale: 'Blues'
+        colorscale: academicColors.heatmapScale
     }];
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         xaxis: { title: colVar },
         yaxis: { title: '' },
         margin: { l: 100, b: 150 },
         annotations: []
-    };
+    });
 
     const axisControl = document.getElementById('show-axis-labels');
     const titleControl = document.getElementById('show-graph-title');

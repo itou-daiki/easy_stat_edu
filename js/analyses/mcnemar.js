@@ -1,7 +1,7 @@
 // ==========================================
 // マクネマー検定 (McNemar's Test)
 // ==========================================
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, InterpretationHelper, generateAPATableHtml } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
 
 // ==========================================
 // Core Calculation
@@ -80,15 +80,15 @@ function mcnemarTest(a, b, c, d) {
         p_exact = Math.min(1, 2 * pExact); // two-sided
     }
 
-    // Effect size: phi coefficient
-    const phi = N > 0 ? Math.sqrt(chi2 / N) : 0;
+    // Effect size: phi coefficient (based on discordant pairs only)
+    const phi = bc > 0 ? Math.sqrt(chi2 / bc) : 0;
 
     // Odds ratio for discordant pairs
     const oddsRatio = c > 0 ? b / c : (b > 0 ? Infinity : 1);
 
     // Significance
     const pMain = p_exact !== null ? p_exact : p_chi2;
-    const significance = pMain < 0.001 ? '***' : pMain < 0.01 ? '**' : pMain < 0.05 ? '*' : '';
+    const significance = pMain < 0.01 ? '**' : pMain < 0.05 ? '*' : pMain < 0.10 ? '†' : 'n.s.';
 
     return {
         chi2, p_chi2, chi2_corrected, p_corrected, p_exact,
@@ -335,13 +335,13 @@ function plotContingencyHeatmap(a, b, c, d, var1, var2, label0, label1) {
         }
     }
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: { text: '分割表ヒートマップ', font: { size: 14 } },
         xaxis: { title: var2, side: 'bottom' },
         yaxis: { title: var1, autorange: 'reversed' },
         margin: { l: 100, b: 80, r: 20, t: 50 },
         annotations: annotations
-    };
+    });
 
     Plotly.newPlot('mcnemar-heatmap', [trace], layout, createPlotlyConfig('マクネマー検定', [var1, var2]));
 }
@@ -408,7 +408,7 @@ export function render(container, currentData, characteristics) {
                             <li><strong>検定統計量:</strong> χ² = (b − c)² / (b + c)（df = 1）</li>
                             <li><strong>イェーツ補正:</strong> χ² = (|b − c| − 1)² / (b + c)</li>
                             <li><strong>正確検定:</strong> b + c < 25 の場合、二項検定を併用</li>
-                            <li><strong>効果量:</strong> φ = √(χ² / N)</li>
+                            <li><strong>効果量:</strong> φ = √(χ² / (b+c))（不一致ペア数を基準）</li>
                             <li><strong>前提:</strong> 対応のあるデータ、各変数が2値</li>
                         </ul>
                     </div>

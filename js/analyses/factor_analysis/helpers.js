@@ -35,7 +35,7 @@ export function matInv(A) { return math.inv(A); }
 export function matDiag(A) { return math.diag(A); }
 
 /**
- * 因子抽出（主因子法）
+ * 因子抽出（主成分法ベースの因子抽出）
  * @param {Array<string>} variables - 変数名配列
  * @param {number} numFactors - 抽出因子数
  * @param {Array<Object>} currentData - データ配列

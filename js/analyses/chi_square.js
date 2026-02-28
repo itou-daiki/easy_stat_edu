@@ -4,7 +4,7 @@
  * @description クロス集計表を用いた変数間の関連性検定
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
 
 /**
  * カイ二乗検定を実行
@@ -318,16 +318,16 @@ function plotHeatmap(observed, colKeys, rowKeys, rowVar, colVar) {
         x: colKeys,
         y: rowKeys,
         type: 'heatmap',
-        colorscale: 'Blues'
+        colorscale: academicColors.heatmapScale
     }];
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         xaxis: { title: colVar },
         yaxis: { title: '' },
         margin: { l: 100, b: 150 },
         annotations: []
-    };
+    });
 
     // 軸ラベルとタイトルの表示切り替え
     const axisControl = document.getElementById('show-axis-labels');

@@ -4,7 +4,7 @@
  * @module eda/visualization
  */
 
-import { createPlotlyConfig, getTategakiAnnotation, getBottomTitleAnnotation } from '../../utils.js';
+import { createPlotlyConfig, getTategakiAnnotation, getBottomTitleAnnotation, getAcademicLayout, academicColors } from '../../utils.js';
 import { calculateSkewness, calculateKurtosis } from './descriptive.js';
 
 // ======================================================================
@@ -103,7 +103,7 @@ export function renderCategoricalPlot(col, valueCounts, plotId, sortOrder) {
         x: labels,
         y: values,
         type: 'bar',
-        marker: { color: 'rgba(30, 144, 255, 0.7)' }
+        marker: { color: academicColors.barFill, line: { color: academicColors.barLine, width: 1 } }
     };
 
     const axisControl = document.getElementById('show-axis-labels');
@@ -113,14 +113,14 @@ export function renderCategoricalPlot(col, valueCounts, plotId, sortOrder) {
 
     const graphTitleText = `【${col}】の度数分布（${sortOrder === 'frequency' ? '度数順' : '名前順'}）`;
 
-    const barLayout = {
+    const barLayout = getAcademicLayout({
         title: '',
         xaxis: { title: col },
         yaxis: { title: '' },
         bargap: 0.2,
         annotations: [],
         margin: { l: 100, b: 100 }
-    };
+    });
 
     if (showAxisLabels) {
         const tategakiTitle = getTategakiAnnotation('度数');
@@ -211,18 +211,18 @@ export function visualizeNumericVariables(currentData, characteristics) {
         const histTrace = {
             x: dataVector,
             type: 'histogram',
-            marker: { color: 'rgba(30, 144, 255, 0.7)' }
+            marker: { color: academicColors.barFill, line: { color: academicColors.barLine, width: 1 } }
         };
 
         const histGraphTitle = `【${col}】のヒストグラム`;
-        const histLayout = {
+        const histLayout = getAcademicLayout({
             title: '',
             xaxis: { title: col },
             yaxis: { title: '' },
             bargap: 0.2,
             annotations: [],
             margin: { l: 100, b: 100 }
-        };
+        });
 
         if (showAxisLabels) {
             const tategakiTitle = getTategakiAnnotation('度数');
@@ -243,15 +243,17 @@ export function visualizeNumericVariables(currentData, characteristics) {
             y: dataVector,
             type: 'box',
             name: col,
-            marker: { color: 'rgba(30, 144, 255, 0.7)' }
+            marker: { color: academicColors.boxLine },
+            fillcolor: academicColors.boxFill,
+            line: { color: academicColors.boxLine }
         };
         const boxGraphTitle = `【${col}】の箱ひげ図`;
-        const boxLayout = {
+        const boxLayout = getAcademicLayout({
             title: '',
             yaxis: { title: col },
             margin: { b: 100 },
             annotations: []
-        };
+        });
 
         if (!showAxisLabels) {
             if (boxLayout.yaxis) boxLayout.yaxis.title = '';
@@ -302,14 +304,14 @@ export function visualizeMultipleNumericVariables(currentData, characteristics) 
     });
 
     const graphTitleText = '全数値変数の箱ひげ図による比較';
-    const layout = {
+    const layout = getAcademicLayout({
         title: '',
         yaxis: { title: '値' },
         showlegend: true,
         height: 500,
         annotations: [],
         margin: { b: 100 }
-    };
+    });
 
     const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
     const showGraphTitle = document.getElementById('show-graph-title')?.checked ?? true;
@@ -432,16 +434,17 @@ export function plotNumericVsNumeric(currentData, var1, var2, container) {
         mode: 'markers',
         type: 'scatter',
         marker: {
-            color: 'rgba(30, 144, 255, 0.6)',
-            size: 8
+            color: academicColors.barFill,
+            size: 8,
+            line: { color: academicColors.barLine, width: 1 }
         }
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: `散布図：【${var1}】×【${var2}】`,
         xaxis: { title: var1 },
         yaxis: { title: var2 }
-    };
+    });
 
     const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
     if (!showAxisLabels) {
@@ -498,15 +501,15 @@ export function plotCategoricalVsCategorical(currentData, var1, var2, container)
         x: var2Array,
         y: var1Array,
         type: 'heatmap',
-        colorscale: 'Blues',
+        colorscale: academicColors.heatmapScale,
         showscale: true
     };
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: `度数：【${var1}】×【${var2}】`,
         xaxis: { title: var2 },
         yaxis: { title: var1 }
-    };
+    });
 
     const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
     if (!showAxisLabels) {
@@ -556,11 +559,11 @@ export function plotCategoricalVsNumeric(currentData, catVar, numVar, container)
         </div>
     `;
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: `箱ひげ図：【${catVar}】×【${numVar}】`,
         xaxis: { title: catVar },
         yaxis: { title: numVar }
-    };
+    });
 
     const showAxisLabels = document.getElementById('show-axis-labels')?.checked ?? true;
     if (!showAxisLabels) {
@@ -677,12 +680,12 @@ export function plotGroupedBarChart(currentData, cat1, cat2, numVar) {
     const resultContainer = document.getElementById('grouped-bar-result');
     resultContainer.innerHTML = `<div id="${plotId}" class="plot-container"></div>`;
 
-    const layout = {
+    const layout = getAcademicLayout({
         title: `【${numVar}】の平均値: ${cat1} × ${cat2}`,
         xaxis: { title: cat1 },
         yaxis: { title: `${numVar} (平均)` },
         barmode: 'group'
-    };
+    });
 
     Plotly.newPlot(plotId, traces, layout, createPlotlyConfig('EDA_グループ化棒グラフ', [cat1, cat2, numVar]));
 }
