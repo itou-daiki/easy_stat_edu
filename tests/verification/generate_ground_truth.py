@@ -263,7 +263,7 @@ def varimax_classic(loadings, max_iter=50, epsilon=1e-6):
                 # denom = p * sum_d2_minus_c2 - (sum_d * sum_d - sum_c * sum_c);
                 
                 p = n_rows
-                numer = 2 * (p * sum_2dc - sum_d * sum_c)
+                numer = p * sum_2dc - 2 * sum_d * sum_c
                 denom = p * sum_d2_minus_c2 - (sum_d**2 - sum_c**2)
                 
                 phi = np.arctan2(numer, denom) / 4.0

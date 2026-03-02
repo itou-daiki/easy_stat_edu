@@ -195,9 +195,9 @@ function runKruskalWallisTest(currentData) {
         const df = groups.length - 1;
         const pValue = 1 - jStat.chisquare.cdf(H, df);
 
-        // 効果量 ε² (epsilon-squared) = (H - k + 1) / (N - 1)
-        const k = groups.length;
-        const epsilon2 = Math.max(0, (H - k + 1) / (N - 1));
+        // 効果量 ε² (epsilon-squared) = H / (N - 1)
+        // Tomczak & Tomczak (2014), simplified from H*(N+1)/(N²-1)
+        const epsilon2 = Math.max(0, H / (N - 1));
 
         const significance = pValue < 0.01 ? '**' : pValue < 0.05 ? '*' : pValue < 0.1 ? '†' : 'n.s.';
         const pText = pValue < 0.001 ? '< .001' : pValue.toFixed(3);
@@ -232,7 +232,7 @@ function runKruskalWallisTest(currentData) {
         </div>
         <p style="color: #6b7280; text-align: right; margin-top: 0.5rem; font-size: 0.9rem;">
             sign: p&lt;0.01** p&lt;0.05* p&lt;0.1† n.s.<br>
-            ε²: イプシロン二乗 = (H − k + 1) / (N − 1)
+            ε²: イプシロン二乗 = H / (N − 1)
         </p></div>`;
 
     if (skippedVars.length > 0) {

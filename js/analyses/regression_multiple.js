@@ -136,7 +136,7 @@ function runMultipleRegression(currentData) {
                             <td>${se.toFixed(3)}</td>
                             <td>${betaStd.toFixed(3)}</td>
                             <td>${t.toFixed(3)}</td>
-                            <td>${p.toFixed(3)}</td>
+                            <td>${p < 0.001 ? '&lt; .001' : p.toFixed(3)}</td>
                             <td style="${vifStyle}">${vif.toFixed(2)}</td>
                             <td><strong style="color: ${p < 0.05 ? '#e53e3e' : '#718096'}">${sig}</strong></td>
                         </tr>

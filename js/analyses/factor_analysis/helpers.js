@@ -129,7 +129,7 @@ export function calculateVarimax(loadings, maxIter = 50, epsilon = 1e-6) {
                     sum_2dc += (2 * d_val * c_val);
                 }
 
-                const numer = 2 * (p * sum_2dc - sum_d * sum_c);
+                const numer = p * sum_2dc - 2 * sum_d * sum_c;
                 const denom = p * sum_d2_minus_c2 - (sum_d * sum_d - sum_c * sum_c);
                 const theta = Math.atan2(numer, denom) / 4;
 
@@ -195,15 +195,26 @@ export function calculatePromax(loadings, kappa = 4) {
     const VtH = matMul(V_t, H_mat);
     const M_mat = matMul(VtV_inv, VtH);
     const M = M_mat.toArray();
-    const T = [];
-
+    // Normalize M: T = M @ diag(d) where d = sqrt(diag(inv(M'M)))
+    // This matches R's stats::promax() normalization
+    const M_mat_inner = math.matrix(M);
+    const MtM = matMul(matTrans(M_mat_inner), M_mat_inner);
+    let MtM_inv;
+    try {
+        MtM_inv = matInv(MtM);
+    } catch (e) {
+        MtM_inv = math.identity(cols);
+    }
+    const MtM_inv_arr = MtM_inv.toArray ? MtM_inv.toArray() : MtM_inv;
+    const d = [];
     for (let j = 0; j < cols; j++) {
-        let sumSq = 0;
-        for (let i = 0; i < cols; i++) sumSq += M[i][j] * M[i][j];
-        const norm = Math.sqrt(sumSq);
-        for (let i = 0; i < cols; i++) {
-            if (!T[i]) T[i] = [];
-            T[i][j] = M[i][j] / norm;
+        d.push(Math.sqrt(MtM_inv_arr[j][j]));
+    }
+    const T = [];
+    for (let i = 0; i < cols; i++) {
+        T[i] = [];
+        for (let j = 0; j < cols; j++) {
+            T[i][j] = M[i][j] * d[j];
         }
     }
 

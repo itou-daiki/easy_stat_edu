@@ -16,18 +16,27 @@ export function performPCA(variables, currentData) {
         throw new Error('変数を2つ以上選択してください');
     }
 
+    // リストワイズ削除: 相関行列の計算と同じ行を使用
+    const validData = currentData.filter(row =>
+        variables.every(v => row[v] != null && !isNaN(row[v]))
+    );
+
+    if (validData.length < 2) {
+        throw new Error('有効なデータが2件未満です。欠損値を確認してください。');
+    }
+
     // データの標準化（Zスコア）
     const means = [];
     const stds = [];
 
     variables.forEach(v => {
-        const vals = currentData.map(r => r[v]);
+        const vals = validData.map(r => r[v]);
         means.push(jStat.mean(vals));
         stds.push(jStat.stdev(vals, true));
     });
 
     // 行列データの作成 (標準化)
-    const matrix = currentData.map(row => {
+    const matrix = validData.map(row => {
         return variables.map((v, i) => (row[v] - means[i]) / stds[i]);
     });
 

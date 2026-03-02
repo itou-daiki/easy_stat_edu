@@ -848,7 +848,7 @@ function runOneWayRepeatedANOVA(currentData) {
         }
 
         const etaSquaredPartial = ssConditions / (ssConditions + ssError);
-        // Partial omega-squared for repeated measures: (SS_cond - df_cond * MS_error) / (SS_cond + SS_error + MS_error)
+        // Omega-squared for repeated measures (removes subject variability): (SS_cond - df_cond * MS_error) / (SS_cond + SS_error + MS_error)
         let omegaSquared = (ssConditions - (dfConditions * msError)) / (ssConditions + ssError + msError);
         const omegaSquaredNegativeRep = omegaSquared < 0;
         if (omegaSquared < 0) omegaSquared = 0;
@@ -938,7 +938,11 @@ function runOneWayRepeatedANOVA(currentData) {
         renderSampleSizeInfo(resultsDiv, N); // Render into resultsDiv for this set
 
         const conditionSEs = dependentVars.map((v, i) => jStat.stdev(validData.map(row => row[i]), true) / Math.sqrt(N));
-        const sigPairs = performRepeatedPostHocTests(dependentVars, validData, msError, dfError, N, method);
+        // validData is a 2D numeric array; post-hoc needs named-property objects
+        const validOriginalData = currentData.filter(row =>
+            dependentVars.every(v => row[v] != null && !isNaN(row[v]))
+        );
+        const sigPairs = performRepeatedPostHocTests(dependentVars, validOriginalData, msError, dfError, N, method);
 
         const testResultsForInterpretation = [{
             varName: `条件 (${dependentVars.join(', ')})`,
@@ -990,8 +994,12 @@ function runOneWayRepeatedANOVA(currentData) {
             annotations: []
         });
 
-        // Add significance brackets
-        addSignificanceBrackets(layout, sigPairs, dependentVars, yMax, yMax * 0.2);
+        // Add significance brackets (sigPairs need `significance` property)
+        const sigPairsWithSig = sigPairs.map(p => ({
+            ...p,
+            significance: p.p < 0.01 ? '**' : p.p < 0.05 ? '*' : p.p < 0.1 ? '†' : 'n.s.'
+        }));
+        addSignificanceBrackets(layout, sigPairsWithSig, dependentVars, yMax, yMax * 0.2);
 
         Plotly.newPlot(plotContainer.id, [trace], layout, createPlotlyConfig(`ANOVA_Set_${setIndex + 1}`, `anova_set_${setIndex + 1}`));
     });

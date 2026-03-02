@@ -19,6 +19,22 @@ function runPCA(currentData) {
     try {
         const { eigenvalues, vectors, scores } = performPCA(variables, currentData);
 
+        // 符号反転 (Sign reflection): 各主成分の負荷量合計が正になるよう調整
+        for (let j = 0; j < vectors.length; j++) {
+            let sumLoading = 0;
+            for (let i = 0; i < variables.length; i++) {
+                sumLoading += vectors[j][i];
+            }
+            if (sumLoading < 0) {
+                for (let i = 0; i < variables.length; i++) {
+                    vectors[j][i] *= -1;
+                }
+                for (let i = 0; i < scores.length; i++) {
+                    scores[i][j] *= -1;
+                }
+            }
+        }
+
         displayEigenvalues(eigenvalues);
         plotScree(eigenvalues);
         displayLoadings(variables, vectors, eigenvalues);

@@ -210,7 +210,7 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
             </div>
             <p style="margin-top: 0.5rem; color: #666; font-size: 0.8rem;">
                 上段: 観測度数 (期待度数), 下段: 調整済み標準化残差 (z)。<br>
-                z > 1.96 (青) は有意に多い、z < -1.96 (赤) は有意に少ない組み合わせを示します。
+                z &gt; 1.96 (青) は有意に多い、z &lt; -1.96 (赤) は有意に少ない組み合わせを示します。
             </p>
         </div>
     `;
@@ -224,7 +224,7 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
                 <div class="data-stat-card" style="background: #f0f9ff; border: 1px solid #bae6fd; text-align: center;">
                     <div class="stat-label">Yates補正 χ² (2x2)</div>
                     <div class="stat-value">${yatesChi.toFixed(2)}</div>
-                    <div class="stat-sub" style="font-size: 0.8rem; color: #666;">p = ${yatesP.toFixed(4)} ${yatesP < 0.01 ? '**' : (yatesP < 0.05 ? '*' : (yatesP < 0.1 ? '†' : 'n.s.'))}</div>
+                    <div class="stat-sub" style="font-size: 0.8rem; color: #666;">${yatesP < 0.001 ? 'p &lt; .001' : 'p = ' + yatesP.toFixed(4)} ${yatesP < 0.01 ? '**' : (yatesP < 0.05 ? '*' : (yatesP < 0.1 ? '†' : 'n.s.'))}</div>
                 </div>
             `;
         }
@@ -254,7 +254,7 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
                 </div>
                 <div class="data-stat-card" style="text-align: center;">
                     <div class="stat-label">p値</div>
-                    <div class="stat-value" style="${p < 0.05 ? 'color: #ef4444;' : ''}">${p.toFixed(4)} ${p < 0.01 ? '**' : (p < 0.05 ? '*' : (p < 0.1 ? '†' : 'n.s.'))}</div>
+                    <div class="stat-value" style="${p < 0.05 ? 'color: #ef4444;' : ''}">${p < 0.001 ? '&lt; .001' : p.toFixed(4)} ${p < 0.01 ? '**' : (p < 0.05 ? '*' : (p < 0.1 ? '†' : 'n.s.'))}</div>
                 </div>
                 <div class="data-stat-card" style="text-align: center;">
                     <div class="stat-label">${rowKeys.length === 2 && colKeys.length === 2 ? 'ファイ係数 (φ) / CramerのV' : 'クラメールのV'}</div>

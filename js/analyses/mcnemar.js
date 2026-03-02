@@ -80,8 +80,8 @@ function mcnemarTest(a, b, c, d) {
         p_exact = Math.min(1, 2 * pExact); // two-sided
     }
 
-    // Effect size: phi coefficient (based on discordant pairs only)
-    const phi = bc > 0 ? Math.sqrt(chi2 / bc) : 0;
+    // Effect size: phi coefficient
+    const phi = N > 0 ? Math.sqrt(chi2 / N) : 0;
 
     // Odds ratio for discordant pairs
     const oddsRatio = c > 0 ? b / c : (b > 0 ? Infinity : 1);
@@ -183,7 +183,7 @@ function runMcNemarTest(currentData) {
                 </div>
                 <div class="data-stat-card">
                     <div class="stat-label">p値${result.p_exact !== null ? '（正確確率）' : ''}</div>
-                    <div class="stat-value" style="${result.pMain < 0.05 ? 'color: #ef4444; font-weight: bold;' : ''}">${result.pMain < 0.001 ? '<.001' : result.pMain.toFixed(4)}${result.significance}</div>
+                    <div class="stat-value" style="${result.pMain < 0.05 ? 'color: #ef4444; font-weight: bold;' : ''}">${result.pMain < 0.001 ? '&lt; .001' : result.pMain.toFixed(4)}${result.significance}</div>
                 </div>
                 <div class="data-stat-card">
                     <div class="stat-label">効果量 φ</div>
@@ -199,7 +199,7 @@ function runMcNemarTest(currentData) {
             <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
                 <p style="margin: 0; font-size: 0.9rem; color: #92400e;">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <strong>注意:</strong> 不一致ペア数(b+c=${result.bc})が25未満のため、正確二項検定の結果を報告しています（p=${result.p_exact.toFixed(4)}）。
+                    <strong>注意:</strong> 不一致ペア数(b+c=${result.bc})が25未満のため、正確二項検定の結果を報告しています（${result.p_exact < 0.001 ? 'p &lt; .001' : 'p=' + result.p_exact.toFixed(4)}）。
                 </p>
             </div>
             ` : ''}
@@ -213,9 +213,9 @@ function runMcNemarTest(currentData) {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td>χ²（補正なし）</td><td>${result.chi2.toFixed(3)}（p = ${result.p_chi2 < 0.001 ? '<.001' : result.p_chi2.toFixed(4)}）</td></tr>
-                        <tr><td>χ²（イェーツ補正）</td><td>${result.chi2_corrected.toFixed(3)}（p = ${result.p_corrected < 0.001 ? '<.001' : result.p_corrected.toFixed(4)}）</td></tr>
-                        ${result.p_exact !== null ? `<tr><td>正確二項検定</td><td>p = ${result.p_exact < 0.001 ? '<.001' : result.p_exact.toFixed(4)}</td></tr>` : ''}
+                        <tr><td>χ²（補正なし）</td><td>${result.chi2.toFixed(3)}（${result.p_chi2 < 0.001 ? 'p &lt; .001' : 'p = ' + result.p_chi2.toFixed(4)}）</td></tr>
+                        <tr><td>χ²（イェーツ補正）</td><td>${result.chi2_corrected.toFixed(3)}（${result.p_corrected < 0.001 ? 'p &lt; .001' : 'p = ' + result.p_corrected.toFixed(4)}）</td></tr>
+                        ${result.p_exact !== null ? `<tr><td>正確二項検定</td><td>${result.p_exact < 0.001 ? 'p &lt; .001' : 'p = ' + result.p_exact.toFixed(4)}</td></tr>` : ''}
                         <tr><td>オッズ比 (b/c)</td><td>${result.oddsRatio === Infinity ? '∞' : result.oddsRatio.toFixed(3)}</td></tr>
                         <tr><td>効果量 φ</td><td>${result.phi.toFixed(3)}</td></tr>
                         <tr><td>N（有効ペア数）</td><td>${N}</td></tr>
@@ -277,9 +277,9 @@ function interpretMcNemar(result, var1, var2, a, b, c, d, label0, label1, N) {
     if (result.pMain < 0.05) {
         html += `<p>✅ <strong>マクネマー検定の結果、有意な変化が認められました</strong>（`;
         if (result.p_exact !== null) {
-            html += `正確二項検定 p = ${result.p_exact < 0.001 ? '<.001' : result.p_exact.toFixed(3)}`;
+            html += `正確二項検定 ${result.p_exact < 0.001 ? 'p &lt; .001' : 'p = ' + result.p_exact.toFixed(3)}`;
         } else {
-            html += `χ²(1) = ${result.chi2.toFixed(2)}, p = ${result.p_chi2 < 0.001 ? '<.001' : result.p_chi2.toFixed(3)}`;
+            html += `χ²(1) = ${result.chi2.toFixed(2)}, ${result.p_chi2 < 0.001 ? 'p &lt; .001' : 'p = ' + result.p_chi2.toFixed(3)}`;
         }
         html += `）。</p>`;
 
@@ -408,7 +408,7 @@ export function render(container, currentData, characteristics) {
                             <li><strong>検定統計量:</strong> χ² = (b − c)² / (b + c)（df = 1）</li>
                             <li><strong>イェーツ補正:</strong> χ² = (|b − c| − 1)² / (b + c)</li>
                             <li><strong>正確検定:</strong> b + c < 25 の場合、二項検定を併用</li>
-                            <li><strong>効果量:</strong> φ = √(χ² / (b+c))（不一致ペア数を基準）</li>
+                            <li><strong>効果量:</strong> φ = √(χ² / N)（全サンプルサイズを基準）</li>
                             <li><strong>前提:</strong> 対応のあるデータ、各変数が2値</li>
                         </ul>
                     </div>

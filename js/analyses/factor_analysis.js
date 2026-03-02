@@ -151,8 +151,30 @@ function runFactorAnalysis(currentData) {
             factorCorrelations = res.correlations;
         }
 
-        // 回転後の負荷量二乗和 (SS Loadings)
+        // 符号反転 (Sign reflection): 各因子の負荷量合計が正になるよう調整
+        // 固有ベクトルの符号は数学的に任意のため、解釈しやすいよう正方向に統一する
         const numVars = variables.length;
+        for (let j = 0; j < numFactors; j++) {
+            let sumLoadings = 0;
+            for (let i = 0; i < numVars; i++) {
+                sumLoadings += loadings[i][j];
+            }
+            if (sumLoadings < 0) {
+                for (let i = 0; i < numVars; i++) {
+                    loadings[i][j] *= -1;
+                }
+                if (factorCorrelations) {
+                    for (let k = 0; k < numFactors; k++) {
+                        if (k !== j) {
+                            factorCorrelations[j][k] *= -1;
+                            factorCorrelations[k][j] *= -1;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 回転後の負荷量二乗和 (SS Loadings)
         const colSS = Array(numFactors).fill(0);
         for (let i = 0; i < numVars; i++) {
             for (let j = 0; j < numFactors; j++) {
@@ -167,9 +189,18 @@ function runFactorAnalysis(currentData) {
         });
 
         // 共通性 (communalities)
-        const communalities = variables.map((_, i) =>
-            loadings[i].reduce((s, l) => s + l * l, 0)
-        );
+        // 直交回転: h² = Σ(L_i²), 斜交回転: h² = diag(L @ Φ @ L')
+        let communalities;
+        if (factorCorrelations) {
+            const L_mat = math.matrix(loadings);
+            const Phi_mat = math.matrix(factorCorrelations);
+            const reproduced = math.multiply(math.multiply(L_mat, Phi_mat), math.transpose(L_mat));
+            communalities = variables.map((_, i) => reproduced.get([i, i]));
+        } else {
+            communalities = variables.map((_, i) =>
+                loadings[i].reduce((s, l) => s + l * l, 0)
+            );
+        }
 
         // 項目の因子割り当て → Cronbach's α
         const itemFactors = variables.map((_, i) => {

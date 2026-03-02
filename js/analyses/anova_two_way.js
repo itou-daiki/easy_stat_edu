@@ -734,20 +734,20 @@ function displayTwoWayANOVAInterpretation(results, designType) {
                 
                 <p style="margin: 0.5rem 0;">
                     <strong>1. 交互作用 (${factorA} × ${factorB}):</strong> <br>
-                    p = ${pAxB.toFixed(3)} (${getStars(pAxB)}), 偏η² = ${etaAxB.toFixed(2)}。<br>
+                    ${pAxB < 0.001 ? 'p &lt; .001' : 'p = ' + pAxB.toFixed(3)} (${getStars(pAxB)}), 偏η² = ${etaAxB.toFixed(2)}。<br>
                     ${getSigText(pAxB)}
                     ${pAxB < 0.05 ? '<br><span style="color: #d97706; font-size: 0.9em;"><i class="fas fa-exclamation-triangle"></i> 交互作用が有意であるため、主効果の解釈には注意が必要です（単純主効果の検定を推奨）。要因の組み合わせによって結果が異なる可能性があります。</span>' : '<br><span style="color: #059669; font-size: 0.9em;">交互作用は有意ではないため、それぞれの主効果（要因単独の影響）に着目します。</span>'}
                 </p>
 
                 <p style="margin: 0.5rem 0;">
                     <strong>2. ${factorA} の主効果:</strong> <br>
-                    p = ${pA.toFixed(3)} (${getStars(pA)}), 偏η² = ${etaA.toFixed(2)}。<br>
+                    ${pA < 0.001 ? 'p &lt; .001' : 'p = ' + pA.toFixed(3)} (${getStars(pA)}), 偏η² = ${etaA.toFixed(2)}。<br>
                     ${getSigText(pA)}
                 </p>
 
                 <p style="margin: 0.5rem 0;">
                     <strong>3. ${factorB} の主効果:</strong> <br>
-                    p = ${pB.toFixed(3)} (${getStars(pB)}), 偏η² = ${etaB.toFixed(2)}。<br>
+                    ${pB < 0.001 ? 'p &lt; .001' : 'p = ' + pB.toFixed(3)} (${getStars(pB)}), 偏η² = ${etaB.toFixed(2)}。<br>
                     ${getSigText(pB)}
                 </p>
                 
@@ -1203,7 +1203,7 @@ function renderTwoWayMixedResults(testResults) {
             res.sources.forEach(src => {
                 const isSig = src.p !== null && src.p < 0.05;
                 const sigMark = src.p !== null ? (src.p < 0.01 ? '**' : src.p < 0.05 ? '*' : src.p < 0.1 ? '†' : '') : '';
-                const pDisplay = src.p !== null ? src.p.toFixed(3) + sigMark : '-';
+                const pDisplay = src.p !== null ? (src.p < 0.001 ? '&lt; .001' : src.p.toFixed(3)) + ' ' + sigMark : '-';
                 const fDisplay = src.f !== null ? src.f.toFixed(2) : '-';
                 const msDisplay = src.ms !== null ? src.ms.toFixed(2) : '-';
                 const etaDisplay = src.eta !== null ? src.eta.toFixed(2) : '-';
@@ -1722,20 +1722,9 @@ export function render(container, currentData, characteristics) {
                     <div id="mixed-between-container" style="margin-bottom: 1rem;"></div>
                     <div style="margin-bottom: 1.5rem; padding: 1rem; background: #fffacd; border-radius: 8px; font-size: 0.9rem;">
                         <i class="fas fa-info-circle" style="color: #d97706;"></i>
-                        被験者内因子の設定：<br>
-                        1. 被験者内因子の名前と水準名（カンマ区切り）を入力してください。<br>
-                        2. 「グリッドを生成」を押すと、各水準に対応する変数の割り当て表が表示されます。<br>
-                        3. 各セルに対応するデータの列（変数）を割り当ててください。
+                        Pre/Post（事前・事後）のペアを指定してください。複数ペアの分析も可能です。
                     </div>
-                    <div style="margin-bottom: 1rem;">
-                        <label style="font-weight: bold;">被験者内因子</label>
-                        <input type="text" id="mixed-within-name" class="form-input" placeholder="例: 時間" value="条件" style="width:100%; padding:0.5rem; margin-bottom:0.5rem;">
-                        <input type="text" id="mixed-within-levels" class="form-input" placeholder="水準 (カンマ区切り) 例: Pre,Mid,Post" style="width:100%; padding:0.5rem;">
-                    </div>
-                    <button id="mixed-generate-grid-btn" class="btn btn-secondary" style="margin-bottom: 1.5rem; width: 100%;">
-                        <i class="fas fa-table"></i> グリッドを生成
-                    </button>
-                    <div id="mixed-grid-area" style="margin-bottom: 1.5rem;"></div>
+                    <div id="pair-selector-container" style="margin-bottom: 1.5rem;"></div>
                     <div id="run-mixed-btn-container"></div>
                 </div>
                 
@@ -1802,99 +1791,28 @@ export function render(container, currentData, characteristics) {
         multiple: false
     });
 
-    document.getElementById('mixed-generate-grid-btn').addEventListener('click', () => {
-        const withinName = document.getElementById('mixed-within-name').value || '条件';
-        const withinLevels = document.getElementById('mixed-within-levels').value.split(',').map(s => s.trim()).filter(s => s);
-        const gridArea = document.getElementById('mixed-grid-area');
+    // Mixed: Pair selector UI
+    createMultiPairSelector('pair-selector-container', numericColumns);
+    createAnalysisButton('run-mixed-btn-container', '分析を実行（混合）', () => {
+        const pairRows = document.querySelectorAll('#pair-selector-container-list .pair-row');
+        const mappings = [];
 
-        if (withinLevels.length < 2) {
-            alert('被験者内因子には少なくとも2つの水準が必要です');
+        pairRows.forEach(row => {
+            const pre = row.querySelector('.pre-select')?.value;
+            const post = row.querySelector('.post-select')?.value;
+            if (pre && post) {
+                mappings.push({ 'Pre': pre, 'Post': post });
+            }
+        });
+
+        if (mappings.length === 0) {
+            alert('少なくとも1つのペア（Pre/Post）を選択してください');
             return;
         }
 
-        let dvSetCount = 0;
-
-        function addDvSet() {
-            const setIdx = dvSetCount++;
-            const setId = `mixed-dv-set-${setIdx}`;
-
-            const setDiv = document.createElement('div');
-            setDiv.id = setId;
-            setDiv.style.cssText = 'border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: #fafbfc;';
-
-            let headerHtml = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <label style="font-weight: bold; color: #4b5563;">従属変数セット ${setIdx + 1}</label>`;
-            if (setIdx > 0) {
-                headerHtml += `<button class="btn-icon mixed-remove-set-btn" data-set-id="${setId}" style="color: #ef4444; border: none; background: none; cursor: pointer;" title="削除"><i class="fas fa-trash-alt"></i></button>`;
-            }
-            headerHtml += `</div>`;
-
-            let tableHtml = `<table class="table table-bordered" style="margin-bottom: 0;">
-                <thead><tr><th>${withinName}</th><th>対応する変数</th></tr></thead><tbody>`;
-            withinLevels.forEach(level => {
-                tableHtml += `<tr><th>${level}</th><td id="${setId}-cell-${level}"></td></tr>`;
-            });
-            tableHtml += `</tbody></table>`;
-
-            setDiv.innerHTML = headerHtml + tableHtml;
-            dvSetsContainer.appendChild(setDiv);
-
-            withinLevels.forEach(level => {
-                createVariableSelector(`${setId}-cell-${level}`, numericColumns, `${setId}-select-${level}`, { placeholder: '変数を選択' });
-            });
-
-            // Remove button event
-            const removeBtn = setDiv.querySelector('.mixed-remove-set-btn');
-            if (removeBtn) {
-                removeBtn.addEventListener('click', () => setDiv.remove());
-            }
-        }
-
-        // Build grid area
-        gridArea.innerHTML = '';
-        const dvSetsContainer = document.createElement('div');
-        dvSetsContainer.id = 'mixed-dv-sets-container';
-        gridArea.appendChild(dvSetsContainer);
-
-        // Add first set
-        addDvSet();
-
-        // Add-set button
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn btn-secondary';
-        addBtn.style.cssText = 'font-size: 0.85rem; padding: 0.25rem 0.75rem; margin-bottom: 1rem;';
-        addBtn.innerHTML = '<i class="fas fa-plus"></i> 従属変数セットを追加';
-        addBtn.addEventListener('click', addDvSet);
-        gridArea.appendChild(addBtn);
-
-        // Run button
-        const runContainer = document.getElementById('run-mixed-btn-container');
-        runContainer.innerHTML = '';
-        createAnalysisButton('run-mixed-btn-container', '分析を実行（混合）', () => {
-            const dvSets = dvSetsContainer.querySelectorAll('[id^="mixed-dv-set-"]');
-            const mappings = [];
-            let hasError = false;
-
-            dvSets.forEach(setDiv => {
-                const setId = setDiv.id;
-                const mapping = {};
-                let missing = false;
-                withinLevels.forEach(level => {
-                    const sel = document.getElementById(`${setId}-select-${level}`);
-                    if (!sel || !sel.value) missing = true;
-                    else mapping[level] = sel.value;
-                });
-                if (missing) hasError = true;
-                else mappings.push(mapping);
-            });
-
-            if (hasError || mappings.length === 0) {
-                alert('すべての水準に変数を割り当ててください');
-                return;
-            }
-            runTwoWayMixedANOVA(currentData, { name: withinName, levels: withinLevels }, mappings);
-        }, { id: 'run-mixed-anova-btn' });
-    });
+        const withinFactor = { name: '条件', levels: ['Pre', 'Post'] };
+        runTwoWayMixedANOVA(currentData, withinFactor, mappings);
+    }, { id: 'run-mixed-anova-btn' });
 
     // Repeated Measures Logic Setup
     const generateGridBtn = document.getElementById('rm-generate-grid-btn');

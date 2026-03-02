@@ -1349,6 +1349,7 @@ export const InterpretationHelper = {
      * @returns {object} { text, isSignificant, stars }
      */
     evaluatePValue(p) {
+        if (p == null || isNaN(p)) return { text: "-", isSignificant: false, stars: "" };
         if (p < 0.001) return { text: "p < .001", isSignificant: true, stars: "**" };
         if (p < 0.01) return { text: "p < .01", isSignificant: true, stars: "**" };
         if (p < 0.05) return { text: "p < .05", isSignificant: true, stars: "*" };

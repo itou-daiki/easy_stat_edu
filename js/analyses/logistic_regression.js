@@ -193,10 +193,9 @@ function computeConfusionMatrix(yTrue, yPred, threshold = 0.5) {
 }
 
 function computeNagelkerkeR2(logLik, nullLogLik, n) {
-    const L0 = Math.exp(nullLogLik);
-    const L1 = Math.exp(logLik);
-    const coxSnell = 1 - Math.pow(L0 / L1, 2 / n);
-    const maxCoxSnell = 1 - Math.pow(L0, 2 / n);
+    // Use log-space computation to avoid exp underflow for large n
+    const coxSnell = 1 - Math.exp((2 / n) * (nullLogLik - logLik));
+    const maxCoxSnell = 1 - Math.exp((2 / n) * nullLogLik);
     return maxCoxSnell > 0 ? coxSnell / maxCoxSnell : 0;
 }
 
@@ -275,7 +274,7 @@ function runLogisticRegression(currentData, characteristics) {
                 </div>
                 <div class="data-stat-card">
                     <div class="stat-label">モデルχ²</div>
-                    <div class="stat-value">${chi2.toFixed(3)} (df=${df}, p=${modelP < 0.001 ? '<.001' : modelP.toFixed(3)})</div>
+                    <div class="stat-value">${chi2.toFixed(3)} (df=${df}, ${modelP < 0.001 ? 'p &lt; .001' : 'p=' + modelP.toFixed(3)})</div>
                 </div>
                 <div class="data-stat-card">
                     <div class="stat-label">正解率</div>
@@ -308,7 +307,7 @@ function runLogisticRegression(currentData, characteristics) {
                                 <td>${result.standardErrors[i].toFixed(4)}</td>
                                 <td>${result.zValues[i].toFixed(3)}</td>
                                 <td style="${result.pValues[i] < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">
-                                    ${result.pValues[i] < 0.001 ? '<.001' : result.pValues[i].toFixed(4)}
+                                    ${result.pValues[i] < 0.001 ? '&lt; .001' : result.pValues[i].toFixed(4)}
                                     ${result.pValues[i] < 0.01 ? '**' : (result.pValues[i] < 0.05 ? '*' : (result.pValues[i] < 0.1 ? '†' : 'n.s.'))}
                                 </td>
                                 <td>${oddsRatios[i].toFixed(4)}</td>

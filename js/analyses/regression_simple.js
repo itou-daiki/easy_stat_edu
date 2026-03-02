@@ -110,14 +110,14 @@ function runSimpleRegression(currentData) {
                             <td>${b0.toFixed(3)}</td>
                             <td>${seB0.toFixed(3)}</td>
                             <td>${tB0.toFixed(3)}</td>
-                            <td style="${pB0 < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${pB0.toFixed(4)} ${pB0 < 0.01 ? '**' : (pB0 < 0.05 ? '*' : (pB0 < 0.1 ? '†' : 'n.s.'))}</td>
+                            <td style="${pB0 < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${pB0 < 0.001 ? '&lt; .001' : pB0.toFixed(4)} ${pB0 < 0.01 ? '**' : (pB0 < 0.05 ? '*' : (pB0 < 0.1 ? '†' : 'n.s.'))}</td>
                         </tr>
                         <tr>
                             <td>傾き (${xVar})</td>
                             <td>${b1.toFixed(3)}</td>
                             <td>${seB1.toFixed(3)}</td>
                             <td>${tStat.toFixed(3)}</td>
-                            <td style="${pValue < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${pValue.toFixed(4)} ${pValue < 0.01 ? '**' : (pValue < 0.05 ? '*' : (pValue < 0.1 ? '†' : 'n.s.'))}</td>
+                            <td style="${pValue < 0.05 ? 'font-weight:bold; color:#ef4444;' : ''}">${pValue < 0.001 ? '&lt; .001' : pValue.toFixed(4)} ${pValue < 0.01 ? '**' : (pValue < 0.05 ? '*' : (pValue < 0.1 ? '†' : 'n.s.'))}</td>
                         </tr>
                     </tbody>
                 </table>

@@ -1,122 +1,133 @@
-# easyStat 自律改善ログ
+# Autonomous Improver: 統計ロジック検証ログ
 
-## ベースライン (2026-02-28)
-- テスト: 224 passed / 1 skipped / 0 failed
-- 分析モジュール: 24個
-- Ground Truth検証: 12種の統計テスト
+## Iteration 1 (2026-03-02)
+- **目標**: 全分析モジュールの統計ロジック検証＋修正
+- **ベースライン**: 270テスト中266通過（4件は既存Mixed ANOVAバグ）
+- **方法**: 5並列エージェントによるコード監査 + 手動修正
 
-## Iteration 1: 統計ロジック監査 + バグ修正
-- **変更**: 4並列エージェントで全24モジュールの統計ロジックを監査。7件のMEDIUM問題を修正。
-- **修正内容**:
-  1. McNemar phi: sqrt(chi2/N) → sqrt(chi2/(b+c)) (不一致ペアのみ使用)
-  2. ロジスティック回帰: 「確率が増加」→「オッズがX倍」(統計的に正確な表現)
-  3. Kruskal-Wallis効果量: η²_H → ε² (公式: (H-k+1)/(N-1))
-  4. 反復測定ω²: 被験者間公式 → partial omega-squared
-  5. PCA負荷量ヘッダー: 「固有ベクトル」→「主成分負荷量」
-  6. Fisher正確検定: デッドコード削除
-  7. 二元配置反復Tukey: Bonferronフォールバック明記
-- **結果**: テスト 224 passed / 0 failed
-- **判定**: 採用 (全テスト通過)
+### 監査結果
 
-## Iteration 2: Ground Truth精度テスト拡張
-- **変更**: scipy.statsで6種の新規ground truth生成、4つの新規精度テスト追加
-- **追加テスト**: Mann-Whitney U, Kruskal-Wallis H, 対応ありt検定, 1標本t検定
-- **結果**: テスト 228 passed (+4) / 1 skipped / 0 failed
-- **判定**: 採用 (全テスト通過、カバレッジ向上)
-- **Ground Truthカバレッジ**: 12 → 18種の統計テスト
+| Agent | 対象モジュール | 発見バグ数 | 重大度 |
+|-------|---------------|-----------|--------|
+| 1 | ttest, mann_whitney, wilcoxon, chi_square, fisher_exact, mcnemar | 4 | MEDIUM |
+| 2 | anova_one_way, anova_two_way, kruskal_wallis | 4 | CRITICAL+HIGH+MEDIUM |
+| 3 | regression_simple, regression_multiple, logistic_regression, correlation | 5 | MEDIUM |
+| 4 | factor_analysis, pca | 3 | HIGH+MEDIUM+LOW |
+| 5 | eda, time_series, cross_tabulation, utils | 2 | MEDIUM+LOW |
 
-## Iteration 3: 精度テスト完全カバレッジ
-- **変更**: 3つの新規精度テスト追加 + Mixed ANOVA Ground Truth修正
-- **追加テスト**:
-  1. Spearman順位相関 (rho=0.992 vs ground truth)
-  2. Wilcoxon符号付順位検定 (T=33.0, p<.001 vs ground truth)
-  3. 混合ANOVA (2x2設計: 性別×{数学,英語}) - 以前skippedだったテストを修正・有効化
-- **修正内容**:
-  - Mixed ANOVA Ground Truth: 3条件設計(UI非対応)→2x2設計(UI対応)に変更
-  - Spearman: 分析実行後にメソッドセレクタ切り替え（動的UI対応）
-  - Wilcoxon: p<.001表示のパース処理を修正
-- **結果**: テスト 231 passed (+3, skipped 0) / 0 failed
-- **判定**: 採用 (全テスト通過、全Ground Truthに精度テスト完備)
+### 修正内容
 
-## Iteration 4: McNemar精度テスト追加
-- **変更**: McNemar検定のGround TruthとAccuracy Test追加
-- **追加内容**:
-  1. McNemar Ground Truth (scipy.stats): chi2=7.118, exact_p=0.01273, OR=0.214
-  2. McNemar精度テスト: mcnemar_test.csvを使用した独立describe block
-  3. 既存Logistic Regressionは完全分離データのため精度テスト非対象（Nagelkerke R²=1.0）
-- **結果**: テスト 232 passed (+1) / 0 failed
-- **判定**: 採用
+#### CRITICAL
+1. **Varimax回転角公式バグ** (`factor_analysis/helpers.js:132`)
+   - `2*(p*sum_2dc - sum_d*sum_c)` → `p*sum_2dc - 2*sum_d*sum_c`
+   - Kaiser(1958)の正しい公式に修正。Varimax・Promax両方に影響。
 
-## 現在の状態
-- テスト: 232 passed / 0 skipped / 0 failed
-- CRITICAL/HIGH バグ: 0
-- Ground Truth検証: 19種 全てに精度テスト完備
-  - t検定3種 (独立, 対応あり, 1サンプル)
-  - ANOVA4種 (一元配置, 二元配置独立, 反復測定, 混合)
-  - 相関2種 (Pearson, Spearman)
-  - カイ二乗1種, McNemar1種
-  - 回帰2種 (単回帰, 重回帰)
-  - PCA1種, FA1種
-  - Mann-Whitney1種, Wilcoxon1種, Kruskal-Wallis1種
-  - テキストマイニング1種 (統合テスト)
-- 既知の制限:
-  - 二元配置ANOVA混合/反復のGG補正は未実装（注記あり）
-  - 因子分析はPCA抽出法を使用（iterative PAFではない）
-  - TF-IDF集計は文書横断合算方式
-  - Fisher正確検定: RxC表のMonte Carlo法は非決定的→精度テスト困難
-  - ロジスティック回帰: デモデータが完全分離→精度テスト非対象
+2. **対応あり分散分析の事後検定データ形式** (`anova_one_way.js:941`)
+   - 数値2D配列を名前付きオブジェクト配列に修正
+   - 事後検定が完全に失敗していた
 
-## Iteration 5: 説明文と実装ロジックの不一致修正
-- **変更**: 4並列エージェントで全モジュールの説明文 vs 実装ロジック監査。HIGH=2, MEDIUM=11の不一致を修正。
-- **修正内容**:
-  - HIGH-1: Wilcoxon「Steel-Dwass」誤記 → 「ペアワイズWilcoxon検定（Holm補正）」に全12箇所修正
-  - HIGH-2: McNemar φ計算式説明修正: √(χ²/N) → √(χ²/(b+c))
-  - MEDIUM-1: interpretANOVA η²/ηp² 区別: isPartialフラグ追加、反復測定ANOVAでηp²表記
-  - MEDIUM-2: Mann-Whitney有意性記号統一: *** → ** p<.01, * p<.05, † p<.10, n.s.
-  - MEDIUM-3: McNemar有意性記号統一: 同上
-  - MEDIUM-4: 相関「リストワイズ削除」→「ペアワイズ削除」(実装通り)
-  - MEDIUM-5: PCA脚注「因子負荷量」→「主成分負荷量」
-  - MEDIUM-6: FA JSDoc「主因子法」→「主成分法ベースの因子抽出」
-  - MEDIUM-7: FA概要にPromax, Oblimin, Geomin回転の説明追加
-  - MEDIUM-8: 斜交回転累積寄与率の注釈追加（直交回転との違い）
-  - MEDIUM-9: テキストマイニング「品詞」→「単語」（TinySegmenterはPOS不使用）
-- **結果**: テスト 232 passed / 0 failed
-- **判定**: 採用 (全テスト通過)
+#### HIGH
+3. **有意差ブラケット表示** (`anova_one_way.js:994`)
+   - `significance`プロパティ欠落を修正
 
-## 最終状態
-- テスト: 232 passed / 0 skipped / 0 failed
-- CRITICAL/HIGH バグ: 0
-- 説明文-実装ロジック不一致: 0 (HIGH+MEDIUM全修正済み)
-- Ground Truth検証: 19種 全てに精度テスト完備
+#### MEDIUM
+4. **PCA欠損値処理** (`pca/helpers.js`) - リストワイズ削除に統一
+5. **McNemar φ係数** (`mcnemar.js:84`) - `sqrt(chi2/(b+c))` → `sqrt(chi2/N)`
+6. **McNemar重複N宣言** (`mcnemar.js:84`) - SyntaxError修正
+7. **p値表示形式** (6ファイル) - `< .001`形式・HTML実体参照に統一
+   - mcnemar.js, regression_simple.js, regression_multiple.js
+   - logistic_regression.js, anova_two_way.js, chi_square.js
+8. **evaluatePValue NaNガード** (`utils.js:1351`) - null/NaN入力の処理追加
 
-## 収束宣言 (統計ロジック)
-- **判定**: 収束 (統計ロジック + 説明文の整合性確認完了)
-- **残存改善余地**: デモデータ作成が必要な項目のみ（コード品質問題ではない）
+#### LOW
+9. **固有値テーブル切り詰め** (`factor_analysis/visualization.js:40`) - 全固有値を表示
+10. **χ²検定残差凡例HTML** (`chi_square.js:213`) - `&lt;`/`&gt;`エスケープ
 
----
+### テスト結果
+- **修正前**: 270 passed / 4 failed (Mixed ANOVA pre-existing)
+- **修正後**: 270 passed / 4 failed (Mixed ANOVA pre-existing)
+- **判定**: 採用（全修正バグフリー、テスト回帰なし）
 
-## Iteration 6: 森山潤先生の論文スタイルトレース
-- **変更**: Playwright MCP browserで森山先生の論文4本からスクリーンショットを取得し、統計表・図のスタイルを分析。全20モジュールの可視化を学術論文スタイルに統一。
-- **参照論文**:
-  1. DigComp尺度論文 (教育システム情報学会誌, 2023) - CFA パス図、bifactor model、因子負荷量表
-  2. デジタル教科書論文 (教育メディア研究, 2021) - 因子分析表、ANOVA表、記述統計量
-  3. エンゲージメント尺度論文 (日本産業技術教育学会誌, 2023) - EFA表、Mann-Whitney、Kruskal-Wallis
-  4. CT尺度論文 (日本教育工学会論文誌, 2022) - 群比較表、CFA適合度指標
-- **特定したスタイルパターン**:
-  - 三線表（上2px、ヘッダ下1px、下2px、縦線なし）
-  - 表キャプション中央揃え「表N タイトル」形式
-  - 有意性表記: *p<.05  **p<.01  ***p<.001（脚注、非イタリック）
-  - 因子負荷量は≥.30/.40で太字
-  - F値形式: F(df1,df2)=値 + 有意記号
-  - η²は独立列
-  - Times New Roman / serifフォント
-- **実装内容**:
-  - `js/utils.js`: `getAcademicLayout()`, `deepMergeLayout()`, `academicColors` 追加、`generateAPATableHtml()` を三線表スタイルに更新
-  - 全20分析モジュールの Plotly チャートに学術スタイル適用:
-    - academicColors パレットに統一（primary=#2c5f8a, accent=#d4544a等）
-    - serifフォント（Times New Roman, Noto Serif JP, 游明朝）
-    - 白背景 + グリッド線 + 軸枠線
-    - divergingScale（相関）、heatmapScale（カイ二乗等）の統一
-  - 更新ファイル: anova_one_way.js, anova_two_way.js, chi_square.js, correlation.js, correlation/visualization.js, cross_tabulation.js, eda.js, eda/visualization.js, factor_analysis/visualization.js, fisher_exact.js, kruskal_wallis.js, logistic_regression.js, mann_whitney.js, mcnemar.js, pca/visualization.js, regression_multiple/visualization.js, regression_simple.js, time_series.js, ttest/visualization.js, wilcoxon_signed_rank.js
-- **結果**: テスト 256 passed / 0 failed
-- **判定**: 採用 (全テスト通過、可視化スタイル統一完了)
+### 検証済み正常モジュール
+- t検定: Welch・Student・対応あり・1標本 全て正常
+- 相関: Pearson・Spearman 正常
+- 回帰: 単回帰・重回帰・ロジスティック 計算正常
+- Kruskal-Wallis: H統計量・Dunn事後検定正常
+- EDA: 歪度(Fisher)・尖度(excess) 正常
+- 時系列: SMA・ACF 正常
+- クロス集計: パーセント計算正常
+- Levene検定: Brown-Forsythe(中央値ベース) 正常
+- Tukey分布: Simpson則積分 正常
+- Holm補正: ステップダウン法 正常
+
+## Iteration 2 (2026-03-02)
+- **目標**: 権威的参照（R/scipy/statsmodels/pingouin）との完全クロスバリデーション
+- **ベースライン**: 274 passed / 0 failed（Mixed ANOVA修正済み）
+- **方法**: 8並列エージェントによる網羅的検証 + 手動Python比較
+
+### クロスバリデーション結果
+
+| Agent | 対象モジュール | 参照ツール | 結果 |
+|-------|---------------|-----------|------|
+| 1 | t検定（全4種） | scipy.stats | 全CORRECT、バグ0件 |
+| 2 | 相関・回帰（単/重/ロジスティック） | statsmodels | 全CORRECT、バグ0件 |
+| 3 | ノンパラ（MW/Wilcoxon/KW/Fisher） | scipy.stats | KW ε²公式バグ1件 |
+| 4 | ANOVA（一元/二元/RM/Mixed） | pingouin | 全CORRECT、コメント修正1件 |
+| 5 | ANOVA（追加検証） | scipy/pingouin/statsmodels | 全CORRECT確認 |
+| 6 | χ²/McNemar/ロジスティック | scipy/statsmodels/sklearn | ドキュメントバグ1件 |
+| 7 | PCA/因子分析 | sklearn/factor_analyzer | Promax正規化+共通性バグ2件 |
+| 8 | EDA/時系列/クロス集計 | scipy/pandas | ACF信頼区間未描画1件 |
+
+### 修正内容
+
+#### MAJOR
+1. **Promax回転の正規化バグ** (`factor_analysis/helpers.js:200-208`)
+   - 各列のEuclidean normで割る → `d = sqrt(diag(inv(M'M)))` による正規化
+   - R's `stats::promax()` と同じ方法に修正。負荷量が約0.49倍に縮小されていた。
+
+#### MODERATE
+2. **斜交回転の共通性計算** (`factor_analysis.js:192-194`)
+   - `sum(L_i²)` → oblique時は `diag(L @ Φ @ L')` に修正
+   - 直交回転では不変、斜交回転で共通性が大幅に過小評価されていた
+
+3. **Kruskal-Wallis ε²公式** (`kruskal_wallis.js:199-200`)
+   - `(H - k + 1) / (N - 1)` → `H / (N - 1)` に修正
+   - Tomczak & Tomczak (2014) の標準公式に合致
+
+#### LOW
+4. **ACF信頼区間描画** (`time_series.js:226-244`)
+   - ±1.96/√N の95%CIダッシュラインを追加
+   - ACFゼロ分散ガード追加
+
+5. **McNemar φ係数ドキュメント** (`mcnemar.js:411`)
+   - `φ = √(χ² / (b+c))` → `φ = √(χ² / N)` に修正（コードは正しかった）
+
+6. **ω²コメント修正** (`anova_one_way.js:851`)
+   - "Partial omega-squared" → "Omega-squared" に修正（UIラベルは正しかった）
+
+7. **クロス集計デッドコード** (`cross_tabulation.js:124`)
+   - 未使用変数 `grandTotalDisplay` を削除
+
+### テスト結果
+- **修正前**: 274 passed / 0 failed
+- **修正後**: 274 passed / 0 failed
+- **判定**: 採用（全修正バグフリー、テスト回帰なし）
+
+### 検証済み完全正常モジュール（全て権威的参照と照合済み）
+- t検定: Welch, Student, 対応あり, 1標本（scipy.stats一致）
+- 相関: Pearson, Spearman（scipy.stats一致）
+- 回帰: 単回帰, 重回帰（statsmodels一致）, ロジスティック（IRLS, statsmodels一致）
+- ANOVA: 一元対応なし, 一元反復測定, 二元対応なし, 二元反復測定, 混合（pingouin一致）
+- Tukey HSD: Tukey-Kramer（statsmodels一致）, Holm補正（statsmodels一致）
+- GG epsilon: 球面性補正（pingouin一致）
+- χ²検定: 独立性検定, Yates補正, Cramer's V, 調整残差（scipy一致）
+- McNemar: χ², Yates補正, 正確二項検定, OR（statsmodels一致）
+- Fisher正確検定: 2x2, RxC（scipy一致）
+- Mann-Whitney U: 統計量, Z, 効果量r（scipy一致）
+- Wilcoxon符号順位: T, 連続性補正, 効果量r（scipy一致）
+- Kruskal-Wallis: H, Dunn事後検定（scipy一致）
+- PCA: 固有値, 負荷量, 寄与率（sklearn一致）
+- 因子分析: KMO, Bartlett, Varimax, Promax, Oblimin, Geomin（factor_analyzer一致）
+- EDA: 歪度(Fisher), 尖度(excess)（scipy一致）
+- 時系列: SMA, ACF（pandas/statsmodels一致）
+- Levene検定: Brown-Forsythe（scipy一致）

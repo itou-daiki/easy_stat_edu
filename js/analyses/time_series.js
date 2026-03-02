@@ -161,7 +161,7 @@ function runTimeSeriesAnalysis(data) {
 
     // Rendering
     renderTimeSeriesPlot(tValues, yValues, sma, maWindow, valueVar);
-    renderACFPlot(acf, acfLags);
+    renderACFPlot(acf, acfLags, yValues.length);
     renderInterpretation(acf, maWindow, valueVar);
 }
 
@@ -183,6 +183,12 @@ function calculateACF(data, maxLag) {
     const n = data.length;
     const mean = data.reduce((a, b) => a + b, 0) / n;
     const variance = data.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
+
+    if (variance === 0) {
+        const result = new Array(maxLag + 1).fill(0);
+        result[0] = 1;
+        return result;
+    }
 
     let acf = [];
     for (let lag = 0; lag <= maxLag; lag++) {
@@ -220,11 +226,11 @@ function renderTimeSeriesPlot(t, y, sma, window, label) {
     Plotly.newPlot('ts-plot-section', [traceOriginal, traceSMA], layout, createPlotlyConfig('時系列分析_推移', [label]));
 }
 
-function renderACFPlot(acf, maxLag) {
+function renderACFPlot(acf, maxLag, n) {
     const lags = Array.from({ length: maxLag + 1 }, (_, i) => i);
 
-    // Confidence Interval (approx 95% = 1.96 / sqrt(N)) - Simplified
-    // Note: This is a loose approximation for visual reference
+    // 95% Confidence Interval: ±1.96 / sqrt(N)
+    const ci = 1.96 / Math.sqrt(n);
 
     const trace = {
         x: lags,
@@ -240,7 +246,11 @@ function renderACFPlot(acf, maxLag) {
         yaxis: { title: '自己相関係数', range: [-1.1, 1.1] },
         shapes: [
             // Zero line
-            { type: 'line', x0: 0, x1: maxLag, y0: 0, y1: 0, line: { color: 'black', width: 1 } }
+            { type: 'line', x0: 0, x1: maxLag, y0: 0, y1: 0, line: { color: 'black', width: 1 } },
+            // Upper 95% CI
+            { type: 'line', x0: 0, x1: maxLag, y0: ci, y1: ci, line: { color: '#e74c3c', width: 1, dash: 'dash' } },
+            // Lower 95% CI
+            { type: 'line', x0: 0, x1: maxLag, y0: -ci, y1: -ci, line: { color: '#e74c3c', width: 1, dash: 'dash' } }
         ]
     });
 

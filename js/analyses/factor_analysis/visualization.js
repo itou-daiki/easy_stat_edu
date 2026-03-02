@@ -37,7 +37,7 @@ export function displayEigenvalues(eigenvalues, rotatedStats) {
     `;
 
     let cumulativeInitial = 0;
-    const numRows = rotatedStats ? rotatedStats.length : eigenvalues.length;
+    const numRows = eigenvalues.length;
 
     for (let i = 0; i < numRows; i++) {
         const val = eigenvalues[i];
@@ -267,27 +267,42 @@ export function displayLoadings(variables, loadings, rotation, extras = {}) {
 export function displayFactorInterpretation(variables, loadings) {
     const container = document.getElementById('factor-interpretation');
     const numFactors = loadings[0].length;
-    const threshold = 0.4;
+
+    // 各項目を最大負荷量の因子に割り当て（負荷量テーブルと同じロジック）
+    const itemFactors = variables.map((_, i) => {
+        let maxAbs = -1, factor = 0;
+        loadings[i].forEach((l, f) => {
+            if (Math.abs(l) > maxAbs) { maxAbs = Math.abs(l); factor = f; }
+        });
+        return factor;
+    });
+
+    // 因子ごとにグループ化し、主負荷量の絶対値で降順ソート
+    const factorGroups = [];
+    for (let f = 0; f < numFactors; f++) {
+        const items = [];
+        variables.forEach((v, i) => {
+            if (itemFactors[i] === f) {
+                items.push({ name: v, loading: loadings[i][f], absLoading: Math.abs(loadings[i][f]) });
+            }
+        });
+        items.sort((a, b) => b.absLoading - a.absLoading);
+        factorGroups.push(items);
+    }
 
     let html = `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">`;
 
     for (let f = 0; f < numFactors; f++) {
-        const factorsLoadings = variables.map((v, i) => ({
-            name: v,
-            loading: loadings[i][f],
-            absLoading: Math.abs(loadings[i][f])
-        }));
-        factorsLoadings.sort((a, b) => b.absLoading - a.absLoading);
-        const strongVars = factorsLoadings.filter(item => item.absLoading >= threshold);
+        const items = factorGroups[f];
 
         html += `
             <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                 <h5 style="color: #2d3748; margin-top: 0; margin-bottom: 1rem; border-bottom: 2px solid #805ad5; padding-bottom: 0.5rem; display: inline-block;">
                     第${f + 1}因子
                 </h5>
-                ${strongVars.length > 0 ? `
+                ${items.length > 0 ? `
                     <ul style="padding-left: 0; list-style: none;">
-                        ${strongVars.map(item => `
+                        ${items.map(item => `
                             <li style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
                                 <span style="font-weight: bold; color: ${item.loading > 0 ? '#2b6cb0' : '#c53030'};">
                                     ${item.name}
@@ -299,12 +314,12 @@ export function displayFactorInterpretation(variables, loadings) {
                         `).join('')}
                     </ul>
                     <p style="margin-top: 1rem; font-size: 0.9rem; color: #718096;">
-                        <i class="fas fa-search"></i> 
+                        <i class="fas fa-search"></i>
                         <strong>解釈のヒント:</strong> これらの変数の共通点は何でしょうか？
                     </p>
                 ` : `
                     <p style="color: #718096;">
-                        負荷量が0.4以上の変数は見つかりませんでした。
+                        この因子に主に負荷する変数は見つかりませんでした。
                     </p>
                 `}
             </div>

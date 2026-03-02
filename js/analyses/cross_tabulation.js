@@ -121,7 +121,6 @@ function renderTable(tableData, mode) {
     colKeys.forEach(ck => {
         html += `<td style="text-align: center; padding: 0.5rem; font-weight: bold;">${formatColTotal(colTotals[ck])}</td>`;
     });
-    const grandTotalDisplay = mode === 'count' ? String(N) : mode === 'total-pct' || mode === 'row-pct' || mode === 'col-pct' ? '100.0%' : String(N);
     html += `<td style="text-align: center; padding: 0.5rem; border-left: 2px solid #333; font-weight: bold;">${mode === 'count' ? N : '100.0%'}</td>`;
     html += `</tr></tbody></table></div>`;
 
