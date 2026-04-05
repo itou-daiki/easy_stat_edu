@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>easyStat - 初学者のためのやさしいマニュアル</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --top-nav-height: 60px;
+        }
+
+        body {
+            background-color: #f8fafc;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--top-nav-height);
+            background: #1e293b;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .top-nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .top-nav .title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-left: 1.5rem;
+            padding-left: 1.5rem;
+            border-left: 1px solid #334155;
+        }
+
+        /* Main layout container */
+        .layout-container {
+            display: flex;
+            margin-top: var(--top-nav-height);
+            flex: 1;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            position: fixed;
+            top: var(--top-nav-height);
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            padding: 1.5rem 0;
+        }
+
+        .sidebar-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-group-title {
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 700;
+            padding: 0 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-link {
+            display: block;
+            padding: 0.5rem 1.5rem 0.5rem 2rem;
+            color: #334155;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-link:hover {
+            background: #f1f5f9;
+            color: #3b82f6;
+            border-left-color: #3b82f6;
+        }
+
+        .sidebar-link i {
+            width: 1.5rem;
+            color: #94a3b8;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 2rem 3rem;
+            max-width: 900px;
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            scroll-margin-top: calc(var(--top-nav-height) + 2rem);
+        }
+
+        .content-section h2 {
+            font-size: 1.6rem;
+            color: #0f172a;
+            border-bottom: 3px solid #3b82f6;
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .content-section h3 {
+            font-size: 1.25rem;
+            color: #1e293b;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            padding-left: 0.75rem;
+            border-left: 4px solid #94a3b8;
+        }
+
+        .alert-box {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+            color: #92400e;
+        }
+
+        .alert-box.info {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+
+        .alert-box.danger {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .data-badge {
+            display: inline-block;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #475569;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .data-badge.numeric { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
+        .data-badge.category { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+
+        .good-bad-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .good-box, .bad-box {
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 2px solid;
+        }
+
+        .good-box {
+            background: #f0fdf4;
+            border-color: #22c55e;
+        }
+
+        .good-box h4 {
+            color: #15803d;
+            margin-top: 0;
+            font-size: 1.2rem;
+        }
+
+        .bad-box {
+            background: #fef2f2;
+            border-color: #ef4444;
+        }
+
+        .bad-box h4 {
+            color: #b91c1c;
+            margin-top: 0;
+            font-size: 1.2rem;
+        }
+
+        table.demo-table {
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        table.demo-table th, table.demo-table td {
+            border: 1px solid #cbd5e1;
+            padding: 0.5rem;
+            text-align: center;
+        }
+
+        table.demo-table th {
+            background: #f1f5f9;
+            font-weight: bold;
+        }
+
+        /* FAQ */
+        .faq-item {
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 1rem;
+        }
+        .faq-q {
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .faq-q i { color: #3b82f6; }
+        .faq-a {
+            color: #475569;
+            padding-left: 1.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .content-area { margin-left: 0; padding: 1rem; }
+            .content-section { padding: 1.5rem; }
+            .good-bad-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="top-nav">
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> 分析トップへ戻る</a>
+        <div class="title"><i class="fas fa-book-open"></i> easyStat 失敗しないマニュアル</div>
+    </header>
+
+    <div class="layout-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">1. 分析前のつまずき解消</div>
+                <a href="#prep-data" class="sidebar-link"><i class="fas fa-file-excel"></i> 正しいExcelの作り方</a>
+                <a href="#prep-types" class="sidebar-link"><i class="fas fa-shapes"></i> 「数値」と「カテゴリ」</a>
+                <a href="#prep-pvalue" class="sidebar-link"><i class="fas fa-lightbulb"></i> 専門用語「p値」の意味</a>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">2. 便利な下準備（ユーティリティ）</div>
+                <a href="#util-support" class="sidebar-link"><i class="fas fa-magic"></i> AI分析サポーター</a>
+                <a href="#util-process" class="sidebar-link"><i class="fas fa-filter"></i> データの整形・欠損処理</a>
+                <a href="#util-merge" class="sidebar-link"><i class="fas fa-object-group"></i> データの結合</a>
+                <a href="#util-score" class="sidebar-link"><i class="fas fa-calculator"></i> 因子得点の算出</a>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">3. 全体像をつかむ</div>
+                <a href="#goal-eda" class="sidebar-link"><i class="fas fa-search"></i> 探索的データ分析・グラフ</a>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">4. グループの違いを比べる</div>
+                <a href="#goal-compare-2" class="sidebar-link"><i class="fas fa-vial"></i> t検定 / U検定 (2群)</a>
+                <a href="#goal-compare-3" class="sidebar-link"><i class="fas fa-chart-bar"></i> 分散分析 / K-W検定 (3群~)</a>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">5. 割合・アンケートの偏りをみる</div>
+                <a href="#goal-prop" class="sidebar-link"><i class="fas fa-table"></i> クロス集計 / カイ二乗検定</a>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">6. 関係性を調べる・予測する</div>
+                <a href="#goal-relate" class="sidebar-link"><i class="fas fa-project-diagram"></i> 相関分析</a>
+                <a href="#goal-predict" class="sidebar-link"><i class="fas fa-chart-line"></i> 単回帰・重回帰・ロジスティック</a>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">7. たくさんの情報をまとめる</div>
+                <a href="#goal-multi" class="sidebar-link"><i class="fas fa-compress-arrows-alt"></i> 因子分析 / PCA</a>
+                <a href="#goal-other" class="sidebar-link"><i class="fas fa-font"></i> 時系列 / テキストマイニング</a>
+            </div>
+
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">8. お困りの時は</div>
+                <a href="#faq" class="sidebar-link"><i class="fas fa-question-circle"></i> よくあるトラブル・FAQ</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content-area">
+            
+            <div class="alert-box info" style="margin-top: 0;">
+                <i class="fas fa-info-circle"></i> <strong>初学者の皆さまへ</strong><br>
+                「分析ソフトを入れたけれど、データが読み込めなくて分析すら始まらない」「用語が難しくてどのボタンを押せばいいかわからない」——easyStatは、そんな「つまづき」をなくすために作られました。<br>
+                このマニュアルは、専門用語を極力減らし、<strong>「やりたいこと」から直感的に機能を探せる</strong>ようにしています。
+            </div>
+
+            <!-- ==============================
+                 1. 分析前のつまずき解消
+            ============================== -->
+            <section id="prep-data" class="content-section">
+                <h2><i class="fas fa-file-excel"></i> 【最重要】正しいデータの作り方</h2>
+                <p>分析ソフトが一番苦手なのは「人間が見るためだけに綺麗に装飾されたExcel」です。<br>
+                コンピューターが読み込めるように、以下のルールを守ってデータ（Excel・CSV）を作りましょう。</p>
+                
+                <ul style="font-weight: bold; color: #1e293b; line-height: 2;">
+                    <li>1行目は「データの項目名（変数名）」だけを書く</li>
+                    <li>セルの結合（くっつけること）は絶対にしない！</li>
+                    <li>1人のデータは「横に1行」で書く</li>
+                    <li>数字の列に「約」や「kg」などの文字を混ぜない！</li>
+                </ul>
+
+                <div class="good-bad-grid">
+                    <div class="bad-box">
+                        <h4><i class="fas fa-times-circle"></i> ダメな例（エラーになります）</h4>
+                        <table class="demo-table">
+                            <tr>
+                                <th colspan="2">アンケート結果</th>
+                                <th>身体測定</th>
+                            </tr>
+                            <tr>
+                                <td>ID</td>
+                                <td>性別</td>
+                                <td>体重</td>
+                            </tr>
+                            <tr>
+                                <td>1</td>
+                                <td>男</td>
+                                <td>約60kg</td> <!-- Error source -->
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>女</td>
+                                <td></td> <!-- Merged cell conceptually -->
+                            </tr>
+                        </table>
+                        <p style="font-size: 0.85rem; color: #b91c1c; margin-top: 0.5rem;">
+                            × 1行目と2行目がタイトルになっている<br>
+                            ×「アンケート結果」などがセル結合されている<br>
+                            × 体重に「kg」という文字が混ざっている
+                        </p>
+                    </div>
+
+                    <div class="good-box">
+                        <h4><i class="far fa-check-circle"></i> 正しい例（こちらを目指す）</h4>
+                        <table class="demo-table">
+                            <tr>
+                                <th>ID</th>
+                                <th>性別</th>
+                                <th>体重</th>
+                            </tr>
+                            <tr>
+                                <td>1</td>
+                                <td>男</td>
+                                <td>60</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>女</td>
+                                <td>55</td>
+                            </tr>
+                        </table>
+                        <p style="font-size: 0.85rem; color: #15803d; margin-top: 0.5rem;">
+                            〇 1行目がシンプルな項目名になっている<br>
+                            〇 単位は含めず数字だけを書いている<br>
+                            〇 1人につき綺麗な1行になっている
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="prep-types" class="content-section">
+                <h2><i class="fas fa-shapes"></i> 「数値データ」と「カテゴリデータ」の違い</h2>
+                <p>easyStatでは、手法を選ぶと「数値変数が〇つ必要」「カテゴリカル変数が〇つ必要」と表示されます。<br>
+                この2つの違いを勘違いすると、<strong>「データを入れたのに分析ボタンが押せない！」</strong>というトラブルになります。</p>
+
+                <div class="good-bad-grid" style="margin-top: 2rem;">
+                    <div style="background: #e0f2fe; padding: 1.5rem; border-radius: 8px;">
+                        <h4 style="color: #0284c7; margin-top: 0;"><i class="fas fa-ruler"></i> 量的データ（数値）</h4>
+                        <p style="font-size: 0.9rem;"><strong>「足し算や平均・大小に意味がある数字」</strong>です。</p>
+                        <ul style="font-size: 0.85rem; margin-top: 0.5rem; padding-left: 1.2rem;">
+                            <li>身長 (160cm, 175cm)</li>
+                            <li>テストの点数 (80点, 95点)</li>
+                            <li>アンケートの5件法 (1:全く違う ～ 5:そう思う)</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background: #dcfce7; padding: 1.5rem; border-radius: 8px;">
+                        <h4 style="color: #166534; margin-top: 0;"><i class="fas fa-tags"></i> 質的データ（カテゴリ）</h4>
+                        <p style="font-size: 0.9rem;"><strong>「グループ分け・名前・記号」</strong>のことです。<strong>見た目が数字でも、平均に意味がなければカテゴリ</strong>です。</p>
+                        <ul style="font-size: 0.85rem; margin-top: 0.5rem; padding-left: 1.2rem;">
+                            <li>性別 (男, 女)</li>
+                            <li>所属クラス (A組, B組)</li>
+                            <li><strong style="color:red">要注意:</strong> 「1=男, 2=女」と入力した数字（平均の1.5に意味がないため）</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="prep-pvalue" class="content-section">
+                <h2><i class="fas fa-lightbulb"></i> 統計用語の基礎：p値と有意差</h2>
+                <p>この先、色々な表で <strong>p値 (p-value)</strong> という数字が出てきます。<br>これは<strong>「たまたま偶然、この結果になった確率」</strong>を表します。難しい数式は知らなくて大丈夫です。</p>
+                <div style="padding: 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <h4 style="margin-top: 0;">これだけ覚えてください！</h4>
+                    <p style="margin-bottom: 0;">
+                        p値 が <strong>0.05 より小さい (p < 0.05) </strong> かどうかを探します。<br>
+                        0.05より小さければ、「偶然起きたにしては珍しすぎる！よって意味のある違いだ！」と判断します（これを<strong>有意差がある</strong>と言います）。見つけやすいように <code>*</code> のマークが付きます。
+                    </p>
+                </div>
+            </section>
+
+            <!-- ==============================
+                 2. 便利な下準備
+            ============================== -->
+            <section id="util-support" class="content-section">
+                <h2><i class="fas fa-magic"></i> AI分析サポーター</h2>
+                <p><strong>目的：</strong>「どう分析すればいいか見当もつかない」時に、AI（システム）が自動でできそうな分析を提案してくれます。</p>
+                <p><strong>使い方：</strong>データを読み込んだら、まずはこれを開いてみてください。「この分析を使う」ボタンでそのまま画面へ移動できます。</p>
+            </section>
+
+            <section id="util-process" class="content-section">
+                <h2><i class="fas fa-filter"></i> データの整形・欠損処理</h2>
+                <p><strong>目的：</strong>分析を始める前に、データをきれいにしたり、必要な列だけを抽出したりします。<br>
+                （「空白があるとめちゃくちゃになる分析」のために、事前に空白行を消したりします）</p>
+            </section>
+
+            <section id="util-merge" class="content-section">
+                <h2><i class="fas fa-object-group"></i> データの結合</h2>
+                <p><strong>目的：</strong>「事前テストのファイル」と「事後テストのファイル」の2つを、出席番号などを目印にして1つのファイルにくっつけます。</p>
+            </section>
+
+            <section id="util-score" class="content-section">
+                <h2><i class="fas fa-calculator"></i> 因子得点の算出</h2>
+                <p><strong>目的：</strong>「Q1, Q2, Q3...」というアンケートの点数を足し算して、「総合満足度」のような新しい列（得点）を作ります。</p>
+            </section>
+
+            <!-- ==============================
+                 3. 全体像をつかむ
+            ============================== -->
+            <section id="goal-eda" class="content-section">
+                <h2><i class="fas fa-search"></i> 探索的データ分析・グラフ (EDA)</h2>
+                <p><strong>目的：</strong>点数の平均が何点か、ばらつきはどのくらいかなど、まずは手持ちのデータの全体像と形を見たい。</p>
+                <div style="margin-top: 1rem;"><span class="data-badge numeric">数値 1つ以上</span></div>
+                <h3>結果の見方</h3>
+                <p>ボタンを押すだけで、ヒストグラム（山の形）、箱ひげ図、平均値などの表が一気に出力されます。異常な値が入っていないかのチェックにも使います。</p>
+            </section>
+
+            <!-- ==============================
+                 4. グループの違いを比べる
+            ============================== -->
+            <section id="goal-compare-2" class="content-section">
+                <h2><i class="fas fa-vial"></i> 2つのグループを比べる (t検定 / U検定)</h2>
+                <p><strong>目的：</strong>「男性と女性」「A組とB組」など、<strong>2つのグループ</strong>で、点数（平均点）に意味のある差があるか調べたい。</p>
+                
+                <h3>どれを使えばいい？</h3>
+                <ul style="line-height: 1.8;">
+                    <li><strong>対応なし t検定：</strong> 全くの別グループ（男女など）を比べる王道パターン。<span class="data-badge numeric">点数の列</span> と <span class="data-badge category">男女の列</span> を選びます。</li>
+                    <li><strong>対応あり t検定：</strong> 同じ人たちの「事前テストと事後テスト」を比べるパターン。<span class="data-badge numeric">事前点数</span> と <span class="data-badge numeric">事後点数</span> を選びます。</li>
+                    <li><strong>マン・ホイットニーのU検定（ノンパラメトリック）：</strong> データが極端に偏っていて、平均値で比べるのが怪しい時のt検定の代わり。順位（どちらが上か）で戦わせます。</li>
+                </ul>
+            </section>
+
+            <section id="goal-compare-3" class="content-section">
+                <h2><i class="fas fa-chart-bar"></i> 3つ以上のグループを比べる (分散分析 / K-W検定)</h2>
+                <p><strong>目的：</strong>「A組、B組、C組」など、<strong>3つ以上</strong>のグループで点数に差があるか調べたい。</p>
+
+                <h3>どれを使えばいい？</h3>
+                <ul style="line-height: 1.8;">
+                    <li><strong>一要因分散分析 (ANOVA)：</strong> 3つ以上のクラス間で点数を比べる王道パターン。<span class="data-badge numeric">点数の列</span> と <span class="data-badge category">クラスの列</span> を選びます。</li>
+                    <li><strong>二要因分散分析：</strong> 「勉強法の違い(A/B)」×「性別(男女)」の2つの原因が、どう影響し合っているか（交互作用）を検証します。</li>
+                    <li><strong>クラスカル・ウォリス検定（ノンパラメトリック）：</strong> データに偏りがある時のANOVAの代用品です。</li>
+                </ul>
+                <p><strong>結果の見方：</strong> まず分散分析表の p値 で「どこかの組に差がある」ことを見つけます。その後、下に出てくる「事後検定（多重比較）」の表を見て、「具体的にA組とC組の間に差がある」という結論を出します。</p>
+            </section>
+
+            <!-- ==============================
+                 5. 割合・アンケートの偏り
+            ============================== -->
+            <section id="goal-prop" class="content-section">
+                <h2><i class="fas fa-table"></i> アンケートの偏りをみる (クロス集計 / カイ二乗)</h2>
+                <p><strong>目的：</strong>「性別（男女）」によって「きのこ/たけのこ派」の割合に違いがあるか？を調べたい。</p>
+                <div style="margin-top: 1rem;"><span class="data-badge category">カテゴリ名 2つ以上</span></div>
+
+                <h3>どれを使えばいい？</h3>
+                <ul style="line-height: 1.8;">
+                    <li><strong>クロス集計：</strong> まずは「男性の犬好きは何人？」のように人数の内訳（表と帯グラフ）を出したい時。</li>
+                    <li><strong>カイ二乗検定：</strong> その人数の偏りが「偶然なのか、本当に性別と好みが関連している（意味のある偏り）のか」を p値 で白黒つけたい時。</li>
+                    <li><strong>フィッシャーの正確確率検定：</strong> カイ二乗検定と同じですが、人数が数人〜数十人と極端に少ない時に使います。</li>
+                    <li><strong>マクネマー検定：</strong> 同じ人たちの「賛成・反対」が、イベントの前後でどう変化したかを調べる時に使います。</li>
+                </ul>
+            </section>
+
+            <!-- ==============================
+                 6. 関係性と予測
+            ============================== -->
+            <section id="goal-relate" class="content-section">
+                <h2><i class="fas fa-project-diagram"></i> 関係性を調べる (相関分析)</h2>
+                <p><strong>目的：</strong>「身長が高い人ほど、体重も重いか？」のように、右上がりの関係か、右下がりの関係かを調べたい。</p>
+                <div style="margin-top: 1rem;"><span class="data-badge numeric">数値 2つ以上</span></div>
+                
+                <p><strong>見方：</strong> <strong>相関係数 (r)</strong> という数字（-1から1の間）を見ます。1に近いほど強い正の相関（連動して増える）、-1に近いほど負の相関（一方が増えれば減る）です。</p>
+            </section>
+
+            <section id="goal-predict" class="content-section">
+                <h2><i class="fas fa-chart-line"></i> 未来を予測する・影響度を知る (回帰分析)</h2>
+                <p><strong>目的：</strong>「勉強時間」や「過去の成績」をもとに、未来の「テストの点数」を推測する数式を作りたい。</p>
+                
+                <h3>どれを使えばいい？</h3>
+                <ul style="line-height: 1.8;">
+                    <li><strong>単回帰分析：</strong> 原因(X)が1つ、結果の数値(Y)が1つの場合。（例: 勉強時間 → テスト点数）</li>
+                    <li><strong>重回帰分析：</strong> 原因(X)が複数ある場合。結果の表の「標準化偏回帰係数(β)」を見ると、どの原因が一番テストの点数に強い影響を与えたかのランキングが作れます。</li>
+                    <li><strong>ロジスティック回帰推分析：</strong> 結果(Y)が「合格/不合格」のような<strong>2択（カテゴリ）</strong>の場合。その確率を予測します。</li>
+                </ul>
+            </section>
+
+            <!-- ==============================
+                 7. 情報をまとめる
+            ============================== -->
+            <section id="goal-multi" class="content-section">
+                <h2><i class="fas fa-compress-arrows-alt"></i> たくさんの情報をスッキリまとめる (因子 / PCA)</h2>
+                <p><strong>目的：</strong>たくさんの質問項目を、「文系力」「理系力」といった見えないテーマでまとめたり、総合的な新しい指標を作りたい。</p>
+                
+                <h3>どれを使えばいい？</h3>
+                <ul style="line-height: 1.8;">
+                    <li><strong>因子分析：</strong> 「国・数・英…」の点数から背後に潜む力（国語と英語ができる人は「言語能力因子」が高い傾向）を発見します。主にアンケート分析で使います。</li>
+                    <li><strong>主成分分析 (PCA)：</strong> 全ての点数をギュッと圧縮して、「総合評価点」という1つの軸を作りたい時などに使います。</li>
+                </ul>
+            </section>
+
+            <section id="goal-other" class="content-section">
+                <h2><i class="fas fa-font"></i> 時系列 / テキストマイニング</h2>
+                <ul style="line-height: 1.8;">
+                    <li><strong>時系列データ分析：</strong> 「1年間の毎月の売上」など、時間経過のトレンドや周期を見ます。<span class="data-badge numeric">数値</span>が必要です。</li>
+                    <li><strong>テキストマイニング：</strong> アンケートの「自由記述欄」に書かれた文章を解析し、よく使われている単語を大きな文字（ワードクラウド）で表示します。<span class="data-badge category">テキストが入った列</span>を選びます。</li>
+                </ul>
+            </section>
+
+            <!-- ==============================
+                 8. よくあるトラブル
+            ============================== -->
+            <section id="faq" class="content-section">
+                <h2><i class="fas fa-question-circle"></i> よくあるトラブル・FAQ</h2>
+                
+                <div class="alert-box danger" style="margin-top: 1rem;">
+                    <strong>困ったときは、ここをチェック！</strong>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-q"></i> ファイルをアップロードしても読み込まれない（赤いエラーが出る）</div>
+                    <div class="faq-a">
+                        一番上の行以外にタイトルが書いてあったり、セルが結合されている可能性があります。<br>
+                        いったんExcelを開き、<strong>1行目に項目名、2行目以降にデータ</strong>という最もシンプルな形になっているか確認してください。
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-q"></i> 分析画面で、「分析を実行」ボタンが暗くて押せない！</div>
+                    <div class="faq-a">
+                        その分析に必要な「変数（列）」がすべて選択されていません。<br>
+                        たとえば「t検定」なら、数値を1つ、カテゴリを1つ（または数値を2つ）リストから選んで青く反転させる必要があります。
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-q"></i> テストの点数（数値）を変数として選びたいのに、リストに出てこない</div>
+                    <div class="faq-a">
+                        その列のどこかに文字（「約」や「kg」など）が混ざっていたり、空欄がありすぎるため、システムが「カテゴリデータ」または「文字」だと勘違いしています。<br>
+                        Excelに戻って、該当する列がすべて半角の数字だけになっているか確認してください。
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-q"></i> パラメトリックとかノンパラメトリックって何？</div>
+                    <div class="faq-a">
+                        パラメトリック＝「データの形が普通の山型（ベルカーブ）で、平均値で比べても大丈夫」な時の一般的な手法。<br>
+                        ノンパラメトリック＝「超すごい人が1人だけいて平均値がおかしくなっている」など、データが歪んでいる時に順位を使って比べる安全な手法です。
+                    </div>
+                </div>
+
+            </section>
+
+        </main>
+    </div>
+
+    <!-- スムーススクロール用JS -->
+    <script>
+        document.querySelectorAll('.sidebar-link').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 60,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // スクロール時に該当メニューをハイライト
+        window.addEventListener('scroll', () => {
+            let current = '';
+            const sections = document.querySelectorAll('.content-section');
+            const navHeight = 70;
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - navHeight) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.style.backgroundColor = '';
+                link.style.borderLeftColor = 'transparent';
+                link.style.fontWeight = 'normal';
+                
+                if (link.getAttribute('href').substring(1) === current) {
+                    link.style.backgroundColor = '#f1f5f9';
+                    link.style.borderLeftColor = '#3b82f6';
+                    link.style.fontWeight = 'bold';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
