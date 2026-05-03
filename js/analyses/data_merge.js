@@ -252,8 +252,8 @@ function updateMergeControls() {
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.2rem; font-weight: bold;">
                 <i class="fas fa-cogs"></i> 結合設定
             </h4>
-            <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end;">
-                <div style="flex: 1; min-width: 200px;">
+            <div class="merge-controls-grid">
+                <div class="merge-control-field">
                     <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">
                         <i class="fas fa-key"></i> キーカラム（結合に使用する列）
                     </label>
@@ -261,7 +261,7 @@ function updateMergeControls() {
                         ${commonColumns.map(c => `<option value="${c}">${c}</option>`).join('')}
                     </select>
                 </div>
-                <div style="flex: 1; min-width: 200px;">
+                <div class="merge-control-field">
                     <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">
                         <i class="fas fa-code-branch"></i> 結合の種類
                     </label>
@@ -271,11 +271,11 @@ function updateMergeControls() {
                         <option value="outer">外部結合（outer）: 全データを保持</option>
                     </select>
                 </div>
-                <div style="flex: 1; min-width: 200px;">
+                <div class="merge-control-field">
                     <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">
                         <i class="fas fa-tag"></i> 重複カラムのサフィックス
                     </label>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <div class="merge-suffix-fields">
                         <div style="flex: 1;">
                             <label style="font-size: 0.8rem; color: #64748b;">ファイル1</label>
                             <input type="text" id="merge-suffix1" value="1" placeholder="1" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; box-sizing: border-box;">
@@ -287,7 +287,7 @@ function updateMergeControls() {
                     </div>
                     <p style="font-size: 0.75rem; color: #94a3b8; margin: 0.25rem 0 0 0;">例：「前」「後」→ 名前_前, 名前_後</p>
                 </div>
-                <div>
+                <div class="merge-action">
                     <button id="run-merge-btn" class="btn-analysis" style="padding: 0.75rem 2rem; font-size: 1rem; font-weight: bold;">
                         <i class="fas fa-object-group"></i> 結合を実行
                     </button>
@@ -387,9 +387,9 @@ export function render(container, currentData, dataCharacteristics) {
             </div>
 
             <!-- ファイルアップロード -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="merge-upload-grid">
                 <!-- ファイル1 -->
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #3182ce;">
+                <div class="merge-file-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #3182ce;">
                     <h4 style="color: #3182ce; margin-bottom: 1rem; font-size: 1.1rem;">
                         <i class="fas fa-file-excel"></i> 1つ目のファイル
                     </h4>
@@ -406,7 +406,7 @@ export function render(container, currentData, dataCharacteristics) {
                 </div>
 
                 <!-- ファイル2 -->
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #dd6b20;">
+                <div class="merge-file-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-top: 4px solid #dd6b20;">
                     <h4 style="color: #dd6b20; margin-bottom: 1rem; font-size: 1.1rem;">
                         <i class="fas fa-file-excel"></i> 2つ目のファイル
                     </h4>
@@ -442,7 +442,7 @@ export function render(container, currentData, dataCharacteristics) {
                 <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.2rem; font-weight: bold;">
                     <i class="fas fa-download"></i> ダウンロード
                 </h4>
-                <div style="display: flex; gap: 1rem; align-items: center;">
+                <div class="merge-download-controls">
                     <label for="merge-format-select" style="font-weight: 500;">ファイル形式:</label>
                     <select id="merge-format-select" style="padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 1rem;">
                         <option value="excel">Excel (.xlsx)</option>

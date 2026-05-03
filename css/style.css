@@ -1616,3 +1616,98 @@ table tr:hover {
 .demo-option-btn.primary:hover {
     background: #e0f2fe;
 }
+
+/* =========================================
+   Data Merge Layout
+   ========================================= */
+.merge-container {
+    min-width: 0;
+}
+
+.merge-upload-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.merge-file-card,
+.merge-control-field {
+    min-width: 0;
+}
+
+.merge-container .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.merge-container .table-container table {
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+}
+
+.merge-controls-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5rem;
+    align-items: end;
+}
+
+.merge-suffix-fields,
+.merge-download-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    min-width: 0;
+}
+
+.merge-action {
+    min-width: 0;
+}
+
+.merge-action .btn-analysis,
+#merge-download-btn {
+    margin-top: 0;
+}
+
+.merge-download-controls {
+    gap: 1rem;
+}
+
+.merge-download-controls label {
+    flex-shrink: 0;
+}
+
+.merge-download-controls select {
+    min-width: 0;
+}
+
+#merge-download-btn {
+    width: auto;
+    min-width: 12rem;
+    white-space: normal;
+}
+
+@media (max-width: 1024px) {
+    .merge-controls-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .merge-upload-grid,
+    .merge-controls-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .merge-download-controls {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .merge-action .btn-analysis,
+    #merge-download-btn {
+        width: 100%;
+    }
+}
