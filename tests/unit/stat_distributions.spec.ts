@@ -45,6 +45,12 @@ test.describe('Statistical Distributions Utils', () => {
             expect(calculateTukeyP(0, 3, 10)).toBe(1.0); // No difference
             expect(calculateTukeyP(100, 3, 10)).toBeLessThan(0.00001); // Huge difference
         });
+
+        test('should return NaN for non-finite inputs instead of coercing to significant p', () => {
+            expect(Number.isNaN(calculateTukeyP(NaN, 3, 10))).toBe(true);
+            expect(Number.isNaN(calculateTukeyP(3, Infinity, 10))).toBe(true);
+            expect(Number.isNaN(calculateTukeyP(3, 3, NaN))).toBe(true);
+        });
     });
 
     test.describe('performHolmCorrection', () => {
@@ -86,6 +92,18 @@ test.describe('Statistical Distributions Utils', () => {
             const results = performHolmCorrection(inputs);
             expect(results[0].p_holm).toBe(1.0);
             expect(results[1].p_holm).toBe(1.0);
+        });
+
+        test('should preserve invalid p-values as NaN and not let them affect valid corrections', () => {
+            const results = performHolmCorrection([
+                { id: 'valid-low', p: 0.01 },
+                { id: 'invalid', p: NaN },
+                { id: 'valid-high', p: 0.04 }
+            ]);
+
+            expect(results.find(r => r.id === 'valid-low')!.p_holm).toBeCloseTo(0.02, 3);
+            expect(Number.isNaN(results.find(r => r.id === 'invalid')!.p_holm)).toBe(true);
+            expect(results.find(r => r.id === 'valid-high')!.p_holm).toBeCloseTo(0.04, 3);
         });
     });
 

@@ -156,8 +156,10 @@ export function studentizedRangeCDF(q, k, df) {
  * @param {number} df - Degrees of freedom
  */
 export function calculateTukeyP(q, k, df) {
+    if (!isFinite(q) || !isFinite(k) || !isFinite(df)) return NaN;
     if (k < 2) return 1.0;
     const cdf = studentizedRangeCDF(Math.abs(q), k, df);
+    if (!isFinite(cdf)) return NaN;
     // CDF is P(Q < q). we want P(Q > q) for p-value.
     const p = 1 - cdf;
     return Math.max(0, Math.min(1, p));
@@ -171,15 +173,25 @@ export function calculateTukeyP(q, k, df) {
  * @returns {Array<Object>} - Array with added 'p_holm' property.
  */
 export function performHolmCorrection(comparisons) {
-    const sorted = [...comparisons].map((c, i) => ({ ...c, originalIndex: i }));
-    sorted.sort((a, b) => a.p - b.p);
+    const sorted = [...comparisons].map((c, i) => {
+        const p = Number(c.p);
+        const validP = Number.isFinite(p) && p >= 0 && p <= 1;
+        return { ...c, p: validP ? p : NaN, _sortP: validP ? p : 1, originalIndex: i };
+    });
+    sorted.sort((a, b) => a._sortP - b._sortP);
 
-    const m = sorted.length;
+    const m = sorted.filter(item => Number.isFinite(item.p)).length;
     let previousAdjP = 0;
 
-    for (let i = 0; i < m; i++) {
+    let validRank = 0;
+    for (let i = 0; i < sorted.length; i++) {
         const item = sorted[i];
-        const rank = i + 1;
+        if (!Number.isFinite(item.p)) {
+            item.p_holm = NaN;
+            continue;
+        }
+        validRank++;
+        const rank = validRank;
         const factor = m - rank + 1;
         let adjP = item.p * factor;
 
@@ -200,9 +212,9 @@ export function performHolmCorrection(comparisons) {
     // But we enriched `sorted` array.
 
     // Return in original order
-    const result = new Array(m);
-    for (let i = 0; i < m; i++) {
-        const { originalIndex, ...rest } = sorted[i];
+    const result = new Array(sorted.length);
+    for (let i = 0; i < sorted.length; i++) {
+        const { originalIndex, _sortP, ...rest } = sorted[i];
         result[originalIndex] = rest;
     }
     return result;

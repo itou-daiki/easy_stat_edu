@@ -1163,15 +1163,12 @@ function updateDataAndUI(message) {
     // UI更新 (テーブルの再描画)
     renderDataOverview('#original-data-overview', originalData, originalCharacteristics, { initiallyCollapsed: false });
 
-    renderDataOverview('#original-data-overview', originalData, originalCharacteristics, { initiallyCollapsed: false });
-
     updateFilterColumnSelect();
     updateReverseColumnSelect();
     updateCategorizeColumnSelect();
     updateStandardizeColumnSelect();
     updateRecodeColumnSelect();
     updateComputeColumnSelect();
-    updateMergeBaseColumnSelect();
     updateCleansingColumnSelect();
 
     // データ品質情報の更新

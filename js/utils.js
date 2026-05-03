@@ -69,6 +69,7 @@ export function toHtmlTable(headers, rowLabels, data) {
  * @returns {string} The interpretation text.
  */
 export function getEffectSizeInterpretation(d) {
+    if (!Number.isFinite(d)) return '効果量を計算できません';
     const absD = Math.abs(d);
     if (absD >= 0.8) return `大きい効果 (|d| = ${absD.toFixed(3)})`;
     if (absD >= 0.5) return `中程度の効果 (|d| = ${absD.toFixed(3)})`;
@@ -83,6 +84,7 @@ export function getEffectSizeInterpretation(d) {
  * @returns {object} { F, p, significant }
  */
 export function calculateLeveneTest(groups) {
+    // Brown-Forsythe variant: deviations are computed from jStat.median below.
     let groupArrays = [];
     if (arguments.length > 1) {
         groupArrays = Array.from(arguments);
@@ -90,6 +92,14 @@ export function calculateLeveneTest(groups) {
         groupArrays = groups;
     } else {
         return { F: 0, p: 1, significant: false };
+    }
+
+    groupArrays = groupArrays
+        .map(g => Array.isArray(g) ? g.filter(v => v != null && Number.isFinite(Number(v))).map(Number) : [])
+        .filter(g => g.length > 0);
+
+    if (groupArrays.length < 2 || groupArrays.some(g => g.length < 2)) {
+        return { F: NaN, p: NaN, significant: false };
     }
 
     // 1. Calculate medians (Brown-Forsythe variant: more robust to non-normality)
@@ -103,6 +113,9 @@ export function calculateLeveneTest(groups) {
     const grandMeanDev = jStat.mean(allDevs);
     const N = allDevs.length;
     const k = groupArrays.length;
+    if (N <= k) {
+        return { F: NaN, p: NaN, significant: false };
+    }
 
     // Sum of Squares Between
     let SSb = 0;
@@ -135,6 +148,9 @@ export function calculateLeveneTest(groups) {
 
     const F = MSb / MSw;
     const p = 1 - jStat.centralF.cdf(F, dfb, dfw);
+    if (!Number.isFinite(F) || !Number.isFinite(p)) {
+        return { F: NaN, p: NaN, significant: false };
+    }
 
     return { F, p, significant: p < 0.05 };
 }
@@ -1349,7 +1365,8 @@ export const InterpretationHelper = {
      * @returns {object} { text, isSignificant, stars }
      */
     evaluatePValue(p) {
-        if (p == null || isNaN(p)) return { text: "-", isSignificant: false, stars: "" };
+        if (p == null || !Number.isFinite(Number(p)) || p < 0 || p > 1) return { text: "-", isSignificant: false, stars: "", invalid: true };
+        p = Number(p);
         if (p < 0.001) return { text: "p < .001", isSignificant: true, stars: "**" };
         if (p < 0.01) return { text: "p < .01", isSignificant: true, stars: "**" };
         if (p < 0.05) return { text: "p < .05", isSignificant: true, stars: "*" };
