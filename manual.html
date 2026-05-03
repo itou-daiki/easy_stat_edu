@@ -63,7 +63,7 @@
 
         /* Main layout container */
         .layout-container {
-            display: flex;
+            display: block;
             margin-top: var(--top-nav-height);
             flex: 1;
         }
@@ -117,10 +117,11 @@
 
         /* Content Area */
         .content-area {
-            flex: 1;
             margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
             padding: 2rem 3rem;
-            max-width: 900px;
+            max-width: 1060px;
+            box-sizing: border-box;
         }
 
         .content-section {
@@ -131,6 +132,7 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
             border: 1px solid #e2e8f0;
             scroll-margin-top: calc(var(--top-nav-height) + 2rem);
+            overflow-x: auto;
         }
 
         .content-section h2 {
@@ -189,6 +191,90 @@
         }
         .data-badge.numeric { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
         .data-badge.category { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+        .data-badge.text { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+
+        .step-list {
+            display: grid;
+            gap: 1rem;
+            margin: 1.25rem 0;
+            counter-reset: manual-step;
+        }
+
+        .step-item {
+            position: relative;
+            padding: 1rem 1rem 1rem 3.25rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .step-item::before {
+            counter-increment: manual-step;
+            content: counter(manual-step);
+            position: absolute;
+            left: 1rem;
+            top: 1rem;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 999px;
+            background: #2563eb;
+            color: white;
+            display: grid;
+            place-items: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .manual-table {
+            width: 100%;
+            min-width: 720px;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+            margin: 1rem 0;
+            overflow-wrap: anywhere;
+        }
+
+        .manual-table th,
+        .manual-table td {
+            border: 1px solid #cbd5e1;
+            padding: 0.75rem;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        .manual-table th {
+            background: #f1f5f9;
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        .manual-table td:first-child {
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .mini-checklist {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin: 1rem 0;
+        }
+
+        .mini-checklist li {
+            margin: 0.45rem 0;
+        }
+
+        .result-template {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            white-space: normal;
+        }
 
         .good-bad-grid {
             display: grid;
@@ -264,10 +350,22 @@
         }
 
         @media (max-width: 768px) {
+            .top-nav { padding: 0 1rem; }
+            .top-nav a { flex: 0 0 auto; font-size: 0.9rem; }
+            .top-nav .title {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-size: 1rem;
+                margin-left: 0.75rem;
+                padding-left: 0.75rem;
+            }
             .sidebar { display: none; }
-            .content-area { margin-left: 0; padding: 1rem; }
+            .content-area { margin-left: 0; width: 100%; padding: 1rem; }
             .content-section { padding: 1.5rem; }
             .good-bad-grid { grid-template-columns: 1fr; }
+            .manual-table { font-size: 0.85rem; }
         }
     </style>
 </head>
@@ -281,6 +379,13 @@
     <div class="layout-container">
         <!-- Sidebar Navigation -->
         <nav class="sidebar">
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">0. まずここから</div>
+                <a href="#quick-start" class="sidebar-link"><i class="fas fa-route"></i> 3分で始める手順</a>
+                <a href="#choose-analysis" class="sidebar-link"><i class="fas fa-compass"></i> 分析選択早見表</a>
+                <a href="#reporting" class="sidebar-link"><i class="fas fa-pen-nib"></i> 結果の書き方</a>
+            </div>
+
             <div class="sidebar-group">
                 <div class="sidebar-group-title">1. 分析前のつまずき解消</div>
                 <a href="#prep-data" class="sidebar-link"><i class="fas fa-file-excel"></i> 正しいExcelの作り方</a>
@@ -338,6 +443,115 @@
                 「分析ソフトを入れたけれど、データが読み込めなくて分析すら始まらない」「用語が難しくてどのボタンを押せばいいかわからない」——easyStatは、そんな「つまづき」をなくすために作られました。<br>
                 このマニュアルは、専門用語を極力減らし、<strong>「やりたいこと」から直感的に機能を探せる</strong>ようにしています。
             </div>
+
+            <section id="quick-start" class="content-section">
+                <h2><i class="fas fa-route"></i> 3分で始める基本手順</h2>
+                <p>迷ったときは、この順番で進めると大きく外しません。easyStatはブラウザ内で計算するため、読み込んだデータを分析用サーバーへ送信しません。</p>
+
+                <div class="step-list">
+                    <div class="step-item"><strong>ExcelまたはCSVを読み込む</strong><br>トップ画面のファイル選択からデータを読み込みます。練習したい場合は、画面上部のデモデータを使えます。</div>
+                    <div class="step-item"><strong>データ概要を確認する</strong><br>列名、数値・カテゴリの判定、欠損値の数を見ます。ここで変数の種類が違って見える場合は、先にデータ整形を使います。</div>
+                    <div class="step-item"><strong>目的に合う分析を選ぶ</strong><br>わからない場合は「AI分析サポーター」を開き、候補を確認します。自分で選ぶ場合は次の早見表を使います。</div>
+                    <div class="step-item"><strong>変数を選んで実行する</strong><br>目的変数、説明変数、グループ変数など、画面に表示された選択欄を順に指定します。</div>
+                    <div class="step-item"><strong>p値・効果量・グラフを一緒に見る</strong><br>p値だけで判断せず、平均差、相関係数、オッズ比、効果量、グラフの形も確認します。</div>
+                </div>
+            </section>
+
+            <section id="choose-analysis" class="content-section">
+                <h2><i class="fas fa-compass"></i> 分析選択早見表</h2>
+                <p>「何を知りたいか」から分析を選ぶための表です。まず目的を選び、必要なデータの形が合っているか確認してください。</p>
+
+                <table class="manual-table">
+                    <thead>
+                        <tr>
+                            <th>知りたいこと</th>
+                            <th>使う分析</th>
+                            <th>必要なデータ</th>
+                            <th>見るポイント</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>データの全体像を知りたい</td>
+                            <td>探索的データ分析</td>
+                            <td><span class="data-badge numeric">数値 1つ以上</span></td>
+                            <td>平均、中央値、標準偏差、ヒストグラム、外れ値</td>
+                        </tr>
+                        <tr>
+                            <td>2群の平均を比べたい</td>
+                            <td>t検定、マン・ホイットニーU検定、ウィルコクソン符号順位検定</td>
+                            <td><span class="data-badge numeric">数値</span><span class="data-badge category">2群</span></td>
+                            <td>p値、平均差、効果量、対応の有無</td>
+                        </tr>
+                        <tr>
+                            <td>3群以上の平均を比べたい</td>
+                            <td>一要因分散分析、二要因分散分析、クラスカル・ウォリス検定</td>
+                            <td><span class="data-badge numeric">数値</span><span class="data-badge category">グループ</span></td>
+                            <td>主効果、交互作用、事後検定</td>
+                        </tr>
+                        <tr>
+                            <td>カテゴリ同士の偏りを見たい</td>
+                            <td>クロス集計、カイ二乗検定、フィッシャーの正確確率検定、マクネマー検定</td>
+                            <td><span class="data-badge category">カテゴリ 2つ以上</span></td>
+                            <td>人数、割合、期待度数、p値</td>
+                        </tr>
+                        <tr>
+                            <td>数値同士の関係を見たい</td>
+                            <td>相関分析</td>
+                            <td><span class="data-badge numeric">数値 2つ以上</span></td>
+                            <td>相関係数 r、散布図、外れ値</td>
+                        </tr>
+                        <tr>
+                            <td>数値を予測したい</td>
+                            <td>単回帰分析、重回帰分析</td>
+                            <td><span class="data-badge numeric">目的変数</span><span class="data-badge numeric">説明変数</span></td>
+                            <td>回帰係数、β、R²、VIF</td>
+                        </tr>
+                        <tr>
+                            <td>2択の確率を予測したい</td>
+                            <td>ロジスティック回帰分析</td>
+                            <td><span class="data-badge category">2値の結果</span><span class="data-badge numeric">説明変数</span></td>
+                            <td>オッズ比、p値、予測確率</td>
+                        </tr>
+                        <tr>
+                            <td>質問項目をまとめたい</td>
+                            <td>因子分析、主成分分析、因子得点の算出</td>
+                            <td><span class="data-badge numeric">数値 3つ以上</span></td>
+                            <td>負荷量、寄与率、得点化する項目</td>
+                        </tr>
+                        <tr>
+                            <td>文章や時系列を見たい</td>
+                            <td>テキストマイニング、時系列データ分析</td>
+                            <td><span class="data-badge text">文章列</span><span class="data-badge numeric">時間順の数値</span></td>
+                            <td>頻出語、共起、トレンド、周期</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="reporting" class="content-section">
+                <h2><i class="fas fa-pen-nib"></i> 結果の書き方</h2>
+                <p>レポートでは「有意だったか」だけでなく、「どちらが高いか」「どのくらい違うか」「どの指標を見たか」を一緒に書くと読みやすくなります。</p>
+
+                <div class="mini-checklist">
+                    <strong>書く前の確認</strong>
+                    <ul>
+                        <li>分析に使った人数・欠損値の扱いを確認した</li>
+                        <li>グラフで極端な外れ値や入力ミスがないか見た</li>
+                        <li>p値だけでなく、平均差・相関係数・効果量・オッズ比などを見た</li>
+                        <li>「差がある」と「関係がある」と「原因である」を混同していない</li>
+                    </ul>
+                </div>
+
+                <h3>文章テンプレート</h3>
+                <div class="result-template">
+                    A群とB群の得点を比較したところ、A群の平均は XX、B群の平均は YY であった。検定の結果、両群の差は有意であった / 有意ではなかった（p = ...）。効果量は ... であり、差の大きさは ... と解釈できる。
+                </div>
+
+                <div class="alert-box info">
+                    <strong>注意：</strong> p &lt; .05 は「偶然だけでは説明しにくい」という意味です。「必ず効果がある」「原因が証明された」という意味ではありません。
+                </div>
+            </section>
 
             <!-- ==============================
                  1. 分析前のつまずき解消
@@ -451,6 +665,9 @@
                         0.05より小さければ、「偶然起きたにしては珍しすぎる！よって意味のある違いだ！」と判断します（これを<strong>有意差がある</strong>と言います）。見つけやすいように <code>*</code> のマークが付きます。
                     </p>
                 </div>
+                <div class="alert-box">
+                    <strong>p値だけで終わらせない：</strong> p値はサンプルサイズの影響を強く受けます。結果を見るときは、平均差、相関係数、効果量、オッズ比、グラフの形も一緒に確認してください。
+                </div>
             </section>
 
             <!-- ==============================
@@ -460,22 +677,78 @@
                 <h2><i class="fas fa-magic"></i> AI分析サポーター</h2>
                 <p><strong>目的：</strong>「どう分析すればいいか見当もつかない」時に、AI（システム）が自動でできそうな分析を提案してくれます。</p>
                 <p><strong>使い方：</strong>データを読み込んだら、まずはこれを開いてみてください。「この分析を使う」ボタンでそのまま画面へ移動できます。</p>
+                <div class="mini-checklist">
+                    <strong>提案結果を見るコツ</strong>
+                    <ul>
+                        <li>提案された分析名だけでなく、「なぜ提案されたか」を確認する</li>
+                        <li>目的が「比較」なのか「関係」なのか「予測」なのかを自分でも言葉にする</li>
+                        <li>提案が複数ある場合は、まず探索的データ分析でデータの形を確認する</li>
+                    </ul>
+                </div>
             </section>
 
             <section id="util-process" class="content-section">
                 <h2><i class="fas fa-filter"></i> データの整形・欠損処理</h2>
                 <p><strong>目的：</strong>分析を始める前に、データをきれいにしたり、必要な列だけを抽出したりします。<br>
                 （「空白があるとめちゃくちゃになる分析」のために、事前に空白行を消したりします）</p>
+                <table class="manual-table">
+                    <thead>
+                        <tr>
+                            <th>やりたいこと</th>
+                            <th>使う操作</th>
+                            <th>注意点</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>欠損値を含む行を除きたい</td>
+                            <td>欠損処理</td>
+                            <td>除外後の人数が少なくなりすぎないか確認します。</td>
+                        </tr>
+                        <tr>
+                            <td>特定の条件だけ残したい</td>
+                            <td>フィルタ</td>
+                            <td>例: 学年が「1年」の行だけ残す、回答済みの行だけ残す。</td>
+                        </tr>
+                        <tr>
+                            <td>逆転項目を直したい</td>
+                            <td>逆転処理</td>
+                            <td>5件法なら「1↔5、2↔4、3はそのまま」のように変換します。</td>
+                        </tr>
+                        <tr>
+                            <td>複数の列から新しい点数を作りたい</td>
+                            <td>計算・標準化</td>
+                            <td>合計点、平均点、z得点などを作ってから分析に使えます。</td>
+                        </tr>
+                    </tbody>
+                </table>
             </section>
 
             <section id="util-merge" class="content-section">
                 <h2><i class="fas fa-object-group"></i> データの結合</h2>
                 <p><strong>目的：</strong>「事前テストのファイル」と「事後テストのファイル」の2つを、出席番号などを目印にして1つのファイルにくっつけます。</p>
+                <div class="step-list">
+                    <div class="step-item"><strong>1つ目のファイルを選ぶ</strong><br>基準にしたいデータを読み込みます。例: 受講者名簿、事前テスト。</div>
+                    <div class="step-item"><strong>2つ目のファイルを選ぶ</strong><br>追加したいデータを読み込みます。例: 事後テスト、アンケート結果。</div>
+                    <div class="step-item"><strong>結合キーを選ぶ</strong><br>ID、出席番号、メールアドレスなど、両方のファイルに共通して入っている列を選びます。</div>
+                    <div class="step-item"><strong>プレビューで横に確認する</strong><br>列が多い場合は、データプレビューを横スクロールして、結合された列が正しく並んでいるか確認します。</div>
+                </div>
+                <div class="alert-box">
+                    <strong>結合前の注意：</strong> 同じIDが複数行あると、意図しない重複が起きることがあります。結合キーは、できるだけ1人につき1つだけの値にしてください。
+                </div>
             </section>
 
             <section id="util-score" class="content-section">
                 <h2><i class="fas fa-calculator"></i> 因子得点の算出</h2>
                 <p><strong>目的：</strong>「Q1, Q2, Q3...」というアンケートの点数を足し算して、「総合満足度」のような新しい列（得点）を作ります。</p>
+                <div class="mini-checklist">
+                    <strong>得点化の前に確認</strong>
+                    <ul>
+                        <li>同じ尺度の項目だけをまとめる</li>
+                        <li>逆転項目がある場合は、先に逆転処理を済ませる</li>
+                        <li>合計点にするか平均点にするかを研究計画に合わせる</li>
+                    </ul>
+                </div>
             </section>
 
             <!-- ==============================
@@ -487,6 +760,15 @@
                 <div style="margin-top: 1rem;"><span class="data-badge numeric">数値 1つ以上</span></div>
                 <h3>結果の見方</h3>
                 <p>ボタンを押すだけで、ヒストグラム（山の形）、箱ひげ図、平均値などの表が一気に出力されます。異常な値が入っていないかのチェックにも使います。</p>
+                <div class="mini-checklist">
+                    <strong>最初に見る場所</strong>
+                    <ul>
+                        <li>平均値と中央値が大きくズレていないか</li>
+                        <li>標準偏差が極端に大きくないか</li>
+                        <li>箱ひげ図で外れ値が多すぎないか</li>
+                        <li>欠損値が分析対象に偏っていないか</li>
+                    </ul>
+                </div>
             </section>
 
             <!-- ==============================
@@ -501,7 +783,9 @@
                     <li><strong>対応なし t検定：</strong> 全くの別グループ（男女など）を比べる王道パターン。<span class="data-badge numeric">点数の列</span> と <span class="data-badge category">男女の列</span> を選びます。</li>
                     <li><strong>対応あり t検定：</strong> 同じ人たちの「事前テストと事後テスト」を比べるパターン。<span class="data-badge numeric">事前点数</span> と <span class="data-badge numeric">事後点数</span> を選びます。</li>
                     <li><strong>マン・ホイットニーのU検定（ノンパラメトリック）：</strong> データが極端に偏っていて、平均値で比べるのが怪しい時のt検定の代わり。順位（どちらが上か）で戦わせます。</li>
+                    <li><strong>ウィルコクソン符号順位検定：</strong> 同じ人の事前・事後を比べたいが、差の分布が偏っている時に使います。</li>
                 </ul>
+                <p><strong>迷ったら：</strong> 「別々の人を比べる」のか「同じ人の前後を比べる」のかを先に決めてください。ここを間違えると、結果の意味が変わります。</p>
             </section>
 
             <section id="goal-compare-3" class="content-section">
@@ -553,8 +837,11 @@
                 <ul style="line-height: 1.8;">
                     <li><strong>単回帰分析：</strong> 原因(X)が1つ、結果の数値(Y)が1つの場合。（例: 勉強時間 → テスト点数）</li>
                     <li><strong>重回帰分析：</strong> 原因(X)が複数ある場合。結果の表の「標準化偏回帰係数(β)」を見ると、どの原因が一番テストの点数に強い影響を与えたかのランキングが作れます。</li>
-                    <li><strong>ロジスティック回帰推分析：</strong> 結果(Y)が「合格/不合格」のような<strong>2択（カテゴリ）</strong>の場合。その確率を予測します。</li>
+                    <li><strong>ロジスティック回帰分析：</strong> 結果(Y)が「合格/不合格」のような<strong>2択（カテゴリ）</strong>の場合。その確率を予測します。</li>
                 </ul>
+                <div class="alert-box">
+                    <strong>回帰分析の注意：</strong> 回帰は「予測」や「関連の強さ」を見る方法です。観察データだけで「原因だ」と断定しないようにしてください。
+                </div>
             </section>
 
             <!-- ==============================
@@ -569,6 +856,7 @@
                     <li><strong>因子分析：</strong> 「国・数・英…」の点数から背後に潜む力（国語と英語ができる人は「言語能力因子」が高い傾向）を発見します。主にアンケート分析で使います。</li>
                     <li><strong>主成分分析 (PCA)：</strong> 全ての点数をギュッと圧縮して、「総合評価点」という1つの軸を作りたい時などに使います。</li>
                 </ul>
+                <p><strong>使い分け：</strong> アンケートの背後にある「見えない性質」を探すなら因子分析、たくさんの数値を少ない総合指標に圧縮するなら主成分分析が向いています。</p>
             </section>
 
             <section id="goal-other" class="content-section">
@@ -577,6 +865,14 @@
                     <li><strong>時系列データ分析：</strong> 「1年間の毎月の売上」など、時間経過のトレンドや周期を見ます。<span class="data-badge numeric">数値</span>が必要です。</li>
                     <li><strong>テキストマイニング：</strong> アンケートの「自由記述欄」に書かれた文章を解析し、よく使われている単語を大きな文字（ワードクラウド）で表示します。<span class="data-badge category">テキストが入った列</span>を選びます。</li>
                 </ul>
+                <div class="mini-checklist">
+                    <strong>データ準備のコツ</strong>
+                    <ul>
+                        <li>時系列は、日付や月の順番が崩れていないか確認する</li>
+                        <li>テキストは、空欄だけの行や同じ文章の重複を確認する</li>
+                        <li>自由記述の個人情報は、必要に応じて事前に伏せ字にする</li>
+                    </ul>
+                </div>
             </section>
 
             <!-- ==============================
