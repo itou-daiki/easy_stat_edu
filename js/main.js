@@ -30,7 +30,8 @@ let currentAnalysisTitle = '';
 let aiState = {
     apiKey: localStorage.getItem(GEMINI_API_KEY_STORAGE) || '',
     lastOutput: '',
-    isGenerating: false
+    isGenerating: false,
+    chatHistory: []
 };
 
 const aiConfigSection = document.getElementById('ai-config-section');
@@ -44,6 +45,8 @@ const aiAssistToggle = document.getElementById('ai-assist-toggle');
 const aiAssistClose = document.getElementById('ai-assist-close');
 const aiAssistStatus = document.getElementById('ai-assist-status');
 const aiAssistOutput = document.getElementById('ai-assist-output');
+const aiChatInput = document.getElementById('ai-chat-input');
+const aiChatSendBtn = document.getElementById('ai-chat-send-btn');
 const aiGenerateBtn = document.getElementById('ai-generate-interpretation-btn');
 const aiCopyBtn = document.getElementById('ai-copy-interpretation-btn');
 
@@ -354,6 +357,9 @@ function disableCard(card) {
 }
 
 async function showAnalysisView(analysisType) {
+    if (currentAnalysisType !== analysisType) {
+        resetAIConversation();
+    }
     currentAnalysisType = analysisType;
     currentAnalysisTitle = getAnalysisTitle(analysisType);
     document.getElementById('navigation-section').style.display = 'none';
@@ -385,6 +391,7 @@ async function showAnalysisView(analysisType) {
 window.backToHome = () => {
     currentAnalysisType = null;
     currentAnalysisTitle = '';
+    resetAIConversation();
     document.getElementById('analysis-header').style.display = 'none';
     document.getElementById('analysis-area').style.display = 'none';
     document.getElementById('navigation-section').style.display = 'block';
@@ -420,7 +427,7 @@ function setupAISupport() {
         localStorage.setItem(GEMINI_API_KEY_STORAGE, key);
         geminiApiKeyInput.value = '';
         geminiApiKeyInput.placeholder = '保存済みのAPIキーがあります（変更する場合は再入力）';
-        setAIOutput('生成AI支援を有効化しました。分析結果ページで解釈補助を利用できます。');
+        setAIOutput('生成AI支援を有効化しました。分析結果ページで解釈補助と追加質問を利用できます。', 'system');
         updateAIConfigStatus();
         updateAIAssistVisibility();
     });
@@ -428,12 +435,13 @@ function setupAISupport() {
     clearGeminiKeyBtn?.addEventListener('click', () => {
         aiState.apiKey = '';
         aiState.lastOutput = '';
+        aiState.chatHistory = [];
         localStorage.removeItem(GEMINI_API_KEY_STORAGE);
         if (geminiApiKeyInput) {
             geminiApiKeyInput.value = '';
             geminiApiKeyInput.placeholder = 'Gemini APIキーを入力';
         }
-        setAIOutput('Gemini APIキーを削除しました。生成AI支援は無効です。');
+        setAIOutput('Gemini APIキーを削除しました。生成AI支援は無効です。', 'system');
         updateAIConfigStatus();
         updateAIAssistVisibility();
     });
@@ -449,6 +457,13 @@ function setupAISupport() {
     });
 
     aiGenerateBtn?.addEventListener('click', generateAIInterpretation);
+    aiChatSendBtn?.addEventListener('click', sendAIChatMessage);
+    aiChatInput?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendAIChatMessage();
+        }
+    });
 
     aiCopyBtn?.addEventListener('click', async () => {
         if (!aiState.lastOutput) return;
@@ -488,9 +503,11 @@ function updateAIAssistStatus() {
     if (!aiAssistStatus || !aiGenerateBtn) return;
     const hasResults = hasAnalysisResults();
     aiAssistStatus.textContent = hasResults
-        ? `${currentAnalysisTitle || '分析結果'}をもとに、解釈の補助を生成できます。`
-        : '分析を実行すると、結果の読み取りを生成できます。';
+        ? `${currentAnalysisTitle || '分析結果'}をもとに、解釈の生成や追加質問ができます。`
+        : '分析を実行すると、結果の読み取りや追加質問ができます。';
     aiGenerateBtn.disabled = aiState.isGenerating || !aiState.apiKey;
+    if (aiChatSendBtn) aiChatSendBtn.disabled = aiState.isGenerating || !aiState.apiKey;
+    if (aiChatInput) aiChatInput.disabled = aiState.isGenerating || !aiState.apiKey;
 }
 
 function hasAnalysisResults() {
@@ -522,59 +539,102 @@ async function generateAIInterpretation() {
     aiGenerateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
     aiCopyBtn.disabled = true;
     aiAssistOutput.className = 'ai-assist-output loading';
-    setAIOutput('データプレビュー、要約統計量、分析手法、分析結果を整理してGeminiに送信しています...');
+    setAIOutput('データプレビュー、要約統計量、分析手法、分析結果を整理してGeminiに送信しています...', 'system');
 
     try {
         const context = buildAIInterpretationContext();
         const prompt = buildAIInterpretationPrompt(context);
-        const response = await fetch(GEMINI_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': aiState.apiKey
-            },
-            body: JSON.stringify({
-                system_instruction: {
-                    parts: [{
-                        text: 'あなたは統計教育のチューターです。提供された分析結果だけを根拠に、日本語で初学者にもわかるように説明してください。因果関係は研究デザインから明らかな場合以外は断定しないでください。p値だけでなく、効果量、方向、データ上の注意点も扱ってください。'
-                    }]
-                },
-                contents: [{
-                    role: 'user',
-                    parts: [{ text: prompt }]
-                }],
-                generationConfig: {
-                    temperature: 0.2,
-                    topP: 0.8,
-                    maxOutputTokens: 1400
-                }
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Gemini API error ${response.status}: ${errorText.slice(0, 300)}`);
-        }
-
-        const result = await response.json();
-        const text = extractGeminiText(result);
-        if (!text) throw new Error('Gemini APIから解釈文を取得できませんでした。');
+        const text = await requestGemini(prompt, 1400);
 
         aiState.lastOutput = text;
+        aiState.chatHistory = [{ role: 'assistant', text }];
         aiAssistOutput.className = 'ai-assist-output';
-        setAIOutput(text);
+        setAIOutput(text, 'assistant');
         aiCopyBtn.disabled = false;
-        aiAssistStatus.textContent = '解釈の補助を生成しました。内容は必ず分析結果と照合してください。';
+        aiAssistStatus.textContent = '解釈の補助を生成しました。続けて質問できます。';
     } catch (error) {
         console.error(error);
         aiAssistOutput.className = 'ai-assist-output error';
-        setAIOutput(`生成に失敗しました。\n${error.message}\n\nAPIキー、ネットワーク接続、Gemini APIの利用設定を確認してください。`);
+        setAIOutput(`生成に失敗しました。\n${error.message}\n\nAPIキー、ネットワーク接続、Gemini APIの利用設定を確認してください。`, 'error');
         aiAssistStatus.textContent = '生成に失敗しました。';
     } finally {
         aiState.isGenerating = false;
         aiGenerateBtn.innerHTML = '<i class="fas fa-sparkles"></i> 解釈を生成';
         updateAIAssistStatus();
     }
+}
+
+async function sendAIChatMessage() {
+    if (!aiState.apiKey) {
+        showError('Gemini APIキーを保存してから利用してください。');
+        return;
+    }
+    const question = aiChatInput?.value.trim();
+    if (!question || aiState.isGenerating) return;
+
+    aiState.isGenerating = true;
+    aiAssistOutput.className = 'ai-assist-output';
+    updateAIAssistStatus();
+    aiChatInput.value = '';
+    appendAIMessage(question, 'user');
+    appendAIMessage('分析結果とこれまでの会話を確認しています...', 'system');
+
+    try {
+        const context = buildAIInterpretationContext();
+        const prompt = buildAIChatPrompt(context, question);
+        const answer = await requestGemini(prompt, 1200);
+        removeLastSystemAIMessage();
+        aiState.lastOutput = answer;
+        aiState.chatHistory.push({ role: 'user', text: question }, { role: 'assistant', text: answer });
+        aiState.chatHistory = aiState.chatHistory.slice(-10);
+        appendAIMessage(answer, 'assistant');
+        aiCopyBtn.disabled = false;
+        aiAssistStatus.textContent = '回答しました。続けて質問できます。';
+    } catch (error) {
+        console.error(error);
+        removeLastSystemAIMessage();
+        appendAIMessage(`回答に失敗しました。\n${error.message}`, 'error');
+        aiAssistStatus.textContent = '回答に失敗しました。';
+    } finally {
+        aiState.isGenerating = false;
+        updateAIAssistStatus();
+    }
+}
+
+async function requestGemini(prompt, maxOutputTokens) {
+    const response = await fetch(GEMINI_ENDPOINT, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': aiState.apiKey
+        },
+        body: JSON.stringify({
+            system_instruction: {
+                parts: [{
+                    text: 'あなたは統計教育のチューターです。提供された分析結果だけを根拠に、日本語で初学者にもわかるように説明してください。因果関係は研究デザインから明らかな場合以外は断定しないでください。p値だけでなく、効果量、方向、データ上の注意点も扱ってください。'
+                }]
+            },
+            contents: [{
+                role: 'user',
+                parts: [{ text: prompt }]
+            }],
+            generationConfig: {
+                temperature: 0.2,
+                topP: 0.8,
+                maxOutputTokens
+            }
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini API error ${response.status}: ${errorText.slice(0, 300)}`);
+    }
+
+    const result = await response.json();
+    const text = extractGeminiText(result);
+    if (!text) throw new Error('Gemini APIから回答を取得できませんでした。');
+    return text;
 }
 
 function buildAIInterpretationContext() {
@@ -592,6 +652,7 @@ function buildAIInterpretationContext() {
             textColumns: dataCharacteristics?.textColumns || []
         },
         summaryStatistics: createAISummaryStatistics(currentData || [], dataCharacteristics),
+        analysisResultTables: extractAnalysisResultTables(),
         analysisResults: extractAnalysisResultText()
     };
 }
@@ -600,18 +661,30 @@ function buildAIInterpretationPrompt(context) {
     return `
 以下はeasyStatの分析結果ページから収集した情報です。ユーザーが結果を理解するための解釈補助を作成してください。
 
-出力形式:
-1. まず結論
-2. 統計指標の読み取り
-3. データと前提の注意点
-4. レポートに書ける文章例
-5. 次に確認するとよいこと
+出力形式（見出しはこの5つだけ）:
+1. 結果から言えること
+2. 注目すべき数値
+3. 解釈で注意すること
+4. レポート例
+5. 次に確認すること
 
 制約:
+- 1文目から、分析結果表にある具体的な変数名・統計量・p値・効果量・相関係数などに基づいて説明する
+- 「この分析は何を調べるものです」のような分析手法の一般説明で始めない
+- 表から読み取れる最も重要な結果を優先し、数値を必ず含める
+- 「相関係数の解釈」などの凡例・目安は、今回の結果そのものではないので主な根拠にしない
 - 与えられた情報にない数値や結論を作らない
+- 分析結果表や抽出テキストに具体的な統計量がない場合は、一般論で埋めず「結果表を十分に読み取れませんでした」と明記する
 - 有意でない結果を「差がある」と言わない
 - 相関や回帰だけで因果関係を断定しない
-- 初学者にわかる自然な日本語で説明する
+- 初学者にわかる自然な日本語で、実務的に役立つ短めの箇条書きにする
+- Markdownの大見出し（##など）は使わない
+
+悪い出力例:
+「この分析は、いくつかの数値データの間にどのような関係があるかを調べたものです。」
+
+良い出力例:
+「数学と英語の相関は r = 0.989, p < .01 で、強い正の相関が見られます。」
 
 分析手法:
 ${JSON.stringify(context.analysis, null, 2)}
@@ -625,8 +698,55 @@ ${JSON.stringify(context.dataPreview, null, 2)}
 要約統計量:
 ${JSON.stringify(context.summaryStatistics, null, 2)}
 
+分析結果表（表構造を保持）:
+${JSON.stringify(context.analysisResultTables, null, 2)}
+
 分析結果ページから抽出したテキスト:
 ${context.analysisResults || 'まだ分析結果のテキストを十分に取得できませんでした。'}
+`.trim();
+}
+
+function buildAIChatPrompt(context, question) {
+    const history = aiState.chatHistory
+        .slice(-8)
+        .map(item => `${item.role === 'user' ? 'ユーザー' : 'AI'}: ${item.text}`)
+        .join('\n\n');
+
+    return `
+以下はeasyStatの分析結果ページから収集した情報と、これまでの会話です。
+ユーザーの追加質問に、分析結果に基づいて具体的に答えてください。
+
+回答ルール:
+- まず質問に直接答える
+- 具体的な変数名・統計量・p値・効果量・相関係数など、結果表から読める数値を優先して使う
+- 分析結果にない情報は推測せず、「この画面の結果だけでは判断できません」と言う
+- 相関や回帰だけで因果関係を断定しない
+- 長くなりすぎないように、必要なら箇条書きで答える
+- Markdownの大見出し（##など）は使わない
+
+分析手法:
+${JSON.stringify(context.analysis, null, 2)}
+
+データ構造:
+${JSON.stringify(context.dataStructure, null, 2)}
+
+データプレビュー（先頭10件）:
+${JSON.stringify(context.dataPreview, null, 2)}
+
+要約統計量:
+${JSON.stringify(context.summaryStatistics, null, 2)}
+
+分析結果表（表構造を保持）:
+${JSON.stringify(context.analysisResultTables, null, 2)}
+
+分析結果ページから抽出したテキスト:
+${context.analysisResults || 'まだ分析結果のテキストを十分に取得できませんでした。'}
+
+これまでの会話:
+${history || 'まだ会話はありません。'}
+
+ユーザーの追加質問:
+${question}
 `.trim();
 }
 
@@ -682,9 +802,44 @@ function extractAnalysisResultText() {
     clone.querySelectorAll('script, style, button, input, select, textarea, canvas, svg, img, .plot-container, .js-plotly-plot, [id*="data_overview"], [id*="data-overview"], [id*="dataframe"]').forEach(el => el.remove());
     const resultContainers = clone.querySelectorAll('#results-section, #summary-stats-section, #test-results-section, #interpretation-section, [id*="result"], [id*="interpretation"]');
     const text = resultContainers.length > 0
-        ? Array.from(resultContainers).map(getVisibleText).join('\n\n')
-        : getVisibleText(clone);
+        ? Array.from(resultContainers).map(getReadableText).join('\n\n')
+        : getReadableText(clone);
     return truncateText(text, 12000);
+}
+
+function extractAnalysisResultTables() {
+    const content = document.getElementById('analysis-content');
+    if (!content) return [];
+
+    const resultRoot = content.querySelector('#analysis-results, #results-section') || content;
+    return Array.from(resultRoot.querySelectorAll('table'))
+        .slice(0, 8)
+        .map((table, index) => {
+            const caption = getNearestHeading(table) || `結果表${index + 1}`;
+            const headers = Array.from(table.querySelectorAll('thead th'))
+                .map(cell => getReadableText(cell))
+                .filter(Boolean);
+            const rows = Array.from(table.querySelectorAll('tbody tr'))
+                .slice(0, 40)
+                .map(row => Array.from(row.children).map(cell => getReadableText(cell)));
+            return { caption, headers, rows };
+        })
+        .filter(table => table.rows.length > 0);
+}
+
+function getNearestHeading(element) {
+    let current = element;
+    for (let depth = 0; current && depth < 4; depth++) {
+        let sibling = current.previousElementSibling;
+        while (sibling) {
+            if (/^H[1-6]$/.test(sibling.tagName)) return getReadableText(sibling);
+            const nestedHeading = sibling.querySelector?.('h1, h2, h3, h4, h5, h6');
+            if (nestedHeading) return getReadableText(nestedHeading);
+            sibling = sibling.previousElementSibling;
+        }
+        current = current.parentElement;
+    }
+    return '';
 }
 
 function extractGeminiText(result) {
@@ -707,9 +862,40 @@ function getVisibleText(element) {
     return normalizeText(element?.textContent || '');
 }
 
-function setAIOutput(text) {
+function getReadableText(element) {
+    if (!element) return '';
+    const clone = element.cloneNode(true);
+    clone.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+    return normalizeText(clone.textContent || '');
+}
+
+function setAIOutput(text, role = 'assistant') {
     if (!aiAssistOutput) return;
-    aiAssistOutput.textContent = text;
+    aiAssistOutput.innerHTML = '';
+    appendAIMessage(text, role);
+}
+
+function appendAIMessage(text, role = 'assistant') {
+    if (!aiAssistOutput) return;
+    const message = document.createElement('div');
+    message.className = `ai-chat-message ${role}`;
+    message.textContent = text;
+    aiAssistOutput.appendChild(message);
+    aiAssistOutput.scrollTop = aiAssistOutput.scrollHeight;
+}
+
+function removeLastSystemAIMessage() {
+    if (!aiAssistOutput) return;
+    const messages = Array.from(aiAssistOutput.querySelectorAll('.ai-chat-message.system'));
+    messages.at(-1)?.remove();
+}
+
+function resetAIConversation() {
+    aiState.chatHistory = [];
+    aiState.lastOutput = '';
+    setAIOutput('「解釈を生成」を押すと、Geminiが結果の読み方、注意点、レポート例を日本語で整理します。その後、この欄で追加質問もできます。');
+    if (aiCopyBtn) aiCopyBtn.disabled = true;
+    if (aiChatInput) aiChatInput.value = '';
 }
 
 function normalizeText(text) {

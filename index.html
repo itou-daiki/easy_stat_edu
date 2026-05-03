@@ -579,7 +579,15 @@
                     データプレビュー先頭10件、要約統計量、分析手法、分析結果のテキスト要約
                 </div>
                 <div id="ai-assist-output" class="ai-assist-output">
-                    <p>「解釈を生成」を押すと、Geminiが結果の読み方、注意点、レポート例を日本語で整理します。</p>
+                    <div class="ai-chat-message assistant">
+                        「解釈を生成」を押すと、Geminiが結果の読み方、注意点、レポート例を日本語で整理します。その後、この欄で追加質問もできます。
+                    </div>
+                </div>
+                <div class="ai-chat-input-area">
+                    <textarea id="ai-chat-input" class="ai-chat-input" rows="2" placeholder="例: この結果をレポート用に短く書くと？ / 有意でない結果はどう説明する？"></textarea>
+                    <button type="button" id="ai-chat-send-btn" class="btn-ai-primary">
+                        <i class="fas fa-paper-plane"></i> 質問
+                    </button>
                 </div>
                 <div class="ai-assist-actions">
                     <button type="button" id="ai-generate-interpretation-btn" class="btn-ai-primary">
