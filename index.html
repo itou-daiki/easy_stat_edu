@@ -155,6 +155,51 @@
             <p class="hero-subtitle">ブラウザ上で簡単かつ高速に統計分析　-データ駆動型探究を促進-</p>
         </div>
 
+        <!-- 生成AI支援設定 -->
+        <div class="ai-config-section collapsed" id="ai-config-section">
+            <button type="button" class="ai-config-header" id="ai-config-toggle" aria-expanded="false" aria-controls="ai-config-content">
+                <div class="ai-config-main">
+                    <div class="ai-config-icon">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <div class="ai-config-title-row">
+                            <h3>生成AIによる解釈支援</h3>
+                            <span id="ai-status-badge" class="ai-status-badge inactive">無効</span>
+                        </div>
+                        <p>Gemini APIキーを設定すると、分析結果の読み取りをAIが補助します。</p>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-down ai-config-chevron" aria-hidden="true"></i>
+            </button>
+            <div class="ai-config-content" id="ai-config-content">
+                <div class="ai-config-help">
+                    <h4>Gemini APIキーの取得方法</h4>
+                    <ol>
+                        <li>Google AI StudioのAPIキー管理ページを開きます。</li>
+                        <li>「APIキーを作成」または「Create API key」を選びます。</li>
+                        <li>表示されたキーをコピーして、下の入力欄に貼り付けます。</li>
+                    </ol>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="ai-key-link">
+                        <i class="fas fa-up-right-from-square"></i> Google AI StudioでAPIキーを取得
+                    </a>
+                    <p class="ai-config-note">
+                        生成時には、データプレビュー先頭10件・要約統計量・分析手法・分析結果の要約をGemini APIへ送信します。
+                        個人情報を含むデータを扱う場合は、送信してよい内容か確認してください。
+                    </p>
+                </div>
+                <div class="ai-config-controls">
+                    <input type="password" id="gemini-api-key-input" class="ai-key-input" placeholder="Gemini APIキーを入力">
+                    <button type="button" id="save-gemini-key-btn" class="btn-ai-primary">
+                        <i class="fas fa-key"></i> 保存して有効化
+                    </button>
+                    <button type="button" id="clear-gemini-key-btn" class="btn-ai-secondary">
+                        <i class="fas fa-trash-alt"></i> 無効化
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- データアップロードセクション -->
         <div class="upload-section-main" id="upload-section-main">
             <div class="upload-area" id="main-upload-area"
@@ -511,6 +556,40 @@
         <!-- 分析エリア -->
         <div id="analysis-area" class="analysis-area" style="display: none;">
             <div id="analysis-content"></div>
+        </div>
+
+        <!-- 生成AI解釈補助フローティングパネル -->
+        <div id="ai-assist-widget" class="ai-assist-widget collapsed" style="display: none;">
+            <button type="button" id="ai-assist-toggle" class="ai-assist-toggle" aria-expanded="false">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                <span>AI解釈補助</span>
+            </button>
+            <div class="ai-assist-panel">
+                <div class="ai-assist-header">
+                    <div>
+                        <h4><i class="fas fa-wand-magic-sparkles"></i> 生成AIによる解釈の補助</h4>
+                        <p id="ai-assist-status">分析を実行後、結果の読み取りを生成できます。</p>
+                    </div>
+                    <button type="button" id="ai-assist-close" class="ai-icon-button" aria-label="閉じる">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ai-context-note">
+                    <strong>送信される内容:</strong>
+                    データプレビュー先頭10件、要約統計量、分析手法、分析結果のテキスト要約
+                </div>
+                <div id="ai-assist-output" class="ai-assist-output">
+                    <p>「解釈を生成」を押すと、Geminiが結果の読み方、注意点、レポート例を日本語で整理します。</p>
+                </div>
+                <div class="ai-assist-actions">
+                    <button type="button" id="ai-generate-interpretation-btn" class="btn-ai-primary">
+                        <i class="fas fa-sparkles"></i> 解釈を生成
+                    </button>
+                    <button type="button" id="ai-copy-interpretation-btn" class="btn-ai-secondary" disabled>
+                        <i class="fas fa-copy"></i> コピー
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- 説明・操作方法・更新履歴 -->
