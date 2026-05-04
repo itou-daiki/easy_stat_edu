@@ -693,6 +693,10 @@ function hasAnalysisResults() {
     if (!content) return false;
     const resultSelectors = [
         '#recommendation-area',
+        '#processing-summary',
+        '#processed-data-overview-section',
+        '#summary-stats-section',
+        '#eda-summary-stats',
         '#results-section',
         '#test-results-section',
         '#interpretation-section',
@@ -1237,7 +1241,7 @@ function extractAnalysisResultText() {
 
     const clone = content.cloneNode(true);
     clone.querySelectorAll('script, style, button, input, select, textarea, canvas, svg, img, .plot-container, .js-plotly-plot, [id*="data_overview"], [id*="data-overview"], [id*="dataframe"]').forEach(el => el.remove());
-    const resultContainers = clone.querySelectorAll('#recommendation-area, #results-section, #summary-stats-section, #test-results-section, #interpretation-section, [id*="result"], [id*="interpretation"]');
+    const resultContainers = clone.querySelectorAll('#recommendation-area, #processing-summary, #data-quality-info, #processed-data-overview-section, #summary-stats-section, #eda-summary-stats, #results-section, #test-results-section, #interpretation-section, [id*="result"], [id*="interpretation"]');
     const text = resultContainers.length > 0
         ? Array.from(resultContainers).map(getReadableText).join('\n\n')
         : getReadableText(clone);

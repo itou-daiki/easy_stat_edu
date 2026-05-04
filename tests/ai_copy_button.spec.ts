@@ -92,4 +92,26 @@ test.describe('AI copy text availability', () => {
         await expect(page.locator('#selected-tags .as-tag')).toHaveCount(1);
         await expect(copyButton).toBeEnabled();
     });
+
+    test('data processing copy button is enabled after a processing operation', async ({ page }) => {
+        await loadDemoData(page);
+        await page.locator('.feature-card[data-analysis="data_processing"]').click();
+        await expect(page.locator('#analysis-area')).toBeVisible();
+
+        const copyButton = page.locator('#ai-copy-context-btn');
+        await expect(copyButton).toBeDisabled();
+
+        await page.locator('#remove-missing-checkbox').check();
+        await page.locator('#process-data-btn').click();
+        await expect(page.locator('#processing-summary')).toContainText('処理完了');
+        await expect(copyButton).toBeEnabled();
+    });
+
+    test('EDA copy button is enabled after automatic summary is shown', async ({ page }) => {
+        await loadDemoData(page);
+        await page.locator('.feature-card[data-analysis="eda"]').click();
+        await expect(page.locator('#eda-summary-stats')).toBeVisible({ timeout: 30000 });
+
+        await expect(page.locator('#ai-copy-context-btn')).toBeEnabled();
+    });
 });
