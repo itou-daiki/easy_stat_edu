@@ -644,26 +644,52 @@ function updateAIAssistVisibility() {
 
 function updateAIAssistStatus() {
     if (!aiAssistStatus || !aiGenerateBtn) return;
-    const hasResults = hasAnalysisResults();
+    const canUseContext = hasAIContextReady();
+    const waitingMessage = getAIContextWaitingMessage();
     if (aiState.apiKey) {
-        aiAssistStatus.textContent = hasResults
+        aiAssistStatus.textContent = canUseContext
             ? `${currentAnalysisTitle || '分析結果'}をもとに、解釈の生成や追加質問ができます。`
-            : '分析を実行すると、結果の読み取りや追加質問ができます。';
+            : waitingMessage;
     } else {
-        aiAssistStatus.textContent = hasResults
+        aiAssistStatus.textContent = canUseContext
             ? `${currentAnalysisTitle || '分析結果'}をもとに、他の生成AIへ貼り付ける用テキストをコピーできます。`
-            : '分析を実行すると、他の生成AIへ貼り付ける用テキストをコピーできます。';
+            : waitingMessage;
     }
-    aiGenerateBtn.disabled = aiState.isGenerating || !aiState.apiKey;
-    if (aiCopyContextBtn) aiCopyContextBtn.disabled = aiState.isGenerating || !currentAnalysisType;
-    if (aiChatSendBtn) aiChatSendBtn.disabled = aiState.isGenerating || !aiState.apiKey;
-    if (aiChatInput) aiChatInput.disabled = aiState.isGenerating || !aiState.apiKey;
+    aiGenerateBtn.disabled = aiState.isGenerating || !aiState.apiKey || !canUseContext;
+    if (aiCopyContextBtn) {
+        aiCopyContextBtn.disabled = aiState.isGenerating || !canUseContext;
+        aiCopyContextBtn.title = canUseContext
+            ? '分析結果を他の生成AIへ貼り付けるためのテキストとしてコピーします'
+            : '変数を選択して分析結果が表示されるとコピーできます';
+    }
+    if (aiChatSendBtn) aiChatSendBtn.disabled = aiState.isGenerating || !aiState.apiKey || !canUseContext;
+    if (aiChatInput) aiChatInput.disabled = aiState.isGenerating || !aiState.apiKey || !canUseContext;
+}
+
+function hasAIContextReady() {
+    if (!currentAnalysisType) return false;
+    if (currentAnalysisType === 'analysis_support' && !hasSelectedAnalysisSupportVariables()) {
+        return false;
+    }
+    return hasAnalysisResults();
+}
+
+function hasSelectedAnalysisSupportVariables() {
+    return document.querySelectorAll('#selected-tags .as-tag').length > 0;
+}
+
+function getAIContextWaitingMessage() {
+    if (currentAnalysisType === 'analysis_support') {
+        return '関心のある変数を選択すると、解釈支援とAI用テキストのコピーが使えます。';
+    }
+    return '変数を選択して分析を実行すると、解釈支援とAI用テキストのコピーが使えます。';
 }
 
 function hasAnalysisResults() {
     const content = document.getElementById('analysis-content');
     if (!content) return false;
     const resultSelectors = [
+        '#recommendation-area',
         '#results-section',
         '#test-results-section',
         '#interpretation-section',
@@ -672,14 +698,20 @@ function hasAnalysisResults() {
         '[id*="output"]'
     ];
     return resultSelectors.some(selector => {
-        const element = content.querySelector(selector);
-        return element && getVisibleText(element).length > 80;
+        return Array.from(content.querySelectorAll(selector)).some(element => {
+            return isElementVisible(element) && getVisibleText(element).length > 80;
+        });
     });
 }
 
 async function generateAIInterpretation() {
     if (!aiState.apiKey) {
         showError('Gemini APIキーを保存してから利用してください。');
+        return;
+    }
+    if (!hasAIContextReady()) {
+        showError(getAIContextWaitingMessage());
+        updateAIAssistStatus();
         return;
     }
     if (aiState.isGenerating) return;
@@ -719,6 +751,11 @@ async function copyAIContextPrompt() {
         showError('分析ページを開いてからコピーしてください。');
         return;
     }
+    if (!hasAIContextReady()) {
+        showError(getAIContextWaitingMessage());
+        updateAIAssistStatus();
+        return;
+    }
 
     try {
         const context = buildAIInterpretationContext();
@@ -736,6 +773,11 @@ async function copyAIContextPrompt() {
 async function sendAIChatMessage() {
     if (!aiState.apiKey) {
         showError('Gemini APIキーを保存してから利用してください。');
+        return;
+    }
+    if (!hasAIContextReady()) {
+        showError(getAIContextWaitingMessage());
+        updateAIAssistStatus();
         return;
     }
     const question = aiChatInput?.value.trim();
@@ -1160,7 +1202,7 @@ function extractAnalysisResultText() {
 
     const clone = content.cloneNode(true);
     clone.querySelectorAll('script, style, button, input, select, textarea, canvas, svg, img, .plot-container, .js-plotly-plot, [id*="data_overview"], [id*="data-overview"], [id*="dataframe"]').forEach(el => el.remove());
-    const resultContainers = clone.querySelectorAll('#results-section, #summary-stats-section, #test-results-section, #interpretation-section, [id*="result"], [id*="interpretation"]');
+    const resultContainers = clone.querySelectorAll('#recommendation-area, #results-section, #summary-stats-section, #test-results-section, #interpretation-section, [id*="result"], [id*="interpretation"]');
     const text = resultContainers.length > 0
         ? Array.from(resultContainers).map(getReadableText).join('\n\n')
         : getReadableText(clone);
@@ -1220,6 +1262,16 @@ function getAnalysisTitle(analysisType) {
 
 function getVisibleText(element) {
     return normalizeText(element?.textContent || '');
+}
+
+function isElementVisible(element) {
+    if (!element) return false;
+    const style = window.getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+        return false;
+    }
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
 }
 
 function getReadableText(element) {
