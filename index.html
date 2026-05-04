@@ -575,12 +575,12 @@
                     </button>
                 </div>
                 <div class="ai-context-note">
-                    <strong>送信される内容:</strong>
-                    データプレビュー先頭10件、要約統計量、分析手法、分析結果のテキスト要約
+                    <strong>利用できる内容:</strong>
+                    データプレビュー先頭10件、要約統計量、分析手法、分析結果のテキスト要約。APIキーがなくても、他の生成AIに貼り付ける用テキストをコピーできます。
                 </div>
                 <div id="ai-assist-output" class="ai-assist-output">
                     <div class="ai-chat-message assistant">
-                        「解釈を生成」を押すと、Geminiが結果の読み方、注意点、レポート例を日本語で整理します。その後、この欄で追加質問もできます。
+                        APIキーがある場合は「解釈を生成」や追加質問ができます。APIキーがない場合は「AI用テキストをコピー」して、ChatGPT、Gemini、Claudeなどに貼り付けて使えます。
                     </div>
                 </div>
                 <div class="ai-chat-input-area">
@@ -590,6 +590,9 @@
                     </button>
                 </div>
                 <div class="ai-assist-actions">
+                    <button type="button" id="ai-copy-context-btn" class="btn-ai-secondary">
+                        <i class="fas fa-clipboard-list"></i> AI用テキストをコピー
+                    </button>
                     <button type="button" id="ai-generate-interpretation-btn" class="btn-ai-primary">
                         <i class="fas fa-sparkles"></i> 解釈を生成
                     </button>
@@ -923,7 +926,7 @@
                         <p>
                             <i class="fab fa-github"></i>
                             このプロジェクトはオープンソースです。
-                            <a href="https://github.com/itou-daiki/easy_stat" target="_blank">GitHubリポジトリ</a>で
+                            <a href="https://github.com/itou-daiki/easy_stat_edu" target="_blank">GitHubリポジトリ</a>で
                             ソースコードを確認したり、issueを報告できます。
                         </p>
                     </div>
@@ -938,7 +941,7 @@
                 <p>easyStat: Open Source for Ubiquitous Statistics</p>
                 <p>Democratizing data, everywhere.</p>
                 <div class="footer-links">
-                    <a href="https://github.com/itou-daiki/easy_stat" target="_blank">
+                    <a href="https://github.com/itou-daiki/easy_stat_edu" target="_blank">
                         <i class="fab fa-github"></i> GitHub
                     </a>
                     <a href="https://forms.gle/G5sMYm7dNpz2FQtU9" target="_blank">

@@ -47,6 +47,7 @@ const aiAssistStatus = document.getElementById('ai-assist-status');
 const aiAssistOutput = document.getElementById('ai-assist-output');
 const aiChatInput = document.getElementById('ai-chat-input');
 const aiChatSendBtn = document.getElementById('ai-chat-send-btn');
+const aiCopyContextBtn = document.getElementById('ai-copy-context-btn');
 const aiGenerateBtn = document.getElementById('ai-generate-interpretation-btn');
 const aiCopyBtn = document.getElementById('ai-copy-interpretation-btn');
 
@@ -441,7 +442,7 @@ function setupAISupport() {
             geminiApiKeyInput.value = '';
             geminiApiKeyInput.placeholder = 'Gemini APIキーを入力';
         }
-        setAIOutput('Gemini APIキーを削除しました。生成AI支援は無効です。', 'system');
+        setAIOutput('Gemini APIキーを削除しました。生成とチャットは無効ですが、AI用テキストのコピーは利用できます。', 'system');
         updateAIConfigStatus();
         updateAIAssistVisibility();
     });
@@ -457,6 +458,7 @@ function setupAISupport() {
     });
 
     aiGenerateBtn?.addEventListener('click', generateAIInterpretation);
+    aiCopyContextBtn?.addEventListener('click', copyAIContextPrompt);
     aiChatSendBtn?.addEventListener('click', sendAIChatMessage);
     aiChatInput?.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && !event.shiftKey) {
@@ -468,7 +470,7 @@ function setupAISupport() {
     aiCopyBtn?.addEventListener('click', async () => {
         if (!aiState.lastOutput) return;
         try {
-            await navigator.clipboard.writeText(aiState.lastOutput);
+            await copyTextToClipboard(aiState.lastOutput);
             aiAssistStatus.textContent = '解釈文をコピーしました。';
         } catch (error) {
             console.error(error);
@@ -494,7 +496,7 @@ function updateAIConfigStatus() {
 function updateAIAssistVisibility() {
     if (!aiAssistWidget) return;
     const analysisVisible = document.getElementById('analysis-area')?.style.display !== 'none';
-    const shouldShow = Boolean(aiState.apiKey && analysisVisible && currentAnalysisType);
+    const shouldShow = Boolean(analysisVisible && currentAnalysisType);
     aiAssistWidget.style.display = shouldShow ? 'block' : 'none';
     if (shouldShow) updateAIAssistStatus();
 }
@@ -502,10 +504,17 @@ function updateAIAssistVisibility() {
 function updateAIAssistStatus() {
     if (!aiAssistStatus || !aiGenerateBtn) return;
     const hasResults = hasAnalysisResults();
-    aiAssistStatus.textContent = hasResults
-        ? `${currentAnalysisTitle || '分析結果'}をもとに、解釈の生成や追加質問ができます。`
-        : '分析を実行すると、結果の読み取りや追加質問ができます。';
+    if (aiState.apiKey) {
+        aiAssistStatus.textContent = hasResults
+            ? `${currentAnalysisTitle || '分析結果'}をもとに、解釈の生成や追加質問ができます。`
+            : '分析を実行すると、結果の読み取りや追加質問ができます。';
+    } else {
+        aiAssistStatus.textContent = hasResults
+            ? `${currentAnalysisTitle || '分析結果'}をもとに、他の生成AIへ貼り付ける用テキストをコピーできます。`
+            : '分析を実行すると、他の生成AIへ貼り付ける用テキストをコピーできます。';
+    }
     aiGenerateBtn.disabled = aiState.isGenerating || !aiState.apiKey;
+    if (aiCopyContextBtn) aiCopyContextBtn.disabled = aiState.isGenerating || !currentAnalysisType;
     if (aiChatSendBtn) aiChatSendBtn.disabled = aiState.isGenerating || !aiState.apiKey;
     if (aiChatInput) aiChatInput.disabled = aiState.isGenerating || !aiState.apiKey;
 }
@@ -561,6 +570,25 @@ async function generateAIInterpretation() {
         aiState.isGenerating = false;
         aiGenerateBtn.innerHTML = '<i class="fas fa-sparkles"></i> 解釈を生成';
         updateAIAssistStatus();
+    }
+}
+
+async function copyAIContextPrompt() {
+    if (!currentAnalysisType) {
+        showError('分析ページを開いてからコピーしてください。');
+        return;
+    }
+
+    try {
+        const context = buildAIInterpretationContext();
+        const prompt = buildAIInterpretationPrompt(context);
+        await copyTextToClipboard(prompt);
+        aiAssistStatus.textContent = '他の生成AIに貼り付ける用テキストをコピーしました。';
+        setAIOutput('AI用テキストをコピーしました。ChatGPT、Gemini、Claudeなどに貼り付けて、分析結果の解釈を依頼できます。', 'system');
+    } catch (error) {
+        console.error(error);
+        aiAssistStatus.textContent = 'AI用テキストのコピーに失敗しました。';
+        setAIOutput('コピーに失敗しました。ブラウザのクリップボード権限を確認してください。', 'error');
     }
 }
 
@@ -879,7 +907,11 @@ function appendAIMessage(text, role = 'assistant') {
     if (!aiAssistOutput) return;
     const message = document.createElement('div');
     message.className = `ai-chat-message ${role}`;
-    message.textContent = text;
+    if (role === 'assistant') {
+        message.innerHTML = renderMarkdown(text);
+    } else {
+        message.textContent = text;
+    }
     aiAssistOutput.appendChild(message);
     aiAssistOutput.scrollTop = aiAssistOutput.scrollHeight;
 }
@@ -893,9 +925,128 @@ function removeLastSystemAIMessage() {
 function resetAIConversation() {
     aiState.chatHistory = [];
     aiState.lastOutput = '';
-    setAIOutput('「解釈を生成」を押すと、Geminiが結果の読み方、注意点、レポート例を日本語で整理します。その後、この欄で追加質問もできます。');
+    setAIOutput('APIキーがある場合は「解釈を生成」や追加質問ができます。APIキーがない場合は「AI用テキストをコピー」して、ChatGPT、Gemini、Claudeなどに貼り付けて使えます。');
     if (aiCopyBtn) aiCopyBtn.disabled = true;
     if (aiChatInput) aiChatInput.value = '';
+}
+
+async function copyTextToClipboard(text) {
+    if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand('copy');
+    textarea.remove();
+    if (!copied) throw new Error('クリップボードへのコピーが許可されませんでした。');
+}
+
+function renderMarkdown(markdown) {
+    const source = String(markdown || '').replace(/\r\n/g, '\n');
+    const codeBlocks = [];
+    let escaped = escapeHtml(source).replace(/```([\s\S]*?)```/g, (_, code) => {
+        const index = codeBlocks.length;
+        codeBlocks.push(`<pre><code>${code.trim()}</code></pre>`);
+        return `@@CODE_BLOCK_${index}@@`;
+    });
+
+    const lines = escaped.split('\n');
+    const html = [];
+    let paragraph = [];
+    let listType = null;
+    let listItems = [];
+
+    const flushParagraph = () => {
+        if (!paragraph.length) return;
+        html.push(`<p>${formatInlineMarkdown(paragraph.join(' '))}</p>`);
+        paragraph = [];
+    };
+
+    const flushList = () => {
+        if (!listType) return;
+        html.push(`<${listType}>${listItems.map(item => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</${listType}>`);
+        listType = null;
+        listItems = [];
+    };
+
+    lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+            flushParagraph();
+            flushList();
+            return;
+        }
+
+        const codeMatch = trimmed.match(/^@@CODE_BLOCK_(\d+)@@$/);
+        if (codeMatch) {
+            flushParagraph();
+            flushList();
+            html.push(codeBlocks[Number(codeMatch[1])] || '');
+            return;
+        }
+
+        const heading = trimmed.match(/^(#{1,4})\s+(.+)$/);
+        if (heading) {
+            flushParagraph();
+            flushList();
+            const level = Math.min(heading[1].length + 1, 4);
+            html.push(`<h${level}>${formatInlineMarkdown(heading[2])}</h${level}>`);
+            return;
+        }
+
+        const unordered = trimmed.match(/^[-*]\s+(.+)$/);
+        const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
+        if (unordered || ordered) {
+            flushParagraph();
+            const nextType = unordered ? 'ul' : 'ol';
+            if (listType && listType !== nextType) flushList();
+            listType = nextType;
+            listItems.push(unordered ? unordered[1] : ordered[1]);
+            return;
+        }
+
+        const quote = trimmed.match(/^&gt;\s?(.+)$/);
+        if (quote) {
+            flushParagraph();
+            flushList();
+            html.push(`<blockquote>${formatInlineMarkdown(quote[1])}</blockquote>`);
+            return;
+        }
+
+        flushList();
+        paragraph.push(trimmed);
+    });
+
+    flushParagraph();
+    flushList();
+    return html.join('');
+}
+
+function formatInlineMarkdown(text) {
+    return text
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/_([^_]+)_/g, '<em>$1</em>');
+}
+
+function escapeHtml(text) {
+    return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 function normalizeText(text) {
