@@ -25,6 +25,147 @@ const GEMINI_API_KEY_STORAGE = 'easyStat.geminiApiKey';
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
+const ANALYSIS_GUIDANCE = {
+    analysis_support: {
+        purpose: 'データの型や研究目的から、適切な分析候補を選ぶための支援。',
+        focus: ['目的とデータ型が対応しているか', '候補分析ごとの前提条件', '最初に試すべき分析と理由'],
+        cannotConclude: ['分析候補の提示だけでは研究仮説の妥当性は判断できない。'],
+        nextSteps: ['研究目的を1文で書く', '目的変数と説明変数を明確にする', '候補分析を1つ選んで結果まで確認する']
+    },
+    data_processing: {
+        purpose: '分析前のデータ整形、再コード化、欠損・表記ゆれ処理の支援。',
+        focus: ['処理前後で値の意味が変わっていないか', '欠損や外れ値の扱い', '再コード化のルールの説明可能性'],
+        cannotConclude: ['加工後のデータだけでは、元データの測定品質までは保証できない。'],
+        nextSteps: ['処理ルールを記録する', '処理前後の件数・分布を比較する', '分析前にデータプレビューを確認する']
+    },
+    data_merge: {
+        purpose: '複数データを共通キーで結合し、分析に使える1つのデータにまとめる。',
+        focus: ['結合キーの一致状況', '結合後の行数・欠損', '重複キーや対応しない行の有無'],
+        cannotConclude: ['結合できたことは、変数間の関係が正しいことを意味しない。'],
+        nextSteps: ['結合前後の件数を確認する', 'キー列の重複を確認する', '結合後の欠損列を点検する']
+    },
+    factor_score: {
+        purpose: '尺度情報にもとづいて因子得点・下位尺度得点を算出する。',
+        focus: ['逆転項目の処理', '尺度ごとの項目数', '得点分布と欠損'],
+        cannotConclude: ['因子得点だけでは尺度の信頼性や妥当性は保証できない。'],
+        nextSteps: ['項目の対応表を確認する', '尺度ごとの信頼性係数を確認する', '因子得点の分布を可視化する']
+    },
+    eda: {
+        purpose: 'データの全体像、分布、外れ値、欠損、変数間の大まかな関係を把握する。',
+        focus: ['平均・中央値・ばらつき', '外れ値や歪み', '欠損率', '次に使うべき分析候補'],
+        cannotConclude: ['EDAだけでは統計的な差や因果関係は断定できない。'],
+        nextSteps: ['外れ値の扱いを決める', '目的に合う検定・回帰へ進む', '必要なら変数変換を検討する']
+    },
+    cross_tabulation: {
+        purpose: '2つのカテゴリ変数の組み合わせの分布を確認する。',
+        focus: ['度数・行パーセント・列パーセント', '偏りが大きいセル', 'サンプルサイズの小さいセル'],
+        cannotConclude: ['クロス集計だけでは偶然を超えた関連かは判断しきれない。'],
+        nextSteps: ['必要ならカイ二乗検定やFisher正確検定へ進む', '小さいセルを確認する', '割合の母数を明記する']
+    },
+    correlation: {
+        purpose: '数値変数どうしが一緒に増減する傾向を確認する。',
+        focus: ['相関係数の向きと強さ', 'p値と信頼区間', '散布図での直線性・外れ値'],
+        cannotConclude: ['相関だけでは因果関係は断定できない。'],
+        nextSteps: ['散布図で形を確認する', '必要なら回帰分析へ進む', '第三の変数の影響を考える']
+    },
+    ttest: {
+        purpose: '2群または1標本の平均差が偶然で説明できるかを検討する。',
+        focus: ['平均差の方向', 't値・自由度・p値', '効果量', '群の人数とばらつき'],
+        cannotConclude: ['有意差があっても、研究デザインなしに原因は断定できない。'],
+        nextSteps: ['効果量を確認する', '群の人数差と外れ値を確認する', 'レポートでは平均・SDも併記する']
+    },
+    anova_one_way: {
+        purpose: '3群以上、または複数条件の平均差を検討する。',
+        focus: ['主効果の有無', 'F値・p値・効果量', '多重比較の結果', '群ごとの平均とばらつき'],
+        cannotConclude: ['ANOVAの主効果だけでは、どの群が違うかは多重比較なしに断定できない。'],
+        nextSteps: ['有意なら多重比較を見る', '効果量を確認する', '群ごとの箱ひげ図や平均を確認する']
+    },
+    anova_two_way: {
+        purpose: '2つの要因が平均に与える影響と交互作用を検討する。',
+        focus: ['各主効果', '交互作用', '単純主効果や多重比較', '効果量'],
+        cannotConclude: ['交互作用がある場合、主効果だけで単純に解釈しない。'],
+        nextSteps: ['交互作用プロットを確認する', '必要なら単純主効果を見る', '要因ごとの平均を比較する']
+    },
+    mann_whitney: {
+        purpose: '独立した2群の分布や順位の違いをノンパラメトリックに検討する。',
+        focus: ['U値・p値・効果量', '中央値や順位の方向', '群のサンプルサイズ'],
+        cannotConclude: ['平均差の検定ではないため、平均だけで説明しない。'],
+        nextSteps: ['中央値や分布図を確認する', '効果量を併記する', '外れ値の影響を確認する']
+    },
+    kruskal_wallis: {
+        purpose: '3群以上の分布や順位の違いをノンパラメトリックに検討する。',
+        focus: ['H値・p値・効果量', '群ごとの中央値', '多重比較の必要性'],
+        cannotConclude: ['有意でも、どの群が違うかは事後比較なしに断定できない。'],
+        nextSteps: ['有意なら事後比較を確認する', '箱ひげ図で分布を確認する', '群サイズを確認する']
+    },
+    wilcoxon_signed_rank: {
+        purpose: '対応のある2条件の差をノンパラメトリックに検討する。',
+        focus: ['差の方向', 'W値・p値・効果量', '差分の分布'],
+        cannotConclude: ['対応のない2群には使えない。'],
+        nextSteps: ['差分の符号と大きさを確認する', '効果量を併記する', '測定の対応関係を確認する']
+    },
+    mcnemar: {
+        purpose: '対応のある2つのカテゴリ測定で、変化が偏っているかを検討する。',
+        focus: ['不一致セル', 'χ²または正確検定のp値', '変化の方向'],
+        cannotConclude: ['対応のない独立サンプルには使えない。'],
+        nextSteps: ['不一致セルの人数を確認する', '変化方向を文章化する', 'サンプルサイズが小さい場合は正確検定を重視する']
+    },
+    chi_square: {
+        purpose: '2つのカテゴリ変数に関連があるかを検討する。',
+        focus: ['χ²値・自由度・p値', '期待度数', '残差や割合の偏り', '効果量'],
+        cannotConclude: ['関連があっても因果関係は断定できない。'],
+        nextSteps: ['期待度数が小さいセルを確認する', 'どのセルが偏っているかを見る', '割合を母数つきで報告する']
+    },
+    fisher_exact: {
+        purpose: '小さいクロス表でカテゴリ変数の関連を正確検定で検討する。',
+        focus: ['p値', 'オッズ比', 'セル度数', '効果の方向'],
+        cannotConclude: ['p値だけでは効果の大きさや実用上の意味は判断できない。'],
+        nextSteps: ['オッズ比とセル度数を併記する', 'サンプルサイズの小ささを明記する', '割合も確認する']
+    },
+    regression_simple: {
+        purpose: '1つの説明変数で目的変数をどの程度予測できるかを検討する。',
+        focus: ['回帰係数の向きと大きさ', 'p値', '決定係数R²', '残差や外れ値'],
+        cannotConclude: ['観察データの回帰だけでは因果関係は断定できない。'],
+        nextSteps: ['散布図と残差を確認する', '係数を具体的な単位で説明する', '必要なら重回帰で交絡を検討する']
+    },
+    regression_multiple: {
+        purpose: '複数の説明変数で目的変数を予測し、各変数の独自の関連を検討する。',
+        focus: ['各係数の方向・p値', '標準化係数', 'R²', '多重共線性'],
+        cannotConclude: ['説明変数間の関連が強いと、個別係数の解釈は不安定になりうる。'],
+        nextSteps: ['VIFや相関を確認する', '重要な説明変数を比較する', '残差や外れ値を確認する']
+    },
+    logistic_regression: {
+        purpose: '二値カテゴリの発生確率を説明変数から予測する。',
+        focus: ['オッズ比', '係数の方向', 'p値', '分類性能', 'イベント数'],
+        cannotConclude: ['オッズ比はリスク比そのものではない。観察データだけで因果は断定できない。'],
+        nextSteps: ['オッズ比を中心に説明する', '分類精度だけでなく混同行列を確認する', 'イベント数が十分か確認する']
+    },
+    factor_analysis: {
+        purpose: '複数項目の背後にある潜在因子を探索する。',
+        focus: ['因子負荷量', '因子数', '回転方法', '因子の命名', '項目のまとまり'],
+        cannotConclude: ['探索的因子分析だけで尺度の妥当性が確定するわけではない。'],
+        nextSteps: ['高負荷項目から因子名を考える', '低負荷・複数因子に高負荷の項目を確認する', '信頼性係数を確認する']
+    },
+    pca: {
+        purpose: '多くの数値変数を少数の主成分に要約する。',
+        focus: ['寄与率', '累積寄与率', '主成分負荷量', 'スコアの分布'],
+        cannotConclude: ['PCAの主成分は潜在因子と同一ではない。'],
+        nextSteps: ['寄与率と負荷量から主成分を解釈する', '必要な主成分数を検討する', '主成分得点を次の分析に使う']
+    },
+    time_series: {
+        purpose: '時間順のデータに含まれるトレンド、周期性、変動を確認する。',
+        focus: ['時系列の傾き', '変動幅', '自己相関', '外れ時点'],
+        cannotConclude: ['時系列の見た目だけで政策や介入の効果は断定できない。'],
+        nextSteps: ['時点の意味を確認する', 'トレンドと季節性を分けて考える', '異常値や欠測時点を確認する']
+    },
+    text_mining: {
+        purpose: '自由記述テキストの頻出語、共起、カテゴリ差を探索する。',
+        focus: ['頻出語', '共起関係', 'カテゴリごとの特徴語', '文脈確認'],
+        cannotConclude: ['頻出語だけでは発言の意味や感情を断定できない。'],
+        nextSteps: ['KWICで文脈を確認する', 'カテゴリ別に比較する', '代表的な記述例とあわせて解釈する']
+    }
+};
+
 let currentAnalysisType = null;
 let currentAnalysisTitle = '';
 let aiState = {
@@ -666,10 +807,12 @@ async function requestGemini(prompt, maxOutputTokens) {
 }
 
 function buildAIInterpretationContext() {
+    const analysisResultTables = extractAnalysisResultTables();
     return {
         analysis: {
             type: currentAnalysisType || 'unknown',
-            title: currentAnalysisTitle || getAnalysisTitle(currentAnalysisType)
+            title: currentAnalysisTitle || getAnalysisTitle(currentAnalysisType),
+            guidance: getAnalysisGuidance(currentAnalysisType)
         },
         dataPreview: (currentData || []).slice(0, 10),
         dataStructure: {
@@ -680,7 +823,8 @@ function buildAIInterpretationContext() {
             textColumns: dataCharacteristics?.textColumns || []
         },
         summaryStatistics: createAISummaryStatistics(currentData || [], dataCharacteristics),
-        analysisResultTables: extractAnalysisResultTables(),
+        dataQualityChecks: createAIDataQualityChecks(currentData || [], dataCharacteristics, analysisResultTables),
+        analysisResultTables,
         analysisResults: extractAnalysisResultText()
     };
 }
@@ -689,18 +833,20 @@ function buildAIInterpretationPrompt(context) {
     return `
 以下はeasyStatの分析結果ページから収集した情報です。ユーザーが結果を理解するための解釈補助を作成してください。
 
-出力形式（見出しはこの5つだけ）:
+出力形式（見出しはこの6つだけ）:
 1. 結果から言えること
 2. 注目すべき数値
-3. 解釈で注意すること
-4. レポート例
-5. 次に確認すること
+3. 信頼性と妥当性チェック
+4. 解釈で注意すること
+5. レポート例
+6. 次に確認すること
 
 制約:
 - 1文目から、分析結果表にある具体的な変数名・統計量・p値・効果量・相関係数などに基づいて説明する
 - 「この分析は何を調べるものです」のような分析手法の一般説明で始めない
 - 表から読み取れる最も重要な結果を優先し、数値を必ず含める
 - 「相関係数の解釈」などの凡例・目安は、今回の結果そのものではないので主な根拠にしない
+- 「信頼性と妥当性チェック」では、分析手法の前提、サンプルサイズ、欠損、群の偏り、期待度数、外れ値、多重比較など、該当する注意点を必ず扱う
 - 与えられた情報にない数値や結論を作らない
 - 分析結果表や抽出テキストに具体的な統計量がない場合は、一般論で埋めず「結果表を十分に読み取れませんでした」と明記する
 - 有意でない結果を「差がある」と言わない
@@ -726,6 +872,9 @@ ${JSON.stringify(context.dataPreview, null, 2)}
 要約統計量:
 ${JSON.stringify(context.summaryStatistics, null, 2)}
 
+データ品質・妥当性チェック:
+${JSON.stringify(context.dataQualityChecks, null, 2)}
+
 分析結果表（表構造を保持）:
 ${JSON.stringify(context.analysisResultTables, null, 2)}
 
@@ -747,6 +896,7 @@ function buildAIChatPrompt(context, question) {
 回答ルール:
 - まず質問に直接答える
 - 具体的な変数名・統計量・p値・効果量・相関係数など、結果表から読める数値を優先して使う
+- 必要に応じて、分析手法の前提、サンプルサイズ、欠損、群の偏り、外れ値などの信頼性・妥当性も確認する
 - 分析結果にない情報は推測せず、「この画面の結果だけでは判断できません」と言う
 - 相関や回帰だけで因果関係を断定しない
 - 長くなりすぎないように、必要なら箇条書きで答える
@@ -764,6 +914,9 @@ ${JSON.stringify(context.dataPreview, null, 2)}
 要約統計量:
 ${JSON.stringify(context.summaryStatistics, null, 2)}
 
+データ品質・妥当性チェック:
+${JSON.stringify(context.dataQualityChecks, null, 2)}
+
 分析結果表（表構造を保持）:
 ${JSON.stringify(context.analysisResultTables, null, 2)}
 
@@ -776,6 +929,185 @@ ${history || 'まだ会話はありません。'}
 ユーザーの追加質問:
 ${question}
 `.trim();
+}
+
+function getAnalysisGuidance(analysisType) {
+    const fallback = {
+        purpose: 'データ分析の結果を読み取り、探究・レポートに使える形へ整理する。',
+        focus: ['主要な統計量', 'p値や効果量', 'データ品質', '何が言えて何が言えないか'],
+        cannotConclude: ['分析結果だけでは、研究デザインを超えた因果関係や一般化は断定できない。'],
+        nextSteps: ['結果表を確認する', '前提条件とデータ品質を確認する', 'レポート用の表現にまとめる']
+    };
+
+    return { ...fallback, ...(ANALYSIS_GUIDANCE[analysisType] || {}) };
+}
+
+function createAIDataQualityChecks(data, characteristics, resultTables = []) {
+    const checks = [];
+    if (!Array.isArray(data) || data.length === 0) {
+        return [{
+            level: 'warning',
+            item: 'データ',
+            message: 'データが読み込まれていないため、妥当性チェックはできません。'
+        }];
+    }
+
+    const rows = data.length;
+    const columns = Object.keys(data[0] || {});
+    if (rows < 20) {
+        checks.push({
+            level: 'warning',
+            item: 'サンプルサイズ',
+            message: `行数が${rows}件です。統計的検定や回帰では結果が不安定になりやすいため、強い結論は避けてください。`
+        });
+    } else if (rows < 50) {
+        checks.push({
+            level: 'note',
+            item: 'サンプルサイズ',
+            message: `行数が${rows}件です。効果量や信頼区間も見ながら慎重に解釈してください。`
+        });
+    }
+
+    if (columns.length > 0) {
+        const missingByColumn = columns.map(col => {
+            const missing = data.filter(row => isMissingValue(row[col])).length;
+            return {
+                variable: col,
+                missing,
+                missingRate: roundStat(missing / rows)
+            };
+        }).filter(item => item.missing > 0)
+            .sort((a, b) => b.missingRate - a.missingRate)
+            .slice(0, 8);
+
+        if (missingByColumn.length > 0) {
+            checks.push({
+                level: 'warning',
+                item: '欠損',
+                message: '欠損がある列があります。欠損の扱いが分析結果に影響していないか確認してください。',
+                details: missingByColumn
+            });
+        }
+    }
+
+    const numericColumns = characteristics?.numericColumns || [];
+    numericColumns.forEach(col => {
+        const values = data.map(row => Number(row[col])).filter(Number.isFinite);
+        const unique = new Set(values).size;
+        if (values.length > 0 && unique <= 1) {
+            checks.push({
+                level: 'warning',
+                item: '数値変数',
+                message: `${col} は有効な値の種類が${unique}個です。分散がないため、相関・回帰・検定の対象としては不適切です。`
+            });
+        }
+
+        const missingRate = 1 - (values.length / rows);
+        if (missingRate >= 0.2) {
+            checks.push({
+                level: 'warning',
+                item: '数値変数の欠損',
+                message: `${col} は欠損率が ${(missingRate * 100).toFixed(1)}% です。分析対象から多くの行が除外されている可能性があります。`
+            });
+        }
+
+        const outlierCount = countIqrOutliers(values);
+        if (outlierCount >= 1 && values.length >= 8) {
+            checks.push({
+                level: 'note',
+                item: '外れ値',
+                message: `${col} にIQR基準で外れ値候補が ${outlierCount} 件あります。平均、相関、回帰への影響を図で確認してください。`
+            });
+        }
+    });
+
+    const categoricalColumns = characteristics?.categoricalColumns || [];
+    categoricalColumns.forEach(col => {
+        const values = data.map(row => row[col]).filter(v => !isMissingValue(v));
+        const counts = topCounts(values, 100);
+        if (counts.length === 0) return;
+
+        if (counts.length < 2) {
+            checks.push({
+                level: 'warning',
+                item: 'カテゴリ変数',
+                message: `${col} はカテゴリが1種類しか確認できません。群間比較やクロス集計には使えません。`
+            });
+        }
+
+        const minCount = Math.min(...counts.map(item => item.count));
+        const maxShare = Math.max(...counts.map(item => item.count)) / values.length;
+        if (minCount < 5) {
+            checks.push({
+                level: 'warning',
+                item: 'カテゴリの少人数セル',
+                message: `${col} には5件未満のカテゴリがあります。群間比較やカイ二乗検定では結果が不安定になる可能性があります。`
+            });
+        }
+        if (maxShare >= 0.85 && counts.length >= 2) {
+            checks.push({
+                level: 'note',
+                item: 'カテゴリの偏り',
+                message: `${col} は最頻カテゴリが ${(maxShare * 100).toFixed(1)}% を占めています。群の偏りに注意してください。`
+            });
+        }
+        if (counts.length > 15) {
+            checks.push({
+                level: 'note',
+                item: 'カテゴリ数',
+                message: `${col} はカテゴリ数が ${counts.length} 個あります。クロス集計や群間比較では解釈が細かくなりすぎる可能性があります。`
+            });
+        }
+    });
+
+    if (!Array.isArray(resultTables) || resultTables.length === 0) {
+        checks.push({
+            level: 'warning',
+            item: '分析結果表',
+            message: '分析結果表を抽出できませんでした。AIに貼り付ける場合は、画面上で分析を実行してからコピーしてください。'
+        });
+    }
+
+    const typeSpecific = getAnalysisSpecificQualityChecks(currentAnalysisType);
+    checks.push(...typeSpecific);
+
+    if (checks.length === 0) {
+        checks.push({
+            level: 'ok',
+            item: '基本チェック',
+            message: '行数、欠損、単純なカテゴリ偏り、外れ値候補について、大きな警告は検出されませんでした。'
+        });
+    }
+
+    return checks.slice(0, 18);
+}
+
+function getAnalysisSpecificQualityChecks(analysisType) {
+    const map = {
+        correlation: ['散布図で直線的な関係か、外れ値が相関係数を強く動かしていないか確認してください。'],
+        regression_simple: ['残差の偏り、外れ値、非線形な関係がないか確認してください。'],
+        regression_multiple: ['説明変数どうしの相関が強い場合、多重共線性で係数が不安定になります。VIFや相関を確認してください。'],
+        logistic_regression: ['イベント数が少ない場合、オッズ比や係数が不安定になります。カテゴリの偏りと混同行列を確認してください。'],
+        chi_square: ['期待度数が5未満のセルが多い場合、カイ二乗検定よりFisher正確検定を検討してください。'],
+        fisher_exact: ['サンプルサイズが小さい場合、p値だけでなくセル度数とオッズ比を併記してください。'],
+        anova_one_way: ['有意な主効果がある場合は、多重比較でどの群が異なるか確認してください。'],
+        anova_two_way: ['交互作用がある場合、主効果だけで結論を書かず、単純主効果や交互作用プロットを確認してください。'],
+        ttest: ['群の人数差、外れ値、ばらつきの違いを確認し、p値だけでなく効果量も報告してください。'],
+        mann_whitney: ['平均差ではなく順位・分布の違いとして解釈し、中央値や箱ひげ図も確認してください。'],
+        kruskal_wallis: ['有意な場合は事後比較でどの群が異なるか確認してください。'],
+        wilcoxon_signed_rank: ['対応のある測定であること、差分の方向と外れ値を確認してください。'],
+        mcnemar: ['不一致セルの人数が結果を決めます。変化した人数と方向を必ず確認してください。'],
+        factor_analysis: ['因子数、回転方法、低負荷項目、複数因子に高く負荷する項目を確認してください。'],
+        pca: ['寄与率だけでなく、主成分負荷量から各主成分の意味を確認してください。'],
+        time_series: ['時間順序、欠測時点、外れ時点、周期性の有無を確認してください。'],
+        text_mining: ['頻出語だけで意味を断定せず、KWICや原文で文脈を確認してください。']
+    };
+
+    return (map[analysisType] || []).map(message => ({
+        level: 'note',
+        item: '分析固有の注意',
+        message
+    }));
 }
 
 function createAISummaryStatistics(data, characteristics) {
@@ -1057,6 +1389,25 @@ function truncateText(text, maxLength) {
     const normalized = normalizeText(text);
     if (normalized.length <= maxLength) return normalized;
     return `${normalized.slice(0, maxLength)}\n...（長いため省略）`;
+}
+
+function isMissingValue(value) {
+    return value == null || String(value).trim() === '';
+}
+
+function countIqrOutliers(values) {
+    const clean = values.filter(Number.isFinite).sort((a, b) => a - b);
+    if (clean.length < 8) return 0;
+    const midpoint = Math.floor(clean.length / 2);
+    const lowerHalf = clean.slice(0, midpoint);
+    const upperHalf = clean.length % 2 === 0 ? clean.slice(midpoint) : clean.slice(midpoint + 1);
+    const q1 = median(lowerHalf);
+    const q3 = median(upperHalf);
+    const iqr = q3 - q1;
+    if (!Number.isFinite(iqr) || iqr === 0) return 0;
+    const lower = q1 - 1.5 * iqr;
+    const upper = q3 + 1.5 * iqr;
+    return clean.filter(value => value < lower || value > upper).length;
 }
 
 function mean(values) {
