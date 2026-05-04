@@ -1,12 +1,27 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const path = require('path');
+const fs = require('fs');
 
 async function loadDemoData(page) {
     await page.goto('http://127.0.0.1:8081/');
     await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
     await page.locator('#main-data-file').setInputFiles(path.join(__dirname, '../datasets/demo_all_analysis.csv'));
     await expect(page.locator('#dataframe-container')).toBeVisible({ timeout: 30000 });
+}
+
+async function mockClipboard(page) {
+    await page.evaluate(() => {
+        window.__copiedText = '';
+        Object.defineProperty(navigator, 'clipboard', {
+            value: {
+                writeText: async text => {
+                    window.__copiedText = text;
+                }
+            },
+            configurable: true
+        });
+    });
 }
 
 async function selectSupportVariable(page, name) {
@@ -32,6 +47,14 @@ async function selectCorrelationVariables(page) {
 }
 
 test.describe('AI copy text availability', () => {
+    test('Gemini requests prefer 3 Flash Preview with a 2.5 Flash fallback', async () => {
+        const source = fs.readFileSync(path.join(__dirname, '../js/main.js'), 'utf8');
+
+        expect(source).toContain("const GEMINI_PRIMARY_MODEL = 'gemini-3-flash-preview'");
+        expect(source).toContain("const GEMINI_FALLBACK_MODEL = 'gemini-2.5-flash'");
+        expect(source).toContain('shouldTryFallbackGeminiModel');
+    });
+
     test('correlation copy button is disabled until variables are selected and results are shown', async ({ page }) => {
         await loadDemoData(page);
         await page.locator('.feature-card[data-analysis="correlation"]').click();
@@ -46,6 +69,15 @@ test.describe('AI copy text availability', () => {
         await page.locator('#run-correlation-btn').click();
         await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 30000 });
         await expect(copyButton).toBeEnabled();
+
+        await mockClipboard(page);
+        await page.locator('#ai-assist-toggle').click();
+        await expect(copyButton).toBeVisible();
+        await copyButton.click();
+        const copiedText = await page.waitForFunction(() => window.__copiedText, null, { timeout: 10000 })
+            .then(handle => handle.jsonValue());
+        expect(copiedText).toContain('全体で900〜1400字程度');
+        expect(copiedText).toContain('短いレポート文と少し詳しいレポート文');
     });
 
     test('analysis supporter copy button is disabled until a variable is selected', async ({ page }) => {

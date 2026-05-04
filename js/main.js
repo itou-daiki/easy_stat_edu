@@ -22,8 +22,11 @@ const demoBtn = document.getElementById('load-demo-btn');
 const featureGrid = document.querySelector('.feature-grid');
 
 const GEMINI_API_KEY_STORAGE = 'easyStat.geminiApiKey';
-const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_PRIMARY_MODEL = 'gemini-3-flash-preview';
+const GEMINI_FALLBACK_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL_CHAIN = [GEMINI_PRIMARY_MODEL, GEMINI_FALLBACK_MODEL];
+const AI_INTERPRETATION_MAX_OUTPUT_TOKENS = 2600;
+const AI_CHAT_MAX_OUTPUT_TOKENS = 1600;
 
 const ANALYSIS_GUIDANCE = {
     analysis_support: {
@@ -726,7 +729,7 @@ async function generateAIInterpretation() {
     try {
         const context = buildAIInterpretationContext();
         const prompt = buildAIInterpretationPrompt(context);
-        const text = await requestGemini(prompt, 1400);
+        const text = await requestGemini(prompt, AI_INTERPRETATION_MAX_OUTPUT_TOKENS);
 
         aiState.lastOutput = text;
         aiState.chatHistory = [{ role: 'assistant', text }];
@@ -793,7 +796,7 @@ async function sendAIChatMessage() {
     try {
         const context = buildAIInterpretationContext();
         const prompt = buildAIChatPrompt(context, question);
-        const answer = await requestGemini(prompt, 1200);
+        const answer = await requestGemini(prompt, AI_CHAT_MAX_OUTPUT_TOKENS);
         removeLastSystemAIMessage();
         aiState.lastOutput = answer;
         aiState.chatHistory.push({ role: 'user', text: question }, { role: 'assistant', text: answer });
@@ -813,39 +816,65 @@ async function sendAIChatMessage() {
 }
 
 async function requestGemini(prompt, maxOutputTokens) {
-    const response = await fetch(GEMINI_ENDPOINT, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': aiState.apiKey
-        },
-        body: JSON.stringify({
-            system_instruction: {
-                parts: [{
-                    text: 'あなたは統計教育のチューターです。提供された分析結果だけを根拠に、日本語で初学者にもわかるように説明してください。因果関係は研究デザインから明らかな場合以外は断定しないでください。p値だけでなく、効果量、方向、データ上の注意点も扱ってください。'
-                }]
+    const errors = [];
+    for (const model of GEMINI_MODEL_CHAIN) {
+        const response = await fetch(getGeminiEndpoint(model), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': aiState.apiKey
             },
-            contents: [{
-                role: 'user',
-                parts: [{ text: prompt }]
-            }],
-            generationConfig: {
-                temperature: 0.2,
-                topP: 0.8,
-                maxOutputTokens
-            }
-        })
-    });
+            body: JSON.stringify({
+                system_instruction: {
+                    parts: [{
+                        text: 'あなたは統計教育のチューターです。提供された分析結果だけを根拠に、日本語で初学者にもわかるように説明してください。因果関係は研究デザインから明らかな場合以外は断定しないでください。p値だけでなく、効果量、方向、データ上の注意点も扱ってください。'
+                    }]
+                },
+                contents: [{
+                    role: 'user',
+                    parts: [{ text: prompt }]
+                }],
+                generationConfig: {
+                    temperature: 0.2,
+                    topP: 0.8,
+                    maxOutputTokens
+                }
+            })
+        });
 
-    if (!response.ok) {
+        if (response.ok) {
+            const result = await response.json();
+            const text = extractGeminiText(result);
+            if (!text) throw new Error(`Gemini APIから回答を取得できませんでした。(${model})`);
+            return text;
+        }
+
         const errorText = await response.text();
-        throw new Error(`Gemini API error ${response.status}: ${errorText.slice(0, 300)}`);
+        errors.push({ model, status: response.status, text: errorText });
+        if (!shouldTryFallbackGeminiModel(model, response.status, errorText)) {
+            throw createGeminiRequestError(errors);
+        }
     }
 
-    const result = await response.json();
-    const text = extractGeminiText(result);
-    if (!text) throw new Error('Gemini APIから回答を取得できませんでした。');
-    return text;
+    throw createGeminiRequestError(errors);
+}
+
+function getGeminiEndpoint(model) {
+    return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+}
+
+function shouldTryFallbackGeminiModel(model, status, errorText) {
+    if (model === GEMINI_FALLBACK_MODEL) return false;
+    if (![400, 403, 404].includes(status)) return false;
+    return /model|not found|not supported|unavailable|permission|access|preview|quota|billing/i.test(errorText);
+}
+
+function createGeminiRequestError(errors) {
+    const main = errors.at(-1);
+    const history = errors
+        .map(error => `${error.model}: ${error.status} ${String(error.text || '').slice(0, 180)}`)
+        .join('\n');
+    return new Error(`Gemini API error ${main?.status || ''} (${main?.model || 'unknown'}):\n${history}`);
 }
 
 function buildAIInterpretationContext() {
@@ -883,6 +912,12 @@ function buildAIInterpretationPrompt(context) {
 5. レポート例
 6. 次に確認すること
 
+分量の目安:
+- 全体で900〜1400字程度を目安にし、短すぎる要約で終わらせない
+- 1〜4の各見出しには2〜4個の箇条書きを入れる
+- 「レポート例」には、短いレポート文と少し詳しいレポート文の2種類を書く
+- 「次に確認すること」は、ユーザーが次に操作・確認できる具体的な行動を3つ書く
+
 制約:
 - 1文目から、分析結果表にある具体的な変数名・統計量・p値・効果量・相関係数などに基づいて説明する
 - 「この分析は何を調べるものです」のような分析手法の一般説明で始めない
@@ -893,7 +928,7 @@ function buildAIInterpretationPrompt(context) {
 - 分析結果表や抽出テキストに具体的な統計量がない場合は、一般論で埋めず「結果表を十分に読み取れませんでした」と明記する
 - 有意でない結果を「差がある」と言わない
 - 相関や回帰だけで因果関係を断定しない
-- 初学者にわかる自然な日本語で、実務的に役立つ短めの箇条書きにする
+- 初学者にわかる自然な日本語で、根拠・意味・注意点がわかる十分な説明量にする
 - Markdownの大見出し（##など）は使わない
 
 悪い出力例:
