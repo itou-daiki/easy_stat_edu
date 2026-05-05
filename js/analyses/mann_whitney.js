@@ -478,7 +478,7 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> マン・ホイットニーのU検定とは？</strong>
                         <p>2つのグループの間に差があるかを調べる方法ですが、t検定と違って「平均値」ではなく「順位（ランキング）」を使って比較します。データが極端な値を含んでいたり、人数が少ない場合に適しています。</p>
-                        <img src="image/mann_whitney.svg" alt="U検定のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <img src="image/mann_whitney.png" alt="U検定のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
