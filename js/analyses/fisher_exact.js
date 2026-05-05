@@ -701,7 +701,7 @@ export function render(container, currentData, characteristics) {
                         <p>カイ二乗検定と同様に、2つのカテゴリカル変数に関連があるかを調べる方法です。
                         カイ二乗検定が「近似」を使うのに対し、フィッシャーの正確確率検定は「正確な確率」を計算するため、
                         サンプルサイズが小さい場合や期待度数が5未満のセルがある場合に特に適しています。</p>
-                        <img src="image/fisher_exact.png" alt="フィッシャーの正確確率検定の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <img src="image/fisher_exact.svg" alt="フィッシャーの正確確率検定の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

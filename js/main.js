@@ -28,6 +28,32 @@ const GEMINI_MODEL_CHAIN = [GEMINI_PRIMARY_MODEL, GEMINI_FALLBACK_MODEL];
 const AI_INTERPRETATION_MAX_OUTPUT_TOKENS = 2600;
 const AI_CHAT_MAX_OUTPUT_TOKENS = 1600;
 
+const ANALYSIS_VISUALS = {
+    analysis_support: 'image/analysis_support.svg',
+    data_processing: 'image/data_processing.svg',
+    data_merge: 'image/data_merge.svg',
+    factor_score: 'image/factor_score.svg',
+    eda: 'image/eda.svg',
+    cross_tabulation: 'image/cross_tabulation.svg',
+    correlation: 'image/correlation.svg',
+    ttest: 'image/ttest.svg',
+    anova_one_way: 'image/anova_one_way.svg',
+    anova_two_way: 'image/anova_two_way.svg',
+    mann_whitney: 'image/mann_whitney.svg',
+    kruskal_wallis: 'image/kruskal_wallis.svg',
+    wilcoxon_signed_rank: 'image/wilcoxon_signed_rank.svg',
+    mcnemar: 'image/mcnemar.svg',
+    chi_square: 'image/chi_square.svg',
+    fisher_exact: 'image/fisher_exact.svg',
+    regression_simple: 'image/regression_simple.svg',
+    regression_multiple: 'image/regression_multiple.svg',
+    logistic_regression: 'image/logistic_regression.svg',
+    factor_analysis: 'image/factor_analysis.svg',
+    pca: 'image/pca.svg',
+    time_series: 'image/time_series.svg',
+    text_mining: 'image/text_mining.svg'
+};
+
 const ANALYSIS_GUIDANCE = {
     analysis_support: {
         purpose: 'データの型や研究目的から、適切な分析候補を選ぶための支援。',
@@ -209,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fileInput.disabled = false;
     document.querySelector('.upload-text').textContent = 'ここにファイルをドラッグ＆ドロップ';
 
+    enhanceAnalysisCards();
     setupEventListeners();
     setupAISupport();
 });
@@ -525,6 +552,7 @@ async function showAnalysisView(analysisType) {
         const modulePath = `./analyses/${analysisType}.js?v=${cacheBuster}`;
         const analysisModule = await import(modulePath);
         analysisModule.render(analysisContent, currentData, dataCharacteristics);
+        injectAnalysisVisualIfMissing(analysisContent, analysisType);
         updateAIAssistVisibility();
     } catch (error) {
         console.error(error);
@@ -543,6 +571,34 @@ window.backToHome = () => {
     document.getElementById('upload-section-main').style.display = 'block';
     updateAIAssistVisibility();
 };
+
+function enhanceAnalysisCards() {
+    featureGrid.querySelectorAll('.feature-card').forEach(card => {
+        const analysisType = card.dataset.analysis;
+        const visualSrc = ANALYSIS_VISUALS[analysisType];
+        if (!visualSrc || card.querySelector('.feature-card-visual')) return;
+
+        const visual = document.createElement('div');
+        visual.className = 'feature-card-visual';
+        visual.innerHTML = `<img src="${visualSrc}" alt="" loading="lazy" decoding="async">`;
+        card.insertBefore(visual, card.firstElementChild);
+    });
+}
+
+function injectAnalysisVisualIfMissing(container, analysisType) {
+    const visualSrc = ANALYSIS_VISUALS[analysisType];
+    if (!visualSrc || !container || container.querySelector('.analysis-visual-hero')) return;
+    if (container.querySelector('img[src^="image/"]')) return;
+
+    const title = currentAnalysisTitle || getAnalysisTitle(analysisType) || '分析';
+    const figure = document.createElement('figure');
+    figure.className = 'analysis-visual-hero';
+    figure.innerHTML = `
+        <img src="${visualSrc}" alt="${title}の概要図" loading="eager" decoding="async">
+        <figcaption>${title}の考え方を図で確認できます</figcaption>
+    `;
+    container.prepend(figure);
+}
 
 // ==========================================
 // Gemini AI Interpretation Support

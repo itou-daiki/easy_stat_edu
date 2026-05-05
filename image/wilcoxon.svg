@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+    <title id="title">ウィルコクソン符号付順位検定</title>
+    <desc id="desc">同じ人の事前・事後の変化を順位で見る</desc>
+    <defs>
+        
+        <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.12"/>
+        </filter>
+        <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+            <path d="M 0 0 L 12 6 L 0 12 z" fill="#0891b2"/>
+        </marker>
+        <marker id="arrow2" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+            <path d="M 0 0 L 12 6 L 0 12 z" fill="#f59e0b"/>
+        </marker>
+        <style>
+            .title { font: 700 42px "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif; fill: #17324d; }
+            .subtitle { font: 500 25px "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif; fill: #475569; }
+            .panelLabel { font: 700 26px "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif; fill: #17324d; }
+            .axisLabel { font: 600 25px "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif; fill: #475569; }
+            .cellText { font: 700 27px "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif; fill: #17324d; }
+            .callout { font: 700 26px "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif; fill: #17324d; }
+            .note { font: 600 25px "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif; fill: #475569; }
+            .formula { font: 700 26px "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif; fill: #d97706; }
+            .bigNum { font: 800 28px "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif; fill: #17324d; }
+            .smallNode { font: 800 23px "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif; fill: #17324d; }
+            .word { font: 800 28px "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif; fill: white; }
+        </style>
+    </defs>
+    
+        <rect width="1200" height="675" rx="34" fill="#f8fafc"/>
+        <circle cx="1060" cy="95" r="96" fill="#0891b2" opacity="0.08"/>
+        <circle cx="108" cy="570" r="118" fill="#0ea5e9" opacity="0.07"/>
+        <rect x="54" y="54" width="1092" height="567" rx="28" fill="#ffffff" filter="url(#cardShadow)"/>
+        <rect x="54" y="54" width="1092" height="10" rx="5" fill="#0891b2"/>
+        <text x="96" y="128" class="title">ウィルコクソン符号付順位検定</text>
+        <text x="96" y="174" class="subtitle">同じ人の事前・事後の変化を順位で見る</text>
+    
+                
+        <line x1="185" y1="525" x2="1025" y2="525" stroke="#94a3b8" stroke-width="3"/>
+        <line x1="185" y1="525" x2="185" y2="260" stroke="#94a3b8" stroke-width="3"/>
+                <line x1="300" y1="455" x2="620" y2="360" stroke="#94a3b8" stroke-width="5"/><circle cx="300" cy="455" r="11" fill="#60a5fa"/><circle cx="620" cy="360" r="11" fill="#0891b2"/><line x1="340" y1="430" x2="660" y2="350" stroke="#94a3b8" stroke-width="5"/><circle cx="340" cy="430" r="11" fill="#60a5fa"/><circle cx="660" cy="350" r="11" fill="#0891b2"/><line x1="380" y1="470" x2="700" y2="410" stroke="#ef4444" stroke-width="5"/><circle cx="380" cy="470" r="11" fill="#60a5fa"/><circle cx="700" cy="410" r="11" fill="#0891b2"/><line x1="420" y1="420" x2="740" y2="330" stroke="#94a3b8" stroke-width="5"/><circle cx="420" cy="420" r="11" fill="#60a5fa"/><circle cx="740" cy="330" r="11" fill="#0891b2"/><line x1="460" y1="445" x2="780" y2="370" stroke="#94a3b8" stroke-width="5"/><circle cx="460" cy="445" r="11" fill="#60a5fa"/><circle cx="780" cy="370" r="11" fill="#0891b2"/>
+                <text x="375" y="565" class="axisLabel" text-anchor="middle">事前</text>
+                <text x="705" y="565" class="axisLabel" text-anchor="middle">事後</text>
+                <text x="600" y="586" class="axisLabel" text-anchor="middle">同じ人の変化量を順位で見る</text>
+</svg>

@@ -372,7 +372,7 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> カイ二乗検定 (Chi-Square Test) とは？</strong>
                         <p>「性別（男女）」や「好みの色（赤・青・黄）」のようなカテゴリーデータ同士に関係があるかを調べる分析です。「クロス集計表」を使って分析します。</p>
-                        <img src="image/chi_square.png" alt="カイ二乗分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
+                        <img src="image/chi_square.svg" alt="カイ二乗分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
