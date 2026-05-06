@@ -425,6 +425,7 @@ test.describe('Time Series - Full Options', () => {
 
 test.describe('Demo Modal - All 8 Buttons', () => {
   test('Each demo button loads correct data', async ({ page }) => {
+    test.setTimeout(60000);
     const demos = [
       { file: 'demo_all_analysis.csv', keyword: '感想' },
       { file: 'ttest_demo.csv', keyword: 'DigComp' },

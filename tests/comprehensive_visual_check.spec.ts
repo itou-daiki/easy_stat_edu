@@ -59,6 +59,126 @@ function setupConsoleLogs(page: Page) {
     return errors;
 }
 
+/** 実運用目線のUI表面監査: 結果画面に出た表・グラフ・画像・ボタン・テキストの破綻を拾う */
+async function auditRenderedSurface(page: Page, label: string) {
+    const audit = await page.evaluate(() => {
+        const isVisible = (el: Element) => {
+            const style = window.getComputedStyle(el);
+            const rect = (el as HTMLElement).getBoundingClientRect();
+            return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+        };
+        const badTextPattern = /\b(?:undefined|NaN|Infinity)\b|\[object Object\]/;
+        const visibleText = document.body.innerText || '';
+        const badTextMatches = Array.from(new Set(visibleText.match(badTextPattern) || []));
+
+        const buttons = Array.from(document.querySelectorAll('button')).filter(isVisible).map((button, index) => {
+            const rect = button.getBoundingClientRect();
+            return {
+                index,
+                text: (button.textContent || '').replace(/\s+/g, ' ').trim(),
+                ariaLabel: button.getAttribute('aria-label') || '',
+                title: button.getAttribute('title') || '',
+                disabled: (button as HTMLButtonElement).disabled,
+                width: rect.width,
+                height: rect.height
+            };
+        });
+        const unlabeledButtons = buttons.filter(button => !button.text && !button.ariaLabel && !button.title);
+
+        const tables = Array.from(document.querySelectorAll('table')).filter(isVisible).map((table, index) => {
+            const rect = table.getBoundingClientRect();
+            const headers = Array.from(table.querySelectorAll('th')).map(th => (th.textContent || '').replace(/\s+/g, ' ').trim());
+            const cells = Array.from(table.querySelectorAll('td, th')).map(cell => (cell.textContent || '').replace(/\s+/g, ' ').trim());
+            return {
+                index,
+                width: rect.width,
+                height: rect.height,
+                headerCount: headers.length,
+                rowCount: table.querySelectorAll('tbody tr, tr').length,
+                emptyHeaders: headers.filter(header => header.length === 0).length,
+                badCells: cells.filter(cell => badTextPattern.test(cell)).slice(0, 5)
+            };
+        });
+
+        const plots = Array.from(document.querySelectorAll('.js-plotly-plot')).filter(isVisible).map((plot, index) => {
+            const rect = plot.getBoundingClientRect();
+            return { index, width: rect.width, height: rect.height };
+        });
+
+        const images = Array.from(document.querySelectorAll('img')).filter(isVisible).map((img, index) => {
+            const image = img as HTMLImageElement;
+            const rect = image.getBoundingClientRect();
+            return {
+                index,
+                alt: image.alt,
+                src: image.getAttribute('src') || '',
+                width: rect.width,
+                height: rect.height,
+                naturalWidth: image.naturalWidth,
+                naturalHeight: image.naturalHeight,
+                complete: image.complete
+            };
+        });
+
+        const canvases = Array.from(document.querySelectorAll('canvas')).filter(isVisible).map((canvas, index) => {
+            const c = canvas as HTMLCanvasElement;
+            const rect = c.getBoundingClientRect();
+            let nonBlank = true;
+            try {
+                const ctx = c.getContext('2d');
+                const sampleSize = 16;
+                const points: Array<[number, number]> = [];
+                for (let y = 0; y <= 4; y++) {
+                    for (let x = 0; x <= 4; x++) {
+                        points.push([
+                            Math.min(Math.max(Math.floor((c.width * x) / 4), 0), Math.max(c.width - sampleSize, 0)),
+                            Math.min(Math.max(Math.floor((c.height * y) / 4), 0), Math.max(c.height - sampleSize, 0))
+                        ]);
+                    }
+                }
+                nonBlank = !!ctx && points.some(([x, y]) => {
+                    const data = ctx.getImageData(x, y, Math.min(sampleSize, c.width), Math.min(sampleSize, c.height)).data;
+                    return Array.from(data).some(value => value !== 0);
+                });
+            } catch {
+                nonBlank = true;
+            }
+            return { index, width: rect.width, height: rect.height, pixelWidth: c.width, pixelHeight: c.height, nonBlank };
+        });
+
+        return { badTextMatches, buttons, unlabeledButtons, tables, plots, images, canvases };
+    });
+
+    expect(audit.badTextMatches, `${label}: visible text should not contain broken placeholders`).toEqual([]);
+    expect(audit.unlabeledButtons, `${label}: visible buttons should have text, aria-label, or title`).toEqual([]);
+    for (const table of audit.tables) {
+        expect(table.width, `${label}: table ${table.index} width`).toBeGreaterThan(20);
+        expect(table.height, `${label}: table ${table.index} height`).toBeGreaterThan(20);
+        expect(table.rowCount, `${label}: table ${table.index} should have rows`).toBeGreaterThan(0);
+        expect(table.badCells, `${label}: table ${table.index} should not contain broken values`).toEqual([]);
+    }
+    for (const plot of audit.plots) {
+        expect(plot.width, `${label}: plot ${plot.index} width`).toBeGreaterThan(200);
+        expect(plot.height, `${label}: plot ${plot.index} height`).toBeGreaterThan(120);
+    }
+    for (const image of audit.images) {
+        expect(image.complete, `${label}: image ${image.index} should finish loading`).toBe(true);
+        expect(image.naturalWidth, `${label}: image ${image.index} natural width`).toBeGreaterThan(0);
+        expect(image.naturalHeight, `${label}: image ${image.index} natural height`).toBeGreaterThan(0);
+    }
+    for (const canvas of audit.canvases) {
+        expect(canvas.width, `${label}: canvas ${canvas.index} CSS width`).toBeGreaterThan(120);
+        expect(canvas.height, `${label}: canvas ${canvas.index} CSS height`).toBeGreaterThan(80);
+        expect(canvas.pixelWidth, `${label}: canvas ${canvas.index} pixel width`).toBeGreaterThan(120);
+        expect(canvas.pixelHeight, `${label}: canvas ${canvas.index} pixel height`).toBeGreaterThan(80);
+        expect(canvas.nonBlank, `${label}: canvas ${canvas.index} should not be blank`).toBe(true);
+    }
+}
+
+test.afterEach(async ({ page }, testInfo) => {
+    await auditRenderedSurface(page, testInfo.title);
+});
+
 // =============================================
 // Group 1: 基本統計・EDA・相関
 // =============================================
@@ -466,14 +586,18 @@ test.describe('Visual Check Group 5: 回帰・多変量', () => {
 
     test('テキストマイニング', async ({ page }) => {
         await navigateToFeature(page, 'text_mining');
-        const count = await page.locator('#text-col option').count();
-        if (count > 0) {
-            await page.selectOption('#text-col', { index: 0 });
-            await page.click('#run-text-btn-container button');
-            await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 60000 });
-            await page.waitForTimeout(1000);
-            await page.screenshot({ path: `${SCREENSHOT_DIR}/24_text_mining.png`, fullPage: true });
-        }
+        const count = await page.locator('#text-var option').count();
+        expect(count, 'Text mining should expose at least one text variable').toBeGreaterThan(1);
+        await page.selectOption('#text-var', { label: '感想' });
+        await page.selectOption('#category-var', { label: 'クラス' });
+        await page.click('#run-text-btn-container button');
+        await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 60000 });
+        const posRankings = page.locator('h6', { hasText: '品詞別ランキング' });
+        const networkLegends = page.locator('text=色分けの意味');
+        expect(await posRankings.count()).toBeGreaterThan(0);
+        expect(await networkLegends.count()).toBeGreaterThan(0);
+        await page.waitForTimeout(1000);
+        await page.screenshot({ path: `${SCREENSHOT_DIR}/24_text_mining.png`, fullPage: true });
         expect(errors).toHaveLength(0);
     });
 });

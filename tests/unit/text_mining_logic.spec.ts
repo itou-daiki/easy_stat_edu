@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
     normalizeToken,
     isContentToken,
+    inferPartOfSpeech,
     computeTermMetrics,
     buildCooccurrenceEdges,
     splitTextIntoSentences
@@ -16,6 +17,9 @@ test.describe('Text mining logic', () => {
         expect(isContentToken('です')).toBe(false);
         expect(isContentToken('12')).toBe(false);
         expect(isContentToken('の')).toBe(false);
+        expect(isContentToken('やすいけど')).toBe(false);
+        expect(isContentToken('難しかっ')).toBe(false);
+        expect(isContentToken('使っ')).toBe(false);
     });
 
     test('computes document-length adjusted TF-IDF and supports global IDF reuse', () => {
@@ -39,6 +43,13 @@ test.describe('Text mining logic', () => {
         const categoryScores = Object.fromEntries(category.termTfIdf);
         expect(categoryScores['共通']).toBeCloseTo(0, 6);
         expect(categoryScores['英語']).toBeCloseTo(Math.log(4 / 3), 6);
+    });
+
+    test('infers broad part-of-speech groups for ranking', () => {
+        expect(inferPartOfSpeech('授業')).toBe('noun');
+        expect(inferPartOfSpeech('分かる')).toBe('verb');
+        expect(inferPartOfSpeech('楽しい')).toBe('adjective');
+        expect(inferPartOfSpeech('ICT')).toBe('alnum');
     });
 
     test('builds sentence-level Jaccard co-occurrence edges', () => {

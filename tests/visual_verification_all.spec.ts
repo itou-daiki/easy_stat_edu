@@ -191,14 +191,18 @@ test.describe('Visual Verification: All Features', () => {
     // 13. Text Mining
     test('Text Mining', async ({ page }) => {
         await navigateToFeature(page, 'text_mining');
-        const count = await page.locator('#text-col option').count();
-        if (count > 0) {
-            await page.selectOption('#text-col', { index: 0 });
-            await page.click('#run-text-btn-container button');
-            // Increase timeout for Text Mining
-            await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 60000 });
-            await page.screenshot({ path: 'test-results/visual_verification/text_mining.png', fullPage: true });
-        }
+        const count = await page.locator('#text-var option').count();
+        expect(count, 'Text mining should expose at least one text variable').toBeGreaterThan(1);
+        await page.selectOption('#text-var', { label: '感想' });
+        await page.selectOption('#category-var', { label: 'クラス' });
+        await page.click('#run-text-btn-container button');
+        // Increase timeout for Text Mining
+        await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 60000 });
+        const posRankings = page.locator('h6', { hasText: '品詞別ランキング' });
+        const networkLegends = page.locator('text=色分けの意味');
+        expect(await posRankings.count()).toBeGreaterThan(0);
+        expect(await networkLegends.count()).toBeGreaterThan(0);
+        await page.screenshot({ path: 'test-results/visual_verification/text_mining.png', fullPage: true });
         assertNoErrors();
     });
 

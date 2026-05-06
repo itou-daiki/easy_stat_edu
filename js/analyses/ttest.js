@@ -835,7 +835,7 @@ export function render(container, currentData, characteristics) {
                 pairEl.className = 'selected-pair-item';
                 pairEl.innerHTML = `
                     <span>${pair.pre} → ${pair.post}</span>
-                    <button class="remove-pair-btn" data-index="${index}"><i class="fas fa-times"></i></button>
+                    <button class="remove-pair-btn" data-index="${index}" aria-label="${pair.pre}から${pair.post}のペアを削除" title="ペアを削除"><i class="fas fa-times"></i></button>
                 `;
                 listContainer.appendChild(pairEl);
             });

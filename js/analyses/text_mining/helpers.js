@@ -27,7 +27,10 @@ export const STOP_WORDS = new Set([
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     // その他一般的すぎる語
     'それ', 'これ', 'あれ', 'どれ', 'なに', 'どう', 'そう', 'ああ',
-    'とき', 'ところ', 'ほう', 'ほど', 'まま', 'よる', 'なか', 'うち'
+    'とき', 'ところ', 'ほう', 'ほど', 'まま', 'よる', 'なか', 'うち',
+    // TinySegmenterで出やすい機能語・接尾的な断片
+    'たけど', 'だけど', 'やすいけど', 'しやすい', 'にくい', 'がつい',
+    'やすい', 'づらい', 'られる', 'くれる', 'される', 'できる'
 ]);
 
 // ======================================================================
@@ -101,10 +104,46 @@ export function isContentToken(token) {
     if (!token || token.length <= 1) return false;
     if (STOP_WORDS.has(token)) return false;
     if (/^[ぁ-ん]+$/.test(token) && token.length <= 2) return false;
+    if (/[っッ]$/.test(token)) return false;
     if (/^[0-9.,]+$/.test(token)) return false;
     if (/^[a-z]$/.test(token)) return false;
     if (SYMBOLS_ONLY.test(token)) return false;
     return true;
+}
+
+/**
+ * TinySegmenterは品詞タグを返さないため、語形から大まかな品詞を推定する。
+ * @param {string} token - 正規化済みトークン
+ * @returns {'noun'|'verb'|'adjective'|'alnum'|'other'}
+ */
+export function inferPartOfSpeech(token) {
+    const word = normalizeToken(token);
+    if (!word) return 'other';
+    if (/^[a-z][a-z0-9+.#-]*$/i.test(word) || /[0-9]/.test(word)) return 'alnum';
+
+    const adjectiveWords = new Set([
+        '良い', '悪い', '楽しい', '難しい', '面白い', '面白', '便利', '簡単',
+        '大変', '嬉しい', '軽い', '重い', '遅い', '早い', '高い', '低い',
+        '必要', '重要', '安全', '活発'
+    ]);
+    if (adjectiveWords.has(word) || /(しい|ない|たい|やすい|づらい)$/.test(word)) {
+        return 'adjective';
+    }
+
+    const verbWords = new Set([
+        '分かる', '動かす', '疲れる', '困る', '思う', '思い', '感じる', '感じ',
+        '増える', '増え', '高まる', '調べる', '調べ', '慣れる', '慣れ',
+        '学ぶ', '学ん', '作る', '作り', '作れる', '聞ける', '見直す', '見直し',
+        '見直せる', '返れる', '使う', '活用', '導入', '共有', '検索', '交流',
+        '発表', '理解', '指導', '研修', '勉強', '集中', '操作'
+    ]);
+    if (verbWords.has(word) || /(する|した|して|できる|される|られる|える|ける|れる|める|ます)$/.test(word)) {
+        return 'verb';
+    }
+
+    if (/^[\u3040-\u30ffー]+$/.test(word)) return 'noun';
+    if (/[\u3400-\u9fff]/.test(word)) return 'noun';
+    return 'other';
 }
 
 /**

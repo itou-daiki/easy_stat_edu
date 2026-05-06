@@ -6,9 +6,10 @@ import {
     tokenizeDocument,
     splitTextIntoSentences,
     computeTermMetrics,
-    buildCooccurrenceEdges
-} from './text_mining/helpers.js';
-import { displayWordCloud } from './text_mining/visualization.js';
+    buildCooccurrenceEdges,
+    inferPartOfSpeech
+} from './text_mining/helpers.js?v=tm-logic-20260507c';
+import { displayWordCloud } from './text_mining/visualization.js?v=tm-logic-20260507c';
 
 async function runTextMining(currentData) {
     const textVar = document.getElementById('text-var').value;
@@ -233,6 +234,14 @@ async function analyzeAndRender(dataItems, container, prefix, options = {}) {
 
             wrapper.appendChild(tableContainer);
 
+            const posContainer = document.createElement('div');
+            posContainer.style.background = 'white';
+            posContainer.style.padding = '1rem';
+            posContainer.style.borderRadius = '8px';
+            posContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            posContainer.innerHTML = renderPartOfSpeechRanking(termFreq, tfidfMap);
+            wrapper.appendChild(posContainer);
+
             const wcId = `${prefix}-wordcloud`;
             const wcContainer = document.createElement('div');
             wcContainer.style.background = 'white';
@@ -280,7 +289,8 @@ async function analyzeAndRender(dataItems, container, prefix, options = {}) {
                         <i class="fas fa-download"></i> 画像保存
                     </button>
                 </div>
-                <div id="${netId}" style="width: 100%; height: 450px; border: 1px solid #f0f0f0; border-radius: 4px;"></div>`;
+                <div id="${netId}" style="width: 100%; height: 450px; border: 1px solid #f0f0f0; border-radius: 4px;"></div>
+                <div id="${netId}-legend" class="tm-network-legend" style="margin-top: 0.75rem;"></div>`;
 
             wrapper.appendChild(wcContainer);
             wrapper.appendChild(wcTfIdfContainer);
@@ -343,7 +353,7 @@ async function analyzeAndRender(dataItems, container, prefix, options = {}) {
                 }
             }
 
-            const topWordsForNet = sortedWords.slice(0, 50).map(x => x[0]);
+            const topWordsForNet = sortedWords.slice(0, 36).map(x => x[0]);
             plotCooccurrenceNetwork(netId, sentences, topWordsForNet, showKwic);
 
             resolve();
@@ -366,6 +376,70 @@ function sanitizeId(value) {
         .normalize('NFKC')
         .replace(/[^\w\u3040-\u30ff\u3400-\u9fff-]+/g, '_')
         .replace(/^_+|_+$/g, '') || 'category';
+}
+
+function renderPartOfSpeechRanking(termFreq, tfidfMap) {
+    const posLabels = {
+        noun: '名詞系',
+        verb: '動詞系',
+        adjective: '形容詞系',
+        alnum: '英数字・略語',
+        other: 'その他'
+    };
+    const posOrder = ['noun', 'verb', 'adjective', 'alnum', 'other'];
+    const grouped = Object.fromEntries(posOrder.map(key => [key, []]));
+
+    Object.entries(termFreq || {}).forEach(([word, freq]) => {
+        const pos = inferPartOfSpeech(word);
+        grouped[pos].push({
+            word,
+            freq,
+            tfidf: tfidfMap instanceof Map && tfidfMap.has(word) ? tfidfMap.get(word) : 0
+        });
+    });
+
+    const columns = posOrder.map(pos => {
+        const rows = grouped[pos]
+            .sort((a, b) => b.freq - a.freq || b.tfidf - a.tfidf || a.word.localeCompare(b.word, 'ja'))
+            .slice(0, 8);
+        const body = rows.length > 0
+            ? rows.map((item, idx) => `
+                <tr>
+                    <td style="padding: 0.35rem 0.25rem; color: #64748b; width: 2rem;">${idx + 1}</td>
+                    <td style="padding: 0.35rem 0.25rem; font-weight: 600;">${escapeHtml(item.word)}</td>
+                    <td style="padding: 0.35rem 0.25rem; text-align: right;">${item.freq}</td>
+                </tr>
+            `).join('')
+            : `<tr><td colspan="3" style="padding: 0.5rem 0.25rem; color: #94a3b8;">該当なし</td></tr>`;
+
+        return `
+            <div style="min-width: 170px; flex: 1 1 170px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                <div style="background: #f8fafc; padding: 0.55rem 0.65rem; font-weight: 700; color: #334155; border-bottom: 1px solid #e2e8f0;">
+                    ${posLabels[pos]}
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.84rem;">
+                    <thead>
+                        <tr style="color: #64748b; font-size: 0.78rem;">
+                            <th style="padding: 0.35rem 0.25rem; text-align: left;">#</th>
+                            <th style="padding: 0.35rem 0.25rem; text-align: left;">語</th>
+                            <th style="padding: 0.35rem 0.25rem; text-align: right;">回数</th>
+                        </tr>
+                    </thead>
+                    <tbody>${body}</tbody>
+                </table>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <h6 style="color: #4a5568; margin: 0 0 0.35rem 0; font-weight: bold;">品詞別ランキング（推定）</h6>
+        <p style="margin: 0 0 0.75rem 0; color: #64748b; font-size: 0.82rem; line-height: 1.55;">
+            TinySegmenterは厳密な品詞タグを返さないため、語形から推定して分類しています。英数字・略語は品詞ではなく、<span style="white-space: nowrap;">ict / sns / scratch</span> などの略語を見やすくするための補助分類です。
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+            ${columns}
+        </div>
+    `;
 }
 
 function renderEmptyNetworkCanvas(containerId) {
@@ -391,6 +465,154 @@ function renderEmptyNetworkCanvas(containerId) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('表示できる共起関係がありません', canvas.width / 2, canvas.height / 2);
+
+    renderNetworkLegend(containerId, [], {}, {}, [], {});
+}
+
+function renderNetworkLegend(containerId, nodesList, nodeGroups, groupMap, colors, weightedDegrees) {
+    const legend = document.getElementById(`${containerId}-legend`);
+    if (!legend) return;
+
+    if (!nodesList || nodesList.length === 0) {
+        legend.innerHTML = `
+            <div style="font-size: 0.85rem; color: #64748b; line-height: 1.6;">
+                <strong>色分けの意味:</strong> 共起関係が十分にないため、語グループは表示していません。
+            </div>
+        `;
+        return;
+    }
+
+    const groups = {};
+    nodesList.forEach(word => {
+        const colorIndex = groupMap[nodeGroups[word]];
+        if (!groups[colorIndex]) groups[colorIndex] = [];
+        groups[colorIndex].push(word);
+    });
+
+    const groupRows = Object.entries(groups)
+        .sort(([, aWords], [, bWords]) => bWords.length - aWords.length)
+        .map(([colorIndex, words], idx) => {
+            const sortedWords = words
+                .slice()
+                .sort((a, b) => (weightedDegrees[b] || 0) - (weightedDegrees[a] || 0) || a.localeCompare(b, 'ja'))
+                .slice(0, 8);
+            const color = colors[Number(colorIndex) % colors.length];
+            return `
+                <div style="display: flex; align-items: flex-start; gap: 0.45rem; min-width: 180px; max-width: 100%;">
+                    <span style="width: 0.8rem; height: 0.8rem; border-radius: 50%; background: ${color}; border: 1px solid rgba(15,23,42,0.16); flex: 0 0 auto; margin-top: 0.25rem;"></span>
+                    <div style="min-width: 0;">
+                        <span style="font-weight: 700; color: #334155;">グループ${idx + 1}</span>
+                        <span style="color: #475569;">: ${sortedWords.map(escapeHtml).join('、')}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    legend.innerHTML = `
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 0.85rem;">
+            <div style="font-size: 0.86rem; color: #475569; line-height: 1.55; margin-bottom: 0.55rem;">
+                <strong style="color: #334155;">色分けの意味:</strong>
+                同じ色の語は、同じ文の中で一緒に出やすい語のまとまりです。線は共起関係を表し、太い線ほど文脈の重なりが強いことを示します。
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.45rem 1rem; font-size: 0.83rem; line-height: 1.5;">
+                ${groupRows}
+            </div>
+        </div>
+    `;
+}
+
+function getNetworkLegendGroups(nodesList, nodeGroups, groupMap, colors, weightedDegrees) {
+    const groups = {};
+    nodesList.forEach(word => {
+        const colorIndex = groupMap[nodeGroups[word]];
+        if (!groups[colorIndex]) groups[colorIndex] = [];
+        groups[colorIndex].push(word);
+    });
+
+    return Object.entries(groups)
+        .sort(([, aWords], [, bWords]) => bWords.length - aWords.length)
+        .map(([colorIndex, words], idx) => ({
+            label: `グループ${idx + 1}`,
+            color: colors[Number(colorIndex) % colors.length],
+            words: words
+                .slice()
+                .sort((a, b) => (weightedDegrees[b] || 0) - (weightedDegrees[a] || 0) || a.localeCompare(b, 'ja'))
+                .slice(0, 8)
+        }));
+}
+
+function drawWrappedCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
+    let line = '';
+    let currentY = y;
+    for (const char of text) {
+        const testLine = line + char;
+        if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
+            ctx.fillText(line, x, currentY);
+            line = char;
+            currentY += lineHeight;
+        } else {
+            line = testLine;
+        }
+    }
+    if (line) ctx.fillText(line, x, currentY);
+    return currentY + lineHeight;
+}
+
+function drawNetworkLegendOnCanvas(ctx, x, y, width, nodesList, nodeGroups, groupMap, colors, weightedDegrees) {
+    const groups = getNetworkLegendGroups(nodesList, nodeGroups, groupMap, colors, weightedDegrees);
+    const padding = 28;
+    const boxX = x;
+    const boxY = y;
+    const boxW = width;
+    const boxH = 300;
+
+    ctx.save();
+    ctx.fillStyle = '#f8fafc';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(boxX, boxY, boxW, boxH, 18);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#334155';
+    ctx.font = 'bold 28px "Helvetica Neue", Arial, sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillText('色分けの意味', boxX + padding, boxY + padding);
+
+    ctx.fillStyle = '#475569';
+    ctx.font = '24px "Helvetica Neue", Arial, sans-serif';
+    const desc = '同じ色の語は、同じ文の中で一緒に出やすい語のまとまりです。線は共起関係を表し、太い線ほど文脈の重なりが強いことを示します。';
+    const afterDescY = drawWrappedCanvasText(ctx, desc, boxX + padding, boxY + padding + 44, boxW - padding * 2, 34);
+
+    let cursorX = boxX + padding;
+    let cursorY = afterDescY + 16;
+    const rowHeight = 36;
+    groups.forEach(group => {
+        const text = `${group.label}: ${group.words.join('、')}`;
+        const itemWidth = Math.min(ctx.measureText(text).width + 60, boxW - padding * 2);
+        if (cursorX + itemWidth > boxX + boxW - padding) {
+            cursorX = boxX + padding;
+            cursorY += rowHeight;
+        }
+        if (cursorY > boxY + boxH - rowHeight) return;
+
+        ctx.fillStyle = group.color;
+        ctx.beginPath();
+        ctx.arc(cursorX + 12, cursorY + 14, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(15,23,42,0.18)';
+        ctx.stroke();
+
+        ctx.fillStyle = '#334155';
+        ctx.font = 'bold 22px "Helvetica Neue", Arial, sans-serif';
+        ctx.fillText(group.label, cursorX + 32, cursorY);
+        ctx.font = '22px "Helvetica Neue", Arial, sans-serif';
+        ctx.fillStyle = '#475569';
+        ctx.fillText(`: ${group.words.join('、')}`, cursorX + 32 + ctx.measureText(group.label).width, cursorY);
+        cursorX += itemWidth + 24;
+    });
+    ctx.restore();
 }
 
 function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
@@ -415,10 +637,14 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
     // Initialize groups
     nodesList.forEach((n, i) => nodeGroups[n] = i);
 
-    // Simple propagation (merge groups connected by strong edges)
+    const sortedWeights = topEdges.map(e => e.weight).sort((a, b) => b - a);
+    const groupThreshold = Math.max(0.2, sortedWeights[Math.floor(sortedWeights.length * 0.4)] || 0.2);
+
+    // Stronger co-occurrences drive color groups; weaker bridge edges remain visible but do not collapse all nodes into one color.
     // Run a few passes
     for (let pass = 0; pass < 3; pass++) {
         topEdges.forEach(e => {
+            if (e.weight < groupThreshold) return;
             const g1 = nodeGroups[e.from];
             const g2 = nodeGroups[e.to];
             if (g1 !== g2) {
@@ -454,6 +680,8 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
         },
         font: { size: 24, color: '#333', strokeWidth: 4, strokeColor: '#fff' }
     }));
+
+    renderNetworkLegend(containerId, nodesList, nodeGroups, groupMap, colors, weightedDegrees);
 
     // Render
     const container = document.getElementById(containerId);
@@ -498,7 +726,7 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
         newBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
-            const filename = `network_${timestamp}.png`;
+            const filename = `cooccurrence_network_${timestamp}.png`;
 
             // 隠しコンテナ作成 (3倍サイズ)
             const hiddenContainer = document.createElement('div');
@@ -557,13 +785,14 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
                     const tempCanvas = document.createElement('canvas');
                     const width = ctx.canvas.width;
                     const height = ctx.canvas.height;
+                    const legendHeight = 360;
 
                     tempCanvas.width = width;
-                    tempCanvas.height = height;
+                    tempCanvas.height = height + legendHeight;
                     const tempCtx = tempCanvas.getContext('2d');
 
                     tempCtx.fillStyle = '#ffffff';
-                    tempCtx.fillRect(0, 0, width, height);
+                    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
                     // ネットワーク描画 (等倍コピー)
                     tempCtx.drawImage(ctx.canvas, 0, 0);
@@ -614,6 +843,8 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
                     });
 
                     tempCtx.restore(); // スケーリング解除
+
+                    drawNetworkLegendOnCanvas(tempCtx, 60, height + 24, width - 120, nodesList, nodeGroups, groupMap, colors, weightedDegrees);
 
                     const dataUrl = tempCanvas.toDataURL("image/png");
 

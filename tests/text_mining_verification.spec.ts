@@ -74,6 +74,8 @@ test.describe('Text Mining Advanced Verification', () => {
         await expect(page.locator('#tm-overall canvas#overall-wordcloud')).toBeVisible({ timeout: 60000 });
         await expect(page.locator('#tm-overall canvas#overall-wordcloud-tfidf')).toBeVisible({ timeout: 60000 });
         await expect(page.locator('#tm-overall #overall-network canvas')).toBeVisible();
+        await expect(page.locator('#tm-overall', { hasText: '品詞別ランキング（推定）' })).toBeVisible();
+        await expect(page.locator('#tm-overall', { hasText: '色分けの意味' })).toBeVisible();
 
         const wordCloudQuality = await page.locator('#overall-wordcloud').evaluate((canvas) => {
             const c = canvas as HTMLCanvasElement;

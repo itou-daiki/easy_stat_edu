@@ -4,7 +4,7 @@
  * @module text_mining/visualization
  */
 
-import { buildCooccurrenceEdges } from './helpers.js';
+import { buildCooccurrenceEdges } from './helpers.js?v=tm-logic-20260507c';
 
 // ======================================================================
 // ワードクラウド

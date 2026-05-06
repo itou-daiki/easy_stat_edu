@@ -741,6 +741,7 @@ export function createMultiPairSelector(containerId, options) {
         removeBtn.style.background = 'none';
         removeBtn.style.cursor = 'pointer';
         removeBtn.title = '削除';
+        removeBtn.setAttribute('aria-label', 'ペア行を削除');
         removeBtn.onclick = () => row.remove();
 
         row.appendChild(preSelect);
@@ -802,6 +803,8 @@ export function createMultiSetSelector(containerId, options) {
         removeBtn.style.border = 'none';
         removeBtn.style.background = 'none';
         removeBtn.style.cursor = 'pointer';
+        removeBtn.title = '分析セットを削除';
+        removeBtn.setAttribute('aria-label', '分析セットを削除');
         removeBtn.onclick = () => row.remove();
         row.appendChild(removeBtn);
 
