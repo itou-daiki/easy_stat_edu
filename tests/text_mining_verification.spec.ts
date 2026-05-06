@@ -69,10 +69,24 @@ test.describe('Text Mining Advanced Verification', () => {
         await expect(page.locator('button.tab-btn', { hasText: '全体分析' })).toBeVisible();
 
         // 7. Verify Overall Analysis (Default Tab) - Wait for this FIRST to ensure analysis is done
-        // Kuromoji loading might take time, so we wait for the canvas
+        // Tokenizer loading might take time, so we wait for the canvas
         // Skipping container check as it was flaky; verify content instead
         await expect(page.locator('#tm-overall canvas#overall-wordcloud')).toBeVisible({ timeout: 60000 });
+        await expect(page.locator('#tm-overall canvas#overall-wordcloud-tfidf')).toBeVisible({ timeout: 60000 });
         await expect(page.locator('#tm-overall #overall-network canvas')).toBeVisible();
+
+        const wordCloudQuality = await page.locator('#overall-wordcloud').evaluate((canvas) => {
+            const c = canvas as HTMLCanvasElement;
+            const rect = c.getBoundingClientRect();
+            return {
+                width: c.width,
+                height: c.height,
+                cssWidth: rect.width,
+                cssHeight: rect.height
+            };
+        });
+        expect(wordCloudQuality.width).toBeGreaterThanOrEqual(wordCloudQuality.cssWidth * 2);
+        expect(wordCloudQuality.height).toBeGreaterThanOrEqual(wordCloudQuality.cssHeight * 2);
 
         // Now check if Category button appeared (it appears after overall analysis)
         await expect(page.locator('button.tab-btn', { hasText: 'カテゴリ別分析' })).toBeVisible();
@@ -118,8 +132,7 @@ test.describe('Text Mining Advanced Verification', () => {
         // await expect(kwicPanel).not.toBeVisible(); // Hidden by default (Skipping check as it might be flaky/open)
 
         // 11. Check for critical errors
-        const criticalErrors = consoleErrors.filter(e => e.includes('Kuromoji') || e.includes('Failed'));
+        const criticalErrors = consoleErrors.filter(e => e.includes('TinySegmenter') || e.includes('Failed'));
         expect(criticalErrors).toHaveLength(0);
     });
 });
-

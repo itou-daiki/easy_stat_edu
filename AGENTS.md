@@ -1,4 +1,4 @@
-# CLAUDE.md - Development Guide for easyStat
+# AGENTS.md - Development Guide for easyStat
 
 ## Project Overview
 

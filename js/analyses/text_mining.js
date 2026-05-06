@@ -1,65 +1,14 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo } from '../utils.js';
-import { STOP_WORDS, initTokenizer as initTokenizerHelper, downloadCanvasAsImage, getTokenizer } from './text_mining/helpers.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton } from '../utils.js';
+import {
+    initTokenizer as initTokenizerHelper,
+    downloadCanvasAsImage,
+    getTokenizer,
+    tokenizeDocument,
+    splitTextIntoSentences,
+    computeTermMetrics,
+    buildCooccurrenceEdges
+} from './text_mining/helpers.js';
 import { displayWordCloud } from './text_mining/visualization.js';
-
-/**
- * 1行を1文書としてトークン配列を返す（ストップワード等を除外）
- * @param {string} text - 文書テキスト
- * @param {Object} tokenizer - TinySegmenter インスタンス
- * @returns {string[]}
- */
-function tokenizeDocument(text, tokenizer) {
-    if (!text || typeof text !== 'string') return [];
-    const tokens = tokenizer.segment(text);
-    return tokens.filter(word => {
-        const isStopWord = STOP_WORDS.has(word);
-        const isOnlyHiragana = /^[ぁ-ん]+$/.test(word) && word.length <= 2;
-        const isOnlySymbols = /^[、。！？「」『』（）・\s]+$/.test(word);
-        return word.length > 1 && !isStopWord && !isOnlyHiragana && !isOnlySymbols;
-    });
-}
-
-/**
- * 文書集合に対して TF-IDF を計算する
- * TF-IDF(t,d) = tf(t,d) * log(N/df(t))
- * @param {Array<string[]>} documents - 各文書のトークン配列（1行＝1文書）
- * @returns {{ termTfIdf: Array<[string, number]>, termDf: Object<string, number>, termFreq: Object<string, number> }}
- */
-function computeTfIdf(documents) {
-    const N = documents.length;
-    if (N === 0) return { termTfIdf: [], termDf: {}, termFreq: {} };
-
-    const termFreq = {};
-    const docFreq = {};
-    const tfPerDoc = documents.map(() => ({}));
-
-    documents.forEach((tokens, dIdx) => {
-        const counts = {};
-        tokens.forEach(t => {
-            counts[t] = (counts[t] || 0) + 1;
-            termFreq[t] = (termFreq[t] || 0) + 1;
-        });
-        Object.keys(counts).forEach(t => {
-            docFreq[t] = (docFreq[t] || 0) + 1;
-            tfPerDoc[dIdx][t] = counts[t];
-        });
-    });
-
-    const tfIdfByTerm = {};
-    tfPerDoc.forEach((docTf) => {
-        Object.entries(docTf).forEach(([t, tf]) => {
-            const df = docFreq[t] || 1;
-            const idf = Math.log(N / df);
-            const tfIdf = tf * idf;
-            tfIdfByTerm[t] = (tfIdfByTerm[t] || 0) + tfIdf;
-        });
-    });
-
-    const termTfIdf = Object.entries(tfIdfByTerm)
-        .sort((a, b) => b[1] - a[1]);
-
-    return { termTfIdf, termDf: docFreq, termFreq };
-}
 
 async function runTextMining(currentData) {
     const textVar = document.getElementById('text-var').value;
@@ -142,10 +91,14 @@ async function runTextMining(currentData) {
         if (allTextsWithId.length === 0) throw new Error('有効なテキストデータがありません');
         updateStatus('テキストを解析中...');
 
+        const tokenizer = getTokenizer();
+        const globalDocuments = allTextsWithId.map(item => tokenizeDocument(item.text, tokenizer));
+        const globalTermMetrics = computeTermMetrics(globalDocuments);
+
         // 1. Overall Analysis
         const overallContainer = document.getElementById('overall-results');
         overallContainer.innerHTML = `<h4 style="color: #2d3748; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;">全体分析 (N=${allTextsWithId.length})</h4>`;
-        await analyzeAndRender(allTextsWithId, overallContainer, 'overall');
+        await analyzeAndRender(allTextsWithId, overallContainer, 'overall', { globalTermMetrics });
 
         // 2. Category Analysis (if selected)
         if (catVar) {
@@ -160,7 +113,7 @@ async function runTextMining(currentData) {
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <label for="${selectId}" style="font-weight: bold; color: #4a5568;">表示カテゴリ:</label>
                     <select id="${selectId}" style="max-width: 300px; padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e0;">
-                        ${categories.map(c => `<option value="${c}">${c}</option>`).join('')}
+                        ${categories.map(c => `<option value="${escapeAttribute(c)}">${escapeHtml(c)}</option>`).join('')}
                     </select>
                 </div>
             `;
@@ -175,12 +128,12 @@ async function runTextMining(currentData) {
 
                 if (catData.length > 0) {
                     catResults.innerHTML = ''; // Clear spinner
-                    const sectionId = `cat-results-${cat}`;
+                    const sectionId = `cat-results-${sanitizeId(cat)}`;
                     const section = document.createElement('div');
                     section.id = sectionId;
-                    section.innerHTML = `<h5 style="color: #1e90ff; font-weight: bold; margin-bottom: 1rem;">＜${cat}＞ (N=${catData.length})</h5>`;
+                    section.innerHTML = `<h5 style="color: #1e90ff; font-weight: bold; margin-bottom: 1rem;">＜${escapeHtml(cat)}＞ (N=${catData.length})</h5>`;
                     catResults.appendChild(section);
-                    await analyzeAndRender(catData, section, `cat-${cat.replace(/\s+/g, '_')}`);
+                    await analyzeAndRender(catData, section, `cat-${sanitizeId(cat)}`, { globalTermMetrics });
                 } else {
                     catResults.innerHTML = '<p class="text-muted">データがありません</p>';
                 }
@@ -204,7 +157,7 @@ async function runTextMining(currentData) {
     }
 }
 
-async function analyzeAndRender(dataItems, container, prefix) {
+async function analyzeAndRender(dataItems, container, prefix, options = {}) {
     return new Promise((resolve) => {
         setTimeout(() => {
             const tokenizer = getTokenizer();
@@ -219,24 +172,15 @@ async function analyzeAndRender(dataItems, container, prefix) {
 
             // 1行＝1文書としてトークン配列を構築（TF-IDF用）
             const documents = dataItems.map(item => tokenizeDocument(item.text, tokenizer));
+            const globalIdf = options.globalTermMetrics?.termIdf || null;
 
             dataItems.forEach(item => {
                 const text = item.text;
-                const rawSentences = text.split(/[。！？\n]+/).filter(s => s.trim().length > 0);
+                const rawSentences = splitTextIntoSentences(text);
 
                 rawSentences.forEach(sent => {
-                    const tokens = tokenizer.segment(sent);
-                    const wordsInSentence = [];
-                    tokens.forEach(word => {
-                        const isStopWord = STOP_WORDS.has(word);
-                        const isOnlyHiragana = /^[ぁ-ん]+$/.test(word) && word.length <= 2;
-                        const isOnlySymbols = /^[、。！？「」『』（）・\s]+$/.test(word);
-
-                        if (word.length > 1 && !isStopWord && !isOnlyHiragana && !isOnlySymbols) {
-                            allWords.push(word);
-                            wordsInSentence.push(word);
-                        }
-                    });
+                    const wordsInSentence = tokenizeDocument(sent, tokenizer);
+                    allWords.push(...wordsInSentence);
 
                     if (wordsInSentence.length > 0) {
                         sentences.push(wordsInSentence);
@@ -253,7 +197,8 @@ async function analyzeAndRender(dataItems, container, prefix) {
             allWords.forEach(w => { counts[w] = (counts[w] || 0) + 1; });
             const sortedWords = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
-            const { termTfIdf, termDf, termFreq } = computeTfIdf(documents);
+            const { termTfIdf, termDf, termFreq } = computeTermMetrics(documents, { idfLookup: globalIdf });
+            const tfidfMap = new Map(termTfIdf);
 
             const wrapper = document.createElement('div');
             wrapper.style.display = 'flex';
@@ -282,8 +227,7 @@ async function analyzeAndRender(dataItems, container, prefix) {
             tableBody.innerHTML = termsForTable.slice(0, 100).map(([w]) => {
                 const freq = termFreq[w] != null ? termFreq[w] : (counts[w] || 0);
                 const df = termDf[w] != null ? termDf[w] : '-';
-                const tfidf = termTfIdf.find(x => x[0] === w);
-                const tfidfVal = tfidf ? tfidf[1].toFixed(4) : '-';
+                const tfidfVal = tfidfMap.has(w) ? tfidfMap.get(w).toFixed(4) : '-';
                 return `<tr><td>${escapeHtml(w)}</td><td>${freq}</td><td>${df}</td><td>${tfidfVal}</td></tr>`;
             }).join('');
 
@@ -375,20 +319,27 @@ async function analyzeAndRender(dataItems, container, prefix) {
 
             displayWordCloud(wcId, sortedWords, showKwic);
 
-            if (termTfIdf.length > 0) {
-                displayWordCloud(wcTfIdfId, termTfIdf.map(([w, v]) => [w, v]), showKwic);
+            const positiveTfIdfTerms = termTfIdf.filter(([, v]) => v > 0);
+            if (positiveTfIdfTerms.length > 0) {
+                displayWordCloud(wcTfIdfId, positiveTfIdfTerms.map(([w, v]) => [w, v]), showKwic);
             } else {
                 const canvas = document.getElementById(wcTfIdfId);
                 if (canvas) {
+                    const scale = 3;
+                    const width = Math.max(420, Math.round(canvas.parentElement?.clientWidth || canvas.parentElement?.getBoundingClientRect().width || 720));
+                    const height = 400;
                     const ctx = canvas.getContext('2d');
-                    canvas.width = canvas.parentElement.offsetWidth || 500;
-                    canvas.height = 400;
+                    canvas.width = width * scale;
+                    canvas.height = height * scale;
+                    canvas.style.width = `${width}px`;
+                    canvas.style.height = `${height}px`;
                     ctx.fillStyle = '#fafbfc';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.fillStyle = '#718096';
-                    ctx.font = '14px sans-serif';
+                    ctx.font = `${14 * scale}px sans-serif`;
                     ctx.textAlign = 'center';
-                    ctx.fillText('TF-IDFを計算する文書がありません', canvas.width / 2, canvas.height / 2);
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('TF-IDFで特徴的な語はありません', canvas.width / 2, canvas.height / 2);
                 }
             }
 
@@ -406,41 +357,49 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+function escapeAttribute(str) {
+    return escapeHtml(String(str)).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function sanitizeId(value) {
+    return String(value)
+        .normalize('NFKC')
+        .replace(/[^\w\u3040-\u30ff\u3400-\u9fff-]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'category';
+}
+
+function renderEmptyNetworkCanvas(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const scale = 3;
+    const width = Math.max(420, Math.round(container.clientWidth || container.getBoundingClientRect().width || 720));
+    const height = 450;
+    container.innerHTML = '';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    canvas.style.width = '100%';
+    canvas.style.height = `${height}px`;
+    container.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fafbfc';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#64748b';
+    ctx.font = `${14 * scale}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('表示できる共起関係がありません', canvas.width / 2, canvas.height / 2);
+}
+
 function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
-    // 1. Jaccard & Edge Construction
-    const edges = [];
-    const wordPresence = {};
-    topWords.forEach(w => { wordPresence[w] = new Set(); });
+    const topEdges = buildCooccurrenceEdges(sentences, topWords, { threshold: 0.1, maxEdges: 80 });
 
-    sentences.forEach((s, sIdx) => {
-        s.forEach(w => {
-            if (wordPresence[w]) wordPresence[w].add(sIdx);
-        });
-    });
-
-    for (let i = 0; i < topWords.length; i++) {
-        for (let j = i + 1; j < topWords.length; j++) {
-            const w1 = topWords[i];
-            const w2 = topWords[j];
-            const set1 = wordPresence[w1];
-            const set2 = wordPresence[w2];
-
-            let intersection = 0;
-            set1.forEach(id => { if (set2.has(id)) intersection++; });
-
-            if (intersection > 0) {
-                const union = new Set([...set1, ...set2]).size;
-                const jaccard = intersection / union;
-                if (jaccard > 0.1) { // Threshold
-                    edges.push({ from: w1, to: w2, weight: jaccard });
-                }
-            }
-        }
+    if (topEdges.length === 0) {
+        renderEmptyNetworkCanvas(containerId);
+        return;
     }
-
-    // Sort edges
-    edges.sort((a, b) => b.weight - a.weight);
-    const topEdges = edges.slice(0, 80); // Keep reasonable number
 
     // Identify active nodes
     const activeWords = new Set();
@@ -476,10 +435,18 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
     const groupMap = {};
     uniqueGroups.forEach((g, i) => groupMap[g] = i % colors.length);
 
+    const weightedDegrees = {};
+    nodesList.forEach(id => { weightedDegrees[id] = 0; });
+    topEdges.forEach(e => {
+        weightedDegrees[e.from] = (weightedDegrees[e.from] || 0) + e.weight;
+        weightedDegrees[e.to] = (weightedDegrees[e.to] || 0) + e.weight;
+    });
+    const maxWeightedDegree = Math.max(...Object.values(weightedDegrees), 1);
+
     const nodes = nodesList.map(id => ({
         id,
         label: id,
-        value: topEdges.filter(e => e.from === id || e.to === id).length * 5 + 5,
+        value: (weightedDegrees[id] / maxWeightedDegree) * 50 + 10,
         color: {
             background: colors[groupMap[nodeGroups[id]]],
             border: '#ffffff',
@@ -502,8 +469,9 @@ function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
     };
 
     const options = {
+        layout: { randomSeed: 42, improvedLayout: true },
         nodes: { shape: 'dot', scaling: { min: 15, max: 60 } },
-        edges: { smooth: { type: 'continuous' } },
+        edges: { smooth: { type: 'continuous' }, scaling: { min: 1, max: 8 } },
         physics: {
             forceAtlas2Based: { gravitationalConstant: -100, centralGravity: 0.01, springConstant: 0.08, springLength: 100, damping: 0.4 },
             minVelocity: 0.75,
@@ -692,12 +660,12 @@ export function render(container, currentData, characteristics) {
                     </div>
                     <h4>分析結果の見方</h4>
                     <ul>
-                        <li><strong>単語の重要度テーブル:</strong> 各単語の出現回数・出現文書数・TF-IDF重みを表示します。TF-IDFは「多くの文書に共通する語」より「特定の文書で特徴的な語」を高く評価します。</li>
+                        <li><strong>単語の重要度テーブル:</strong> 各単語の出現回数・出現文書数・TF-IDF重みを表示します。TF-IDFは文書長で調整した出現割合に、全体データでの珍しさ（IDF）を掛けた値です。カテゴリ別分析でも全体データのIDFを使うため、カテゴリ間で特徴語を比較しやすくしています。</li>
                         <li><strong>ワードクラウド（出現回数 / TF-IDF）:</strong> 単語を大きく表示します。出現回数版とTF-IDF重み版の2種類があります。<strong>単語をクリックすると、その単語を含む元の文が表示されます（KWIC）。</strong></li>
-                        <li><strong>共起ネットワーク:</strong> 関連性の強い単語を線で結びます。<strong>同じ色のノードは、似た文脈で使われる「グループ（コミュニティ）」を表します。</strong></li>
+                        <li><strong>共起ネットワーク:</strong> 同じ文に一緒に出た単語を、文集合の重なり（Jaccard係数）で線として結びます。<strong>同じ色のノードは、似た文脈で使われる「グループ（コミュニティ）」を表します。</strong></li>
                     </ul>
                     <h4>対象となる単語</h4>
-                    <p>分析では<strong>2文字以上の主要な単語</strong>を抽出します（一般的なストップワードや記号は自動的に除外されます）。</p>
+                    <p>分析では表記を正規化したうえで、<strong>2文字以上の主要な単語</strong>を抽出します（一般的なストップワード、数字のみの語、記号は自動的に除外されます）。</p>
                 </div>
             </div>
 

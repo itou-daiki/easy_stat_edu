@@ -4,9 +4,81 @@
  * @module text_mining/visualization
  */
 
+import { buildCooccurrenceEdges } from './helpers.js';
+
 // ======================================================================
 // ワードクラウド
 // ======================================================================
+
+const WORD_CLOUD_PALETTE = [
+    '#2563eb',
+    '#0f766e',
+    '#c2410c',
+    '#7c3aed',
+    '#be123c',
+    '#047857',
+    '#b45309',
+    '#4338ca'
+];
+
+function hashString(value) {
+    let hash = 0;
+    for (let i = 0; i < value.length; i++) {
+        hash = ((hash << 5) - hash) + value.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash);
+}
+
+function normalizeWordWeights(wordCounts, limit = 70) {
+    const cleaned = (Array.isArray(wordCounts) ? wordCounts : [])
+        .map(([word, weight]) => [String(word), Number(weight)])
+        .filter(([word, weight]) => word.length > 0 && Number.isFinite(weight) && weight > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit);
+
+    if (cleaned.length === 0) return [];
+
+    const weights = cleaned.map(([, weight]) => weight);
+    const minWeight = Math.min(...weights);
+    const maxWeight = Math.max(...weights);
+    const minFont = 16;
+    const maxFont = cleaned.length <= 8 ? 58 : 48;
+
+    return cleaned.map(([word, weight]) => {
+        const ratio = maxWeight === minWeight ? 0.65 : (weight - minWeight) / (maxWeight - minWeight);
+        const fontSize = minFont + Math.sqrt(ratio) * (maxFont - minFont);
+        return [word, fontSize];
+    });
+}
+
+function drawCanvasMessage(canvas, message, scale, width, height) {
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fafbfc';
+    ctx.fillRect(0, 0, width * scale, height * scale);
+    ctx.fillStyle = '#64748b';
+    ctx.font = `${14 * scale}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(message, (width * scale) / 2, (height * scale) / 2);
+}
+
+function renderEmptyNetworkCanvas(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const scale = 3;
+    const width = Math.max(420, Math.round(container.clientWidth || container.getBoundingClientRect().width || 720));
+    const height = 450;
+    container.innerHTML = '';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    canvas.style.width = '100%';
+    canvas.style.height = `${height}px`;
+    container.appendChild(canvas);
+    drawCanvasMessage(canvas, '表示できる共起関係がありません', scale, width, height);
+}
 
 /**
  * ワードクラウドを描画
@@ -19,7 +91,8 @@ export function displayWordCloud(canvasId, wordCounts, onClick) {
     if (!canvas) return;
 
     const SCALE = 3; // 高画質化のためのスケール倍率
-    const width = canvas.parentElement.offsetWidth || 500;
+    const parentWidth = canvas.parentElement?.clientWidth || canvas.parentElement?.getBoundingClientRect().width || 720;
+    const width = Math.max(420, Math.round(parentWidth));
     const height = 400;
 
     // 内部解像度を上げる
@@ -30,17 +103,23 @@ export function displayWordCloud(canvasId, wordCounts, onClick) {
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
 
-    const list = wordCounts.slice(0, 70).map(([w, c]) => [w, c]);
+    const list = normalizeWordWeights(wordCounts);
+    if (list.length === 0) {
+        drawCanvasMessage(canvas, '表示できる単語がありません', SCALE, width, height);
+        return;
+    }
 
     WordCloud(canvas, {
         list: list,
-        gridSize: 8 * SCALE,
-        weightFactor: size => Math.pow(size, 0.7) * 18 * SCALE,
-        minSize: 10 * SCALE,
+        gridSize: Math.round(10 * SCALE),
+        weightFactor: size => size * SCALE,
+        minSize: 11 * SCALE,
         fontFamily: 'sans-serif',
-        color: 'random-dark',
+        color: (word) => WORD_CLOUD_PALETTE[hashString(String(word)) % WORD_CLOUD_PALETTE.length],
         backgroundColor: '#fafbfc',
         rotateRatio: 0,
+        shrinkToFit: true,
+        drawOutOfBound: false,
         click: (item) => {
             if (item && item[0]) onClick(item[0]);
         },
@@ -60,30 +139,12 @@ export function displayWordCloud(canvasId, wordCounts, onClick) {
  * @param {Function} onClick - ノードクリック時のコールバック
  */
 export function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
-    // 1. Jaccard & Edge Construction
-    const edges = [];
-    const wordPresence = {};
-    topWords.forEach(w => { wordPresence[w] = new Set(); });
+    const edges = buildCooccurrenceEdges(sentences, topWords, { threshold: 0.1, maxEdges: 80 })
+        .map(edge => ({ ...edge, value: edge.weight }));
 
-    sentences.forEach((s, sIdx) => {
-        s.forEach(w => {
-            if (wordPresence[w]) wordPresence[w].add(sIdx);
-        });
-    });
-
-    for (let i = 0; i < topWords.length; i++) {
-        for (let j = i + 1; j < topWords.length; j++) {
-            const w1 = topWords[i];
-            const w2 = topWords[j];
-            const set1 = wordPresence[w1];
-            const set2 = wordPresence[w2];
-            const inter = [...set1].filter(x => set2.has(x)).length;
-            const union = new Set([...set1, ...set2]).size;
-            const jaccard = union > 0 ? inter / union : 0;
-            if (jaccard > 0.05) {
-                edges.push({ from: w1, to: w2, value: jaccard });
-            }
-        }
+    if (edges.length === 0) {
+        renderEmptyNetworkCanvas(containerId);
+        return;
     }
 
     // 2. Node Degrees
@@ -180,6 +241,7 @@ export function plotCooccurrenceNetwork(containerId, sentences, topWords, onClic
     };
 
     const options = {
+        layout: { randomSeed: 42, improvedLayout: true },
         physics: {
             stabilization: { iterations: 100 },
             barnesHut: { gravitationalConstant: -3000, springLength: 150 }
