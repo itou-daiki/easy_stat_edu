@@ -201,7 +201,7 @@ function visualizeCategoricalVariables(currentData, characteristics) {
         const selectId = `sort-select-${index}`;
         const plotId = `cat-plot-${index}`;
 
-        plotsContainer.innerHTML += `
+        plotsContainer.insertAdjacentHTML('beforeend', `
             <div class="categorical-viz-section" style="margin-bottom: 2.5rem; padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #1e90ff;">
                 <h5 style="color: #2d3748; font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;">
                     <i class="fas fa-chart-bar" style="color: #1e90ff;"></i> 変数名: <span style="color: #1e90ff;">${col}</span>
@@ -215,7 +215,7 @@ function visualizeCategoricalVariables(currentData, characteristics) {
                 </div>
                 <div id="${plotId}" class="plot-container"></div>
             </div>
-        `;
+        `);
 
         // 初期表示（度数順）
         renderCategoricalPlot(col, valueCounts, plotId, 'frequency');
@@ -333,7 +333,7 @@ function visualizeNumericVariables(currentData, characteristics) {
         const histId = `num-hist-${index}`;
         const boxId = `num-box-${index}`;
 
-        plotsContainer.innerHTML += `
+        plotsContainer.insertAdjacentHTML('beforeend', `
             <div class="numeric-viz-section" style="margin-bottom: 2.5rem; padding: 1.5rem; background: #fafbfc; border-radius: 8px; border-left: 4px solid #1e90ff;">
                 <h5 style="color: #2d3748; font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;">
                     <i class="fas fa-chart-line" style="color: #1e90ff;"></i> 変数名: <span style="color: #1e90ff;">${col}</span>
@@ -351,7 +351,7 @@ function visualizeNumericVariables(currentData, characteristics) {
                 <div id="${histId}" class="plot-container" style="margin-bottom: 1rem;"></div>
                 <div id="${boxId}" class="plot-container"></div>
             </div>
-        `;
+        `);
 
         // Check control state (Global check, better to do inside loop or passed down, but global ID is fine for this app)
         const axisControl = document.getElementById('show-axis-labels');

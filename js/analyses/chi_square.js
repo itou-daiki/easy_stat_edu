@@ -149,6 +149,7 @@ function runChiSquare(currentData) {
 
 function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, smallExpRate, yatesChi, yatesP, oddsRatio, phiCoef) {
     const container = document.getElementById('chi-results');
+    const omnibusSignificant = p < 0.05;
 
     // Warning for Assumption
     let warningHtml = '';
@@ -189,10 +190,11 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
             const res = adjResiduals[i][j];
             rowSum += obs;
 
-            // 残差による色付け
+            // 残差による色付け。全体検定が非有意のときは、有意差ではなく探索的な目安として示す。
             let style = '';
-            if (res > 1.96) style = 'background: #dbeafe; color: #1e40af; font-weight: bold;'; // 有意に多い
-            else if (res < -1.96) style = 'background: #fee2e2; color: #991b1b;'; // 有意に少ない
+            if (omnibusSignificant && res > 1.96) style = 'background: #dbeafe; color: #1e40af; font-weight: bold;'; // 有意に多い
+            else if (omnibusSignificant && res < -1.96) style = 'background: #fee2e2; color: #991b1b; font-weight: bold;'; // 有意に少ない
+            else if (!omnibusSignificant && Math.abs(res) > 1.96) style = 'background: #fef3c7; color: #92400e; font-weight: bold;'; // 参考: 残差が大きい
 
             html += `
                 <td style="${style}">
@@ -210,7 +212,9 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
             </div>
             <p style="margin-top: 0.5rem; color: #666; font-size: 0.8rem;">
                 上段: 観測度数 (期待度数), 下段: 調整済み標準化残差 (z)。<br>
-                z &gt; 1.96 (青) は有意に多い、z &lt; -1.96 (赤) は有意に少ない組み合わせを示します。
+                ${omnibusSignificant
+                    ? 'z &gt; 1.96 (青) は有意に多い、z &lt; -1.96 (赤) は有意に少ない組み合わせを示します。'
+                    : '全体検定が5%水準で有意でないため、|z| &gt; 1.96 のセルがあっても有意な偏りとは断定しません。該当セルは黄色で探索的な目安として示します。'}
             </p>
         </div>
     `;
@@ -382,7 +386,7 @@ export function render(container, currentData, characteristics) {
                     <h4>結果の読み方</h4>
                     <ul>
                         <li><strong>p値 < 0.05:</strong> 2つのデータには「関連がある（独立ではない）」と言えます。</li>
-                        <li><strong>残差分析:</strong> 「思ったより多かった（または少なかった）」組み合わせが分かります。調整済み残差が1.96以上だと「有意に多い」です。</li>
+                        <li><strong>残差分析:</strong> 全体検定で関連が見られた場合に、「思ったより多かった（または少なかった）」組み合わせを確認します。全体検定が非有意の場合は、参考情報として扱います。</li>
                     </ul>
                 </div>
             </div>
@@ -401,7 +405,7 @@ export function render(container, currentData, characteristics) {
                             <li><strong>検定手法:</strong> ピアソンのカイ二乗検定 (Pearson's Chi-square test)</li>
                             <li><strong>統計量:</strong> \( \chi^2 = \sum \frac{(O_{ij} - E_{ij})^2}{E_{ij}} \) （O:観測度数, E:期待度数）</li>
                             <li><strong>効果量 (Cramer's V):</strong> \( V = \sqrt{\frac{\chi^2}{N \times \min(r-1, c-1)}} \)</li>
-                            <li><strong>残差分析:</strong> 調整済み標準化残差 (Adjusted Standardized Residuals) を算出。絶対値が1.96を超える場合、有意な偏りとみなします。</li>
+                            <li><strong>残差分析:</strong> 調整済み標準化残差 (Adjusted Standardized Residuals) を算出。全体検定が有意な場合に、絶対値が1.96を超えるセルを偏りの大きい組み合わせとして確認します。全体検定が非有意の場合は探索的な目安として扱います。</li>
                             <li>※ 2×2分割表の場合、イェーツの連続性補正を適用しています。</li>
                         </ul>
                     </div>

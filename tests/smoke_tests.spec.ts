@@ -225,6 +225,18 @@ test.describe('Smoke Tests for all Analyses', () => {
             if (analysis.resultSelector) {
                 await expect(page.locator(analysis.resultSelector)).toBeVisible({ timeout: 60000 });
             }
+
+            // Re-running an analysis must update the existing visualization controls.
+            if (analysis.name !== 'EDA' && analysis.runBtn) {
+                const axisControls = page.locator('#show-axis-labels');
+                if (await axisControls.count() > 0) {
+                    await page.locator(analysis.runBtn).click();
+                    await expect(axisControls).toHaveCount(1);
+                    await expect(page.locator('#show-graph-title')).toHaveCount(1);
+                    await expect(page.getByText('軸ラベルを表示', { exact: true })).toHaveCount(1);
+                    await expect(page.getByText('グラフタイトルを表示', { exact: true })).toHaveCount(1);
+                }
+            }
         });
     }
 });

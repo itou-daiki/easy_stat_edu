@@ -146,11 +146,27 @@ async function auditRenderedSurface(page: Page, label: string) {
             return { index, width: rect.width, height: rect.height, pixelWidth: c.width, pixelHeight: c.height, nonBlank };
         });
 
-        return { badTextMatches, buttons, unlabeledButtons, tables, plots, images, canvases };
+        const analysisRoot = document.getElementById('analysis-content');
+        const plotTargets = analysisRoot?.querySelectorAll('.js-plotly-plot').length || 0;
+        const canvasTargets = analysisRoot?.querySelectorAll('canvas.tm-wordcloud-canvas, .tm-network-canvas').length || 0;
+        const tableTargets = analysisRoot?.querySelectorAll('table').length || 0;
+        const editorCoverage = {
+            targets: plotTargets + canvasTargets + tableTargets,
+            plotDelta: (analysisRoot?.querySelectorAll('[data-editor-kind="plotly"]').length || 0) - plotTargets,
+            canvasDelta: (analysisRoot?.querySelectorAll('[data-editor-kind="canvas"]').length || 0) - canvasTargets,
+            tableDelta: (analysisRoot?.querySelectorAll('[data-editor-kind="table"]').length || 0) - tableTargets
+        };
+
+        return { badTextMatches, buttons, unlabeledButtons, tables, plots, images, canvases, editorCoverage };
     });
 
     expect(audit.badTextMatches, `${label}: visible text should not contain broken placeholders`).toEqual([]);
     expect(audit.unlabeledButtons, `${label}: visible buttons should have text, aria-label, or title`).toEqual([]);
+    if (audit.editorCoverage.targets > 0) {
+        expect(audit.editorCoverage.plotDelta, `${label}: every Plotly graph should have one editor`).toBe(0);
+        expect(audit.editorCoverage.canvasDelta, `${label}: every Canvas graph should have one editor`).toBe(0);
+        expect(audit.editorCoverage.tableDelta, `${label}: every table should have one editor`).toBe(0);
+    }
     for (const table of audit.tables) {
         expect(table.width, `${label}: table ${table.index} width`).toBeGreaterThan(20);
         expect(table.height, `${label}: table ${table.index} height`).toBeGreaterThan(20);
@@ -594,9 +610,36 @@ test.describe('Visual Check Group 5: 回帰・多変量', () => {
         await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 60000 });
         const posRankings = page.locator('h6', { hasText: '品詞別ランキング' });
         const networkLegends = page.locator('text=色分けの意味');
-        expect(await posRankings.count()).toBeGreaterThan(0);
-        expect(await networkLegends.count()).toBeGreaterThan(0);
-        await page.waitForTimeout(1000);
+        await expect(posRankings.first()).toBeVisible({ timeout: 60000 });
+        await expect(networkLegends.first()).toBeVisible({ timeout: 60000 });
+        await page.waitForFunction(() => {
+            const isVisible = (el: Element) => {
+                const style = window.getComputedStyle(el);
+                const rect = el.getBoundingClientRect();
+                return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
+            };
+            const canvases = Array.from(document.querySelectorAll('canvas')).filter(isVisible) as HTMLCanvasElement[];
+            if (canvases.length === 0) return false;
+            return canvases.every(canvas => {
+                if (canvas.width <= 120 || canvas.height <= 80) return false;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+                const sampleSize = 16;
+                const points: Array<[number, number]> = [];
+                for (let y = 0; y <= 4; y++) {
+                    for (let x = 0; x <= 4; x++) {
+                        points.push([
+                            Math.min(Math.max(Math.floor((canvas.width * x) / 4), 0), Math.max(canvas.width - sampleSize, 0)),
+                            Math.min(Math.max(Math.floor((canvas.height * y) / 4), 0), Math.max(canvas.height - sampleSize, 0))
+                        ]);
+                    }
+                }
+                return points.some(([x, y]) => {
+                    const data = ctx.getImageData(x, y, Math.min(sampleSize, canvas.width), Math.min(sampleSize, canvas.height)).data;
+                    return Array.from(data).some(value => value !== 0);
+                });
+            });
+        }, null, { timeout: 60000 });
         await page.screenshot({ path: `${SCREENSHOT_DIR}/24_text_mining.png`, fullPage: true });
         expect(errors).toHaveLength(0);
     });

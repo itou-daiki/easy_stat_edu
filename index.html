@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=20260728-viz-size-editor">
 
     <!-- vis.js for network graphs -->
     <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
@@ -205,22 +205,59 @@
         <div class="upload-section-main" id="upload-section-main">
             <div class="upload-area" id="main-upload-area"
                 style="opacity: 0.5; pointer-events: none; position: relative;">
-                <div class="upload-info">
-                    <div class="upload-icon">
-                        <i class="fas fa-cloud-upload-alt"></i>
+                <div class="data-input-switcher" role="tablist" aria-label="データの入力方法">
+                    <button type="button" id="data-source-file-tab" class="data-input-tab active"
+                        role="tab" aria-selected="true" aria-controls="file-input-panel">
+                        <i class="fas fa-file-excel"></i> ファイル
+                    </button>
+                    <button type="button" id="data-source-paste-tab" class="data-input-tab"
+                        role="tab" aria-selected="false" aria-controls="paste-input-panel">
+                        <i class="fas fa-table"></i> 表を入力
+                    </button>
+                </div>
+
+                <div id="file-input-panel" class="data-input-panel active" role="tabpanel"
+                    aria-labelledby="data-source-file-tab">
+                    <div class="upload-info">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div>
+                            <h3>データファイルをアップロード</h3>
+                            <p class="upload-text">統計エンジンを初期化しています...</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3>データファイルをアップロード</h3>
-                        <p class="upload-text">統計エンジンを初期化しています...</p>
+                    <div class="upload-buttons">
+                        <input type="file" id="main-data-file" accept=".xlsx,.xls,.csv" style="display: none;" disabled>
+                        <button class="btn-upload" id="main-upload-btn" disabled>
+                            <i class="fas fa-spinner fa-spin"></i> 初期化中...
+                        </button>
+                        <p class="upload-hint">または</p>
+                        <button class="btn-demo" id="load-demo-btn">デモデータを試す</button>
                     </div>
                 </div>
-                <div class="upload-buttons">
-                    <input type="file" id="main-data-file" accept=".xlsx,.xls,.csv" style="display: none;" disabled>
-                    <button class="btn-upload" id="main-upload-btn" disabled>
-                        <i class="fas fa-spinner fa-spin"></i> 初期化中...
-                    </button>
-                    <p class="upload-hint">または</p>
-                    <button class="btn-demo" id="load-demo-btn">デモデータを試す</button>
+
+                <div id="paste-input-panel" class="data-input-panel paste-input-panel" role="tabpanel"
+                    aria-labelledby="data-source-paste-tab" hidden>
+                    <div class="paste-input-heading">
+                        <div>
+                            <h3><i class="fas fa-table"></i> 表形式データ</h3>
+                            <p>1行目を列名として読み込みます</p>
+                        </div>
+                        <button type="button" id="clear-table-input-btn" class="icon-button-subtle"
+                            aria-label="入力を消去" title="入力を消去" disabled>
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                    <label for="tabular-data-input" class="sr-only">表形式データを入力</label>
+                    <textarea id="tabular-data-input" rows="9" spellcheck="false"
+                        placeholder="学年	得点	自由記述&#10;1年	72	授業が分かりやすい&#10;2年	81	実習が楽しい"></textarea>
+                    <div class="paste-input-footer">
+                        <span id="table-input-status" role="status" aria-live="polite">タブ区切り・カンマ区切りに対応</span>
+                        <button type="button" id="load-pasted-data-btn" class="btn-upload" disabled>
+                            <i class="fas fa-arrow-right"></i> このデータを読み込む
+                        </button>
+                    </div>
                 </div>
             </div>
             <div id="main-file-info" class="file-info" style="display: none;"></div>
@@ -533,13 +570,12 @@
                             <p class="feature-card-requirement" style="display: none;">数値変数が1つ以上必要です</p>
                         </div>
 
-                        <div class="feature-card" data-analysis="text_mining">
+                        <div class="feature-card" data-analysis="text_mining" data-requires="none">
                             <h3 class="feature-card-title">
                                 <i class="fas fa-font feature-card-icon"></i>
                                 テキストマイニング
                             </h3>
                             <p class="feature-card-description">自由記述のアンケートなど、文章の中でよく使われる単語や傾向を調べます</p>
-                            <p class="feature-card-requirement" style="display: none;">テキスト変数が1つ以上必要です</p>
                         </div>
                     </div>
                 </div>
@@ -561,7 +597,8 @@
 
         <!-- 生成AI解釈補助フローティングパネル -->
         <div id="ai-assist-widget" class="ai-assist-widget collapsed" style="display: none;">
-            <button type="button" id="ai-assist-toggle" class="ai-assist-toggle" aria-expanded="false">
+            <button type="button" id="ai-assist-toggle" class="ai-assist-toggle"
+                aria-expanded="false" aria-label="AI解釈補助を開く" title="AI解釈補助を開く">
                 <i class="fas fa-wand-magic-sparkles"></i>
                 <span>AI解釈補助</span>
             </button>
@@ -631,10 +668,12 @@
                         <li><strong>教育的:</strong> 統計手法の説明と結果の解釈を提供</li>
                     </ul>
 
-                    <h4>対応ファイル形式</h4>
+                    <h4>データの入力方法</h4>
                     <ul>
                         <li>Excel形式（.xlsx, .xls）</li>
                         <li>CSV形式（.csv）</li>
+                        <li>Excelからコピーした表、またはタブ・カンマ区切りの表形式データ</li>
+                        <li>テキストマイニング画面での文章の直接入力</li>
                     </ul>
 
                     <h4>利用可能な分析手法</h4>
@@ -714,10 +753,10 @@
                     <div class="usage-step">
                         <div class="step-number">1</div>
                         <div class="step-content">
-                            <h5>データをアップロード</h5>
+                            <h5>データを用意</h5>
                             <p>
-                                「データファイルをアップロード」エリアで、Excel（.xlsx, .xls）またはCSVファイルを選択してください。
-                                ドラッグ&ドロップにも対応しています。
+                                「ファイル」からExcel・CSVを読み込むか、「表を入力」にExcelの表を貼り付けます。
+                                テキストマイニングは、分析画面で文章を直接入力することもできます。
                             </p>
                         </div>
                     </div>
@@ -727,7 +766,7 @@
                         <div class="step-content">
                             <h5>データ概要を確認</h5>
                             <p>
-                                アップロード後、データの概要（行数・列数・統計量）が表示されます。
+                                読み込み後、データの概要（行数・列数・統計量）が表示されます。
                                 折りたたみ可能なセクションで、必要に応じて確認できます。
                             </p>
                         </div>
@@ -958,14 +997,21 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
     <script src="js/lib/tiny-segmenter.js"></script>
     <!-- WordCloud2.js Production Build -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
     <script src="js/lib/vis-network.min.js"></script>
 
     <!-- Custom JavaScript -->
-    <!-- utils.js is imported by main.js, no need to include separately -->
-    <script type="module" src="js/main.js?v=3"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "./js/utils.js": "./js/utils.js?v=20260728-viz-size-editor-c"
+            }
+        }
+    </script>
+    <script type="module" src="js/main.js?v=20260728-viz-size-editor-c"></script>
 </body>
 
 </html>

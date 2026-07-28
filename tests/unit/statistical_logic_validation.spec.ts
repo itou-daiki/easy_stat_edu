@@ -302,5 +302,51 @@ test.describe('Statistical Logic Validation', () => {
 
             expect(tableSection).toContain('<thead>');
         });
+
+        test('interpretation should not overstate non-significant chi-square results', async ({ page }) => {
+            await page.goto('/');
+            const interpretation = await page.evaluate(async () => {
+                const { InterpretationHelper } = await import('/js/utils.js');
+                return InterpretationHelper.interpretChiSquare(0.05184, 0.217, 'スマホ使用時間カテゴリ', '学習満足度');
+            });
+
+            expect(interpretation).toContain('<em>p</em> = 0.052');
+            expect(interpretation).toContain('5%水準では有意とは言えません');
+            expect(interpretation).toContain('独立であること');
+            expect(interpretation).not.toContain('変数は互いに独立である（偏りがない）と考えられます');
+            expect(interpretation).not.toContain('<em>p</em> = 0.05,');
+        });
+
+        test('visualization controls should stay unique across reruns and replaced result containers', async ({ page }) => {
+            await page.goto('/');
+            const counts = await page.evaluate(async () => {
+                const { createVisualizationControls } = await import('/js/utils.js');
+                const target = document.createElement('div');
+                document.body.appendChild(target);
+
+                createVisualizationControls(target);
+                const firstAxis = target.querySelector('#show-axis-labels') as HTMLInputElement;
+                firstAxis.checked = false;
+
+                createVisualizationControls(target);
+                const replacementTarget = document.createElement('div');
+                document.body.appendChild(replacementTarget);
+                createVisualizationControls(replacementTarget);
+
+                return {
+                    originalCheckboxes: target.querySelectorAll('input[type="checkbox"]').length,
+                    replacementCheckboxes: replacementTarget.querySelectorAll('input[type="checkbox"]').length,
+                    axisControls: document.querySelectorAll('#show-axis-labels').length,
+                    titleControls: document.querySelectorAll('#show-graph-title').length,
+                    axisChecked: (replacementTarget.querySelector('#show-axis-labels') as HTMLInputElement).checked
+                };
+            });
+
+            expect(counts.originalCheckboxes).toBe(0);
+            expect(counts.replacementCheckboxes).toBe(2);
+            expect(counts.axisControls).toBe(1);
+            expect(counts.titleControls).toBe(1);
+            expect(counts.axisChecked).toBe(false);
+        });
     });
 });

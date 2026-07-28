@@ -595,7 +595,9 @@ test.describe('Statistical Accuracy Verification', () => {
         await expect(page.locator('#tm-cat-tab-btn')).toBeVisible();
         await page.click('#tm-cat-tab-btn');
         await expect(page.locator('#tm-category')).toBeVisible();
-        await expect(page.locator('#category-results')).not.toBeEmpty();
+        await expect(page.locator('#tm-cat-select')).toHaveCount(0);
+        await expect(page.locator('#category-results .tm-category-section h4').first()).toBeVisible({ timeout: 60000 });
+        await expect(page.locator('#category-results canvas[id*="-wordcloud"]').first()).toBeVisible();
     });
 
 });

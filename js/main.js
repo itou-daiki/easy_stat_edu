@@ -1,7 +1,7 @@
 // ==========================================
 // Imports
 // ==========================================
-import { showError, showLoadingMessage, hideLoadingMessage, toggleCollapsible, renderDataPreview, renderSummaryStatistics, renderDataOverview } from './utils.js';
+import { showError, showLoadingMessage, hideLoadingMessage, toggleCollapsible, renderDataPreview, renderSummaryStatistics, renderDataOverview, installVisualizationEditors } from './utils.js';
 
 // ==========================================
 // Global Variables & Exports for Modules
@@ -20,6 +20,14 @@ const fileInput = document.getElementById('main-data-file');
 const fileInfo = document.getElementById('main-file-info');
 const demoBtn = document.getElementById('load-demo-btn');
 const featureGrid = document.querySelector('.feature-grid');
+const dataSourceFileTab = document.getElementById('data-source-file-tab');
+const dataSourcePasteTab = document.getElementById('data-source-paste-tab');
+const fileInputPanel = document.getElementById('file-input-panel');
+const pasteInputPanel = document.getElementById('paste-input-panel');
+const tabularDataInput = document.getElementById('tabular-data-input');
+const loadPastedDataBtn = document.getElementById('load-pasted-data-btn');
+const clearTableInputBtn = document.getElementById('clear-table-input-btn');
+const tableInputStatus = document.getElementById('table-input-status');
 
 const GEMINI_API_KEY_STORAGE = 'easyStat.geminiApiKey';
 const GEMINI_PRIMARY_MODEL = 'gemini-3-flash-preview';
@@ -244,6 +252,26 @@ document.addEventListener('DOMContentLoaded', () => {
 // Event Listeners
 // ==========================================
 function setupEventListeners() {
+    dataSourceFileTab?.addEventListener('click', () => setDataInputMode('file'));
+    dataSourcePasteTab?.addEventListener('click', () => {
+        setDataInputMode('paste');
+        tabularDataInput?.focus();
+    });
+
+    tabularDataInput?.addEventListener('input', updateTableInputState);
+    tabularDataInput?.addEventListener('keydown', event => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && !loadPastedDataBtn.disabled) {
+            event.preventDefault();
+            loadPastedTable();
+        }
+    });
+    loadPastedDataBtn?.addEventListener('click', loadPastedTable);
+    clearTableInputBtn?.addEventListener('click', () => {
+        tabularDataInput.value = '';
+        updateTableInputState();
+        tabularDataInput.focus();
+    });
+
     uploadBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
@@ -258,7 +286,18 @@ function setupEventListeners() {
         event.preventDefault();
         uploadArea.classList.remove('drag-over');
         const file = event.dataTransfer.files[0];
-        if (file) handleFile(file);
+        if (file) {
+            setDataInputMode('file');
+            handleFile(file);
+            return;
+        }
+
+        const pastedText = event.dataTransfer.getData('text/plain');
+        if (pastedText) {
+            setDataInputMode('paste');
+            tabularDataInput.value = pastedText;
+            updateTableInputState();
+        }
     });
     demoBtn.addEventListener('click', () => {
         document.getElementById('demo-modal').style.display = 'block';
@@ -317,6 +356,103 @@ function setupEventListeners() {
 // ==========================================
 // File Handling & Data Processing
 // ==========================================
+function setDataInputMode(mode) {
+    const showPasteInput = mode === 'paste';
+    dataSourceFileTab?.classList.toggle('active', !showPasteInput);
+    dataSourceFileTab?.setAttribute('aria-selected', String(!showPasteInput));
+    dataSourcePasteTab?.classList.toggle('active', showPasteInput);
+    dataSourcePasteTab?.setAttribute('aria-selected', String(showPasteInput));
+    if (fileInputPanel) fileInputPanel.hidden = showPasteInput;
+    if (pasteInputPanel) pasteInputPanel.hidden = !showPasteInput;
+}
+
+function updateTableInputState() {
+    if (!tabularDataInput || !loadPastedDataBtn || !clearTableInputBtn || !tableInputStatus) return;
+    const value = tabularDataInput.value;
+    const hasInput = value.trim().length > 0;
+    loadPastedDataBtn.disabled = !hasInput;
+    clearTableInputBtn.disabled = !hasInput;
+
+    if (!hasInput) {
+        tableInputStatus.textContent = 'タブ区切り・カンマ区切りに対応';
+        return;
+    }
+
+    const physicalRows = value.split(/\r\n|\r|\n/).filter(line => line.trim() !== '').length;
+    const format = value.includes('\t') ? 'タブ区切り' : 'カンマ区切り';
+    tableInputStatus.textContent = `${format}・入力 ${physicalRows.toLocaleString()}行`;
+}
+
+function trimOuterBlankLines(value) {
+    const lines = String(value ?? '').replace(/^\uFEFF/, '').split(/\r\n|\r|\n/);
+    while (lines.length > 0 && lines[0].trim() === '') lines.shift();
+    while (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+    return lines.join('\n');
+}
+
+export function parseTabularText(value) {
+    const source = trimOuterBlankLines(value);
+    if (!source) throw new Error('表形式データを入力してください。');
+    if (!globalThis.XLSX) throw new Error('表データの読込機能を初期化できませんでした。');
+
+    const readOptions = { type: 'string', raw: true };
+    if (source.includes('\t')) readOptions.FS = '\t';
+
+    const workbook = globalThis.XLSX.read(source, readOptions);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = globalThis.XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        raw: true,
+        defval: null,
+        blankrows: false
+    });
+    const hasValue = value => value != null && String(value).trim() !== '';
+    const populatedRows = rows.filter(row => Array.isArray(row) && row.some(hasValue));
+
+    if (populatedRows.length < 2) {
+        throw new Error('1行目に列名、2行目以降にデータを入力してください。');
+    }
+
+    const columnCount = Math.max(...populatedRows.map(row => row.length));
+    const headerRow = populatedRows[0];
+    const usedHeaders = new Map();
+    const headers = Array.from({ length: columnCount }, (_, index) => {
+        const rawHeader = hasValue(headerRow[index]) ? String(headerRow[index]).trim() : `列${index + 1}`;
+        const occurrence = (usedHeaders.get(rawHeader) || 0) + 1;
+        usedHeaders.set(rawHeader, occurrence);
+        return occurrence === 1 ? rawHeader : `${rawHeader}_${occurrence}`;
+    });
+
+    const data = populatedRows.slice(1)
+        .filter(row => row.some(hasValue))
+        .map(row => Object.fromEntries(headers.map((header, index) => {
+            const cell = row[index];
+            return [header, hasValue(cell) ? cell : null];
+        })));
+
+    if (data.length === 0) throw new Error('読み込めるデータ行がありません。');
+    return { data, headers };
+}
+window.parseTabularText = parseTabularText;
+
+function loadPastedTable() {
+    const originalButtonHtml = loadPastedDataBtn.innerHTML;
+    loadPastedDataBtn.disabled = true;
+    loadPastedDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 読み込み中...';
+
+    try {
+        const parsed = parseTabularText(tabularDataInput.value);
+        processData('貼り付けデータ', parsed.data);
+        tableInputStatus.textContent = `${parsed.data.length.toLocaleString()}行 × ${parsed.headers.length.toLocaleString()}列を読み込みました`;
+    } catch (error) {
+        console.error(error);
+        showError(error.message || '表形式データの読み込みに失敗しました。');
+    } finally {
+        loadPastedDataBtn.innerHTML = originalButtonHtml;
+        loadPastedDataBtn.disabled = tabularDataInput.value.trim().length === 0;
+    }
+}
+
 function handleFile(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -427,8 +563,14 @@ function analyzeDataCharacteristics(data) {
             }
         } else {
             const uniqueValues = new Set(values);
+            const stringValues = values.map(value => String(value).trim());
+            const uniqueRatio = uniqueValues.size / values.length;
+            const averageLength = stringValues.reduce((sum, value) => sum + value.length, 0) / stringValues.length;
+            const hasTextColumnName = /(自由.?記述|記述|コメント|感想|理由|意見|文章|テキスト|詳細|備考)/i.test(col);
+            const looksLikeFreeText = hasTextColumnName || (uniqueRatio >= 0.7 && averageLength >= 12);
+
             // Heuristic for string columns: if it has few unique values, or a low unique ratio, it's categorical.
-            if (uniqueValues.size <= 10 || (uniqueValues.size / values.length < 0.5 && values.length > 5)) {
+            if (!looksLikeFreeText && (uniqueValues.size <= 10 || (uniqueRatio < 0.5 && values.length > 5))) {
                 characteristics.categoricalColumns.push(col);
             } else {
                 characteristics.textColumns.push(col);
@@ -442,9 +584,10 @@ window.analyzeDataCharacteristics = analyzeDataCharacteristics;
 // ==========================================
 // UI Updates & View Management
 // ==========================================
-function updateFileInfo(fileName, data) {
+function updateFileInfo(sourceName, data) {
     const nRows = data.length;
     const nCols = Object.keys(data[0] || {}).length;
+    const safeSourceName = escapeHtml(sourceName);
 
     fileInfo.innerHTML = `
         <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; color: #1e293b;">
@@ -453,10 +596,10 @@ function updateFileInfo(fileName, data) {
         <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
             <div style="flex: 2; min-width: 200px; background: #f8fafc; padding: 1rem; border-radius: 8px; border-left: 4px solid #1e90ff;">
                 <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
-                    <i class="fas fa-file-excel" style="margin-right: 0.5rem; color: #1e90ff;"></i>ファイル名
+                    <i class="fas fa-database" style="margin-right: 0.5rem; color: #1e90ff;"></i>データソース
                 </div>
                 <div style="font-weight: bold; color: #1e293b; font-size: 1.1rem; word-break: break-all;">
-                    ${fileName}
+                    ${safeSourceName}
                 </div>
             </div>
             
@@ -551,6 +694,7 @@ async function showAnalysisView(analysisType) {
         const cacheBuster = Date.now();
         const modulePath = `./analyses/${analysisType}.js?v=${cacheBuster}`;
         const analysisModule = await import(modulePath);
+        installVisualizationEditors(analysisContent);
         analysisModule.render(analysisContent, currentData, dataCharacteristics);
         injectAnalysisVisualIfMissing(analysisContent, analysisType);
         updateAIAssistVisibility();

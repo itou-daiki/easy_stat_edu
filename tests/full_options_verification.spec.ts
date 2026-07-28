@@ -48,7 +48,7 @@ test.describe('Correlation Analysis - Full Options', () => {
     await page.waitForTimeout(500);
 
     // Try to select multiple variables via multiselect
-    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]');
+    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]:not([data-visualization-control])');
     const checkboxCount = await checkboxes.count();
     if (checkboxCount > 0) {
       // Click first 4 numeric variable checkboxes
@@ -120,7 +120,7 @@ test.describe('Logistic Regression - Full Options', () => {
     }
 
     // Select predictor checkboxes
-    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]');
+    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]:not([data-visualization-control])');
     const cbCount = await checkboxes.count();
     for (let i = 0; i < Math.min(3, cbCount); i++) {
       await checkboxes.nth(i).click();
@@ -160,7 +160,7 @@ test.describe('ANOVA Options - Tukey/Holm, Multiple DVs', () => {
     await page.waitForTimeout(300);
 
     // Select dependent variable
-    const depCheckboxes = page.locator('.variable-checkbox, input[type="checkbox"]');
+    const depCheckboxes = page.locator('.variable-checkbox, input[type="checkbox"]:not([data-visualization-control])');
     const depCount = await depCheckboxes.count();
     if (depCount > 0) {
       await depCheckboxes.first().click();
@@ -239,7 +239,7 @@ test.describe('Factor Analysis - Rotation Methods', () => {
     await page.waitForTimeout(1000);
 
     // Select variables (Q1-Q15)
-    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]');
+    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]:not([data-visualization-control])');
     const cbCount = await checkboxes.count();
     for (let i = 0; i < Math.min(15, cbCount); i++) {
       await checkboxes.nth(i).click();
@@ -311,7 +311,7 @@ test.describe('PCA - Options', () => {
     await page.waitForTimeout(1000);
 
     // Select variables
-    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]');
+    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]:not([data-visualization-control])');
     const cbCount = await checkboxes.count();
     for (let i = 0; i < Math.min(15, cbCount); i++) {
       await checkboxes.nth(i).click();

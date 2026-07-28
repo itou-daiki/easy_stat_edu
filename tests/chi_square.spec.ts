@@ -2,6 +2,29 @@
 import { test, expect } from '@playwright/test';
 import { loadParamsFromConfig, navigateToFeature, uploadFile, selectStandardOption } from './utils/test-helpers';
 
+function createBorderlineChiSquareCsv() {
+    const counts = [
+        ['1年', '標準（6〜8時間）', 20],
+        ['1年', '短い（6時間未満）', 5],
+        ['1年', '長い（8時間以上）', 10],
+        ['2年', '標準（6〜8時間）', 14],
+        ['2年', '短い（6時間未満）', 8],
+        ['2年', '長い（8時間以上）', 7],
+        ['3年', '標準（6〜8時間）', 18],
+        ['3年', '短い（6時間未満）', 15],
+        ['3年', '長い（8時間以上）', 3],
+    ];
+    const rows = ['学年,睡眠時間カテゴリ'];
+
+    counts.forEach(([grade, sleepCategory, count]) => {
+        for (let i = 0; i < Number(count); i++) {
+            rows.push(`${grade},${sleepCategory}`);
+        }
+    });
+
+    return rows.join('\n');
+}
+
 test.describe('Chi-Square Test Verification', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
@@ -31,5 +54,59 @@ test.describe('Chi-Square Test Verification', () => {
         expect(textContent).toContain('カイ二乗'); // "Chi-square" in Japanese
         expect(textContent).toContain('p値'); // "p-value"
         expect(textContent).toContain('クラメールのV');
+    });
+
+    test('should keep one visualization control set after repeated analysis', async ({ page }) => {
+        await selectStandardOption(page, '#row-var', '性別', 'label');
+        await selectStandardOption(page, '#col-var', 'クラス', 'label');
+
+        const runButton = page.locator('#run-chi-btn');
+        await runButton.click();
+        await expect(page.locator('#show-axis-labels')).toHaveCount(1);
+        await page.locator('#show-axis-labels').uncheck();
+
+        await runButton.click();
+        await runButton.click();
+
+        await expect(page.locator('#visualization-controls-container')).toHaveCount(1);
+        await expect(page.locator('#show-axis-labels')).toHaveCount(1);
+        await expect(page.locator('#show-graph-title')).toHaveCount(1);
+        await expect(page.getByText('軸ラベルを表示', { exact: true })).toHaveCount(1);
+        await expect(page.getByText('グラフタイトルを表示', { exact: true })).toHaveCount(1);
+        await expect(page.locator('#show-axis-labels')).not.toBeChecked();
+    });
+
+    test('should treat large residuals as exploratory when omnibus test is not significant', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
+        await page.locator('#main-data-file').setInputFiles({
+            name: 'chi_square_borderline.csv',
+            mimeType: 'text/csv',
+            buffer: Buffer.from(createBorderlineChiSquareCsv(), 'utf8'),
+        });
+        await navigateToFeature(page, 'chi_square');
+
+        await selectStandardOption(page, '#row-var', '学年', 'label');
+        await selectStandardOption(page, '#col-var', '睡眠時間カテゴリ', 'label');
+        await page.click('#run-chi-btn');
+
+        await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('#analysis-results')).toContainText('5%水準で有意な関連は確認されませんでした');
+        await expect(page.locator('#analysis-results')).toContainText('有意な偏りとは断定しません');
+        await expect(page.locator('#analysis-results')).not.toContainText('z > 1.96 (青) は有意に多い');
+
+        const residualCells = page.locator('#analysis-results table').first().locator('td');
+        const highlightCounts = await residualCells.evaluateAll(cells => {
+            const backgrounds = cells.map(cell => getComputedStyle(cell).backgroundColor);
+            return {
+                exploratory: backgrounds.filter(color => color === 'rgb(254, 243, 199)').length,
+                significantHigh: backgrounds.filter(color => color === 'rgb(219, 234, 254)').length,
+                significantLow: backgrounds.filter(color => color === 'rgb(254, 226, 226)').length,
+            };
+        });
+
+        expect(highlightCounts.exploratory).toBeGreaterThan(0);
+        expect(highlightCounts.significantHigh).toBe(0);
+        expect(highlightCounts.significantLow).toBe(0);
     });
 });

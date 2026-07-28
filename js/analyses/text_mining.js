@@ -1,374 +1,43 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton } from '../utils.js';
 import {
-    initTokenizer as initTokenizerHelper,
+    renderDataOverview,
+    createVariableSelector,
+    createAnalysisButton
+} from '../utils.js';
+import {
+    initTokenizer,
     downloadCanvasAsImage,
     getTokenizer,
-    tokenizeDocument,
+    getTokenizerInfo,
+    analyzeDocument,
     splitTextIntoSentences,
     computeTermMetrics,
-    buildCooccurrenceEdges,
-    inferPartOfSpeech
-} from './text_mining/helpers.js?v=tm-logic-20260507c';
-import { displayWordCloud } from './text_mining/visualization.js?v=tm-logic-20260507c';
+    computeCategorySpecificity,
+    buildGroupComparisonRows
+} from './text_mining/helpers.js?v=tm-logic-20260728f';
+import {
+    displayWordCloud,
+    plotCooccurrenceNetwork,
+    POS_STYLES
+} from './text_mining/visualization.js?v=tm-logic-20260728f';
 
-async function runTextMining(currentData) {
-    const textVar = document.getElementById('text-var').value;
-    const catVar = document.getElementById('category-var').value;
+const POS_ORDER = [
+    'noun',
+    'proper_noun',
+    'verbal_noun',
+    'adjectival_noun',
+    'verb',
+    'adjective',
+    'adverb',
+    'adnominal',
+    'interjection',
+    'alnum',
+    'other'
+];
 
-    if (!textVar) {
-        alert('テキスト変数を選択してください');
-        return;
-    }
-
-    // UI Loading state
-    const btn = document.getElementById('run-text-btn');
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-
-    // Status callback for loading UI
-    const updateStatus = (message) => {
-        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${message}`;
-    };
-    updateStatus('解析エンジンを準備中...');
-
-
-    // Clear previous results
-    document.getElementById('analysis-results').style.display = 'block';
-    const resultsArea = document.getElementById('analysis-results');
-    resultsArea.innerHTML = ''; // Reset content
-
-    // Create Tab Container
-    resultsArea.innerHTML = `
-        <div class="tab-container">
-            <button class="tab-btn active" onclick="switchTab('tm-overall')">全体分析</button>
-            <button class="tab-btn" id="tm-cat-tab-btn" onclick="switchTab('tm-category')" style="display: none;">カテゴリ別分析</button>
-        </div>
-        
-        <div id="tm-overall" class="tab-content active">
-            <div id="overall-results"></div>
-        </div>
-        
-        <div id="tm-category" class="tab-content">
-            <div id="category-controls" style="margin-bottom: 1rem;"></div>
-            <div id="category-results"></div>
-        </div>
-
-        <!-- KWIC Panel -->
-        <div class="kwic-overlay" id="kwic-overlay" onclick="closeKwicPanel()"></div>
-        <div class="kwic-panel" id="kwic-panel">
-            <div class="kwic-header">
-                <div class="kwic-title">文脈検索 (KWIC)</div>
-                <button class="kwic-close" onclick="closeKwicPanel()">&times;</button>
-            </div>
-            <div id="kwic-content"></div>
-        </div>
-    `;
-
-    // Expose helpers globally
-    window.switchTab = (tabId) => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-        const btn = document.querySelector(`button[onclick="switchTab('${tabId}')"]`);
-        if (btn) btn.classList.add('active');
-
-        document.getElementById(tabId).classList.add('active');
-    };
-
-    window.closeKwicPanel = () => {
-        document.getElementById('kwic-panel').classList.remove('open');
-        document.getElementById('kwic-overlay').classList.remove('open');
-    };
-
-    try {
-        if (!getTokenizer()) await initTokenizerHelper(updateStatus);
-
-        const allTextsWithId = currentData.map((d, i) => ({
-            text: d[textVar],
-            id: i,
-            cat: catVar ? d[catVar] : null
-        })).filter(d => d.text != null && d.text !== '');
-
-        if (allTextsWithId.length === 0) throw new Error('有効なテキストデータがありません');
-        updateStatus('テキストを解析中...');
-
-        const tokenizer = getTokenizer();
-        const globalDocuments = allTextsWithId.map(item => tokenizeDocument(item.text, tokenizer));
-        const globalTermMetrics = computeTermMetrics(globalDocuments);
-
-        // 1. Overall Analysis
-        const overallContainer = document.getElementById('overall-results');
-        overallContainer.innerHTML = `<h4 style="color: #2d3748; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;">全体分析 (N=${allTextsWithId.length})</h4>`;
-        await analyzeAndRender(allTextsWithId, overallContainer, 'overall', { globalTermMetrics });
-
-        // 2. Category Analysis (if selected)
-        if (catVar) {
-            document.getElementById('tm-cat-tab-btn').style.display = 'block';
-
-            const categories = [...new Set(currentData.map(d => d[catVar]))].filter(v => v != null).sort();
-            const catControls = document.getElementById('category-controls');
-
-            // Category Selector
-            const selectId = 'tm-cat-select';
-            catControls.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <label for="${selectId}" style="font-weight: bold; color: #4a5568;">表示カテゴリ:</label>
-                    <select id="${selectId}" style="max-width: 300px; padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e0;">
-                        ${categories.map(c => `<option value="${escapeAttribute(c)}">${escapeHtml(c)}</option>`).join('')}
-                    </select>
-                </div>
-            `;
-
-            const catResults = document.getElementById('category-results');
-
-            // Function to render specific category
-            const renderCategory = async (cat) => {
-                catResults.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin fa-2x" style="color: #1e90ff;"></i></div>';
-
-                const catData = allTextsWithId.filter(d => d.cat === cat);
-
-                if (catData.length > 0) {
-                    catResults.innerHTML = ''; // Clear spinner
-                    const sectionId = `cat-results-${sanitizeId(cat)}`;
-                    const section = document.createElement('div');
-                    section.id = sectionId;
-                    section.innerHTML = `<h5 style="color: #1e90ff; font-weight: bold; margin-bottom: 1rem;">＜${escapeHtml(cat)}＞ (N=${catData.length})</h5>`;
-                    catResults.appendChild(section);
-                    await analyzeAndRender(catData, section, `cat-${sanitizeId(cat)}`, { globalTermMetrics });
-                } else {
-                    catResults.innerHTML = '<p class="text-muted">データがありません</p>';
-                }
-            };
-
-            // Initial Render
-            await renderCategory(categories[0]);
-
-            // Change Event
-            document.getElementById(selectId).addEventListener('change', (e) => {
-                renderCategory(e.target.value);
-            });
-        }
-
-    } catch (e) {
-        console.error(e);
-        alert('解析中にエラーが発生しました: ' + e.message);
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
-}
-
-async function analyzeAndRender(dataItems, container, prefix, options = {}) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            const tokenizer = getTokenizer();
-            if (!tokenizer) {
-                resolve();
-                return;
-            }
-
-            const allWords = [];
-            const sentences = [];
-            const sentenceMap = [];
-
-            // 1行＝1文書としてトークン配列を構築（TF-IDF用）
-            const documents = dataItems.map(item => tokenizeDocument(item.text, tokenizer));
-            const globalIdf = options.globalTermMetrics?.termIdf || null;
-
-            dataItems.forEach(item => {
-                const text = item.text;
-                const rawSentences = splitTextIntoSentences(text);
-
-                rawSentences.forEach(sent => {
-                    const wordsInSentence = tokenizeDocument(sent, tokenizer);
-                    allWords.push(...wordsInSentence);
-
-                    if (wordsInSentence.length > 0) {
-                        sentences.push(wordsInSentence);
-                        sentenceMap.push({
-                            original: sent,
-                            words: new Set(wordsInSentence),
-                            sourceId: item.id
-                        });
-                    }
-                });
-            });
-
-            const counts = {};
-            allWords.forEach(w => { counts[w] = (counts[w] || 0) + 1; });
-            const sortedWords = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-
-            const { termTfIdf, termDf, termFreq } = computeTermMetrics(documents, { idfLookup: globalIdf });
-            const tfidfMap = new Map(termTfIdf);
-
-            const wrapper = document.createElement('div');
-            wrapper.style.display = 'flex';
-            wrapper.style.flexDirection = 'column';
-            wrapper.style.gap = '1.5rem';
-            wrapper.style.marginBottom = '1.5rem';
-
-            // 単語重要度テーブル（出現回数 + TF-IDF）
-            const tableId = `${prefix}-term-table`;
-            const tableContainer = document.createElement('div');
-            tableContainer.style.background = 'white';
-            tableContainer.style.padding = '1rem';
-            tableContainer.style.borderRadius = '8px';
-            tableContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            tableContainer.innerHTML = `
-                <h6 style="color: #4a5568; margin: 0 0 0.5rem 0; font-weight: bold;">単語の重要度（出現回数・TF-IDF）</h6>
-                <div style="max-height: 220px; overflow-y: auto;">
-                    <table class="data-table" style="width: 100%; font-size: 0.9rem;">
-                        <thead><tr><th>単語</th><th>出現回数</th><th>出現文書数</th><th>TF-IDF重み</th></tr></thead>
-                        <tbody id="${tableId}-body"></tbody>
-                    </table>
-                </div>
-            `;
-            const tableBody = tableContainer.querySelector(`#${tableId}-body`);
-            const termsForTable = termTfIdf.length > 0 ? termTfIdf : sortedWords.map(([w]) => [w, 0]);
-            tableBody.innerHTML = termsForTable.slice(0, 100).map(([w]) => {
-                const freq = termFreq[w] != null ? termFreq[w] : (counts[w] || 0);
-                const df = termDf[w] != null ? termDf[w] : '-';
-                const tfidfVal = tfidfMap.has(w) ? tfidfMap.get(w).toFixed(4) : '-';
-                return `<tr><td>${escapeHtml(w)}</td><td>${freq}</td><td>${df}</td><td>${tfidfVal}</td></tr>`;
-            }).join('');
-
-            wrapper.appendChild(tableContainer);
-
-            const posContainer = document.createElement('div');
-            posContainer.style.background = 'white';
-            posContainer.style.padding = '1rem';
-            posContainer.style.borderRadius = '8px';
-            posContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            posContainer.innerHTML = renderPartOfSpeechRanking(termFreq, tfidfMap);
-            wrapper.appendChild(posContainer);
-
-            const wcId = `${prefix}-wordcloud`;
-            const wcContainer = document.createElement('div');
-            wcContainer.style.background = 'white';
-            wcContainer.style.padding = '1rem';
-            wcContainer.style.borderRadius = '8px';
-            wcContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            wcContainer.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <h6 style="color: #4a5568; margin: 0; font-weight: bold;">ワードクラウド（出現回数） <small style="font-weight: normal; color: #718096;">(クリックで文脈表示)</small></h6>
-                    <button class="download-btn" data-target="${wcId}" style="background: #4299e1; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
-                        <i class="fas fa-download"></i> 画像保存
-                    </button>
-                </div>
-                <div style="position: relative;">
-                    <canvas id="${wcId}" style="width: 100%; height: 400px; cursor: pointer;"></canvas>
-                </div>`;
-
-            const wcTfIdfId = `${prefix}-wordcloud-tfidf`;
-            const wcTfIdfContainer = document.createElement('div');
-            wcTfIdfContainer.style.background = 'white';
-            wcTfIdfContainer.style.padding = '1rem';
-            wcTfIdfContainer.style.borderRadius = '8px';
-            wcTfIdfContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            wcTfIdfContainer.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <h6 style="color: #4a5568; margin: 0; font-weight: bold;">ワードクラウド（TF-IDF重み） <small style="font-weight: normal; color: #718096;">(クリックで文脈表示)</small></h6>
-                    <button class="download-btn" data-target="${wcTfIdfId}" style="background: #4299e1; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
-                        <i class="fas fa-download"></i> 画像保存
-                    </button>
-                </div>
-                <div style="position: relative;">
-                    <canvas id="${wcTfIdfId}" style="width: 100%; height: 400px; cursor: pointer;"></canvas>
-                </div>`;
-
-            const netId = `${prefix}-network`;
-            const netContainer = document.createElement('div');
-            netContainer.style.background = 'white';
-            netContainer.style.padding = '1rem';
-            netContainer.style.borderRadius = '8px';
-            netContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            netContainer.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <h6 style="color: #4a5568; margin: 0; font-weight: bold;">共起ネットワーク <small style="font-weight: normal; color: #718096;">(グループ別色分け)</small></h6>
-                    <button class="download-btn" data-target="${netId}" style="background: #4299e1; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
-                        <i class="fas fa-download"></i> 画像保存
-                    </button>
-                </div>
-                <div id="${netId}" style="width: 100%; height: 450px; border: 1px solid #f0f0f0; border-radius: 4px;"></div>
-                <div id="${netId}-legend" class="tm-network-legend" style="margin-top: 0.75rem;"></div>`;
-
-            wrapper.appendChild(wcContainer);
-            wrapper.appendChild(wcTfIdfContainer);
-            wrapper.appendChild(netContainer);
-            container.appendChild(wrapper);
-
-            wrapper.querySelectorAll('.download-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    downloadCanvasAsImage(btn.dataset.target);
-                });
-            });
-
-            const showKwic = (word) => {
-                const results = sentenceMap.filter(s => s.words.has(word));
-                const panel = document.getElementById('kwic-panel');
-                const content = document.getElementById('kwic-content');
-
-                const safeWord = escapeHtml(word);
-                content.innerHTML = `
-                    <div style="margin-bottom: 1rem; color: #4a5568;">
-                        「<span style="font-weight: bold; color: #1e90ff;">${safeWord}</span>」を含む文 (${results.length}件)
-                    </div>
-                    <ul class="kwic-list">
-                        ${results.slice(0, 100).map(r => {
-                            const safeOriginal = escapeHtml(r.original);
-                            return `<li class="kwic-item">${safeOriginal.replace(safeWord, '<span class="kwic-keyword">' + safeWord + '</span>')}</li>`;
-                        }).join('')}
-                    </ul>
-                    ${results.length > 100 ? '<p style="text-align: center; color: #718096; font-size: 0.8rem;">(上位100件を表示)</p>' : ''}
-                `;
-
-                panel.classList.add('open');
-                document.getElementById('kwic-overlay').classList.add('open');
-            };
-
-            displayWordCloud(wcId, sortedWords, showKwic);
-
-            const positiveTfIdfTerms = termTfIdf.filter(([, v]) => v > 0);
-            if (positiveTfIdfTerms.length > 0) {
-                displayWordCloud(wcTfIdfId, positiveTfIdfTerms.map(([w, v]) => [w, v]), showKwic);
-            } else {
-                const canvas = document.getElementById(wcTfIdfId);
-                if (canvas) {
-                    const scale = 3;
-                    const width = Math.max(420, Math.round(canvas.parentElement?.clientWidth || canvas.parentElement?.getBoundingClientRect().width || 720));
-                    const height = 400;
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = width * scale;
-                    canvas.height = height * scale;
-                    canvas.style.width = `${width}px`;
-                    canvas.style.height = `${height}px`;
-                    ctx.fillStyle = '#fafbfc';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.fillStyle = '#718096';
-                    ctx.font = `${14 * scale}px sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('TF-IDFで特徴的な語はありません', canvas.width / 2, canvas.height / 2);
-                }
-            }
-
-            const topWordsForNet = sortedWords.slice(0, 36).map(x => x[0]);
-            plotCooccurrenceNetwork(netId, sentences, topWordsForNet, showKwic);
-
-            resolve();
-        }, 10);
-    });
-}
-
-function escapeHtml(str) {
+function escapeHtml(value) {
     const div = document.createElement('div');
-    div.textContent = str;
+    div.textContent = String(value ?? '');
     return div.innerHTML;
-}
-
-function escapeAttribute(str) {
-    return escapeHtml(String(str)).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function sanitizeId(value) {
@@ -378,559 +47,1016 @@ function sanitizeId(value) {
         .replace(/^_+|_+$/g, '') || 'category';
 }
 
-function renderPartOfSpeechRanking(termFreq, tfidfMap) {
-    const posLabels = {
-        noun: '名詞系',
-        verb: '動詞系',
-        adjective: '形容詞系',
-        alnum: '英数字・略語',
-        other: 'その他'
-    };
-    const posOrder = ['noun', 'verb', 'adjective', 'alnum', 'other'];
-    const grouped = Object.fromEntries(posOrder.map(key => [key, []]));
+function parseTermList(value) {
+    return [...new Set(
+        String(value || '')
+            .split(/[\n\r,、;；]+/)
+            .map(term => term.normalize('NFKC').trim())
+            .filter(Boolean)
+    )];
+}
 
-    Object.entries(termFreq || {}).forEach(([word, freq]) => {
-        const pos = inferPartOfSpeech(word);
-        grouped[pos].push({
-            word,
-            freq,
-            tfidf: tfidfMap instanceof Map && tfidfMap.has(word) ? tfidfMap.get(word) : 0
+function clampInteger(value, fallback, min, max) {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.min(max, Math.max(min, parsed));
+}
+
+function readAnalysisSettings() {
+    return {
+        minFrequency: clampInteger(document.getElementById('tm-min-frequency')?.value, 2, 1, 1000),
+        networkTermLimit: clampInteger(document.getElementById('tm-network-term-limit')?.value, 45, 10, 80),
+        networkEdgeLimit: clampInteger(document.getElementById('tm-network-edge-limit')?.value, 60, 10, 200),
+        minCooccurrence: clampInteger(document.getElementById('tm-min-cooccurrence')?.value, 2, 1, 100),
+        cooccurrenceUnit: document.getElementById('tm-cooccurrence-unit')?.value === 'document'
+            ? 'document'
+            : 'sentence',
+        stopWords: new Set(parseTermList(document.getElementById('tm-stop-words')?.value)),
+        forceTerms: parseTermList(document.getElementById('tm-force-terms')?.value)
+    };
+}
+
+function buildAnalyzedItem(item, tokenizer, extractionOptions) {
+    const rawSentences = splitTextIntoSentences(item.text);
+    const sentenceTexts = rawSentences.length > 0 ? rawSentences : [item.text];
+    const sentences = sentenceTexts.map(original => {
+        const tokens = analyzeDocument(original, tokenizer, extractionOptions);
+        return {
+            original,
+            tokens,
+            terms: tokens.map(token => token.term),
+            sourceId: item.id
+        };
+    });
+
+    return {
+        ...item,
+        sentences,
+        tokens: sentences.flatMap(sentence => sentence.tokens),
+        terms: sentences.flatMap(sentence => sentence.terms)
+    };
+}
+
+function buildPartOfSpeechLookup(items) {
+    const counts = {};
+    items.forEach(item => {
+        item.tokens.forEach(token => {
+            if (!counts[token.term]) counts[token.term] = {};
+            counts[token.term][token.pos] = (counts[token.term][token.pos] || 0) + 1;
         });
     });
 
-    const columns = posOrder.map(pos => {
-        const rows = grouped[pos]
-            .sort((a, b) => b.freq - a.freq || b.tfidf - a.tfidf || a.word.localeCompare(b.word, 'ja'))
-            .slice(0, 8);
-        const body = rows.length > 0
-            ? rows.map((item, idx) => `
-                <tr>
-                    <td style="padding: 0.35rem 0.25rem; color: #64748b; width: 2rem;">${idx + 1}</td>
-                    <td style="padding: 0.35rem 0.25rem; font-weight: 600;">${escapeHtml(item.word)}</td>
-                    <td style="padding: 0.35rem 0.25rem; text-align: right;">${item.freq}</td>
-                </tr>
-            `).join('')
-            : `<tr><td colspan="3" style="padding: 0.5rem 0.25rem; color: #94a3b8;">該当なし</td></tr>`;
+    return Object.fromEntries(Object.entries(counts).map(([term, posCounts]) => {
+        const pos = Object.entries(posCounts)
+            .sort((a, b) => b[1] - a[1] || POS_ORDER.indexOf(a[0]) - POS_ORDER.indexOf(b[0]))[0]?.[0]
+            || 'other';
+        return [term, pos];
+    }));
+}
 
-        return `
-            <div style="min-width: 170px; flex: 1 1 170px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-                <div style="background: #f8fafc; padding: 0.55rem 0.65rem; font-weight: 700; color: #334155; border-bottom: 1px solid #e2e8f0;">
-                    ${posLabels[pos]}
-                </div>
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.84rem;">
-                    <thead>
-                        <tr style="color: #64748b; font-size: 0.78rem;">
-                            <th style="padding: 0.35rem 0.25rem; text-align: left;">#</th>
-                            <th style="padding: 0.35rem 0.25rem; text-align: left;">語</th>
-                            <th style="padding: 0.35rem 0.25rem; text-align: right;">回数</th>
-                        </tr>
-                    </thead>
-                    <tbody>${body}</tbody>
-                </table>
-            </div>
-        `;
+function formatPValue(value) {
+    if (!Number.isFinite(value)) return '-';
+    if (value < 0.001) return '&lt; .001';
+    return value.toFixed(3).replace(/^0/, '');
+}
+
+function highlightKwicText(text, surfaces) {
+    const uniqueSurfaces = [...new Set((surfaces || []).filter(Boolean))]
+        .sort((a, b) => b.length - a.length);
+    if (uniqueSurfaces.length === 0) return escapeHtml(text);
+
+    const escapedPattern = uniqueSurfaces
+        .map(surface => surface.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .join('|');
+    const regex = new RegExp(`(${escapedPattern})`, 'giu');
+    return String(text).split(regex).map(part => {
+        const isKeyword = uniqueSurfaces.some(surface =>
+            surface.normalize('NFKC').toLowerCase() === part.normalize('NFKC').toLowerCase()
+        );
+        return isKeyword
+            ? `<mark class="kwic-keyword">${escapeHtml(part)}</mark>`
+            : escapeHtml(part);
     }).join('');
+}
+
+function openKwicPanel(word, items) {
+    const matches = [];
+    items.forEach(item => {
+        item.sentences.forEach(sentence => {
+            const matchingTokens = sentence.tokens.filter(token => token.term === word);
+            if (matchingTokens.length === 0) return;
+            matches.push({
+                sourceId: item.id,
+                original: sentence.original,
+                surfaces: matchingTokens.map(token => token.surface)
+            });
+        });
+    });
+
+    const panel = document.getElementById('kwic-panel');
+    const overlay = document.getElementById('kwic-overlay');
+    const content = document.getElementById('kwic-content');
+    if (!panel || !overlay || !content) return;
+
+    const documentCount = new Set(matches.map(match => match.sourceId)).size;
+    content.innerHTML = `
+        <div class="kwic-summary">
+            <strong>「${escapeHtml(word)}」</strong>
+            <span>${matches.length}文・${documentCount}文書</span>
+        </div>
+        <ol class="kwic-list">
+            ${matches.slice(0, 200).map(match => `
+                <li class="kwic-item">
+                    <span class="kwic-source">文書 ${match.sourceId + 1}</span>
+                    ${highlightKwicText(match.original, match.surfaces)}
+                </li>
+            `).join('')}
+        </ol>
+        ${matches.length > 200
+            ? '<p class="tm-muted">表示は先頭200文までです。</p>'
+            : ''}
+    `;
+    panel.classList.add('open');
+    overlay.classList.add('open');
+    panel.setAttribute('aria-hidden', 'false');
+}
+
+function closeKwicPanel() {
+    const panel = document.getElementById('kwic-panel');
+    const overlay = document.getElementById('kwic-overlay');
+    panel?.classList.remove('open');
+    overlay?.classList.remove('open');
+    panel?.setAttribute('aria-hidden', 'true');
+}
+
+function renderSummary(items, metrics, tokenizerInfo) {
+    const sentenceCount = items.reduce((sum, item) => sum + item.sentences.length, 0);
+    const totalTerms = Object.values(metrics.termFreq).reduce((sum, value) => sum + value, 0);
+    const zeroTermDocuments = items.filter(item => item.terms.length === 0).length;
+    const warning = tokenizerInfo.warning
+        ? `<div class="tm-engine-warning">${escapeHtml(tokenizerInfo.warning)}</div>`
+        : '';
 
     return `
-        <h6 style="color: #4a5568; margin: 0 0 0.35rem 0; font-weight: bold;">品詞別ランキング（推定）</h6>
-        <p style="margin: 0 0 0.75rem 0; color: #64748b; font-size: 0.82rem; line-height: 1.55;">
-            TinySegmenterは厳密な品詞タグを返さないため、語形から推定して分類しています。英数字・略語は品詞ではなく、<span style="white-space: nowrap;">ict / sns / scratch</span> などの略語を見やすくするための補助分類です。
-        </p>
-        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
-            ${columns}
+        <div class="tm-summary-strip">
+            <div><span>文書</span><strong>${items.length}</strong></div>
+            <div><span>文</span><strong>${sentenceCount}</strong></div>
+            <div><span>抽出語</span><strong>${totalTerms}</strong></div>
+            <div><span>異なり語</span><strong>${Object.keys(metrics.termFreq).length}</strong></div>
+            <div><span>解析器</span><strong class="tm-engine-name">${escapeHtml(tokenizerInfo.label)}</strong></div>
         </div>
+        ${zeroTermDocuments > 0
+            ? `<div class="tm-method-note">${zeroTermDocuments}文書は、抽出条件を満たす語が0件でした。</div>`
+            : ''}
+        ${warning}
     `;
 }
 
-function renderEmptyNetworkCanvas(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    const scale = 3;
-    const width = Math.max(420, Math.round(container.clientWidth || container.getBoundingClientRect().width || 720));
-    const height = 450;
-    container.innerHTML = '';
+function renderTermTable(metrics, posByWord, minFrequency, prefix) {
+    const tfidfMap = new Map(metrics.termTfIdf);
+    const rows = Object.entries(metrics.termFreq)
+        .filter(([, frequency]) => frequency >= minFrequency)
+        .sort((a, b) =>
+            b[1] - a[1]
+            || (metrics.termDf[b[0]] || 0) - (metrics.termDf[a[0]] || 0)
+            || a[0].localeCompare(b[0], 'ja')
+        )
+        .slice(0, 150);
 
-    const canvas = document.createElement('canvas');
-    canvas.width = width * scale;
-    canvas.height = height * scale;
-    canvas.style.width = '100%';
-    canvas.style.height = `${height}px`;
-    container.appendChild(canvas);
-
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fafbfc';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#64748b';
-    ctx.font = `${14 * scale}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('表示できる共起関係がありません', canvas.width / 2, canvas.height / 2);
-
-    renderNetworkLegend(containerId, [], {}, {}, [], {});
+    return `
+        <section class="tm-result-panel">
+            <div class="tm-panel-heading">
+                <div>
+                    <h6>抽出語リスト（出現回数順）</h6>
+                    <p>TF＝出現回数、DF＝その語を含む文書数。語を押すとKWICを表示します。</p>
+                </div>
+                <span class="tm-count-badge">${rows.length}語表示</span>
+            </div>
+            <div class="tm-table-scroll">
+                <table class="data-table tm-term-table">
+                    <thead>
+                        <tr>
+                            <th>語</th>
+                            <th>品詞</th>
+                            <th>TF</th>
+                            <th>DF</th>
+                            <th>文書率</th>
+                            <th>TF-IDF合計</th>
+                        </tr>
+                    </thead>
+                    <tbody id="${prefix}-term-table-body">
+                        ${rows.length > 0 ? rows.map(([word, frequency]) => {
+                            const pos = posByWord[word] || 'other';
+                            const posStyle = POS_STYLES[pos] || POS_STYLES.other;
+                            return `
+                                <tr>
+                                    <td>
+                                        <button type="button" class="tm-term-link" data-term="${escapeHtml(word)}">
+                                            ${escapeHtml(word)}
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <span class="tm-pos-label">
+                                            <i style="background:${posStyle.color};"></i>${posStyle.label}
+                                        </span>
+                                    </td>
+                                    <td>${frequency}</td>
+                                    <td>${metrics.termDf[word] || 0}</td>
+                                    <td>${((metrics.termDocumentRate[word] || 0) * 100).toFixed(1)}%</td>
+                                    <td>${(tfidfMap.get(word) || 0).toFixed(4)}</td>
+                                </tr>
+                            `;
+                        }).join('') : `
+                            <tr><td colspan="6">最小出現数を満たす語がありません。</td></tr>
+                        `}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    `;
 }
 
-function renderNetworkLegend(containerId, nodesList, nodeGroups, groupMap, colors, weightedDegrees) {
-    const legend = document.getElementById(`${containerId}-legend`);
-    if (!legend) return;
+function renderCategoryFeatureTable(rows, category, minFrequency, termFreq) {
+    const visibleRows = (rows || [])
+        .filter(row => row.z > 0 && (termFreq[row.term] || 0) >= minFrequency)
+        .slice(0, 40);
+    const significantCount = visibleRows.filter(row => row.q < 0.05).length;
 
-    if (!nodesList || nodesList.length === 0) {
-        legend.innerHTML = `
-            <div style="font-size: 0.85rem; color: #64748b; line-height: 1.6;">
-                <strong>色分けの意味:</strong> 共起関係が十分にないため、語グループは表示していません。
+    return `
+        <section class="tm-result-panel tm-feature-panel">
+            <div class="tm-panel-heading">
+                <div>
+                    <h6>「${escapeHtml(category)}」の特徴語</h6>
+                    <p>文書への出現有無を他カテゴリと比較した調整済み標準化残差です。zが大きいほど、このカテゴリに特徴的です。</p>
+                </div>
+                <span class="tm-count-badge">FDR 5%: ${significantCount}語</span>
             </div>
+            <div class="tm-table-scroll">
+                <table class="data-table tm-feature-table">
+                    <thead>
+                        <tr>
+                            <th>語</th>
+                            <th>カテゴリ内</th>
+                            <th>その他</th>
+                            <th>z</th>
+                            <th>q</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${visibleRows.length > 0 ? visibleRows.map(row => `
+                            <tr class="${row.q < 0.05 ? 'tm-significant-row' : ''}">
+                                <td><button type="button" class="tm-term-link" data-term="${escapeHtml(row.term)}">${escapeHtml(row.term)}</button></td>
+                                <td>${(row.categoryRate * 100).toFixed(1)}%</td>
+                                <td>${(row.outsideRate * 100).toFixed(1)}%</td>
+                                <td>${row.z.toFixed(2)}</td>
+                                <td>${formatPValue(row.q)}</td>
+                            </tr>
+                        `).join('') : `
+                            <tr><td colspan="5">比較可能な特徴語がありません。</td></tr>
+                        `}
+                    </tbody>
+                </table>
+            </div>
+            <div class="tm-table-footnote">
+                qはBenjamini-Hochberg法で多重比較を補正。q &lt; .05の行を強調しています。
+            </div>
+        </section>
+    `;
+}
+
+function formatComparisonQ(value) {
+    if (!Number.isFinite(value)) return 'q=-';
+    if (value < 0.001) return 'q<.001';
+    return `q=${value.toFixed(3).replace(/^0/, '')}`;
+}
+
+function renderGroupComparison(rows, categories, groupSizes, posByWord) {
+    if (!rows.length) {
+        return `
+            <section class="tm-result-panel tm-group-comparison-panel">
+                <div class="tm-panel-heading">
+                    <div>
+                        <h6>群間比較</h6>
+                        <p>現在の抽出条件では、群間で比較できる語がありません。</p>
+                    </div>
+                </div>
+            </section>
         `;
-        return;
     }
 
-    const groups = {};
-    nodesList.forEach(word => {
-        const colorIndex = groupMap[nodeGroups[word]];
-        if (!groups[colorIndex]) groups[colorIndex] = [];
-        groups[colorIndex].push(word);
+    const categoryNames = categories.map(category => String(category));
+    return `
+        <section class="tm-result-panel tm-group-comparison-panel" data-comparison-mode="rate">
+            <div class="tm-panel-heading">
+                <div>
+                    <h6>群間比較</h6>
+                    <p>同じ語を全群で横に並べています。語を押すと全群のKWICを表示します。</p>
+                </div>
+                <span class="tm-count-badge">差の大きい上位${rows.length}語</span>
+            </div>
+            <div class="tm-comparison-toolbar">
+                <div class="tm-segmented-control" role="group" aria-label="群間比較の表示指標">
+                    <button type="button" class="active" data-comparison-mode="rate" aria-pressed="true">文書率</button>
+                    <button type="button" data-comparison-mode="z" aria-pressed="false">特徴度 z</button>
+                </div>
+                <div class="tm-comparison-legend tm-comparison-rate-legend">
+                    青い帯が長いほど、その語を含む文書の割合が高い群です。
+                </div>
+                <div class="tm-comparison-legend tm-comparison-z-legend" hidden>
+                    <span><i class="tm-z-positive-swatch"></i>期待より多い</span>
+                    <span><i class="tm-z-negative-swatch"></i>期待より少ない</span>
+                    <span>* q &lt; .05</span>
+                </div>
+            </div>
+            <div class="tm-table-scroll tm-comparison-scroll">
+                <table class="data-table tm-comparison-table">
+                    <thead>
+                        <tr>
+                            <th class="tm-comparison-term-column">語・品詞</th>
+                            ${categoryNames.map(category => `
+                                <th class="tm-comparison-group-header">
+                                    ${escapeHtml(category)}
+                                    <small>N=${groupSizes[category] || 0}</small>
+                                </th>
+                            `).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => {
+                            const pos = posByWord[row.term] || 'other';
+                            const posStyle = POS_STYLES[pos] || POS_STYLES.other;
+                            return `
+                                <tr>
+                                    <th class="tm-comparison-term-column" scope="row">
+                                        <button type="button" class="tm-term-link" data-term="${escapeHtml(row.term)}">
+                                            ${escapeHtml(row.term)}
+                                        </button>
+                                        <span class="tm-pos-label">
+                                            <i style="background:${posStyle.color};"></i>${posStyle.label}
+                                        </span>
+                                    </th>
+                                    ${categoryNames.map(category => {
+                                        const group = row.groups[category];
+                                        const rate = Math.max(0, Math.min(1, group?.rate || 0));
+                                        const z = Number(group?.z) || 0;
+                                        const q = Number.isFinite(group?.q) ? group.q : 1;
+                                        const count = group?.count || 0;
+                                        const documents = group?.documentCount || groupSizes[category] || 0;
+                                        return `
+                                            <td class="tm-group-comparison-cell tm-rate-cell"
+                                                data-rate="${rate}"
+                                                data-z="${z}"
+                                                data-q="${q}"
+                                                data-count="${count}"
+                                                data-documents="${documents}"
+                                                style="--tm-rate-width:${(rate * 100).toFixed(1)}%;">
+                                                <strong class="tm-group-value">${(rate * 100).toFixed(1)}%</strong>
+                                                <small class="tm-group-detail">${count}/${documents}</small>
+                                            </td>
+                                        `;
+                                    }).join('')}
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <div class="tm-table-footnote">
+                文書率は語を1回以上含む文書の割合です。zとqは各群をその他すべての群と比較し、群ごとにFDR補正しています。
+            </div>
+        </section>
+    `;
+}
+
+function setGroupComparisonMode(panel, mode) {
+    const selectedMode = mode === 'z' ? 'z' : 'rate';
+    panel.dataset.comparisonMode = selectedMode;
+    panel.querySelectorAll('[data-comparison-mode]').forEach(button => {
+        const active = button.dataset.comparisonMode === selectedMode;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    panel.querySelector('.tm-comparison-rate-legend')?.toggleAttribute('hidden', selectedMode !== 'rate');
+    panel.querySelector('.tm-comparison-z-legend')?.toggleAttribute('hidden', selectedMode !== 'z');
+
+    panel.querySelectorAll('.tm-group-comparison-cell').forEach(cell => {
+        const rate = Number(cell.dataset.rate) || 0;
+        const z = Number(cell.dataset.z) || 0;
+        const q = Number(cell.dataset.q);
+        const count = Number(cell.dataset.count) || 0;
+        const documents = Number(cell.dataset.documents) || 0;
+        const value = cell.querySelector('.tm-group-value');
+        const detail = cell.querySelector('.tm-group-detail');
+
+        cell.classList.remove('tm-rate-cell', 'tm-z-positive', 'tm-z-negative', 'tm-z-neutral');
+        if (selectedMode === 'rate') {
+            cell.classList.add('tm-rate-cell');
+            cell.style.setProperty('--tm-rate-width', `${Math.max(0, Math.min(100, rate * 100)).toFixed(1)}%`);
+            value.textContent = `${(rate * 100).toFixed(1)}%`;
+            detail.textContent = `${count}/${documents}`;
+            return;
+        }
+
+        const zClass = z > 0.05 ? 'tm-z-positive' : z < -0.05 ? 'tm-z-negative' : 'tm-z-neutral';
+        cell.classList.add(zClass);
+        cell.style.setProperty('--tm-z-opacity', String(Math.min(0.72, 0.12 + Math.abs(z) / 5)));
+        value.textContent = `${z > 0 ? '+' : ''}${z.toFixed(2)}${q < 0.05 ? ' *' : ''}`;
+        detail.textContent = formatComparisonQ(q);
+    });
+}
+
+function bindGroupComparison(panel, items) {
+    if (!panel) return;
+    panel.querySelectorAll('.tm-segmented-control [data-comparison-mode]').forEach(button => {
+        button.addEventListener('click', () => {
+            setGroupComparisonMode(panel, button.dataset.comparisonMode);
+        });
+    });
+    bindTermLinks(panel, items);
+}
+
+function renderPartOfSpeechRanking(termFreq, posByWord, tokenizerInfo, minFrequency) {
+    const grouped = Object.fromEntries(POS_ORDER.map(pos => [pos, []]));
+    Object.entries(termFreq).forEach(([word, frequency]) => {
+        if (frequency < minFrequency) return;
+        const pos = posByWord[word] || 'other';
+        grouped[pos].push({ word, frequency });
     });
 
-    const groupRows = Object.entries(groups)
-        .sort(([, aWords], [, bWords]) => bWords.length - aWords.length)
-        .map(([colorIndex, words], idx) => {
-            const sortedWords = words
-                .slice()
-                .sort((a, b) => (weightedDegrees[b] || 0) - (weightedDegrees[a] || 0) || a.localeCompare(b, 'ja'))
-                .slice(0, 8);
-            const color = colors[Number(colorIndex) % colors.length];
+    const columns = POS_ORDER
+        .filter(pos => grouped[pos].length > 0)
+        .map(pos => {
+            const style = POS_STYLES[pos] || POS_STYLES.other;
+            const rows = grouped[pos]
+                .sort((a, b) => b.frequency - a.frequency || a.word.localeCompare(b.word, 'ja'))
+                .slice(0, 10);
             return `
-                <div style="display: flex; align-items: flex-start; gap: 0.45rem; min-width: 180px; max-width: 100%;">
-                    <span style="width: 0.8rem; height: 0.8rem; border-radius: 50%; background: ${color}; border: 1px solid rgba(15,23,42,0.16); flex: 0 0 auto; margin-top: 0.25rem;"></span>
-                    <div style="min-width: 0;">
-                        <span style="font-weight: 700; color: #334155;">グループ${idx + 1}</span>
-                        <span style="color: #475569;">: ${sortedWords.map(escapeHtml).join('、')}</span>
+                <div class="tm-pos-column">
+                    <div class="tm-pos-column-title">
+                        <i style="background:${style.color};"></i>${style.label}
                     </div>
+                    <ol>
+                        ${rows.map(item => `
+                            <li>
+                                <button type="button" class="tm-term-link" data-term="${escapeHtml(item.word)}">${escapeHtml(item.word)}</button>
+                                <span>${item.frequency}</span>
+                            </li>
+                        `).join('')}
+                    </ol>
                 </div>
             `;
         }).join('');
 
-    legend.innerHTML = `
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 0.85rem;">
-            <div style="font-size: 0.86rem; color: #475569; line-height: 1.55; margin-bottom: 0.55rem;">
-                <strong style="color: #334155;">色分けの意味:</strong>
-                同じ色の語は、同じ文の中で一緒に出やすい語のまとまりです。線は共起関係を表し、太い線ほど文脈の重なりが強いことを示します。
+    return `
+        <section class="tm-result-panel">
+            <div class="tm-panel-heading">
+                <div>
+                    <h6>品詞別ランキング${tokenizerInfo.hasMorphology ? '' : '（推定）'}</h6>
+                    <p>${tokenizerInfo.hasMorphology
+                        ? '形態素解析の基本形と品詞タグを使用しています。'
+                        : '簡易分かち書き時のみ、語形から品詞を推定します。'}</p>
+                </div>
             </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 0.45rem 1rem; font-size: 0.83rem; line-height: 1.5;">
-                ${groupRows}
-            </div>
-        </div>
+            <div class="tm-pos-grid">${columns || '<p>表示できる語がありません。</p>'}</div>
+        </section>
     `;
 }
 
-function getNetworkLegendGroups(nodesList, nodeGroups, groupMap, colors, weightedDegrees) {
-    const groups = {};
-    nodesList.forEach(word => {
-        const colorIndex = groupMap[nodeGroups[word]];
-        if (!groups[colorIndex]) groups[colorIndex] = [];
-        groups[colorIndex].push(word);
-    });
-
-    return Object.entries(groups)
-        .sort(([, aWords], [, bWords]) => bWords.length - aWords.length)
-        .map(([colorIndex, words], idx) => ({
-            label: `グループ${idx + 1}`,
-            color: colors[Number(colorIndex) % colors.length],
-            words: words
-                .slice()
-                .sort((a, b) => (weightedDegrees[b] || 0) - (weightedDegrees[a] || 0) || a.localeCompare(b, 'ja'))
-                .slice(0, 8)
-        }));
+function renderWordCloudPanel(id, title, subtitle) {
+    return `
+        <section class="tm-result-panel tm-visual-panel">
+            <div class="tm-panel-heading tm-visual-heading">
+                <div>
+                    <h6>${escapeHtml(title)}</h6>
+                    <p>${escapeHtml(subtitle)}</p>
+                </div>
+                <button type="button" class="download-btn" data-target="${id}" title="PNG画像を保存" aria-label="${escapeHtml(title)}をPNG画像で保存">
+                    <i class="fas fa-download"></i><span>画像保存</span>
+                </button>
+            </div>
+            <canvas id="${id}" class="tm-wordcloud-canvas"></canvas>
+            <div id="${id}-legend"></div>
+        </section>
+    `;
 }
 
-function drawWrappedCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
-    let line = '';
-    let currentY = y;
-    for (const char of text) {
-        const testLine = line + char;
-        if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
-            ctx.fillText(line, x, currentY);
-            line = char;
-            currentY += lineHeight;
-        } else {
-            line = testLine;
+function renderNetworkPanel(id, settings) {
+    const unitLabel = settings.cooccurrenceUnit === 'document' ? '文書' : '文';
+    return `
+        <section class="tm-result-panel tm-network-panel">
+            <div class="tm-panel-heading tm-visual-heading">
+                <div>
+                    <h6>共起ネットワーク</h6>
+                    <p>${unitLabel}単位のJaccard係数が強い関係を表示します。ノードを押すとKWICを表示します。</p>
+                </div>
+                <button type="button" class="download-btn" data-target="${id}" title="PNG画像を保存" aria-label="共起ネットワークをPNG画像で保存">
+                    <i class="fas fa-download"></i><span>画像保存</span>
+                </button>
+            </div>
+            <div id="${id}" class="tm-network-canvas"></div>
+            <div id="${id}-legend"></div>
+        </section>
+    `;
+}
+
+function bindTermLinks(container, items) {
+    container.querySelectorAll('.tm-term-link').forEach(button => {
+        button.addEventListener('click', () => openKwicPanel(button.dataset.term, items));
+    });
+}
+
+async function analyzeAndRender(items, container, prefix, context) {
+    const documents = items.map(item => item.terms);
+    const metrics = computeTermMetrics(documents, {
+        idfLookup: context.globalMetrics?.termIdf
+    });
+    const minFrequency = context.settings.minFrequency;
+    const frequencyWords = Object.entries(metrics.termFreq)
+        .filter(([, frequency]) => frequency >= minFrequency)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'));
+    const tfidfWords = metrics.termTfIdf
+        .filter(([word, value]) => value > 0 && (metrics.termFreq[word] || 0) >= minFrequency);
+    const featureRows = context.categorySpecificity || [];
+    const positiveFeatureWords = featureRows
+        .filter(row => row.z > 0 && (metrics.termFreq[row.term] || 0) >= minFrequency)
+        .map(row => [row.term, row.z]);
+    const secondCloudIsFeature = Boolean(context.categoryName && positiveFeatureWords.length > 0);
+
+    const frequencyCloudId = `${prefix}-wordcloud`;
+    const secondCloudId = secondCloudIsFeature
+        ? `${prefix}-wordcloud-feature`
+        : `${prefix}-wordcloud-tfidf`;
+    const networkId = `${prefix}-network`;
+
+    container.insertAdjacentHTML('beforeend', `
+        ${renderSummary(items, metrics, context.tokenizerInfo)}
+        ${renderTermTable(metrics, context.posByWord, minFrequency, prefix)}
+        ${context.categoryName
+            ? renderCategoryFeatureTable(featureRows, context.categoryName, minFrequency, metrics.termFreq)
+            : ''}
+        ${renderPartOfSpeechRanking(metrics.termFreq, context.posByWord, context.tokenizerInfo, minFrequency)}
+        <div class="tm-visual-grid">
+            ${renderWordCloudPanel(
+                frequencyCloudId,
+                'ワードクラウド（出現回数）',
+                '大きい語ほど、分析対象内で多く使われています。'
+            )}
+            ${renderWordCloudPanel(
+                secondCloudId,
+                secondCloudIsFeature
+                    ? `ワードクラウド（「${context.categoryName}」の特徴度）`
+                    : 'ワードクラウド（TF-IDF）',
+                secondCloudIsFeature
+                    ? '大きい語ほど、他カテゴリより相対的に多く出現します。有意性は特徴語表のq値で確認します。'
+                    : '大きい語ほど、文書内で重要かつ全体では比較的珍しい語です。'
+            )}
+        </div>
+        ${renderNetworkPanel(networkId, context.settings)}
+    `);
+
+    const showKwic = word => openKwicPanel(word, items);
+    displayWordCloud(frequencyCloudId, frequencyWords, showKwic, {
+        posByWord: context.posByWord,
+        metricLabel: '出現回数が多い語ほど大きく表示'
+    });
+    displayWordCloud(
+        secondCloudId,
+        secondCloudIsFeature ? positiveFeatureWords : tfidfWords,
+        showKwic,
+        {
+            posByWord: context.posByWord,
+            metricLabel: secondCloudIsFeature
+                ? '調整済み標準化残差 z が大きい語ほど大きく表示'
+                : 'TF-IDF合計が大きい語ほど大きく表示'
         }
+    );
+
+    container.querySelectorAll(
+        `.download-btn[data-target="${frequencyCloudId}"], .download-btn[data-target="${secondCloudId}"]`
+    ).forEach(button => {
+        button.addEventListener('click', event => {
+            event.preventDefault();
+            downloadCanvasAsImage(button.dataset.target);
+        });
+    });
+
+    const cooccurrenceUnits = context.settings.cooccurrenceUnit === 'document'
+        ? documents
+        : items.flatMap(item => item.sentences.map(sentence => sentence.terms));
+    const networkTerms = frequencyWords
+        .slice(0, context.settings.networkTermLimit)
+        .map(([word]) => word);
+    plotCooccurrenceNetwork(
+        networkId,
+        cooccurrenceUnits,
+        networkTerms,
+        metrics.termFreq,
+        showKwic,
+        {
+            maxEdges: context.settings.networkEdgeLimit,
+            minCooccurrence: context.settings.minCooccurrence,
+            unitLabel: context.settings.cooccurrenceUnit === 'document' ? '文書' : '文'
+        }
+    );
+
+    bindTermLinks(container, items);
+    await Promise.resolve();
+}
+
+function activateTab(tabId, renderCategorySections) {
+    document.querySelectorAll('#analysis-results .tab-btn').forEach(button => {
+        button.classList.toggle('active', button.dataset.tabTarget === tabId);
+        button.setAttribute('aria-selected', button.dataset.tabTarget === tabId ? 'true' : 'false');
+    });
+    document.querySelectorAll('#analysis-results .tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === tabId);
+    });
+    if (tabId === 'tm-category') renderCategorySections?.();
+}
+
+async function runTextMining(currentData) {
+    const inputMode = document.querySelector('[data-tm-input-mode].active')?.dataset.tmInputMode || 'column';
+    const useDirectInput = inputMode === 'direct';
+    const textVar = document.getElementById('text-var')?.value;
+    const categoryVar = useDirectInput ? '' : document.getElementById('category-var')?.value;
+    const directDocuments = useDirectInput
+        ? String(document.getElementById('tm-direct-text')?.value || '')
+            .split(/\r\n|\r|\n/)
+            .map(text => text.trim())
+            .filter(Boolean)
+        : [];
+
+    if (!useDirectInput && !textVar) {
+        alert('テキスト変数を選択してください');
+        return;
     }
-    if (line) ctx.fillText(line, x, currentY);
-    return currentY + lineHeight;
-}
-
-function drawNetworkLegendOnCanvas(ctx, x, y, width, nodesList, nodeGroups, groupMap, colors, weightedDegrees) {
-    const groups = getNetworkLegendGroups(nodesList, nodeGroups, groupMap, colors, weightedDegrees);
-    const padding = 28;
-    const boxX = x;
-    const boxY = y;
-    const boxW = width;
-    const boxH = 300;
-
-    ctx.save();
-    ctx.fillStyle = '#f8fafc';
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(boxX, boxY, boxW, boxH, 18);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#334155';
-    ctx.font = 'bold 28px "Helvetica Neue", Arial, sans-serif';
-    ctx.textBaseline = 'top';
-    ctx.fillText('色分けの意味', boxX + padding, boxY + padding);
-
-    ctx.fillStyle = '#475569';
-    ctx.font = '24px "Helvetica Neue", Arial, sans-serif';
-    const desc = '同じ色の語は、同じ文の中で一緒に出やすい語のまとまりです。線は共起関係を表し、太い線ほど文脈の重なりが強いことを示します。';
-    const afterDescY = drawWrappedCanvasText(ctx, desc, boxX + padding, boxY + padding + 44, boxW - padding * 2, 34);
-
-    let cursorX = boxX + padding;
-    let cursorY = afterDescY + 16;
-    const rowHeight = 36;
-    groups.forEach(group => {
-        const text = `${group.label}: ${group.words.join('、')}`;
-        const itemWidth = Math.min(ctx.measureText(text).width + 60, boxW - padding * 2);
-        if (cursorX + itemWidth > boxX + boxW - padding) {
-            cursorX = boxX + padding;
-            cursorY += rowHeight;
-        }
-        if (cursorY > boxY + boxH - rowHeight) return;
-
-        ctx.fillStyle = group.color;
-        ctx.beginPath();
-        ctx.arc(cursorX + 12, cursorY + 14, 11, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(15,23,42,0.18)';
-        ctx.stroke();
-
-        ctx.fillStyle = '#334155';
-        ctx.font = 'bold 22px "Helvetica Neue", Arial, sans-serif';
-        ctx.fillText(group.label, cursorX + 32, cursorY);
-        ctx.font = '22px "Helvetica Neue", Arial, sans-serif';
-        ctx.fillStyle = '#475569';
-        ctx.fillText(`: ${group.words.join('、')}`, cursorX + 32 + ctx.measureText(group.label).width, cursorY);
-        cursorX += itemWidth + 24;
-    });
-    ctx.restore();
-}
-
-function plotCooccurrenceNetwork(containerId, sentences, topWords, onClick) {
-    const topEdges = buildCooccurrenceEdges(sentences, topWords, { threshold: 0.1, maxEdges: 80 });
-
-    if (topEdges.length === 0) {
-        renderEmptyNetworkCanvas(containerId);
+    if (useDirectInput && directDocuments.length === 0) {
+        alert('分析するテキストを入力してください');
         return;
     }
 
-    // Identify active nodes
-    const activeWords = new Set();
-    topEdges.forEach(e => { activeWords.add(e.from); activeWords.add(e.to); });
-    const nodesList = Array.from(activeWords);
+    const settings = readAnalysisSettings();
+    const button = document.getElementById('run-text-btn');
+    const originalButtonHtml = button.innerHTML;
+    const updateStatus = message => {
+        button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(message)}`;
+    };
+    button.disabled = true;
 
-    // --- Community Detection (Simple Connected Components Logic or modularity-like) ---
-    // For simplicity and dependency-free, let's use a simple label propagation-like approach or greedly assign classes
-    // Here we use a predefined color palette
-    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98FB98', '#DDA0DD', '#F0E68C'];
-    const nodeGroups = {};
+    const resultsArea = document.getElementById('analysis-results');
+    resultsArea.style.display = 'block';
+    resultsArea.innerHTML = `
+        <div class="tab-container" role="tablist" aria-label="テキストマイニング結果">
+            <button type="button" class="tab-btn active" data-tab-target="tm-overall" role="tab" aria-selected="true">全体分析</button>
+            <button type="button" class="tab-btn" id="tm-cat-tab-btn" data-tab-target="tm-category" role="tab" aria-selected="false" style="display:none;">カテゴリ別分析</button>
+        </div>
+        <div id="tm-overall" class="tab-content active" role="tabpanel">
+            <div id="overall-results"></div>
+        </div>
+        <div id="tm-category" class="tab-content" role="tabpanel">
+            <div id="category-results"></div>
+        </div>
+        <div class="kwic-overlay" id="kwic-overlay"></div>
+        <aside class="kwic-panel" id="kwic-panel" aria-hidden="true" aria-label="文脈検索">
+            <div class="kwic-header">
+                <div class="kwic-title">文脈検索（KWIC）</div>
+                <button type="button" class="kwic-close" id="kwic-close" aria-label="文脈検索を閉じる">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="kwic-content"></div>
+        </aside>
+    `;
+    document.getElementById('kwic-close')?.addEventListener('click', closeKwicPanel);
+    document.getElementById('kwic-overlay')?.addEventListener('click', closeKwicPanel);
 
-    // Initialize groups
-    nodesList.forEach((n, i) => nodeGroups[n] = i);
-
-    const sortedWeights = topEdges.map(e => e.weight).sort((a, b) => b - a);
-    const groupThreshold = Math.max(0.2, sortedWeights[Math.floor(sortedWeights.length * 0.4)] || 0.2);
-
-    // Stronger co-occurrences drive color groups; weaker bridge edges remain visible but do not collapse all nodes into one color.
-    // Run a few passes
-    for (let pass = 0; pass < 3; pass++) {
-        topEdges.forEach(e => {
-            if (e.weight < groupThreshold) return;
-            const g1 = nodeGroups[e.from];
-            const g2 = nodeGroups[e.to];
-            if (g1 !== g2) {
-                // Merge to smaller group id usually, or just min
-                const minG = Math.min(g1, g2);
-                nodeGroups[e.from] = minG;
-                nodeGroups[e.to] = minG;
-            }
+    let renderCategorySections = null;
+    resultsArea.querySelectorAll('.tab-btn').forEach(tabButton => {
+        tabButton.addEventListener('click', () => {
+            activateTab(tabButton.dataset.tabTarget, renderCategorySections);
         });
-    }
-
-    // Remap groups to 0..N for coloring
-    const uniqueGroups = [...new Set(Object.values(nodeGroups))];
-    const groupMap = {};
-    uniqueGroups.forEach((g, i) => groupMap[g] = i % colors.length);
-
-    const weightedDegrees = {};
-    nodesList.forEach(id => { weightedDegrees[id] = 0; });
-    topEdges.forEach(e => {
-        weightedDegrees[e.from] = (weightedDegrees[e.from] || 0) + e.weight;
-        weightedDegrees[e.to] = (weightedDegrees[e.to] || 0) + e.weight;
-    });
-    const maxWeightedDegree = Math.max(...Object.values(weightedDegrees), 1);
-
-    const nodes = nodesList.map(id => ({
-        id,
-        label: id,
-        value: (weightedDegrees[id] / maxWeightedDegree) * 50 + 10,
-        color: {
-            background: colors[groupMap[nodeGroups[id]]],
-            border: '#ffffff',
-            highlight: { background: colors[groupMap[nodeGroups[id]]], border: '#1e90ff' }
-        },
-        font: { size: 24, color: '#333', strokeWidth: 4, strokeColor: '#fff' }
-    }));
-
-    renderNetworkLegend(containerId, nodesList, nodeGroups, groupMap, colors, weightedDegrees);
-
-    // Render
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    const navData = {
-        nodes: new vis.DataSet(nodes),
-        edges: new vis.DataSet(topEdges.map(e => ({
-            from: e.from, to: e.to, value: e.weight,
-            title: `Jaccard: ${e.weight.toFixed(3)}`,
-            color: { color: '#cbd5e0', highlight: '#1e90ff' }
-        })))
-    };
-
-    const options = {
-        layout: { randomSeed: 42, improvedLayout: true },
-        nodes: { shape: 'dot', scaling: { min: 15, max: 60 } },
-        edges: { smooth: { type: 'continuous' }, scaling: { min: 1, max: 8 } },
-        physics: {
-            forceAtlas2Based: { gravitationalConstant: -100, centralGravity: 0.01, springConstant: 0.08, springLength: 100, damping: 0.4 },
-            minVelocity: 0.75,
-            solver: 'forceAtlas2Based',
-            stabilization: { enabled: true, iterations: 1000 }
-        },
-        interaction: { hover: true }
-    };
-
-    const network = new vis.Network(container, navData, options);
-
-    network.on("click", function (params) {
-        if (params.nodes.length > 0) {
-            onClick(params.nodes[0]);
-        }
     });
 
-    // 高画質ダウンロードの実装（隠しコンテナでの再レンダリング）
-    const downloadBtn = document.querySelector(`.download-btn[data-target="${containerId}"]`);
-    if (downloadBtn) {
-        const newBtn = downloadBtn.cloneNode(true);
-        downloadBtn.parentNode.replaceChild(newBtn, downloadBtn);
+    try {
+        updateStatus('形態素解析器を準備中...');
+        if (!getTokenizer()) await initTokenizer(updateStatus);
+        const tokenizer = getTokenizer();
+        const tokenizerInfo = getTokenizerInfo();
 
-        newBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
-            const filename = `cooccurrence_network_${timestamp}.png`;
+        const rawItems = useDirectInput
+            ? directDocuments.map((text, index) => ({
+                text,
+                id: index,
+                category: null
+            }))
+            : (currentData || []).map((row, index) => ({
+                text: row[textVar] == null ? '' : String(row[textVar]).trim(),
+                id: index,
+                category: categoryVar ? row[categoryVar] : null
+            })).filter(item => item.text.length > 0);
+        if (rawItems.length === 0) throw new Error('有効なテキストデータがありません');
 
-            // 隠しコンテナ作成 (3倍サイズ)
-            const hiddenContainer = document.createElement('div');
-            hiddenContainer.style.position = 'fixed';
-            hiddenContainer.style.left = '-9999px';
-            hiddenContainer.style.top = '-9999px';
-            hiddenContainer.style.width = '2400px';
-            hiddenContainer.style.height = '1350px';
-            document.body.appendChild(hiddenContainer);
+        updateStatus('基本形と品詞を解析中...');
+        const extractionOptions = {
+            forceTerms: settings.forceTerms,
+            stopWords: settings.stopWords
+        };
+        const items = rawItems.map(item => buildAnalyzedItem(item, tokenizer, extractionOptions));
+        const posByWord = buildPartOfSpeechLookup(items);
+        const globalMetrics = computeTermMetrics(items.map(item => item.terms));
+        const categorySpecificity = categoryVar
+            ? computeCategorySpecificity(
+                items
+                    .filter(item => item.category != null && String(item.category).trim() !== '')
+                    .map(item => ({ category: String(item.category), tokens: item.terms })),
+                { minDocumentFrequency: Math.max(2, settings.minFrequency) }
+            )
+            : {};
 
-            // オプションのスケーリング (x3)
-            const SCALE = 3;
-            const highResOptions = JSON.parse(JSON.stringify(options));
-            // デフォルトラベルを非表示（カスタム描画するため）
-            if (!highResOptions.nodes.font) highResOptions.nodes.font = {};
-            highResOptions.nodes.font.size = 0;
-            highResOptions.nodes.font.color = 'rgba(0,0,0,0)';
+        updateStatus('全体分析を描画中...');
+        const overallContainer = document.getElementById('overall-results');
+        overallContainer.innerHTML = `
+            <div class="tm-section-title">
+                <h4>全体分析</h4>
+                <span>N=${items.length}</span>
+            </div>
+        `;
+        await analyzeAndRender(items, overallContainer, 'overall', {
+            settings,
+            tokenizerInfo,
+            posByWord,
+            globalMetrics
+        });
 
-            if (highResOptions.nodes.font) {
-                highResOptions.nodes.font.size = (highResOptions.nodes.font.size || 14) * SCALE;
-                highResOptions.nodes.font.strokeWidth = (highResOptions.nodes.font.strokeWidth || 0) * SCALE;
-            }
-            if (highResOptions.nodes.scaling) {
-                highResOptions.nodes.scaling.min *= SCALE;
-                highResOptions.nodes.scaling.max *= SCALE;
-            }
+        if (categoryVar) {
+            const categories = [...new Set(items
+                .map(item => item.category)
+                .filter(value => value != null && String(value).trim() !== ''))]
+                .sort((a, b) => String(a).localeCompare(String(b), 'ja', { numeric: true }));
+            const categoryTab = document.getElementById('tm-cat-tab-btn');
+            categoryTab.style.display = categories.length > 0 ? '' : 'none';
+            const categoryResults = document.getElementById('category-results');
+            let categoryRenderPromise = null;
 
-            // 物理演算パラメータのスケーリング (重要: ノード間の距離を広げる)
-            if (highResOptions.physics && highResOptions.physics.forceAtlas2Based) {
-                const fa = highResOptions.physics.forceAtlas2Based;
+            renderCategorySections = () => {
+                if (categoryRenderPromise) return categoryRenderPromise;
+                categoryRenderPromise = (async () => {
+                    const categoryNames = categories.map(category => String(category));
+                    const groupSizes = Object.fromEntries(categoryNames.map(category => [
+                        category,
+                        items.filter(item => String(item.category) === category).length
+                    ]));
+                    const comparisonRows = buildGroupComparisonRows(
+                        categorySpecificity,
+                        categoryNames,
+                        {
+                            termFrequency: globalMetrics.termFreq,
+                            groupSizes,
+                            minFrequency: settings.minFrequency,
+                            limit: 30
+                        }
+                    );
+                    categoryResults.innerHTML = `
+                        <div class="tm-category-method">
+                            <strong>カテゴリ比較:</strong>
+                            最初に全群を横断比較し、その下に群ごとの抽出語・特徴語・ワードクラウド・共起ネットワークを連続表示します。
+                        </div>
+                        ${renderGroupComparison(comparisonRows, categories, groupSizes, posByWord)}
+                        <div class="tm-category-stack"></div>
+                    `;
+                    bindGroupComparison(
+                        categoryResults.querySelector('.tm-group-comparison-panel'),
+                        items
+                    );
+                    const stack = categoryResults.querySelector('.tm-category-stack');
 
-                // バネの長さを広げる
-                fa.springLength = (fa.springLength || 300) * SCALE;
-
-                // 反発力(gravitationalConstant)も強めて、より広がりやすくする
-                fa.gravitationalConstant = (fa.gravitationalConstant || -2500) * SCALE;
-
-                highResOptions.physics.stabilization = { enabled: true, iterations: 2000, fit: true };
-            }
-            // ラベル重複描画を防ぐため、描画用データセットのラベルを空にする
-            // (vis-networkのデフォルト描画を完全に無効化)
-            const hdNavData = {
-                nodes: new vis.DataSet(navData.nodes.map(n => ({ ...n, label: " " }))), // 空文字だとIDが出る場合があるのでスペース
-                edges: new vis.DataSet(navData.edges.get())
+                    for (const [index, category] of categories.entries()) {
+                        const categoryItems = items.filter(item => item.category === category);
+                        const section = document.createElement('section');
+                        section.className = 'tm-category-section';
+                        section.id = `cat-results-${index}-${sanitizeId(category)}`;
+                        section.innerHTML = `
+                            <div class="tm-section-title">
+                                <h4>${escapeHtml(category)}</h4>
+                                <span>N=${categoryItems.length}</span>
+                            </div>
+                        `;
+                        stack.appendChild(section);
+                        await analyzeAndRender(categoryItems, section, `cat-${index}-${sanitizeId(category)}`, {
+                            settings,
+                            tokenizerInfo,
+                            posByWord,
+                            globalMetrics,
+                            categoryName: String(category),
+                            categorySpecificity: categorySpecificity[String(category)] || []
+                        });
+                    }
+                })().catch(error => {
+                    console.error(error);
+                    categoryResults.innerHTML = `
+                        <div class="error-message">カテゴリ別分析の描画中にエラーが発生しました: ${escapeHtml(error.message)}</div>
+                    `;
+                });
+                return categoryRenderPromise;
             };
 
-            // 高画質ネットワーク生成
-            const hdNetwork = new vis.Network(hiddenContainer, hdNavData, highResOptions);
-
-            // 安定化計算（物理演算）完了を待つ
-            hdNetwork.once("stabilizationIterationsDone", () => {
-                hdNetwork.fit({ animation: false });
-
-                hdNetwork.once("afterDrawing", (ctx) => {
-                    // 1. 白背景合成
-                    const tempCanvas = document.createElement('canvas');
-                    const width = ctx.canvas.width;
-                    const height = ctx.canvas.height;
-                    const legendHeight = 360;
-
-                    tempCanvas.width = width;
-                    tempCanvas.height = height + legendHeight;
-                    const tempCtx = tempCanvas.getContext('2d');
-
-                    tempCtx.fillStyle = '#ffffff';
-                    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-                    // ネットワーク描画 (等倍コピー)
-                    tempCtx.drawImage(ctx.canvas, 0, 0);
-
-                    // 2. ラベルをノード中央にカスタム描画
-                    // 元のデータ(navData)からラベル情報を取得して描画する
-
-                    // Retina Display 対応 (pixelRatioによるスケーリング補正)
-                    // hiddenContainerの論理サイズを取得し、Canvasの物理サイズとの比率を計算
-                    const domWidth = parseFloat(hiddenContainer.style.width) || 2400; // 2400px指定済み
-                    const pixelRatio = width / domWidth;
-
-                    tempCtx.save();
-                    // 座標系を論理ピクセルに合わせる (getPositions()の戻り値は論理座標)
-                    tempCtx.scale(pixelRatio, pixelRatio);
-
-                    const positions = hdNetwork.getPositions();
-                    tempCtx.textAlign = 'center';
-                    tempCtx.textBaseline = 'middle';
-                    tempCtx.lineJoin = 'round';
-
-                    navData.nodes.forEach(node => {
-                        const pos = positions[node.id];
-                        if (!pos) return;
-
-                        // 重要: シミュレーション座標(pos)をDOM座標(画面上のピクセル位置)に変換する
-                        // fit()によるズームやパンを反映させるために必須
-                        const domPos = hdNetwork.canvasToDOM(pos);
-
-                        // ノードのサイズからフォントサイズを決定
-                        const box = hdNetwork.getBoundingBox(node.id);
-                        const width = box.right - box.left;
-
-                        // 直径の40%程度を基本とするが、最低サイズを大きく確保
-                        const minSize = 16 * SCALE;
-                        let fontSize = Math.max(minSize, width * 0.25);
-
-                        // フォント設定
-                        tempCtx.font = `bold ${fontSize}px "Helvetica Neue", Arial, sans-serif`;
-                        tempCtx.lineWidth = fontSize * 0.15; // 縁取りの太さ
-
-                        // 白縁取り + 黒文字
-                        tempCtx.strokeStyle = '#ffffff';
-                        tempCtx.fillStyle = '#333333';
-
-                        tempCtx.strokeText(node.label, domPos.x, domPos.y);
-                        tempCtx.fillText(node.label, domPos.x, domPos.y);
-                    });
-
-                    tempCtx.restore(); // スケーリング解除
-
-                    drawNetworkLegendOnCanvas(tempCtx, 60, height + 24, width - 120, nodesList, nodeGroups, groupMap, colors, weightedDegrees);
-
-                    const dataUrl = tempCanvas.toDataURL("image/png");
-
-                    const link = document.createElement('a');
-                    link.download = filename;
-                    link.href = dataUrl;
-                    link.click();
-
-                    setTimeout(() => {
-                        hdNetwork.destroy();
-                        if (document.body.contains(hiddenContainer)) {
-                            document.body.removeChild(hiddenContainer);
-                        }
-                    }, 1000);
-                });
-            });
-        });
+            categoryResults.innerHTML = `
+                <div class="tm-method-note">
+                    「${escapeHtml(categoryVar)}」の${categories.length}カテゴリを、タブを開いたときに連続表示します。
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error(error);
+        alert(`解析中にエラーが発生しました: ${error.message}`);
+    } finally {
+        button.innerHTML = originalButtonHtml;
+        button.disabled = false;
     }
 }
 
-
 export function render(container, currentData, characteristics) {
-    const { textColumns, categoricalColumns } = characteristics;
-
+    const data = Array.isArray(currentData) ? currentData : [];
+    const safeCharacteristics = characteristics || {
+        numericColumns: [],
+        categoricalColumns: [],
+        textColumns: []
+    };
+    const {
+        numericColumns = [],
+        categoricalColumns = [],
+        textColumns = []
+    } = safeCharacteristics;
+    const numericSet = new Set(numericColumns);
+    const availableTextColumns = [
+        ...textColumns,
+        ...categoricalColumns.filter(column => !numericSet.has(column) && !textColumns.includes(column))
+    ];
+    const hasColumnInput = data.length > 0 && availableTextColumns.length > 0;
+    const initialInputMode = hasColumnInput ? 'column' : 'direct';
 
     container.innerHTML = `
         <div class="text-mining-container">
-            <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
-                    <i class="fas fa-comment-dots"></i> テキストマイニング
-                </h3>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">テキストデータの構造を可視化します（日本語対応）</p>
+            <div class="analysis-title-banner">
+                <h3><i class="fas fa-comment-dots"></i> テキストマイニング</h3>
+                <p>基本形・品詞・文書頻度・特徴語・共起関係をブラウザ内で分析します</p>
             </div>
 
-            <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
+            <div class="collapsible-section info-sections" style="margin-bottom:2rem;">
                 <div class="collapsible-header collapsed" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('collapsed');">
                     <h3><i class="fas fa-info-circle"></i> 分析の概要・方法</h3>
                     <i class="fas fa-chevron-down toggle-icon"></i>
                 </div>
                 <div class="collapsible-content collapsed">
                     <div class="note">
-                        <strong><i class="fas fa-lightbulb"></i> テキストマイニングとは？</strong>
-                        <p>大量のテキストデータから有用な情報やパターンを抽出する分析手法です。自然言語処理技術を用いて、テキストに含まれる単語の頻度や関係性を可視化します。</p>
+                        <strong><i class="fas fa-lightbulb"></i> KH Coder型の探索手順</strong>
+                        <p>頻度や特徴度で注目語を見つけ、KWICで原文を確認し、共起ネットワークで語同士の文脈を探索します。</p>
                     </div>
-                    <h4>分析結果の見方</h4>
+                    <h4>集計単位と指標</h4>
                     <ul>
-                        <li><strong>単語の重要度テーブル:</strong> 各単語の出現回数・出現文書数・TF-IDF重みを表示します。TF-IDFは文書長で調整した出現割合に、全体データでの珍しさ（IDF）を掛けた値です。カテゴリ別分析でも全体データのIDFを使うため、カテゴリ間で特徴語を比較しやすくしています。</li>
-                        <li><strong>ワードクラウド（出現回数 / TF-IDF）:</strong> 単語を大きく表示します。出現回数版とTF-IDF重み版の2種類があります。<strong>単語をクリックすると、その単語を含む元の文が表示されます（KWIC）。</strong></li>
-                        <li><strong>共起ネットワーク:</strong> 同じ文に一緒に出た単語を、文集合の重なり（Jaccard係数）で線として結びます。<strong>同じ色のノードは、似た文脈で使われる「グループ（コミュニティ）」を表します。</strong></li>
+                        <li><strong>TF / DF:</strong> 語の出現回数と、その語を含む文書数です。</li>
+                        <li><strong>TF-IDF:</strong> 文書長で調整した語頻度と、全体での珍しさを組み合わせます。</li>
+                        <li><strong>カテゴリ特徴度:</strong> 文書出現率の調整済み標準化残差を用い、q値を多重比較補正します。</li>
+                        <li><strong>共起:</strong> 文または文書に一緒に現れた語のJaccard係数を使います。</li>
                     </ul>
-                    <h4>対象となる単語</h4>
-                    <p>分析では表記を正規化したうえで、<strong>2文字以上の主要な単語</strong>を抽出します（一般的なストップワード、数字のみの語、記号は自動的に除外されます）。</p>
                 </div>
             </div>
 
-            <!-- 分析設定 -->
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-                <div class="grid-2-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-                    <div id="text-var-container"></div>
-                    <div id="category-var-container"></div>
+            <section class="tm-settings-panel">
+                <div class="tm-input-toolbar">
+                    <span>入力方法</span>
+                    <div class="tm-segmented-control" role="group" aria-label="テキストの入力方法">
+                        <button type="button" id="tm-input-column" data-tm-input-mode="column"
+                            ${hasColumnInput ? '' : 'disabled'}
+                            aria-pressed="${initialInputMode === 'column'}">
+                            <i class="fas fa-columns"></i> データ列
+                        </button>
+                        <button type="button" id="tm-input-direct" data-tm-input-mode="direct"
+                            aria-pressed="${initialInputMode === 'direct'}">
+                            <i class="fas fa-align-left"></i> 直接入力
+                        </button>
+                    </div>
                 </div>
+
+                <div id="tm-column-input-panel" class="tm-input-panel">
+                    <div class="grid-2-cols tm-variable-grid">
+                        <div id="text-var-container"></div>
+                        <div id="category-var-container"></div>
+                    </div>
+                </div>
+
+                <div id="tm-direct-input-panel" class="tm-input-panel" hidden>
+                    <label for="tm-direct-text">
+                        <span><i class="fas fa-font"></i> 分析するテキスト</span>
+                        <small>1行を1文書として集計</small>
+                    </label>
+                    <textarea id="tm-direct-text" rows="9"
+                        placeholder="授業が分かりやすかった&#10;データ分析の実習が楽しかった&#10;グラフから傾向を発見できた"></textarea>
+                    <div id="tm-direct-text-status" class="tm-input-status" role="status" aria-live="polite">0文書・0文字</div>
+                </div>
+
+                <details class="tm-advanced-settings">
+                    <summary><i class="fas fa-sliders-h"></i> 抽出・共起の詳細設定</summary>
+                    <div class="tm-settings-grid">
+                        <label>
+                            <span>最小出現数</span>
+                            <input type="number" id="tm-min-frequency" value="2" min="1" max="1000">
+                        </label>
+                        <label>
+                            <span>共起の単位</span>
+                            <select id="tm-cooccurrence-unit">
+                                <option value="sentence" selected>文</option>
+                                <option value="document">文書（1行）</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>ネットワークの語数</span>
+                            <input type="number" id="tm-network-term-limit" value="45" min="10" max="80">
+                        </label>
+                        <label>
+                            <span>表示する線の上限</span>
+                            <input type="number" id="tm-network-edge-limit" value="60" min="10" max="200">
+                        </label>
+                        <label>
+                            <span>最小共起回数</span>
+                            <input type="number" id="tm-min-cooccurrence" value="2" min="1" max="100">
+                        </label>
+                        <label class="tm-wide-setting">
+                            <span>除外語（改行・読点区切り）</span>
+                            <textarea id="tm-stop-words" rows="2" placeholder="例：今回、回答"></textarea>
+                        </label>
+                        <label class="tm-wide-setting">
+                            <span>強制抽出語（改行・読点区切り）</span>
+                            <textarea id="tm-force-terms" rows="2" placeholder="例：データサイエンス、生成AI"></textarea>
+                        </label>
+                    </div>
+                </details>
+
                 <div id="run-text-btn-container"></div>
-            </div>
+            </section>
 
-            <!-- データ概要 -->
-            <div id="tm-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
-
-            <!-- 結果エリア -->
-            <div id="analysis-results" style="display: none;"></div>
+            <div id="tm-data-overview" class="info-sections" style="margin-bottom:2rem;"></div>
+            <div id="analysis-results" style="display:none;"></div>
         </div>
     `;
 
-    renderDataOverview('#tm-data-overview', currentData, characteristics, { initiallyCollapsed: true });
-
-    // Text Variable Select
-    createVariableSelector('text-var-container', textColumns, 'text-var', {
+    if (data.length > 0) {
+        renderDataOverview('#tm-data-overview', data, safeCharacteristics, {
+            initiallyCollapsed: true
+        });
+    }
+    createVariableSelector('text-var-container', availableTextColumns, 'text-var', {
         label: '<i class="fas fa-font"></i> 分析するテキスト変数（必須）:',
         multiple: false
     });
-
-    // Category Variable Select
     createVariableSelector('category-var-container', categoricalColumns, 'category-var', {
         label: '<i class="fas fa-layer-group"></i> カテゴリ変数（任意・比較用）:',
         multiple: false,
         placeholder: '選択なし（全体分析のみ）'
     });
+    createAnalysisButton(
+        'run-text-btn-container',
+        '分析を実行',
+        () => runTextMining(data),
+        { id: 'run-text-btn' }
+    );
 
-    createAnalysisButton('run-text-btn-container', '分析を実行', () => runTextMining(currentData), { id: 'run-text-btn' });
+    const columnInputPanel = document.getElementById('tm-column-input-panel');
+    const directInputPanel = document.getElementById('tm-direct-input-panel');
+    const dataOverview = document.getElementById('tm-data-overview');
+    const results = document.getElementById('analysis-results');
+    const directInput = document.getElementById('tm-direct-text');
+    const directStatus = document.getElementById('tm-direct-text-status');
+    const inputModeButtons = [...document.querySelectorAll('[data-tm-input-mode]')];
+
+    const updateDirectStatus = () => {
+        const documents = String(directInput?.value || '')
+            .split(/\r\n|\r|\n/)
+            .map(text => text.trim())
+            .filter(Boolean);
+        const characterCount = documents.reduce((sum, text) => sum + text.length, 0);
+        directStatus.textContent = `${documents.length.toLocaleString()}文書・${characterCount.toLocaleString()}文字`;
+    };
+
+    const setInputMode = mode => {
+        if (mode === 'column' && !hasColumnInput) return;
+        inputModeButtons.forEach(button => {
+            const isActive = button.dataset.tmInputMode === mode;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', String(isActive));
+        });
+        columnInputPanel.hidden = mode !== 'column';
+        directInputPanel.hidden = mode !== 'direct';
+        dataOverview.hidden = mode !== 'column' || data.length === 0;
+        results.style.display = 'none';
+        results.innerHTML = '';
+        if (mode === 'direct') directInput.focus();
+    };
+
+    inputModeButtons.forEach(button => {
+        button.addEventListener('click', () => setInputMode(button.dataset.tmInputMode));
+    });
+    directInput?.addEventListener('input', updateDirectStatus);
+    updateDirectStatus();
+    setInputMode(initialInputMode);
 }

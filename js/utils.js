@@ -1040,6 +1040,1066 @@ export function createPlotlyConfig(analysisName, variables) {
     };
 }
 
+const visualizationEditorInstallations = new WeakMap();
+const capturedPlotSpecs = new WeakMap();
+const plotEditorStates = new WeakMap();
+const VISUALIZATION_ASPECT_RATIOS = Object.freeze({
+    '16:9': 16 / 9,
+    '4:3': 4 / 3,
+    '3:2': 3 / 2,
+    '1:1': 1
+});
+let visualizationEditorSequence = 0;
+
+function installPlotlySpecCapture() {
+    if (!window.Plotly || window.Plotly.__easyStatSpecCaptureInstalled) return;
+
+    const originalNewPlot = window.Plotly.newPlot;
+    window.Plotly.newPlot = function easyStatNewPlot(graphDiv, data, layout, config) {
+        const target = typeof graphDiv === 'string'
+            ? document.getElementById(graphDiv)
+            : graphDiv;
+        const spec = { data, layout: layout || {}, config };
+        const existingState = target ? plotEditorStates.get(target) : null;
+        const reapplyEditorState = Boolean(existingState && !existingState.isEditorRedraw);
+        const result = originalNewPlot.apply(this, arguments);
+        if (target) {
+            target.__easyStatPlotSpec = spec;
+            capturedPlotSpecs.set(target, spec);
+            if (existingState) existingState.plotSpec = spec;
+        }
+        if (result?.then) {
+            result.then(resolvedTarget => {
+                if (resolvedTarget) {
+                    resolvedTarget.__easyStatPlotSpec = spec;
+                    capturedPlotSpecs.set(resolvedTarget, spec);
+                    if (existingState) {
+                        existingState.target = resolvedTarget;
+                        existingState.plotSpec = spec;
+                        plotEditorStates.set(resolvedTarget, existingState);
+                    }
+                }
+                if (reapplyEditorState && existingState) {
+                    queueMicrotask(() => applyPlotEditorState(existingState));
+                }
+            }).catch(() => {
+                // The original Plotly promise remains authoritative for error handling.
+            });
+        }
+        return result;
+    };
+    window.Plotly.__easyStatSpecCaptureInstalled = true;
+}
+
+function getTitleText(title) {
+    const text = typeof title === 'string'
+        ? title
+        : (title && typeof title.text === 'string' ? title.text : '');
+    return /^Click to enter (?:X axis|Y axis|plot) title$/i.test(text.trim()) ? '' : text;
+}
+
+function toEditableLabel(value, joinBreaks = ' ') {
+    return String(value || '')
+        .replace(/<br\s*\/?>/gi, joinBreaks)
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/\s+/g, joinBreaks ? ' ' : '')
+        .trim();
+}
+
+function findNearbyHeadingText(element, root) {
+    const labelledBy = element.getAttribute?.('aria-labelledby');
+    if (labelledBy) {
+        const labelledElement = document.getElementById(labelledBy);
+        const labelledText = labelledElement?.textContent?.trim();
+        if (labelledText) return labelledText;
+    }
+
+    let current = element;
+    while (current && current !== root) {
+        let sibling = current.previousElementSibling;
+        while (sibling) {
+            const heading = sibling.matches?.('h2, h3, h4, h5, h6')
+                ? sibling
+                : sibling.querySelector?.('h2, h3, h4, h5, h6');
+            const text = heading?.textContent?.trim();
+            if (text) return text;
+            sibling = sibling.previousElementSibling;
+        }
+        current = current.parentElement;
+    }
+
+    const panelHeading = element.closest?.('section, article, .result-section, .analysis-section')
+        ?.querySelector('h2, h3, h4, h5, h6')
+        ?.textContent
+        ?.trim();
+    return panelHeading || '';
+}
+
+function createVisualizationEditorShell(kind, summaryText) {
+    const details = document.createElement('details');
+    details.className = 'visualization-item-editor';
+    details.dataset.editorKind = kind;
+
+    const summary = document.createElement('summary');
+    const icon = document.createElement('i');
+    icon.className = kind === 'table' ? 'fas fa-table' : 'fas fa-sliders-h';
+    icon.setAttribute('aria-hidden', 'true');
+    const label = document.createElement('span');
+    label.textContent = summaryText;
+    summary.append(icon, label);
+
+    const body = document.createElement('div');
+    body.className = 'visualization-item-editor-body';
+    const fields = document.createElement('div');
+    fields.className = 'visualization-item-editor-fields';
+    body.appendChild(fields);
+    details.append(summary, body);
+
+    return { details, body, fields };
+}
+
+function appendVisualizationTextField(fields, options) {
+    const idPrefix = `visualization-editor-${++visualizationEditorSequence}`;
+    const field = document.createElement('div');
+    field.className = 'visualization-item-editor-field';
+
+    const toggleLabel = document.createElement('label');
+    toggleLabel.className = 'visualization-item-editor-toggle';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `${idPrefix}-visible`;
+    checkbox.checked = options.checked;
+    checkbox.dataset.visualizationControl = options.key;
+    const toggleText = document.createElement('span');
+    toggleText.textContent = options.label;
+    toggleLabel.htmlFor = checkbox.id;
+    toggleLabel.append(checkbox, toggleText);
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = `${idPrefix}-text`;
+    input.className = 'visualization-item-editor-input';
+    input.value = options.value;
+    input.placeholder = options.placeholder || '';
+    const editableName = options.inputLabel || options.label.replace(/を表示$/, '');
+    input.setAttribute('aria-label', `${editableName}を編集`);
+    input.dataset.visualizationInput = options.key;
+
+    field.append(toggleLabel, input);
+    fields.appendChild(field);
+    return { checkbox, input };
+}
+
+function appendVisualizationToggle(fields, options) {
+    const id = `visualization-editor-${++visualizationEditorSequence}-visible`;
+    const field = document.createElement('div');
+    field.className = 'visualization-item-editor-field visualization-item-editor-field-compact';
+
+    const label = document.createElement('label');
+    label.className = 'visualization-item-editor-toggle';
+    label.htmlFor = id;
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = id;
+    checkbox.checked = options.checked;
+    checkbox.dataset.visualizationControl = options.key;
+    const text = document.createElement('span');
+    text.textContent = options.label;
+    label.append(checkbox, text);
+    field.appendChild(label);
+    fields.appendChild(field);
+    return checkbox;
+}
+
+function appendVisualizationSizeFields(fields, options) {
+    const idPrefix = `visualization-editor-${++visualizationEditorSequence}-size`;
+    const group = document.createElement('fieldset');
+    group.className = 'visualization-item-editor-size';
+    const legend = document.createElement('legend');
+    legend.textContent = '大きさ・縦横比';
+    const controls = document.createElement('div');
+    controls.className = 'visualization-size-controls';
+
+    const widthControl = document.createElement('div');
+    widthControl.className = 'visualization-size-control';
+    const widthLabel = document.createElement('label');
+    widthLabel.htmlFor = `${idPrefix}-width`;
+    widthLabel.textContent = '表示幅';
+    const widthRow = document.createElement('div');
+    widthRow.className = 'visualization-size-range';
+    const widthInput = document.createElement('input');
+    widthInput.type = 'range';
+    widthInput.id = `${idPrefix}-width`;
+    widthInput.min = '50';
+    widthInput.max = '100';
+    widthInput.step = '5';
+    widthInput.value = String(options.widthPercent);
+    widthInput.dataset.visualizationInput = 'width';
+    const widthOutput = document.createElement('output');
+    widthOutput.htmlFor = widthInput.id;
+    widthOutput.textContent = `${options.widthPercent}%`;
+    widthRow.append(widthInput, widthOutput);
+    widthControl.append(widthLabel, widthRow);
+
+    const ratioControl = document.createElement('div');
+    ratioControl.className = 'visualization-size-control';
+    const ratioLabel = document.createElement('label');
+    ratioLabel.htmlFor = `${idPrefix}-ratio`;
+    ratioLabel.textContent = '縦横比';
+    const ratioSelect = document.createElement('select');
+    ratioSelect.id = `${idPrefix}-ratio`;
+    ratioSelect.className = 'visualization-item-editor-input';
+    ratioSelect.dataset.visualizationInput = 'aspect-ratio';
+    [
+        ['auto', '自動（元の比率）'],
+        ['16:9', '16:9（横長）'],
+        ['4:3', '4:3（標準）'],
+        ['3:2', '3:2'],
+        ['1:1', '1:1（正方形）'],
+        ['custom', '高さを指定']
+    ].forEach(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        ratioSelect.appendChild(option);
+    });
+    ratioSelect.value = options.aspectRatio || 'auto';
+    ratioControl.append(ratioLabel, ratioSelect);
+
+    const heightControl = document.createElement('div');
+    heightControl.className = 'visualization-size-control';
+    const heightLabel = document.createElement('label');
+    heightLabel.htmlFor = `${idPrefix}-height`;
+    heightLabel.textContent = '高さ（px）';
+    const heightInput = document.createElement('input');
+    heightInput.type = 'number';
+    heightInput.id = `${idPrefix}-height`;
+    heightInput.className = 'visualization-item-editor-input';
+    heightInput.min = '240';
+    heightInput.max = '1000';
+    heightInput.step = '10';
+    heightInput.value = String(options.height);
+    heightInput.disabled = ratioSelect.value !== 'custom';
+    heightInput.dataset.visualizationInput = 'height';
+    heightControl.append(heightLabel, heightInput);
+
+    controls.append(widthControl, ratioControl, heightControl);
+    group.append(legend, controls);
+    fields.appendChild(group);
+    return { widthInput, widthOutput, ratioSelect, heightInput };
+}
+
+function clampVisualizationValue(value, minimum, maximum, fallback) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return fallback;
+    return Math.min(maximum, Math.max(minimum, numeric));
+}
+
+function getVisualizationParentWidth(target) {
+    const parent = target?.parentElement;
+    if (!parent) return Math.max(target?.getBoundingClientRect().width || 0, 1);
+    const style = window.getComputedStyle(parent);
+    const horizontalPadding = (Number.parseFloat(style.paddingLeft) || 0)
+        + (Number.parseFloat(style.paddingRight) || 0);
+    const clientWidth = parent.clientWidth || parent.getBoundingClientRect().width;
+    return Math.max(clientWidth - horizontalPadding, 1);
+}
+
+function getVisualizationSizeDefaults(target, fallbackHeight = 420) {
+    const rect = target.getBoundingClientRect();
+    const availableWidth = getVisualizationParentWidth(target);
+    const width = Math.max(rect.width || availableWidth, 1);
+    const height = clampVisualizationValue(
+        Math.round(rect.height || fallbackHeight),
+        240,
+        1000,
+        fallbackHeight
+    );
+    const widthPercent = clampVisualizationValue(
+        Math.round((width / availableWidth) * 100 / 5) * 5,
+        50,
+        100,
+        100
+    );
+    return {
+        widthPercent,
+        height,
+        aspectRatio: width / Math.max(height, 1)
+    };
+}
+
+function resolveVisualizationDimensions(target, controls, defaults) {
+    const availableWidth = getVisualizationParentWidth(target);
+    const widthPercent = clampVisualizationValue(
+        controls.widthInput.value,
+        50,
+        100,
+        defaults.widthPercent
+    );
+    const minimumWidth = Math.min(280, availableWidth);
+    const width = Math.round(Math.max(
+        minimumWidth,
+        availableWidth * widthPercent / 100
+    ));
+    const ratioKey = controls.ratioSelect.value;
+    const ratio = ratioKey === 'auto'
+        ? defaults.aspectRatio
+        : VISUALIZATION_ASPECT_RATIOS[ratioKey];
+    const height = ratioKey === 'custom'
+        ? clampVisualizationValue(controls.heightInput.value, 240, 1000, defaults.height)
+        : clampVisualizationValue(
+            Math.round(width / Math.max(ratio || defaults.aspectRatio, 0.1)),
+            240,
+            1000,
+            defaults.height
+        );
+
+    controls.widthInput.value = String(widthPercent);
+    controls.widthOutput.textContent = `${widthPercent}%`;
+    controls.heightInput.disabled = ratioKey !== 'custom';
+    if (ratioKey !== 'custom') controls.heightInput.value = String(Math.round(height));
+
+    return {
+        widthPercent,
+        width,
+        height: Math.round(height),
+        aspectRatio: ratioKey
+    };
+}
+
+function applyVisualizationBox(target, dimensions) {
+    target.style.boxSizing = 'border-box';
+    target.style.width = `${dimensions.width}px`;
+    target.style.maxWidth = '100%';
+    target.style.height = `${dimensions.height}px`;
+    target.style.marginLeft = 'auto';
+    target.style.marginRight = 'auto';
+    target.dataset.visualWidthPercent = String(dimensions.widthPercent);
+    target.dataset.visualAspectRatio = dimensions.aspectRatio;
+    target.dataset.visualHeight = String(dimensions.height);
+}
+
+function bindVisualizationSizeControls(controls, apply) {
+    let timer = null;
+    const scheduleApply = () => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(apply, 80);
+    };
+
+    controls.widthInput.addEventListener('input', () => {
+        controls.widthOutput.textContent = `${controls.widthInput.value}%`;
+        scheduleApply();
+    });
+    controls.widthInput.addEventListener('change', apply);
+    controls.ratioSelect.addEventListener('change', apply);
+    controls.heightInput.addEventListener('input', scheduleApply);
+    controls.heightInput.addEventListener('change', apply);
+}
+
+function appendVisualizationResetButton(body, onReset) {
+    const actions = document.createElement('div');
+    actions.className = 'visualization-item-editor-actions';
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.className = 'visualization-item-editor-reset';
+    resetButton.title = '初期表示に戻す';
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-undo';
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = '初期値に戻す';
+    resetButton.append(icon, text);
+    resetButton.addEventListener('click', onReset);
+    actions.appendChild(resetButton);
+    body.appendChild(actions);
+}
+
+function insertVisualizationEditor(target, editor) {
+    if (!target?.parentNode) return false;
+    target.parentNode.insertBefore(editor, target);
+    return true;
+}
+
+function getTypedAnnotation(layout, type) {
+    return (layout?.annotations || []).find(annotation => annotation?._annotationType === type) || null;
+}
+
+function getRenderedPlotLabels(plot) {
+    const plotRect = plot.getBoundingClientRect();
+    const annotationCandidates = Array.from(plot.querySelectorAll('.annotation-text'))
+        .map(element => ({
+            text: element.textContent?.trim() || '',
+            rect: element.getBoundingClientRect()
+        }))
+        .filter(item => item.text);
+    const bottomCandidate = annotationCandidates
+        .filter(item => {
+            if (!plotRect.height) return false;
+            const centerY = item.rect.top + item.rect.height / 2;
+            return centerY > plotRect.top + plotRect.height * 0.7
+                && !/^(?:\*+|†|n\.s\.)$/i.test(item.text);
+        })
+        .sort((a, b) => b.rect.top - a.rect.top || b.text.length - a.text.length)[0];
+    const verticalCandidate = annotationCandidates
+        .filter(item => {
+            if (!plotRect.width || item === bottomCandidate) return false;
+            const centerX = item.rect.left + item.rect.width / 2;
+            const centerY = item.rect.top + item.rect.height / 2;
+            return centerX < plotRect.left + plotRect.width * 0.2
+                && centerY > plotRect.top + plotRect.height * 0.15
+                && centerY < plotRect.top + plotRect.height * 0.85;
+        })
+        .sort((a, b) => a.rect.left - b.rect.left)[0];
+    const graphTitle = plot.querySelector('.gtitle')?.textContent?.trim() || '';
+    const xTitle = plot.querySelector('.xtitle')?.textContent?.trim() || '';
+    const yTitle = plot.querySelector('.ytitle')?.textContent?.trim() || '';
+
+    return {
+        title: graphTitle || bottomCandidate?.text || '',
+        titleUsesAnnotation: !graphTitle && Boolean(bottomCandidate),
+        x: xTitle,
+        y: yTitle || verticalCandidate?.text || '',
+        yUsesAnnotation: !yTitle && Boolean(verticalCandidate)
+    };
+}
+
+function setTypedAnnotation(annotations, type, template, text, visible) {
+    const next = Array.isArray(annotations) ? annotations.map(annotation => ({ ...annotation })) : [];
+    const index = next.findIndex(annotation => annotation?._annotationType === type);
+    if (index >= 0) {
+        next[index] = { ...next[index], ...(template || {}), text, visible };
+    } else if (template) {
+        next.push({ ...template, text, visible, _annotationType: type });
+    }
+    return next;
+}
+
+function mergePlotlyLayoutUpdate(layout, update) {
+    const next = { ...(layout || {}) };
+    if (Object.prototype.hasOwnProperty.call(update, 'title.text')) {
+        next.title = typeof next.title === 'object' && next.title !== null
+            ? { ...next.title, text: update['title.text'] }
+            : { text: update['title.text'] };
+    }
+    if (Object.prototype.hasOwnProperty.call(update, 'xaxis.title.text')) {
+        const xaxis = { ...(next.xaxis || {}) };
+        xaxis.title = typeof xaxis.title === 'object' && xaxis.title !== null
+            ? { ...xaxis.title, text: update['xaxis.title.text'] }
+            : { text: update['xaxis.title.text'] };
+        next.xaxis = xaxis;
+    }
+    if (Object.prototype.hasOwnProperty.call(update, 'yaxis.title.text')) {
+        const yaxis = { ...(next.yaxis || {}) };
+        yaxis.title = typeof yaxis.title === 'object' && yaxis.title !== null
+            ? { ...yaxis.title, text: update['yaxis.title.text'] }
+            : { text: update['yaxis.title.text'] };
+        next.yaxis = yaxis;
+    }
+    if (Object.prototype.hasOwnProperty.call(update, 'annotations')) {
+        next.annotations = update.annotations;
+    }
+    if (Object.prototype.hasOwnProperty.call(update, 'showlegend')) {
+        next.showlegend = update.showlegend;
+    }
+    if (Object.prototype.hasOwnProperty.call(update, 'height')) {
+        next.height = update.height;
+    }
+    if (Object.prototype.hasOwnProperty.call(update, 'width')) {
+        next.width = update.width;
+    }
+    if (Object.prototype.hasOwnProperty.call(update, 'margin.b')) {
+        next.margin = { ...(next.margin || {}), b: update['margin.b'] };
+    }
+    return next;
+}
+
+function updatePlotlyExportDimensions(state, dimensions) {
+    const targets = [
+        state.plotSpec?.config,
+        capturedPlotSpecs.get(state.target)?.config,
+        state.target?._context
+    ].filter(Boolean);
+    targets.forEach(config => {
+        const current = config.toImageButtonOptions || {};
+        config.toImageButtonOptions = {
+            ...current,
+            width: dimensions.width,
+            height: dimensions.height
+        };
+    });
+}
+
+function resizePlotlyTarget(plot) {
+    window.requestAnimationFrame(() => {
+        try {
+            const result = window.Plotly?.Plots?.resize?.(plot);
+            if (result?.catch) {
+                result.catch(error => console.warn('図の大きさを更新できませんでした。', error));
+            }
+        } catch (error) {
+            console.warn('図の大きさを更新できませんでした。', error);
+        }
+    });
+}
+
+function applyPlotEditorState(state) {
+    const plot = state.target;
+    if (!plot?.isConnected || !window.Plotly) return;
+
+    const update = {};
+    const dimensions = resolveVisualizationDimensions(
+        plot,
+        state.sizeControls,
+        state.sizeDefaults
+    );
+    applyVisualizationBox(plot, dimensions);
+    update.width = dimensions.width;
+    update.height = dimensions.height;
+    updatePlotlyExportDimensions(state, dimensions);
+    let annotations = Array.isArray(plot.layout?.annotations)
+        ? plot.layout.annotations
+        : (Array.isArray(state.plotSpec?.layout?.annotations)
+            ? state.plotSpec.layout.annotations
+            : []);
+    let annotationsChanged = false;
+
+    if (state.titleSource === 'annotation') {
+        annotations = setTypedAnnotation(
+            annotations,
+            'bottomTitle',
+            state.titleAnnotation,
+            state.titleInput.value,
+            state.titleCheckbox.checked
+        );
+        annotationsChanged = true;
+        update['margin.b'] = state.titleCheckbox.checked
+            ? Math.max(
+                state.defaultBottomMargin,
+                120,
+                Math.round(dimensions.height * 0.22)
+            )
+            : state.defaultBottomMargin;
+    } else {
+        update['title.text'] = state.titleCheckbox.checked ? state.titleInput.value : '';
+    }
+
+    update['xaxis.title.text'] = state.xCheckbox.checked ? state.xInput.value : '';
+
+    if (state.ySource === 'annotation') {
+        annotations = setTypedAnnotation(
+            annotations,
+            'tategaki',
+            state.yAnnotation,
+            state.yInput.value.split('').join('<br>'),
+            state.yCheckbox.checked
+        );
+        annotationsChanged = true;
+        update['yaxis.title.text'] = '';
+    } else {
+        update['yaxis.title.text'] = state.yCheckbox.checked ? state.yInput.value : '';
+    }
+
+    if (state.legendCheckbox) {
+        update.showlegend = state.legendCheckbox.checked;
+    }
+    if (annotationsChanged) update.annotations = annotations;
+
+    try {
+        if (plot.data && plot._fullLayout) {
+            const relayoutResult = window.Plotly.relayout(plot, update);
+            if (relayoutResult?.catch) {
+                relayoutResult.catch(error => console.warn('図の表示設定を更新できませんでした。', error));
+            }
+            if (relayoutResult?.then) {
+                relayoutResult.then(
+                    () => resizePlotlyTarget(plot),
+                    () => {}
+                );
+            } else {
+                resizePlotlyTarget(plot);
+            }
+            return;
+        }
+
+        const spec = state.plotSpec || capturedPlotSpecs.get(plot) || plot.__easyStatPlotSpec;
+        if (!spec) return;
+        const nextLayout = mergePlotlyLayoutUpdate(spec.layout, update);
+        state.plotSpec = { ...spec, layout: nextLayout };
+        plot.__easyStatPlotSpec = state.plotSpec;
+        capturedPlotSpecs.set(plot, state.plotSpec);
+        state.isEditorRedraw = true;
+        let redrawResult;
+        try {
+            redrawResult = window.Plotly.newPlot(
+                plot,
+                state.plotSpec.data,
+                nextLayout,
+                state.plotSpec.config
+            );
+        } catch (error) {
+            state.isEditorRedraw = false;
+            throw error;
+        }
+        if (redrawResult?.then) {
+            redrawResult.then(
+                () => {
+                    state.isEditorRedraw = false;
+                    resizePlotlyTarget(plot);
+                },
+                error => {
+                    state.isEditorRedraw = false;
+                    console.warn('図の表示設定を更新できませんでした。', error);
+                }
+            );
+        } else {
+            state.isEditorRedraw = false;
+            resizePlotlyTarget(plot);
+        }
+    } catch (error) {
+        console.warn('図の表示設定を更新できませんでした。', error);
+    }
+}
+
+function enhancePlotlyFigure(plot, root, installation) {
+    if (!plot || plot.dataset.visualizationEditorAttached) return true;
+    if (!plot.querySelector('.main-svg')) return false;
+    const readyAt = Number(plot.dataset.visualizationEditorReadyAt || 0);
+    if (!readyAt) {
+        plot.dataset.visualizationEditorReadyAt = String(Date.now());
+        return false;
+    }
+    if (Date.now() - readyAt < 500) return false;
+    delete plot.dataset.visualizationEditorReadyAt;
+    plot.dataset.visualizationEditorAttached = 'plotly';
+
+    const layout = plot.layout || {};
+    const fullLayout = plot._fullLayout || {};
+    const capturedSpec = capturedPlotSpecs.get(plot) || plot.__easyStatPlotSpec || null;
+    plot.dataset.visualizationSpecCaptured = String(Boolean(capturedSpec));
+    const capturedLayout = capturedSpec?.layout || {};
+    const renderedLabels = getRenderedPlotLabels(plot);
+    const storedBottomTitle = getTypedAnnotation(layout, 'bottomTitle')
+        || getTypedAnnotation(capturedLayout, 'bottomTitle')
+        || getTypedAnnotation(fullLayout, 'bottomTitle');
+    const storedVerticalTitle = getTypedAnnotation(layout, 'tategaki')
+        || getTypedAnnotation(capturedLayout, 'tategaki')
+        || getTypedAnnotation(fullLayout, 'tategaki');
+    const layoutTitle = getTitleText(layout.title)
+        || getTitleText(capturedLayout.title)
+        || getTitleText(fullLayout.title)
+        || (!renderedLabels.titleUsesAnnotation ? renderedLabels.title : '');
+    const xTitle = getTitleText(layout.xaxis?.title)
+        || getTitleText(capturedLayout.xaxis?.title)
+        || getTitleText(fullLayout.xaxis?.title)
+        || renderedLabels.x;
+    const yAxisTitle = getTitleText(layout.yaxis?.title)
+        || getTitleText(capturedLayout.yaxis?.title)
+        || getTitleText(fullLayout.yaxis?.title)
+        || (!renderedLabels.yUsesAnnotation ? renderedLabels.y : '');
+    const bottomTitle = storedBottomTitle
+        || (renderedLabels.titleUsesAnnotation
+            ? getBottomTitleAnnotation(renderedLabels.title)
+            : null);
+    const verticalTitle = storedVerticalTitle
+        || (renderedLabels.yUsesAnnotation
+            ? getTategakiAnnotation(renderedLabels.y)
+            : null);
+    const titleSource = layoutTitle ? 'layout' : (bottomTitle ? 'annotation' : 'layout');
+    const ySource = yAxisTitle ? 'axis' : (verticalTitle ? 'annotation' : 'axis');
+    const nearbyHeading = findNearbyHeadingText(plot, root);
+    const defaultTitle = toEditableLabel(
+        layoutTitle || bottomTitle?.text || nearbyHeading || 'グラフ'
+    );
+    const defaultXTitle = toEditableLabel(xTitle);
+    const defaultYTitle = toEditableLabel(
+        yAxisTitle || verticalTitle?.text,
+        ySource === 'annotation' ? '' : ' '
+    );
+    const masterAxis = root.querySelector('#show-axis-labels');
+    const masterTitle = root.querySelector('#show-graph-title');
+    const hasMeaningfulLegend = Array.isArray(plot.data)
+        && plot.data.some(trace => trace?.showlegend !== false && String(trace?.name || '').trim());
+
+    const sizeDefaults = getVisualizationSizeDefaults(
+        plot,
+        Number(fullLayout.height || layout.height) || 420
+    );
+    const defaultBottomMargin = Number(
+        layout.margin?.b
+        || capturedLayout.margin?.b
+        || fullLayout.margin?.b
+    ) || 80;
+    const editor = createVisualizationEditorShell('plotly', '図の表示設定');
+    const titleField = appendVisualizationTextField(editor.fields, {
+        key: 'title',
+        label: 'この図のタイトルを表示',
+        checked: masterTitle?.checked ?? true,
+        value: defaultTitle,
+        placeholder: 'グラフタイトル'
+    });
+    const xField = appendVisualizationTextField(editor.fields, {
+        key: 'x-axis',
+        label: 'X軸ラベルを表示',
+        checked: masterAxis?.checked ?? true,
+        value: defaultXTitle,
+        placeholder: 'X軸ラベル'
+    });
+    const yField = appendVisualizationTextField(editor.fields, {
+        key: 'y-axis',
+        label: 'Y軸ラベルを表示',
+        checked: masterAxis?.checked ?? true,
+        value: defaultYTitle,
+        placeholder: 'Y軸ラベル'
+    });
+    const legendCheckbox = hasMeaningfulLegend
+        ? appendVisualizationToggle(editor.fields, {
+            key: 'legend',
+            label: '凡例を表示',
+            checked: fullLayout.showlegend ?? layout.showlegend ?? true
+        })
+        : null;
+    const sizeControls = appendVisualizationSizeFields(editor.fields, {
+        widthPercent: sizeDefaults.widthPercent,
+        aspectRatio: 'auto',
+        height: sizeDefaults.height
+    });
+
+    const state = {
+        target: plot,
+        editor: editor.details,
+        titleSource,
+        ySource,
+        titleAnnotation: bottomTitle ? { ...bottomTitle } : null,
+        yAnnotation: verticalTitle ? { ...verticalTitle } : null,
+        defaultBottomMargin,
+        titleCheckbox: titleField.checkbox,
+        titleInput: titleField.input,
+        xCheckbox: xField.checkbox,
+        xInput: xField.input,
+        yCheckbox: yField.checkbox,
+        yInput: yField.input,
+        legendCheckbox,
+        sizeControls,
+        sizeDefaults,
+        plotSpec: capturedSpec,
+        isEditorRedraw: false,
+        defaults: {
+            title: defaultTitle,
+            x: defaultXTitle,
+            y: defaultYTitle,
+            titleVisible: masterTitle?.checked ?? true,
+            axesVisible: masterAxis?.checked ?? true,
+            legendVisible: legendCheckbox?.checked ?? false,
+            widthPercent: sizeDefaults.widthPercent,
+            aspectRatio: 'auto',
+            height: sizeDefaults.height
+        }
+    };
+
+    const apply = () => applyPlotEditorState(state);
+    [
+        state.titleCheckbox,
+        state.xCheckbox,
+        state.yCheckbox,
+        state.legendCheckbox
+    ].filter(Boolean).forEach(control => control.addEventListener('change', apply));
+
+    let inputTimer = null;
+    [state.titleInput, state.xInput, state.yInput].forEach(input => {
+        input.addEventListener('input', () => {
+            window.clearTimeout(inputTimer);
+            inputTimer = window.setTimeout(apply, 120);
+        });
+        input.addEventListener('change', apply);
+    });
+    bindVisualizationSizeControls(sizeControls, apply);
+
+    appendVisualizationResetButton(editor.body, () => {
+        state.titleInput.value = state.defaults.title;
+        state.xInput.value = state.defaults.x;
+        state.yInput.value = state.defaults.y;
+        state.titleCheckbox.checked = state.defaults.titleVisible;
+        state.xCheckbox.checked = state.defaults.axesVisible;
+        state.yCheckbox.checked = state.defaults.axesVisible;
+        if (state.legendCheckbox) {
+            state.legendCheckbox.checked = state.defaults.legendVisible;
+        }
+        state.sizeControls.widthInput.value = String(state.defaults.widthPercent);
+        state.sizeControls.ratioSelect.value = state.defaults.aspectRatio;
+        state.sizeControls.heightInput.value = String(state.defaults.height);
+        apply();
+    });
+
+    if (!insertVisualizationEditor(plot, editor.details)) {
+        delete plot.dataset.visualizationEditorAttached;
+        return false;
+    }
+    installation.plotStates.add(state);
+    installation.sizeStates.add({ target: plot, applySize: apply });
+    plotEditorStates.set(plot, state);
+    apply();
+    return true;
+}
+
+function enhanceHtmlTable(table, root) {
+    if (!table || table.dataset.visualizationEditorAttached) return;
+    if (table.closest('.visualization-item-editor')) return;
+    table.dataset.visualizationEditorAttached = 'table';
+
+    let caption = table.querySelector(':scope > caption');
+    const hadCaption = Boolean(caption);
+    if (!caption) {
+        caption = document.createElement('caption');
+        caption.className = 'editable-table-caption';
+        table.prepend(caption);
+    }
+
+    const defaultTitle = (
+        caption.textContent?.trim()
+        || table.getAttribute('aria-label')?.trim()
+        || findNearbyHeadingText(table, root)
+        || '分析結果表'
+    );
+    const editor = createVisualizationEditorShell('table', '表タイトル');
+    const titleField = appendVisualizationTextField(editor.fields, {
+        key: 'table-title',
+        label: '表タイトルを表示',
+        checked: !caption.hidden,
+        value: defaultTitle,
+        placeholder: '表タイトル'
+    });
+
+    const apply = () => {
+        caption.textContent = titleField.input.value;
+        caption.hidden = !titleField.checkbox.checked;
+        table.dataset.tableTitle = titleField.input.value;
+    };
+    titleField.checkbox.addEventListener('change', apply);
+    titleField.input.addEventListener('input', apply);
+    appendVisualizationResetButton(editor.body, () => {
+        titleField.input.value = defaultTitle;
+        titleField.checkbox.checked = true;
+        apply();
+    });
+
+    if (!insertVisualizationEditor(table, editor.details)) {
+        delete table.dataset.visualizationEditorAttached;
+        if (!hadCaption) caption.remove();
+        return;
+    }
+    apply();
+}
+
+function enhanceCanvasFigure(target, root, installation) {
+    if (!target || target.dataset.visualizationEditorAttached) return;
+    target.dataset.visualizationEditorAttached = 'canvas';
+
+    const panel = target.closest('.tm-result-panel') || target.parentElement;
+    const heading = panel?.querySelector('.tm-visual-heading h6, h5, h4');
+    const defaultTitle = heading?.textContent?.trim()
+        || findNearbyHeadingText(target, root)
+        || '可視化';
+    const legend = target.id ? document.getElementById(`${target.id}-legend`) : null;
+    const downloadButton = panel?.querySelector(`.download-btn[data-target="${target.id}"]`);
+    const sizeDefaults = getVisualizationSizeDefaults(target, 420);
+    const editor = createVisualizationEditorShell('canvas', '図の表示設定');
+    const titleField = appendVisualizationTextField(editor.fields, {
+        key: 'title',
+        label: 'この図のタイトルを表示',
+        checked: !heading?.hidden,
+        value: defaultTitle,
+        placeholder: 'グラフタイトル'
+    });
+    const legendCheckbox = legend
+        ? appendVisualizationToggle(editor.fields, {
+            key: 'legend',
+            label: '凡例を表示',
+            checked: !legend.hidden
+        })
+        : null;
+    const sizeControls = appendVisualizationSizeFields(editor.fields, {
+        widthPercent: sizeDefaults.widthPercent,
+        aspectRatio: 'auto',
+        height: sizeDefaults.height
+    });
+    let lastDimensions = null;
+
+    const apply = () => {
+        if (heading) {
+            heading.textContent = titleField.input.value;
+            heading.hidden = !titleField.checkbox.checked;
+        }
+        const visibleTitle = titleField.checkbox.checked ? titleField.input.value : '';
+        target.dataset.visualTitle = visibleTitle;
+        const dimensions = resolveVisualizationDimensions(target, sizeControls, sizeDefaults);
+        const sizeChanged = !lastDimensions
+            || lastDimensions.width !== dimensions.width
+            || lastDimensions.height !== dimensions.height;
+        if (sizeChanged && typeof target.__easyStatResizeFigure === 'function') {
+            target.__easyStatResizeFigure(dimensions);
+        }
+        lastDimensions = dimensions;
+        applyVisualizationBox(target, dimensions);
+        const canvas = target.tagName === 'CANVAS' ? target : target.querySelector('canvas');
+        if (canvas) {
+            canvas.dataset.visualTitle = visibleTitle;
+            canvas.dataset.visualLegendVisible = String(legendCheckbox?.checked ?? true);
+            canvas.dataset.visualWidthPercent = String(dimensions.widthPercent);
+            canvas.dataset.visualAspectRatio = dimensions.aspectRatio;
+            canvas.dataset.visualHeight = String(dimensions.height);
+        }
+        target.dataset.visualLegendVisible = String(legendCheckbox?.checked ?? true);
+        if (legend && legendCheckbox) legend.hidden = !legendCheckbox.checked;
+        if (downloadButton) {
+            downloadButton.setAttribute(
+                'aria-label',
+                `${titleField.input.value || '図'}をPNG画像で保存`
+            );
+        }
+    };
+    titleField.checkbox.addEventListener('change', apply);
+    titleField.input.addEventListener('input', apply);
+    legendCheckbox?.addEventListener('change', apply);
+    bindVisualizationSizeControls(sizeControls, apply);
+    appendVisualizationResetButton(editor.body, () => {
+        titleField.input.value = defaultTitle;
+        titleField.checkbox.checked = true;
+        if (legendCheckbox) legendCheckbox.checked = true;
+        sizeControls.widthInput.value = String(sizeDefaults.widthPercent);
+        sizeControls.ratioSelect.value = 'auto';
+        sizeControls.heightInput.value = String(sizeDefaults.height);
+        apply();
+    });
+
+    if (!insertVisualizationEditor(target, editor.details)) {
+        delete target.dataset.visualizationEditorAttached;
+        return;
+    }
+    installation.sizeStates.add({ target, applySize: apply });
+    apply();
+}
+
+/**
+ * Adds editable title, axis, legend, size, aspect-ratio, and table-caption controls.
+ * A MutationObserver covers figures and tables created after the analysis button is pressed.
+ * @param {HTMLElement|string} root - Analysis result root element or ID.
+ * @returns {{refresh: Function, disconnect: Function}|null}
+ */
+export function installVisualizationEditors(root) {
+    const target = typeof root === 'string' ? document.getElementById(root) : root;
+    if (!target) return null;
+    installPlotlySpecCapture();
+
+    const existing = visualizationEditorInstallations.get(target);
+    if (existing) {
+        existing.refresh();
+        return existing.api;
+    }
+
+    const installation = {
+        plotStates: new Set(),
+        sizeStates: new Set(),
+        scheduled: false,
+        observer: null,
+        resizeObserver: null,
+        resizeTimer: null,
+        lastWidth: target.getBoundingClientRect().width,
+        refresh: null,
+        masterListener: null,
+        api: null
+    };
+
+    const refresh = () => {
+        installation.scheduled = false;
+        let waitingForPlot = false;
+        installation.plotStates.forEach(state => {
+            if (!state.target.isConnected) installation.plotStates.delete(state);
+        });
+        installation.sizeStates.forEach(state => {
+            if (!state.target.isConnected) installation.sizeStates.delete(state);
+        });
+
+        target.querySelectorAll('.js-plotly-plot').forEach(plot => {
+            if (!enhancePlotlyFigure(plot, target, installation)) waitingForPlot = true;
+        });
+        target.querySelectorAll('table').forEach(table => {
+            enhanceHtmlTable(table, target);
+        });
+        target.querySelectorAll('canvas.tm-wordcloud-canvas, .tm-network-canvas').forEach(figure => {
+            if (figure.tagName === 'CANVAS' && figure.closest('.tm-network-canvas')) return;
+            enhanceCanvasFigure(figure, target, installation);
+        });
+        if (waitingForPlot) window.setTimeout(scheduleRefresh, 50);
+    };
+    installation.refresh = refresh;
+
+    const scheduleRefresh = () => {
+        if (installation.scheduled) return;
+        installation.scheduled = true;
+        queueMicrotask(refresh);
+    };
+
+    installation.observer = new MutationObserver(scheduleRefresh);
+    installation.observer.observe(target, { childList: true, subtree: true });
+    if (window.ResizeObserver) {
+        installation.resizeObserver = new ResizeObserver(() => {
+            const width = target.getBoundingClientRect().width;
+            if (Math.abs(width - installation.lastWidth) < 1) return;
+            installation.lastWidth = width;
+            window.clearTimeout(installation.resizeTimer);
+            installation.resizeTimer = window.setTimeout(() => {
+                installation.sizeStates.forEach(state => {
+                    if (state.target.isConnected) state.applySize();
+                });
+            }, 100);
+        });
+        installation.resizeObserver.observe(target);
+    }
+
+    installation.masterListener = event => {
+        if (event.target?.id !== 'show-axis-labels' && event.target?.id !== 'show-graph-title') {
+            return;
+        }
+        window.setTimeout(() => {
+            const axisVisible = target.querySelector('#show-axis-labels')?.checked;
+            const titleVisible = target.querySelector('#show-graph-title')?.checked;
+            installation.plotStates.forEach(state => {
+                if (!state.target.isConnected) return;
+                if (typeof axisVisible === 'boolean') {
+                    state.xCheckbox.checked = axisVisible;
+                    state.yCheckbox.checked = axisVisible;
+                }
+                if (typeof titleVisible === 'boolean') {
+                    state.titleCheckbox.checked = titleVisible;
+                }
+                applyPlotEditorState(state);
+            });
+        }, 100);
+    };
+    target.addEventListener('change', installation.masterListener, true);
+
+    const api = {
+        refresh,
+        disconnect: () => {
+            installation.observer?.disconnect();
+            installation.resizeObserver?.disconnect();
+            window.clearTimeout(installation.resizeTimer);
+            target.removeEventListener('change', installation.masterListener, true);
+            visualizationEditorInstallations.delete(target);
+        }
+    };
+    installation.api = api;
+    visualizationEditorInstallations.set(target, installation);
+    refresh();
+    return api;
+}
+
 /**
  * Creates visualization controls (Axis Labels and Graph Title toggles).
  * @param {HTMLElement|string} container - The container element or ID.
@@ -1049,7 +2109,29 @@ export function createVisualizationControls(container) {
     const target = typeof container === 'string' ? document.getElementById(container) : container;
     if (!target) return null;
 
+    const previousAxisChecked = (
+        target.querySelector('#show-axis-labels')
+        || document.querySelector('#show-axis-labels')
+    )?.checked;
+    const previousTitleChecked = (
+        target.querySelector('#show-graph-title')
+        || document.querySelector('#show-graph-title')
+    )?.checked;
+
+    // These IDs are intentionally shared by every analysis, so only one
+    // visualization-control set may exist in the active analysis view.
+    const staleWrappers = new Set();
+    document.querySelectorAll('#show-axis-labels, #show-graph-title').forEach(control => {
+        if (target.contains(control)) return;
+        const wrapper = control.closest('.visualization-controls')
+            || control.parentElement?.parentElement;
+        if (wrapper && wrapper !== target) staleWrappers.add(wrapper);
+    });
+    staleWrappers.forEach(wrapper => wrapper.remove());
+
     const wrapper = document.createElement('div');
+    wrapper.className = 'visualization-controls';
+    wrapper.dataset.visualizationControls = 'true';
     wrapper.style.marginBottom = '1rem';
     wrapper.style.padding = '0.75rem';
     wrapper.style.background = '#f0f9ff';
@@ -1068,7 +2150,7 @@ export function createVisualizationControls(container) {
     const axisCheckbox = document.createElement('input');
     axisCheckbox.type = 'checkbox';
     axisCheckbox.id = 'show-axis-labels';
-    axisCheckbox.checked = true;
+    axisCheckbox.checked = previousAxisChecked ?? true;
     axisCheckbox.style.marginRight = '0.5rem';
     axisCheckbox.style.transform = 'scale(1.2)';
     axisCheckbox.style.cursor = 'pointer';
@@ -1092,7 +2174,7 @@ export function createVisualizationControls(container) {
     const titleCheckbox = document.createElement('input');
     titleCheckbox.type = 'checkbox';
     titleCheckbox.id = 'show-graph-title';
-    titleCheckbox.checked = true;
+    titleCheckbox.checked = previousTitleChecked ?? true;
     titleCheckbox.style.marginRight = '0.5rem';
     titleCheckbox.style.transform = 'scale(1.2)';
     titleCheckbox.style.cursor = 'pointer';
@@ -1110,7 +2192,7 @@ export function createVisualizationControls(container) {
 
     wrapper.appendChild(axisWrapper);
     wrapper.appendChild(titleWrapper);
-    target.appendChild(wrapper);
+    target.replaceChildren(wrapper);
 
     return { axisControl: axisCheckbox, titleControl: titleCheckbox };
 }
@@ -1492,6 +2574,10 @@ export const InterpretationHelper = {
     interpretChiSquare(p, cramerV, rowVar = "", colVar = "") {
         const pEval = this.evaluatePValue(p);
         const varsText = (rowVar && colVar) ? `「<strong>${rowVar}</strong>」と「<strong>${colVar}</strong>」の間には` : "2つの変数の間には";
+        const pNumber = Number(p);
+        const exactPText = Number.isFinite(pNumber)
+            ? (pNumber < 0.001 ? "<em>p</em> &lt; .001" : `<em>p</em> = ${pNumber.toFixed(3)}`)
+            : "<em>p</em> = -";
 
         let vText = "";
         if (cramerV !== undefined && cramerV !== null) {
@@ -1508,8 +2594,13 @@ export const InterpretationHelper = {
                 `変数の組み合わせによって偏りがある（独立ではない）と言えます。<br>` +
                 `具体的な偏りについては、調整済み残差の表を確認してください。`;
         } else {
-            return `${varsText}有意な関連は見られませんでした (<em>p</em> = ${p.toFixed(2)}${vText})。<br>` +
-                `変数は互いに独立である（偏りがない）と考えられます。`;
+            const trendText = pNumber < 0.1
+                ? `5%水準では有意とは言えませんが、10%水準では関連の傾向があります。<br>`
+                : "";
+            return `${varsText}5%水準で有意な関連は確認されませんでした (${exactPText}${vText})。<br>` +
+                trendText +
+                `これは「独立であること」や「偏りがないこと」を証明するものではありません。<br>` +
+                `サンプルサイズや期待度数を確認し、必要に応じて残差分析や追加データで傾向を検討してください。`;
         }
     },
 

@@ -2,6 +2,25 @@
 import { test, expect } from '@playwright/test';
 import { loadParamsFromConfig, navigateToFeature, uploadFile, selectStandardOption, selectVariables } from './utils/test-helpers';
 
+async function expectEveryFigureAndTableToHaveEditor(page) {
+    await expect.poll(async () => page.locator('#analysis-content').evaluate(root => {
+        const plotTargets = root.querySelectorAll('.js-plotly-plot').length;
+        const canvasTargets = root.querySelectorAll('canvas.tm-wordcloud-canvas, .tm-network-canvas').length;
+        const tableTargets = root.querySelectorAll('table').length;
+        return {
+            plotDelta: root.querySelectorAll('[data-editor-kind="plotly"]').length - plotTargets,
+            canvasDelta: root.querySelectorAll('[data-editor-kind="canvas"]').length - canvasTargets,
+            tableDelta: root.querySelectorAll('[data-editor-kind="table"]').length - tableTargets,
+            hasTargets: plotTargets + canvasTargets + tableTargets > 0
+        };
+    }), { timeout: 10000 }).toEqual({
+        plotDelta: 0,
+        canvasDelta: 0,
+        tableDelta: 0,
+        hasTargets: true
+    });
+}
+
 test.describe('Visual Verification: All Features', () => {
     // Capture console logs
     const consoleLogs = [];
@@ -42,6 +61,7 @@ test.describe('Visual Verification: All Features', () => {
 
         await page.click('#plot-two-vars-btn');
         await page.waitForTimeout(1000);
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/eda_scatter.png', fullPage: true });
         assertNoErrors();
     });
@@ -52,6 +72,7 @@ test.describe('Visual Verification: All Features', () => {
         await selectVariables(page, ['数学', '英語', '理科']);
         await page.click('#run-correlation-btn-container button');
         await expect(page.locator('#analysis-results')).toBeVisible();
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/correlation.png', fullPage: true });
         assertNoErrors();
     });
@@ -65,6 +86,7 @@ test.describe('Visual Verification: All Features', () => {
 
         await page.click('#run-chi-btn-container button');
         await expect(page.locator('#analysis-results')).toBeVisible();
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/chi_square.png', fullPage: true });
         assertNoErrors();
     });
@@ -77,6 +99,7 @@ test.describe('Visual Verification: All Features', () => {
         await selectVariables(page, ['数学']);
         await page.click('#independent-btn-container button');
         await expect(page.locator('#results-section')).toBeVisible();
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/ttest_independent.png', fullPage: true });
         assertNoErrors();
     });
@@ -93,6 +116,7 @@ test.describe('Visual Verification: All Features', () => {
 
         await page.click('#run-btn-container button');
         await expect(page.locator('#results-section')).toBeVisible();
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/mann_whitney.png', fullPage: true });
         assertNoErrors();
     });
@@ -104,6 +128,7 @@ test.describe('Visual Verification: All Features', () => {
         await selectVariables(page, ['数学']);
         await page.click('#run-ind-btn-container button');
         await expect(page.locator('#analysis-results')).toBeVisible();
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/anova_one_way.png', fullPage: true });
         assertNoErrors();
     });
@@ -116,6 +141,7 @@ test.describe('Visual Verification: All Features', () => {
         await selectVariables(page, ['数学']);
         await page.click('#run-ind-btn-container button');
         await expect(page.locator('#analysis-results')).toBeVisible();
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/anova_two_way.png', fullPage: true });
         assertNoErrors();
     });
@@ -129,6 +155,7 @@ test.describe('Visual Verification: All Features', () => {
 
         await page.click('#run-regression-btn-container button');
         await expect(page.locator('#analysis-results')).toBeVisible();
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/regression_simple.png', fullPage: true });
         assertNoErrors();
     });
@@ -153,6 +180,7 @@ test.describe('Visual Verification: All Features', () => {
 
         await page.click('#run-regression-btn-container button');
         await expect(page.locator('#analysis-results')).toBeVisible();
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/regression_multiple.png', fullPage: true });
         assertNoErrors();
     });
@@ -163,6 +191,7 @@ test.describe('Visual Verification: All Features', () => {
         await selectVariables(page, ['数学', '英語', '理科', '学習時間']);
         await page.click('#run-pca-btn-container button');
         await expect(page.locator('#analysis-results')).toBeVisible();
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/pca.png', fullPage: true });
         assertNoErrors();
     });
@@ -173,6 +202,7 @@ test.describe('Visual Verification: All Features', () => {
         await selectVariables(page, ['数学', '英語', '理科', '学習時間']);
         await page.click('#run-factor-btn-container button');
         await expect(page.locator('#fa-analysis-results')).toBeVisible();
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/factor_analysis.png', fullPage: true });
         assertNoErrors();
     });
@@ -184,6 +214,7 @@ test.describe('Visual Verification: All Features', () => {
         await selectStandardOption(page, '#value-var', '数学', 'label');
         await page.click('#run-btn-container button');
         await expect(page.locator('#ts-results-section')).toBeVisible();
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/time_series.png', fullPage: true });
         assertNoErrors();
     });
@@ -200,8 +231,11 @@ test.describe('Visual Verification: All Features', () => {
         await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 60000 });
         const posRankings = page.locator('h6', { hasText: '品詞別ランキング' });
         const networkLegends = page.locator('text=色分けの意味');
+        await expect(posRankings.first()).toBeVisible({ timeout: 60000 });
+        await expect(networkLegends.first()).toBeVisible({ timeout: 60000 });
         expect(await posRankings.count()).toBeGreaterThan(0);
         expect(await networkLegends.count()).toBeGreaterThan(0);
+        await expectEveryFigureAndTableToHaveEditor(page);
         await page.screenshot({ path: 'test-results/visual_verification/text_mining.png', fullPage: true });
         assertNoErrors();
     });
