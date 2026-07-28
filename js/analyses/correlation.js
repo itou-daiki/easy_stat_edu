@@ -218,6 +218,37 @@ function runCorrelationAnalysis(currentData) {
         return;
     }
 
+    const invalidColumns = selectedVars.filter(variable => {
+        const values = currentData
+            .map(row => row[variable])
+            .filter(value => value != null && value !== '' && Number.isFinite(Number(value)))
+            .map(Number);
+        return values.length < 3 || jStat.stdev(values, true) === 0;
+    });
+    if (invalidColumns.length > 0) {
+        alert(`相関係数を計算できない変数があります（有効値3件未満、または分散0）: ${invalidColumns.join(', ')}`);
+        return;
+    }
+
+    const insufficientPairs = [];
+    for (let i = 0; i < selectedVars.length; i++) {
+        for (let j = i + 1; j < selectedVars.length; j++) {
+            const pairCount = currentData.filter(row => (
+                row[selectedVars[i]] != null
+                && row[selectedVars[i]] !== ''
+                && Number.isFinite(Number(row[selectedVars[i]]))
+                && row[selectedVars[j]] != null
+                && row[selectedVars[j]] !== ''
+                && Number.isFinite(Number(row[selectedVars[j]]))
+            )).length;
+            if (pairCount < 3) insufficientPairs.push(`${selectedVars[i]} × ${selectedVars[j]}`);
+        }
+    }
+    if (insufficientPairs.length > 0) {
+        alert(`同時に有効なデータが3件未満の組み合わせがあります: ${insufficientPairs.join(', ')}`);
+        return;
+    }
+
     const matrixData = calculateCorrelationMatrix(selectedVars, currentData);
     const { matrix, pValues, ciLower, ciUpper } = getActiveMatrixAndCI(matrixData);
     const nValuesArr = matrixData.nValues;
@@ -251,7 +282,7 @@ function runCorrelationAnalysis(currentData) {
     }
     interpretationHtml += '</ul>';
     if (significantCount === 0) {
-        interpretationHtml = '<p>統計的に有意な相関は見られませんでした。</p>';
+        interpretationHtml = '<p>5%水準で有意な相関を示す十分な証拠は得られませんでした。相関がないことを証明する結果ではありません。</p>';
     }
 
     // Add Interpretation Area
@@ -709,7 +740,7 @@ function plotScatterMatrix(variables, currentData, matrixData) {
 export function render(container, currentData, characteristics) {
     const { numericColumns } = characteristics;
 
-    container.innerHTML = `
+    container.innerHTML = String.raw`
         <div class="correlation-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">

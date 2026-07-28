@@ -460,7 +460,7 @@ function displayVisualization(testResults) {
 }
 
 export function render(container, currentData, characteristics) {
-    container.innerHTML = `
+    container.innerHTML = String.raw`
         <div class="mann-whitney-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
@@ -507,7 +507,7 @@ export function render(container, currentData, characteristics) {
                             <li><strong>統計量 (U):</strong> 順位和から算出 (\( U_1 = R_1 - \frac{n_1(n_1+1)}{2} \))</li>
                             <li><strong>p値:</strong> 正規近似 (Z検定) を使用 (タイ/同順位がある場合は分散の補正あり)</li>
                             <li><strong>効果量 (r):</strong> \( r = \frac{|Z|}{\sqrt{N}} \) （Nは総サンプル数）</li>
-                            <li>※ N > 20 の場合、正規近似の精度は十分高いとみなされます。</li>
+                            <li>※ 大標本では正規近似を使用します。同順位の多さや各群の標本数も確認してください。</li>
                         </ul>
                     </div>
                 </div>

@@ -62,7 +62,7 @@ const ANALYSIS_INFO = {
         title: '二要因分散分析',
         icon: 'fa-th-large',
         purpose: ['compare', 'association'],
-        description: '2つの要因が数値に与える影響と交互作用を調べます。',
+        description: '2つの要因による平均の違いと交互作用を調べます。',
         resultFocus: '主効果、交互作用、単純主効果、事後検定',
         caution: '「A要因の効果」「B要因の効果」「組み合わせの効果」を分けて読みます。'
     },
@@ -481,7 +481,7 @@ function buildRecommendations(profile) {
 
     if (numerics.length === 2 && categoricals.length === 0) {
         add('correlation', 94, '2つの数値列が選ばれています。関係の強さを見る基本形です。', `${numerics[0].name} と ${numerics[1].name} を選びます。`, { badge: '最有力' });
-        add('regression_simple', 90, '一方の数値からもう一方の数値を予測できます。', '原因・説明側をX、結果・予測したい側をYにします。');
+        add('regression_simple', 90, '一方の数値からもう一方の数値を予測できます。', '説明・予測に使う側をX、結果・予測したい側をYにします。回帰だけでは因果関係を判断できません。');
         add('ttest', 78, '同じ対象の事前・事後なら、対応のあるt検定が使えます。', '事前列と事後列の2列を選びます。');
         add('wilcoxon_signed_rank', 76, '対応のある2列で差の分布が偏る場合に使えます。', '事前列と事後列を選びます。');
     }

@@ -51,31 +51,19 @@ test.describe('Table & Notation Validation', () => {
             expect(constSection).toContain("< 0.01 ? '**'");
         });
 
-        test('chi_square.js main p-value should use full significance chain', async ({ page }) => {
+        test('chi_square.js main p-value should use the shared significance formatter', async ({ page }) => {
             const response = await page.goto('/js/analyses/chi_square.js');
             const src = await response!.text();
 
-            // The stat card p-value display (around displayChiSquareResult)
-            // Should NOT have only a single `< 0.05 ? '*' : ''` pattern
-            const displayFn = src.substring(
-                src.indexOf('function displayChiSquareResult'),
-                src.indexOf('function displayChiSquareResult') + 5000
-            );
-            // Should use ** for p < 0.01
-            expect(displayFn).toMatch(/< 0\.01 \? '\*\*'/);
+            expect(src).toContain('getSignificanceSymbol(p)');
         });
 
-        test('chi_square.js Yates p-value should use full significance chain', async ({ page }) => {
+        test('chi_square.js should use Yates p-value as the 2x2 primary result', async ({ page }) => {
             const response = await page.goto('/js/analyses/chi_square.js');
             const src = await response!.text();
 
-            // Yates section
-            const yatesSection = src.substring(
-                src.indexOf('Yates補正'),
-                src.indexOf('Yates補正') + 1000
-            );
-            // Should have ** for p < 0.01
-            expect(yatesSection).toMatch(/< 0\.01 \? '\*\*'/);
+            expect(src).toContain('const reportedPValue = is2x2 ? yatesPValue : pValue');
+            expect(src).toContain('2×2の主結果');
         });
     });
 

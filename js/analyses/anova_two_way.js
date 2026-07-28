@@ -736,7 +736,7 @@ function displayTwoWayANOVAInterpretation(results, designType) {
                     <strong>1. 交互作用 (${factorA} × ${factorB}):</strong> <br>
                     ${pAxB < 0.001 ? 'p &lt; .001' : 'p = ' + pAxB.toFixed(3)} (${getStars(pAxB)}), 偏η² = ${etaAxB.toFixed(2)}。<br>
                     ${getSigText(pAxB)}
-                    ${pAxB < 0.05 ? '<br><span style="color: #d97706; font-size: 0.9em;"><i class="fas fa-exclamation-triangle"></i> 交互作用が有意であるため、主効果の解釈には注意が必要です（単純主効果の検定を推奨）。要因の組み合わせによって結果が異なる可能性があります。</span>' : '<br><span style="color: #059669; font-size: 0.9em;">交互作用は有意ではないため、それぞれの主効果（要因単独の影響）に着目します。</span>'}
+                    ${pAxB < 0.05 ? '<br><span style="color: #d97706; font-size: 0.9em;"><i class="fas fa-exclamation-triangle"></i> 交互作用が有意であるため、主効果の解釈には注意が必要です（単純主効果の検定を推奨）。要因の組み合わせによって結果が異なる可能性があります。</span>' : '<br><span style="color: #059669; font-size: 0.9em;">交互作用は有意ではないため、それぞれの主効果（他方の要因を平均した水準差）を確認します。</span>'}
                 </p>
 
                 <p style="margin: 0.5rem 0;">
@@ -1607,13 +1607,13 @@ function runTwoWayRepeatedANOVA(currentData, factors, mapping) {
 export function render(container, currentData, characteristics) {
     const { numericColumns, categoricalColumns } = characteristics;
 
-    container.innerHTML = `
+    container.innerHTML = String.raw`
     <div class="anova-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                     <i class="fas fa-project-diagram"></i> 二要因分散分析 (Two-way ANOVA)
                 </h3>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つの要因（グループ変数など）が従属変数に与える影響と、その交互作用を検定します</p>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">2つの要因による平均の違いと、その交互作用を検定します</p>
             </div>
 
             <!-- 分析の概要・方法 -->
@@ -1625,10 +1625,10 @@ export function render(container, currentData, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note-section">
                         <h4><i class="fas fa-search"></i> どんな時に使う？</h4>
-                        <p>ある結果（売上、テストの点数など）に対して、2つの要因（性別と年齢層、広告媒体と時間帯など）が影響しているかを検証したい場合に使用します。</p>
+                        <p>ある結果（売上、テストの点数など）について、2つの要因（性別と年齢層、広告媒体と時間帯など）による平均の違いと交互作用を検討する場合に使用します。</p>
                         <img src="image/anova_two_way.png" alt="二要因分散分析の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                         <ul>
-                            <li><strong>主効果（Main Effect）:</strong> 個々の要因が結果に与える影響</li>
+                            <li><strong>主効果（Main Effect）:</strong> 他方の要因を平均したときの水準間の違い</li>
                             <li><strong>交互作用（Interaction）:</strong> 要因の組み合わせによって結果が変化するか（例：特定の薬は特定の年齢層にだけ効く、など）</li>
                         </ul>
                     </div>

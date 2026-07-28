@@ -52,7 +52,7 @@ function runPCA(currentData) {
 export function render(container, currentData, characteristics) {
     const { numericColumns } = characteristics;
 
-    container.innerHTML = `
+    container.innerHTML = String.raw`
         <div class="pca-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
@@ -81,7 +81,7 @@ export function render(container, currentData, characteristics) {
                     <h4>因子分析との違い</h4>
                     <ul>
                         <li><strong>PCA:</strong> データの「情報（分散）」を要約・圧縮するのが目的。</li>
-                        <li><strong>因子分析:</strong> データの背後にある「原因（因子）」を探るのが目的。</li>
+                        <li><strong>因子分析:</strong> 観測項目の相関を説明する潜在因子を探索するのが目的。</li>
                     </ul>
                 </div>
             </div>

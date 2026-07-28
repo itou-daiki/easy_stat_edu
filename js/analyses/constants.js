@@ -27,7 +27,7 @@ export const SIGNIFICANCE_LEVELS = {
  * @constant
  */
 export const SIGNIFICANCE_SYMBOLS = {
-    STRONG: '***',
+    STRONG: '**',
     MODERATE: '**',
     WEAK: '*',
     MARGINAL: '†',

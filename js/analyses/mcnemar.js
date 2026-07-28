@@ -1,7 +1,7 @@
 // ==========================================
 // マクネマー検定 (McNemar's Test)
 // ==========================================
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, generateAPATableHtml, getAcademicLayout, academicColors, isMissingCell, formatPValue } from '../utils.js';
 
 // ==========================================
 // Core Calculation
@@ -13,25 +13,29 @@ import { renderDataOverview, createVariableSelector, createAnalysisButton, rende
  * a = both Yes, b = var1 Yes & var2 No, c = var1 No & var2 Yes, d = both No
  */
 function buildContingencyTable(data, var1, var2) {
-    const vals1 = [...new Set(data.map(r => r[var1]).filter(v => v != null))].sort();
-    const vals2 = [...new Set(data.map(r => r[var2]).filter(v => v != null))].sort();
+    const validRows = data.filter(row => (
+        !isMissingCell(row[var1]) && !isMissingCell(row[var2])
+    ));
+    const vals1 = [...new Set(validRows.map(r => r[var1]))].sort();
+    const vals2 = [...new Set(validRows.map(r => r[var2]))].sort();
 
     if (vals1.length !== 2 || vals2.length !== 2) {
         return { error: `両変数とも2値である必要があります（${var1}: ${vals1.length}値, ${var2}: ${vals2.length}値）` };
     }
+    if (!vals1.every(value => vals2.includes(value))) {
+        return { error: `対応のある2変数では同じ2カテゴリを使用してください（${var1}: ${vals1.join(' / ')}, ${var2}: ${vals2.join(' / ')}）` };
+    }
 
     // Use consistent labeling: first sorted value = row/col 0, second = row/col 1
-    const allLabels = [...new Set([...vals1, ...vals2])].sort();
-    const label0 = allLabels[0];
-    const label1 = allLabels.length > 1 ? allLabels[1] : vals1[1] || vals2[1];
+    const label0 = vals1[0];
+    const label1 = vals1[1];
 
     let a = 0, b = 0, c = 0, d = 0;
     let validN = 0;
 
-    data.forEach(row => {
+    validRows.forEach(row => {
         const v1 = row[var1];
         const v2 = row[var2];
-        if (v1 == null || v2 == null) return;
         validN++;
 
         const is1First = (v1 === label0);
@@ -64,7 +68,7 @@ function mcnemarTest(a, b, c, d) {
         p_chi2 = 1 - jStat.chisquare.cdf(chi2, 1);
 
         // With Yates' continuity correction
-        chi2_corrected = Math.pow(Math.abs(b - c) - 1, 2) / bc;
+        chi2_corrected = Math.pow(Math.max(0, Math.abs(b - c) - 1), 2) / bc;
         p_corrected = 1 - jStat.chisquare.cdf(chi2_corrected, 1);
     }
 
@@ -275,7 +279,7 @@ function interpretMcNemar(result, var1, var2, a, b, c, d, label0, label1, N) {
     const prop2 = (a + c) / N; // var2 = label1 proportion
 
     if (result.pMain < 0.05) {
-        html += `<p>✅ <strong>マクネマー検定の結果、有意な変化が認められました</strong>（`;
+        html += `<p><strong>マクネマー検定の結果、有意な変化が認められました</strong>（`;
         if (result.p_exact !== null) {
             html += `正確二項検定 ${result.p_exact < 0.001 ? 'p &lt; .001' : 'p = ' + result.p_exact.toFixed(3)}`;
         } else {
@@ -284,22 +288,22 @@ function interpretMcNemar(result, var1, var2, a, b, c, d, label0, label1, N) {
         html += `）。</p>`;
 
         if (c > b) {
-            html += `<p>📈 「${label0}」から「${label1}」へ変化した人（<strong>${c}人</strong>）が、逆方向の変化（<strong>${b}人</strong>）より有意に多いです。</p>`;
+            html += `<p>「${label0}」から「${label1}」へ変化した人（<strong>${c}人</strong>）が、逆方向の変化（<strong>${b}人</strong>）より多い結果です。</p>`;
         } else {
-            html += `<p>📉 「${label1}」から「${label0}」へ変化した人（<strong>${b}人</strong>）が、逆方向の変化（<strong>${c}人</strong>）より有意に多いです。</p>`;
+            html += `<p>「${label1}」から「${label0}」へ変化した人（<strong>${b}人</strong>）が、逆方向の変化（<strong>${c}人</strong>）より多い結果です。</p>`;
         }
     } else {
-        html += `<p>⚠️ マクネマー検定の結果、<strong>有意な変化は認められませんでした</strong>（p = ${result.pMain.toFixed(3)}）。「${var1}」と「${var2}」で比率に有意な差はありません。</p>`;
+        html += `<p>マクネマー検定では、5%水準で比率の変化を示す十分な証拠は得られませんでした（${formatPValue(result.pMain, { html: true })}）。比率が同じであることを証明する結果ではありません。</p>`;
     }
 
-    html += `<p>📊 <strong>効果量 φ = ${result.phi.toFixed(3)}</strong>: `;
+    html += `<p><strong>効果量 φ = ${result.phi.toFixed(3)}</strong>: `;
     if (result.phi >= 0.5) html += '大きな効果です。';
     else if (result.phi >= 0.3) html += '中程度の効果です。';
     else if (result.phi >= 0.1) html += '小さな効果です。';
     else html += 'ほぼ効果なしです。';
     html += '</p>';
 
-    html += `<p>📋 ${var1}で「${label1}」の比率: <strong>${(prop1 * 100).toFixed(1)}%</strong> → ${var2}で「${label1}」の比率: <strong>${(prop2 * 100).toFixed(1)}%</strong></p>`;
+    html += `<p>${var1}で「${label1}」の比率: <strong>${(prop1 * 100).toFixed(1)}%</strong> → ${var2}で「${label1}」の比率: <strong>${(prop2 * 100).toFixed(1)}%</strong></p>`;
 
     return html;
 }

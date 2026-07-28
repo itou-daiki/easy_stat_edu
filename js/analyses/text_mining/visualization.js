@@ -3,7 +3,7 @@
  * ワードクラウドとKH Coder準拠のJaccard共起ネットワークを描画する。
  */
 
-import { buildCooccurrenceEdges } from './helpers.js';
+import { buildCooccurrenceEdges, resolveCanvasExportFrame } from './helpers.js';
 
 export const POS_STYLES = {
     noun: { label: '名詞', color: '#2563eb' },
@@ -392,6 +392,16 @@ function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
     return cursorY + lineHeight;
 }
 
+function fitCanvasText(ctx, text, maxWidth) {
+    const value = String(text || '');
+    if (ctx.measureText(value).width <= maxWidth) return value;
+    let fitted = value;
+    while (fitted.length > 1 && ctx.measureText(`${fitted}…`).width > maxWidth) {
+        fitted = fitted.slice(0, -1);
+    }
+    return `${fitted}…`;
+}
+
 function downloadNetworkImage(containerId, groups, diagnostics) {
     const container = document.getElementById(containerId);
     const sourceCanvas = container?.querySelector('canvas');
@@ -406,12 +416,23 @@ function downloadNetworkImage(containerId, groups, diagnostics) {
     const visualTitle = container.dataset.visualTitle || sourceCanvas.dataset.visualTitle || '';
     const titleHeight = visualTitle ? Math.round(72 * scale) : 0;
     const showLegend = container.dataset.visualLegendVisible !== 'false';
+    const legendColumns = Math.min(3, Math.max(1, groups.length));
+    const legendRows = Math.ceil(groups.length / legendColumns);
     const legendHeight = showLegend
-        ? Math.max(210 * scale, (130 + groups.length * 34) * scale)
+        ? Math.max(210 * scale, (130 + legendRows * 42) * scale)
         : 0;
+    const exportFrame = resolveCanvasExportFrame(
+        sourceCanvas.width,
+        sourceCanvas.height,
+        titleHeight,
+        legendHeight,
+        sourceCanvas.dataset.visualAspectRatio
+            || container.dataset.visualAspectRatio
+            || 'auto'
+    );
     const output = document.createElement('canvas');
-    output.width = sourceCanvas.width;
-    output.height = titleHeight + sourceCanvas.height + legendHeight;
+    output.width = exportFrame.width;
+    output.height = exportFrame.height;
     const ctx = output.getContext('2d');
 
     ctx.fillStyle = '#ffffff';
@@ -428,14 +449,18 @@ function downloadNetworkImage(containerId, groups, diagnostics) {
             titleFontSize -= scale;
             ctx.font = `bold ${titleFontSize}px "Helvetica Neue", "Yu Gothic", sans-serif`;
         }
-        ctx.fillText(visualTitle, output.width / 2, titleHeight / 2);
+        ctx.fillText(
+            visualTitle,
+            output.width / 2,
+            exportFrame.stackY + titleHeight / 2
+        );
         ctx.textAlign = 'left';
     }
 
-    ctx.drawImage(sourceCanvas, 0, titleHeight);
+    ctx.drawImage(sourceCanvas, exportFrame.contentX, exportFrame.contentY);
 
     if (legendHeight > 0) {
-        const top = titleHeight + sourceCanvas.height;
+        const top = exportFrame.legendY;
         ctx.fillStyle = '#f8fafc';
         ctx.fillRect(0, top, output.width, legendHeight);
         ctx.strokeStyle = '#e2e8f0';
@@ -452,7 +477,7 @@ function downloadNetworkImage(containerId, groups, diagnostics) {
         ctx.fillStyle = '#475569';
         ctx.font = `${13 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
         const description = `円の大きさ＝語の出現回数、線の太さ＝Jaccard係数、色＝モジュラリティ法で検出した語群。${diagnostics.unitLabel}単位・共起${diagnostics.minCooccurrence}回以上・上位${diagnostics.edgeCount}本。`;
-        let cursorY = wrapCanvasText(
+        const cursorY = wrapCanvasText(
             ctx,
             description,
             padding,
@@ -460,23 +485,35 @@ function downloadNetworkImage(containerId, groups, diagnostics) {
             output.width - padding * 2,
             22 * scale
         ) + 10 * scale;
+        const columnWidth = (output.width - padding * 2) / legendColumns;
 
-        groups.forEach(group => {
+        groups.forEach((group, index) => {
+            const column = index % legendColumns;
+            const row = Math.floor(index / legendColumns);
+            const itemX = padding + column * columnWidth;
+            const itemY = cursorY + row * rowHeight;
             ctx.fillStyle = group.color;
             ctx.beginPath();
-            ctx.arc(padding + 7 * scale, cursorY + 8 * scale, 7 * scale, 0, Math.PI * 2);
+            ctx.arc(itemX + 7 * scale, itemY + 8 * scale, 7 * scale, 0, Math.PI * 2);
             ctx.fill();
             ctx.fillStyle = '#334155';
             ctx.font = `bold ${13 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
-            ctx.fillText(`${group.label}:`, padding + 22 * scale, cursorY);
+            const label = `${group.label}:`;
+            const textX = itemX + 22 * scale;
+            ctx.fillText(label, textX, itemY);
+            const labelWidth = ctx.measureText(`${label} `).width;
             ctx.font = `${13 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
             ctx.fillStyle = '#475569';
+            const words = group.words.slice(0, 12).join('、');
             ctx.fillText(
-                group.words.slice(0, 12).join('、'),
-                padding + 22 * scale + ctx.measureText(`${group.label}: `).width,
-                cursorY
+                fitCanvasText(
+                    ctx,
+                    words,
+                    Math.max(20 * scale, columnWidth - 28 * scale - labelWidth)
+                ),
+                textX + labelWidth,
+                itemY
             );
-            cursorY += rowHeight;
         });
     }
 

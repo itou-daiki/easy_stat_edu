@@ -1,7 +1,7 @@
 // ==========================================
 // Logistic Regression Module
 // ==========================================
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, getAcademicLayout, academicColors, formatPValue } from '../utils.js';
 
 // ==========================================
 // Logistic Regression Core (IRLS)
@@ -189,7 +189,8 @@ function computeConfusionMatrix(yTrue, yPred, threshold = 0.5) {
     const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
     const recall = tp + fn > 0 ? tp / (tp + fn) : 0;
     const f1 = precision + recall > 0 ? 2 * precision * recall / (precision + recall) : 0;
-    return { tp, fp, tn, fn, accuracy, precision, recall, f1 };
+    const baselineAccuracy = Math.max(tp + fn, tn + fp) / (tp + fp + tn + fn);
+    return { tp, fp, tn, fn, accuracy, baselineAccuracy, precision, recall, f1 };
 }
 
 function computeNagelkerkeR2(logLik, nullLogLik, n) {
@@ -277,8 +278,12 @@ function runLogisticRegression(currentData, characteristics) {
                     <div class="stat-value">${chi2.toFixed(3)} (df=${df}, ${modelP < 0.001 ? 'p &lt; .001' : 'p=' + modelP.toFixed(3)})</div>
                 </div>
                 <div class="data-stat-card">
-                    <div class="stat-label">正解率</div>
+                    <div class="stat-label">標本内正解率</div>
                     <div class="stat-value">${(cm.accuracy * 100).toFixed(1)}%</div>
+                </div>
+                <div class="data-stat-card">
+                    <div class="stat-label">多数派のみの基準正解率</div>
+                    <div class="stat-value">${(cm.baselineAccuracy * 100).toFixed(1)}%</div>
                 </div>
                 <div class="data-stat-card">
                     <div class="stat-label">対数尤度</div>
@@ -392,7 +397,7 @@ function runLogisticRegression(currentData, characteristics) {
         result.pValues[i] < 0.001 ? '< .001' : result.pValues[i].toFixed(3),
         oddsRatios[i].toFixed(3)
     ]);
-    const noteAPA = `Nagelkerke <em>R</em><sup>2</sup> = ${nagelkerkeR2.toFixed(3)}, χ<sup>2</sup>(${df}) = ${chi2.toFixed(2)}, <em>p</em> ${modelP < 0.001 ? '< .001' : '= ' + modelP.toFixed(3)}. 正解率 = ${(cm.accuracy * 100).toFixed(1)}%.`;
+    const noteAPA = `Nagelkerke <em>R</em><sup>2</sup> = ${nagelkerkeR2.toFixed(3)}, χ<sup>2</sup>(${df}) = ${chi2.toFixed(2)}, <em>p</em> ${modelP < 0.001 ? '< .001' : '= ' + modelP.toFixed(3)}. In-sample accuracy = ${(cm.accuracy * 100).toFixed(1)}%; majority-class baseline = ${(cm.baselineAccuracy * 100).toFixed(1)}%.`;
 
     setTimeout(() => {
         const container = document.getElementById('reporting-table-container-logistic');
@@ -436,41 +441,35 @@ function interpretLogistic(result, varNames, oddsRatios, cm, r2, modelP, label0,
 
     // Model fit
     if (modelP < 0.05) {
-        html += `<p>✅ <strong>モデルは統計的に有意</strong>です（p ${modelP < 0.001 ? '< .001' : '= ' + modelP.toFixed(3)}）。説明変数は「${label1}」の予測に寄与しています。</p>`;
+        html += `<p><strong>切片のみのモデルと比べて適合度が有意に改善</strong>しました（${formatPValue(modelP, { html: true })}）。説明変数全体が「${label1}」との関連を示しています。</p>`;
     } else {
-        html += `<p>⚠️ モデルは統計的に有意ではありません（p = ${modelP.toFixed(3)}）。説明変数では「${label1}」を十分に予測できていない可能性があります。</p>`;
+        html += `<p>切片のみのモデルと比べた適合度の改善について、5%水準で十分な証拠は得られませんでした（${formatPValue(modelP, { html: true })}）。予測性能がないことを証明する結果ではありません。</p>`;
     }
 
-    html += `<p>📊 <strong>Nagelkerke R² = ${r2.toFixed(3)}</strong>: `;
-    if (r2 >= 0.5) html += '高い説明力を持つモデルです。';
-    else if (r2 >= 0.25) html += '中程度の説明力があります。';
-    else html += '説明力はやや低いです。';
-    html += '</p>';
+    html += `<p><strong>Nagelkerke R² = ${r2.toFixed(3)}</strong>: 切片のみのモデルからの改善を表す擬似R²です。線形回帰のR²と同じ割合としては解釈しません。</p>`;
 
-    html += `<p>🎯 <strong>正解率 ${(cm.accuracy * 100).toFixed(1)}%</strong>: `;
-    if (cm.accuracy >= 0.9) html += '非常に高い予測精度です。';
-    else if (cm.accuracy >= 0.7) html += '良好な予測精度です。';
-    else html += '予測精度の改善が望まれます。';
-    html += '</p>';
+    const accuracyLift = cm.accuracy - cm.baselineAccuracy;
+    html += `<p><strong>標本内正解率 ${(cm.accuracy * 100).toFixed(1)}%</strong>（多数派のみの基準 ${(cm.baselineAccuracy * 100).toFixed(1)}%、差 ${accuracyLift >= 0 ? '+' : ''}${(accuracyLift * 100).toFixed(1)}ポイント）。同じデータで学習・評価した見かけの値であり、汎化性能は検証用データや交差検証で確認してください。</p>`;
 
     // Significant predictors
     const sigVars = varNames.slice(1).filter((_, i) => result.pValues[i + 1] < 0.05);
     if (sigVars.length > 0) {
-        html += '<p>📌 <strong>有意な説明変数：</strong></p><ul>';
-        sigVars.forEach((name, idx) => {
+        html += '<p><strong>他の説明変数を一定としたときに有意な関連を示す変数：</strong></p><ul>';
+        sigVars.forEach(name => {
             const realIdx = varNames.indexOf(name);
             const or = oddsRatios[realIdx];
             html += `<li><strong>${name}</strong>: `;
             if (or > 1) {
-                html += `この変数が1単位増加すると、「${label1}」になるオッズが<strong>${or.toFixed(3)}倍</strong>になります（オッズ比 = ${or.toFixed(3)}）。`;
+                html += `1単位高いとき、「${label1}」のオッズが<strong>${or.toFixed(3)}倍</strong>高い関連です（オッズ比 = ${or.toFixed(3)}）。`;
             } else {
-                html += `この変数が1単位増加すると、「${label1}」になるオッズが<strong>${or.toFixed(3)}倍</strong>に減少します（オッズ比 = ${or.toFixed(3)}）。`;
+                html += `1単位高いとき、「${label1}」のオッズが<strong>${or.toFixed(3)}倍</strong>になる関連です（オッズ比 = ${or.toFixed(3)}）。`;
             }
             html += '</li>';
         });
         html += '</ul>';
     }
 
+    html += '<p>オッズ比は確率の倍率ではありません。また、回帰係数だけでは因果関係を判断できません。</p>';
     return html;
 }
 
@@ -665,13 +664,13 @@ export function render(container, currentData, characteristics) {
                     <ul>
                         <li><i class="fas fa-check"></i> テスト得点から「合格/不合格」を予測したいとき</li>
                         <li><i class="fas fa-check"></i> 年齢や行動パターンから「購入する/しない」を予測したいとき</li>
-                        <li><i class="fas fa-check"></i> どの要因が結果に影響するか（オッズ比）を知りたいとき</li>
+                        <li><i class="fas fa-check"></i> 他の変数を一定とした関連をオッズ比で確認したいとき</li>
                     </ul>
                     <h4>主な指標</h4>
                     <ul>
-                        <li><strong>オッズ比 (OR):</strong> 説明変数が1増えると結果が起こる確率が何倍になるかを表します。</li>
-                        <li><strong>Nagelkerke R²:</strong> モデルの説明力（0〜1）。大きいほど良いモデルです。</li>
-                        <li><strong>正解率:</strong> モデルが正しく分類できた割合です。</li>
+                        <li><strong>オッズ比 (OR):</strong> 説明変数が1増えたときのオッズの倍率です。確率の倍率ではありません。</li>
+                        <li><strong>Nagelkerke R²:</strong> 切片のみのモデルからの適合度改善を表す擬似R²です。</li>
+                        <li><strong>標本内正解率:</strong> 学習に使ったデータを分類した割合です。多数派のみの基準値と比較し、汎化性能とは区別します。</li>
                         <li><strong>混同行列:</strong> 正しい予測と誤った予測の内訳を示します。</li>
                     </ul>
                 </div>

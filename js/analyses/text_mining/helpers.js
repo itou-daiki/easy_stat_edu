@@ -657,6 +657,56 @@ export function buildCooccurrenceEdges(sentences, topWords, options = {}) {
 // 画像ダウンロード
 // ======================================================================
 
+const CANVAS_EXPORT_ASPECT_DIMENSIONS = Object.freeze({
+    '16:9': [16, 9],
+    '4:3': [4, 3],
+    '3:2': [3, 2],
+    '1:1': [1, 1]
+});
+
+/**
+ * 固定比率が選ばれている場合、タイトル・凡例を含む保存画像全体の比率を保つ。
+ * 描画本体は拡大縮小せず、追加した余白の中央へ配置する。
+ */
+export function resolveCanvasExportFrame(
+    sourceWidth,
+    sourceHeight,
+    titleHeight = 0,
+    legendHeight = 0,
+    aspectRatioKey = 'auto'
+) {
+    const contentWidth = Math.max(1, Math.round(Number(sourceWidth) || 0));
+    const contentHeight = Math.max(1, Math.round(Number(sourceHeight) || 0));
+    const topHeight = Math.max(0, Math.round(Number(titleHeight) || 0));
+    const bottomHeight = Math.max(0, Math.round(Number(legendHeight) || 0));
+    const naturalHeight = topHeight + contentHeight + bottomHeight;
+    const ratioDimensions = CANVAS_EXPORT_ASPECT_DIMENSIONS[aspectRatioKey];
+
+    let width = contentWidth;
+    let height = naturalHeight;
+    if (ratioDimensions) {
+        const [ratioWidth, ratioHeight] = ratioDimensions;
+        const unit = Math.max(
+            1,
+            Math.ceil(contentWidth / ratioWidth),
+            Math.ceil(naturalHeight / ratioHeight)
+        );
+        width = ratioWidth * unit;
+        height = ratioHeight * unit;
+    }
+
+    const stackY = Math.floor((height - naturalHeight) / 2);
+    const contentX = Math.floor((width - contentWidth) / 2);
+    return {
+        width,
+        height,
+        stackY,
+        contentX,
+        contentY: stackY + topHeight,
+        legendY: stackY + topHeight + contentHeight
+    };
+}
+
 /**
  * Canvas要素を画像としてダウンロード
  * @param {string} targetId - ダウンロード対象のCanvas要素ID
@@ -693,11 +743,18 @@ export function downloadCanvasAsImage(targetId) {
         const legendHeight = showLegend && (legendMetric || legendItems.length > 0)
             ? Math.round((120 + Math.ceil(legendItems.length / 3) * 42) * scale)
             : 0;
+        const exportFrame = resolveCanvasExportFrame(
+            canvas.width,
+            canvas.height,
+            titleHeight,
+            legendHeight,
+            canvas.dataset.visualAspectRatio || 'auto'
+        );
 
         // 画面上のタイトル・凡例設定を含むCanvasを作成して合成
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = Math.max(canvas.width, 1);
-        tempCanvas.height = Math.max(titleHeight + canvas.height + legendHeight, 1);
+        tempCanvas.width = exportFrame.width;
+        tempCanvas.height = exportFrame.height;
         const ctx = tempCanvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
@@ -717,15 +774,19 @@ export function downloadCanvasAsImage(targetId) {
                 titleFontSize -= scale;
                 ctx.font = `bold ${titleFontSize}px "Helvetica Neue", "Yu Gothic", sans-serif`;
             }
-            ctx.fillText(visualTitle, tempCanvas.width / 2, titleHeight / 2);
+            ctx.fillText(
+                visualTitle,
+                tempCanvas.width / 2,
+                exportFrame.stackY + titleHeight / 2
+            );
             ctx.textAlign = 'left';
         }
 
         // 元の画像を重ねる
-        ctx.drawImage(canvas, 0, titleHeight);
+        ctx.drawImage(canvas, exportFrame.contentX, exportFrame.contentY);
 
         if (legendHeight > 0) {
-            const top = titleHeight + canvas.height;
+            const top = exportFrame.legendY;
             const padding = 24 * scale;
             ctx.fillStyle = '#f8fafc';
             ctx.fillRect(0, top, tempCanvas.width, legendHeight);

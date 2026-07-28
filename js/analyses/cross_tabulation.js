@@ -1,45 +1,40 @@
 // ==========================================
 // クロス集計 (Cross Tabulation)
 // ==========================================
-import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, getAcademicLayout, academicColors } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, getAcademicLayout, academicColors, buildContingencyTable as buildSharedContingencyTable } from '../utils.js';
 
 // ==========================================
 // Core Calculation
 // ==========================================
 
 function buildCrossTable(data, rowVar, colVar) {
-    const rowKeys = [...new Set(data.map(r => r[rowVar]).filter(v => v != null))].sort();
-    const colKeys = [...new Set(data.map(r => r[colVar]).filter(v => v != null))].sort();
-
-    // Initialize count matrix
+    const {
+        rowKeys,
+        colKeys,
+        observed,
+        rowTotals: rowTotalValues,
+        colTotals: colTotalValues,
+        total,
+        excludedRows
+    } = buildSharedContingencyTable(data, rowVar, colVar);
     const counts = {};
-    rowKeys.forEach(rk => {
+    rowKeys.forEach((rk, rowIndex) => {
         counts[rk] = {};
-        colKeys.forEach(ck => { counts[rk][ck] = 0; });
+        colKeys.forEach((ck, colIndex) => {
+            counts[rk][ck] = observed[rowIndex][colIndex];
+        });
     });
 
-    // Count
-    let N = 0;
-    data.forEach(row => {
-        const rv = row[rowVar];
-        const cv = row[colVar];
-        if (rv != null && cv != null && counts[rv] !== undefined && counts[rv][cv] !== undefined) {
-            counts[rv][cv]++;
-            N++;
-        }
-    });
-
-    // Row totals, col totals
     const rowTotals = {};
-    rowKeys.forEach(rk => {
-        rowTotals[rk] = colKeys.reduce((sum, ck) => sum + counts[rk][ck], 0);
+    rowKeys.forEach((rk, index) => {
+        rowTotals[rk] = rowTotalValues[index];
     });
     const colTotals = {};
-    colKeys.forEach(ck => {
-        colTotals[ck] = rowKeys.reduce((sum, rk) => sum + counts[rk][ck], 0);
+    colKeys.forEach((ck, index) => {
+        colTotals[ck] = colTotalValues[index];
     });
 
-    return { counts, rowKeys, colKeys, rowTotals, colTotals, N };
+    return { counts, rowKeys, colKeys, rowTotals, colTotals, N: total, excludedRows };
 }
 
 // ==========================================
@@ -210,6 +205,10 @@ function runCrossTabulation(currentData) {
     if (rowVar === colVar) { alert('異なる変数を選択してください'); return; }
 
     const table = buildCrossTable(currentData, rowVar, colVar);
+    if (table.N === 0 || table.rowKeys.length === 0 || table.colKeys.length === 0) {
+        alert('2変数の両方に値がある行がありません。欠損値を確認してください。');
+        return;
+    }
     const tableData = { ...table, rowVar, colVar };
 
     const container = document.getElementById('crosstab-results');
@@ -239,6 +238,7 @@ function runCrossTabulation(currentData) {
 
                 <p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.85rem;">
                     <em>N</em>=${table.N}　行: ${table.rowKeys.length}カテゴリ　列: ${table.colKeys.length}カテゴリ
+                    ${table.excludedRows > 0 ? `　欠損により除外: ${table.excludedRows}行` : ''}
                 </p>
 
                 <div id="crosstab-heatmap" style="margin-top: 1.5rem;"></div>

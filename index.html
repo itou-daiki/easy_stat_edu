@@ -505,7 +505,7 @@
                         <div class="feature-card" data-analysis="chi_square" data-requires="categorical:2">
                             <h3 class="feature-card-title">
                                 <i class="fas fa-table feature-card-icon"></i>
-                                カイ２乗検定
+                                カイ二乗検定
                             </h3>
                             <p class="feature-card-description">「性別」と「きのこ/たけのこ派」のように、2つのアンケート項目に偏り（関連性）があるか調べます</p>
                             <p class="feature-card-requirement" style="display: none;">カテゴリカル変数が2つ以上必要です</p>
@@ -528,7 +528,7 @@
                         <div class="category-icon"><i class="fas fa-chart-line"></i></div>
                         <div class="category-info">
                             <h3>回帰分析・予測モデル</h3>
-                            <p>何かの結果に対して、どの要因がどれくらい影響しているか予測・分析します</p>
+                            <p>結果と説明変数の関連を数式で表し、条件に応じた値や確率を予測します</p>
                         </div>
                     </div>
                     <div class="category-cards">
@@ -546,7 +546,7 @@
                                 <i class="fas fa-layer-group feature-card-icon"></i>
                                 重回帰分析
                             </h3>
-                            <p class="feature-card-description">複数の要因から結果を予測し、どの要因が最も結果に影響しているか調べます</p>
+                            <p class="feature-card-description">複数の説明変数から結果を予測し、他の変数を一定とした関連を調べます</p>
                             <p class="feature-card-requirement" style="display: none;">数値変数が3つ以上必要です</p>
                         </div>
 
@@ -685,14 +685,15 @@
                     <h4>easyStat - ブラウザ統計分析アプリ</h4>
                     <p>
                         <strong>easyStat</strong>は、ブラウザ上で動作する無料の統計分析Webアプリケーションです。
-                        PyScriptを活用し、データのアップロードから高度な統計分析まで、すべてブラウザ内で完結します。
+                        JavaScriptでデータの読込・集計・統計分析・テキストマイニング・可視化を端末内で実行します。
                     </p>
 
                     <h4>主な特徴</h4>
                     <ul>
                         <li><strong>完全ブラウザベース:</strong> インストール不要、Webブラウザだけで利用可能</li>
-                        <li><strong>データプライバシー:</strong> データはブラウザ内で処理され、外部サーバーに送信されません</li>
-                        <li><strong>豊富な分析機能:</strong> 基本統計から高度な多変量解析まで12種類の分析手法</li>
+                        <li><strong>端末内で分析:</strong> 通常の統計分析・テキストマイニングでは、入力データを分析用サーバーへ送信しません</li>
+                        <li><strong>任意の生成AI支援:</strong> Gemini APIキーを設定して解釈支援を実行した場合のみ、データの先頭10行と分析結果の要約をGemini APIへ送信します</li>
+                        <li><strong>豊富な分析機能:</strong> データ整形から多変量解析、テキストマイニングまで23機能</li>
                         <li><strong>日本語対応:</strong> UIと分析結果の解釈がすべて日本語</li>
                         <li><strong>教育的:</strong> 統計手法の説明と結果の解釈を提供</li>
                     </ul>
@@ -709,7 +710,19 @@
                     <div class="analysis-methods-grid">
                         <div class="method-item">
                             <i class="fas fa-broom"></i>
-                            <span>データクレンジング</span>
+                            <span>分析サポーター</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-filter"></i>
+                            <span>データ加工・整形</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-object-group"></i>
+                            <span>データ結合</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-calculator"></i>
+                            <span>因子得点算出</span>
                         </div>
                         <div class="method-item">
                             <i class="fas fa-search"></i>
@@ -718,6 +731,10 @@
                         <div class="method-item">
                             <i class="fas fa-project-diagram"></i>
                             <span>相関分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-border-all"></i>
+                            <span>クロス集計</span>
                         </div>
                         <div class="method-item">
                             <i class="fas fa-table"></i>
@@ -736,12 +753,36 @@
                             <span>二要因分散分析</span>
                         </div>
                         <div class="method-item">
+                            <i class="fas fa-balance-scale"></i>
+                            <span>マン・ホイットニーのU検定</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-sort-amount-up"></i>
+                            <span>クラスカル・ウォリス検定</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-exchange-alt"></i>
+                            <span>ウィルコクソンの符号付順位検定</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>マクネマー検定</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-bullseye"></i>
+                            <span>フィッシャーの正確確率検定</span>
+                        </div>
+                        <div class="method-item">
                             <i class="fas fa-chart-line"></i>
                             <span>単回帰分析</span>
                         </div>
                         <div class="method-item">
                             <i class="fas fa-layer-group"></i>
                             <span>重回帰分析</span>
+                        </div>
+                        <div class="method-item">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>ロジスティック回帰分析</span>
                         </div>
                         <div class="method-item">
                             <i class="fas fa-sitemap"></i>
@@ -752,12 +793,8 @@
                             <span>主成分分析</span>
                         </div>
                         <div class="method-item">
-                            <i class="fas fa-bullseye"></i>
-                            <span>フィッシャーの正確確率検定</span>
-                        </div>
-                        <div class="method-item">
-                            <i class="fas fa-exchange-alt"></i>
-                            <span>ウィルコクソンの符号付順位検定</span>
+                            <i class="fas fa-chart-area"></i>
+                            <span>時系列データ分析</span>
                         </div>
                         <div class="method-item">
                             <i class="fas fa-file-alt"></i>
@@ -829,10 +866,12 @@
 
                     <h4>Tips</h4>
                     <ul>
-                        <li><i class="fas fa-lightbulb"></i> データは完全にブラウザ内で処理されるため、機密データも安全に分析できます</li>
-                        <li><i class="fas fa-lightbulb"></i> 初回起動時はPythonライブラリの読み込みに数分かかる場合があります</li>
+                        <li><i class="fas fa-lightbulb"></i> 機密データでは生成AI支援を有効にせず、所属組織のデータ取扱規定も確認してください</li>
+                        <li><i class="fas fa-lightbulb"></i> 初回表示にはCDNからライブラリやフォントを読み込むため、インターネット接続が必要です</li>
                         <li><i class="fas fa-lightbulb"></i> データ概要セクションは折りたたんでスペースを節約できます</li>
                         <li><i class="fas fa-lightbulb"></i> 各分析には説明が表示され、統計手法を学びながら分析できます</li>
+                        <li><i class="fas fa-lightbulb"></i> p値が有意でない結果は「差や関連がない証明」ではなく、今回のデータでは十分な証拠を得られなかった結果です</li>
+                        <li><i class="fas fa-lightbulb"></i> 観察データの相関や回帰だけでは因果関係を判断できません</li>
                     </ul>
                 </div>
             </div>
@@ -848,6 +887,22 @@
                 </div>
                 <div class="collapsible-content collapsed">
                     <div class="changelog">
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.7.0</span>
+                                <span class="changelog-date">2026年7月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>入力・可視化・解釈の横断改善</h5>
+                                <ul>
+                                    <li><strong>入力方法の拡充:</strong> 表形式の直接入力、Excelからの貼り付け、テキストの直接入力に対応</li>
+                                    <li><strong>図表編集:</strong> 図表タイトル、軸ラベル、凡例、画像サイズ・比率の編集とPNG保存に対応</li>
+                                    <li><strong>テキストマイニング:</strong> 高速なブラウザ内分割、品詞別ランキング、KWIC、カテゴリ比較、ワードクラウド、共起ネットワークを改善</li>
+                                    <li><strong>分析精度:</strong> カイ二乗検定の2×2補正、残差の多重比較補正、欠損値処理、解釈上の注意を統一</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <div class="changelog-entry">
                             <div class="changelog-header">
                                 <span class="changelog-version">v1.6.0</span>

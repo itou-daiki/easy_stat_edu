@@ -6,7 +6,7 @@
  *              R×C分割表: 全観測確率の正確計算（中小規模テーブル対応）
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors, buildContingencyTable, calculateResidualPValues, formatPValue, getSignificanceSymbol } from '../utils.js';
 
 // ==========================================
 // 数学ユーティリティ
@@ -333,24 +333,21 @@ function runFisherExact(currentData) {
         return;
     }
 
-    // クロス集計表の作成
-    const rowKeys = [...new Set(currentData.map(d => d[rowVar]).filter(v => v != null))].sort();
-    const colKeys = [...new Set(currentData.map(d => d[colVar]).filter(v => v != null))].sort();
+    const {
+        rowKeys,
+        colKeys,
+        observed,
+        rowTotals,
+        colTotals,
+        expected,
+        total,
+        excludedRows
+    } = buildContingencyTable(currentData, rowVar, colVar);
 
-    const observed = rowKeys.map(r => {
-        return colKeys.map(c => {
-            return currentData.filter(d => d[rowVar] === r && d[colVar] === c).length;
-        });
-    });
-
-    const rowTotals = observed.map(row => row.reduce((a, b) => a + b, 0));
-    const colTotals = colKeys.map((_, i) => observed.reduce((sum, row) => sum + row[i], 0));
-    const total = rowTotals.reduce((a, b) => a + b, 0);
-
-    // 期待度数
-    const expected = rowKeys.map((_, i) => {
-        return colKeys.map((_, j) => (rowTotals[i] * colTotals[j]) / total);
-    });
+    if (rowKeys.length < 2 || colKeys.length < 2) {
+        alert('フィッシャー検定には、両方の変数で2つ以上の有効なカテゴリが必要です。欠損値とカテゴリを確認してください。');
+        return;
+    }
 
     // カイ二乗統計量（参考）
     let chiSquare = 0;
@@ -378,6 +375,7 @@ function runFisherExact(currentData) {
             return denom > 0 ? (obs - exp) / denom : 0;
         });
     });
+    const residualPValues = calculateResidualPValues(adjResiduals);
 
     // フィッシャーの正確確率検定
     let fisherResult;
@@ -390,38 +388,42 @@ function runFisherExact(currentData) {
     }
 
     // 期待度数<5のセルの割合
-    let cellsCount = 0;
-    let smallExpCount = 0;
-    expected.forEach(row => {
-        row.forEach(exp => {
-            cellsCount++;
-            if (exp < 5) smallExpCount++;
-        });
-    });
+    const cellsCount = expected.flat().length;
+    const smallExpCount = expected.flat().filter(exp => exp < 5).length;
     const smallExpRate = (smallExpCount / cellsCount) * 100;
 
     // 結果表示
-    displayResults(fisherResult, is2x2, chiSquare, df, cramersV, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, total, smallExpRate, rowTotals);
+    displayResults(fisherResult, is2x2, chiSquare, df, cramersV, rowKeys, colKeys, observed, expected, adjResiduals, residualPValues, rowVar, colVar, total, smallExpRate, rowTotals, excludedRows);
 }
 
 // ==========================================
 // 結果表示
 // ==========================================
 
-function displayResults(fisherResult, is2x2, chiSquare, df, cramersV, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, total, smallExpRate, rowTotals) {
+function displayResults(fisherResult, is2x2, chiSquare, df, cramersV, rowKeys, colKeys, observed, expected, adjResiduals, residualPValues, rowVar, colVar, total, smallExpRate, rowTotals, excludedRows) {
     const container = document.getElementById('fisher-results');
 
     const pValue = is2x2 ? fisherResult.p_twotail : fisherResult.p_value;
     const pText = pValue < 0.001 ? '< .001' : pValue.toFixed(4);
-    const significance = pValue < 0.01 ? '**' : pValue < 0.05 ? '*' : pValue < 0.1 ? '†' : 'n.s.';
+    const significance = getSignificanceSymbol(pValue);
+    const omnibusSignificant = pValue < 0.05;
 
     // 前提条件の注意
     let warningHtml = '';
     if (smallExpRate > 20) {
+        const probabilityDescription = (!is2x2 && fisherResult.method === 'monte_carlo')
+            ? '条件付きモンテカルロ推定'
+            : '正確確率';
         warningHtml = `
             <div style="background-color: #f0fdf4; border: 1px solid #86efac; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; color: #166534;">
                 <strong><i class="fas fa-check-circle"></i> 期待度数が5未満のセルが ${smallExpRate.toFixed(1)}% あります。</strong><br>
-                カイ二乗検定の近似が不正確な可能性がありますが、フィッシャーの正確確率検定は正確なp値を提供するため、こちらの結果を参照してください。
+                カイ二乗近似が不正確な可能性があるため、この分析では${probabilityDescription}によるp値を参照してください。
+            </div>`;
+    }
+    if (excludedRows > 0) {
+        warningHtml += `
+            <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1rem; color: #1e3a8a;">
+                2変数のどちらかが欠損している ${excludedRows} 行を除外し、有効ケースで分析しました。
             </div>`;
     }
 
@@ -521,15 +523,18 @@ function displayResults(fisherResult, is2x2, chiSquare, df, cramersV, rowKeys, c
             const obs = observed[i][j];
             const exp = expected[i][j];
             const res = adjResiduals[i][j];
+            const residualP = residualPValues[i][j];
 
             let style = '';
-            if (res > 1.96) style = 'background: #dbeafe; color: #1e40af; font-weight: bold;';
-            else if (res < -1.96) style = 'background: #fee2e2; color: #991b1b;';
+            if (omnibusSignificant && residualP.adjusted < 0.05 && res > 0) style = 'background: #dbeafe; color: #1e40af; font-weight: bold;';
+            else if (omnibusSignificant && residualP.adjusted < 0.05 && res < 0) style = 'background: #fee2e2; color: #991b1b; font-weight: bold;';
+            else if (residualP.raw < 0.05) style = 'background: #fef3c7; color: #92400e; font-weight: bold;';
 
             html += `
                 <td style="${style}">
                     <div>${obs} <span style="font-size:0.8em; color:#666;">(${exp.toFixed(1)})</span></div>
                     <div style="font-size:0.8em;">z=${res.toFixed(1)}</div>
+                    <div style="font-size:0.72em; color:#64748b;">${residualP.method === 'holm' ? 'p<sub>Holm</sub>' : 'p<sub>cell</sub>'}${formatPValue(residualP.adjusted, { includeP: false, html: true })}</div>
                 </td>
             `;
         });
@@ -541,8 +546,12 @@ function displayResults(fisherResult, is2x2, chiSquare, df, cramersV, rowKeys, c
                 </table>
             </div>
             <p style="margin-top: 0.5rem; color: #666; font-size: 0.8rem;">
-                上段: 観測度数 (期待度数), 下段: 調整済み標準化残差 (z)。<br>
-                z &gt; 1.96 (青) は有意に多い、z &lt; -1.96 (赤) は有意に少ない組み合わせを示します。
+                上段: 観測度数 (期待度数), 下段: 調整済み標準化残差 (z) とセルp値。<br>
+                ${omnibusSignificant
+                    ? (is2x2
+                        ? '2×2表のセルp値が .05 未満の多い組み合わせを青、少ない組み合わせを赤で示します。'
+                        : 'Holm補正後のセルp値が .05 未満の多い組み合わせを青、少ない組み合わせを赤で示します。未補正でのみ .05 未満のセルは黄色です。')
+                    : '全体検定が5%水準で有意でないため、セルの未補正p値が .05 未満でも有意な偏りとは断定しません。該当セルは黄色で探索的な目安として示します。'}
             </p>
         </div>
 
@@ -564,8 +573,11 @@ function displayResults(fisherResult, is2x2, chiSquare, df, cramersV, rowKeys, c
         return row;
     });
 
-    const pApaText = pValue < 0.001 ? '< .001' : `= ${pValue.toFixed(3)}`;
-    let noteAPA = `<em>Note</em>. Values are N (Row %). Fisher's exact test: <em>p</em> ${pApaText}, Cramer's <em>V</em> = ${cramersV.toFixed(2)}.`;
+    const pApaText = formatPValue(pValue, { includeP: false, html: true });
+    const methodApa = (!is2x2 && fisherResult.method === 'monte_carlo')
+        ? `Fisher-Freeman-Halton Monte Carlo estimate (${fisherResult.nSim.toLocaleString()} samples)`
+        : "Fisher's exact test";
+    let noteAPA = `<em>Note</em>. Values are N (Row %). ${methodApa}: <em>p</em> ${pApaText}, Cramer's <em>V</em> = ${cramersV.toFixed(2)}.`;
     if (is2x2 && isFinite(fisherResult.oddsRatio)) {
         noteAPA += ` OR = ${fisherResult.oddsRatio.toFixed(2)}.`;
     }
@@ -614,19 +626,19 @@ function generateInterpretation(pValue, cramersV, rowVar, colVar, is2x2, fisherR
         text += `変数の組み合わせによって偏りがある（独立ではない）と言えます。<br>`;
         text += `具体的な偏りについては、調整済み残差の表を確認してください。`;
     } else {
-        text += `「<strong>${rowVar}</strong>」と「<strong>${colVar}</strong>」の間に有意な関連は見られませんでした (<em>p</em> = ${pValue.toFixed(3)}, <em>V</em> = ${cramersV.toFixed(2)} [${vText}])。<br>`;
-        text += `変数は互いに独立である（偏りがない）と考えられます。`;
+        text += `「<strong>${rowVar}</strong>」と「<strong>${colVar}</strong>」の関連について、5%水準で十分な証拠は得られませんでした (${formatPValue(pValue, { html: true })}, <em>V</em> = ${cramersV.toFixed(2)} [${vText}])。<br>`;
+        text += `独立であることや偏りがないことを証明する結果ではありません。`;
     }
 
     if (is2x2 && isFinite(fisherResult.oddsRatio)) {
         const or = fisherResult.oddsRatio;
-        text += `<br><br><strong>オッズ比 = ${or.toFixed(2)}</strong>: `;
+        text += `<br><br><strong>オッズ比 = ${or.toFixed(2)}</strong>: 表の第1行における第1列のオッズを、第2行と比較した標本推定値です。`;
         if (Math.abs(or - 1) < 0.01) {
-            text += '2つの条件で事象の起こりやすさに差はありません。';
+            text += ' 1に近い値ですが、同じオッズであると断定するものではありません。';
         } else if (or > 1) {
-            text += `第1群は第2群に比べて ${or.toFixed(2)} 倍事象が起こりやすいことを示します。`;
+            text += ` 第1行のオッズは第2行の約${or.toFixed(2)}倍です。`;
         } else {
-            text += `第1群は第2群に比べて事象が起こりにくいことを示します（1/${(1 / or).toFixed(2)} 倍）。`;
+            text += ` 第1行のオッズは第2行より低く、逆比では約${(1 / or).toFixed(2)}倍です。`;
         }
     }
 
@@ -687,7 +699,7 @@ export function render(container, currentData, characteristics) {
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
                     <i class="fas fa-bullseye"></i> フィッシャーの正確確率検定
                 </h3>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">カテゴリカル変数間の独立性を正確確率に基づいて検定します</p>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">小標本にも対応した条件付き確率でカテゴリ変数間の関連を検定します</p>
             </div>
 
             <div class="collapsible-section info-sections" style="margin-bottom: 2rem;">
@@ -699,8 +711,7 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> フィッシャーの正確確率検定とは？</strong>
                         <p>カイ二乗検定と同様に、2つのカテゴリカル変数に関連があるかを調べる方法です。
-                        カイ二乗検定が「近似」を使うのに対し、フィッシャーの正確確率検定は「正確な確率」を計算するため、
-                        サンプルサイズが小さい場合や期待度数が5未満のセルがある場合に特に適しています。</p>
+                        2×2表では超幾何分布による正確計算を行います。R×C表では表の規模に応じて全列挙または条件付きモンテカルロ推定を使用するため、結果欄の計算方法も確認してください。</p>
                         <img src="image/fisher_exact.png" alt="フィッシャーの正確確率検定の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
@@ -708,12 +719,12 @@ export function render(container, currentData, characteristics) {
                         <li><i class="fas fa-check"></i> <strong>小サンプル:</strong> データの総数が少ない（目安: N &lt; 20〜30程度）</li>
                         <li><i class="fas fa-check"></i> <strong>期待度数が小さい:</strong> クロス集計表の期待度数が5未満のセルが20%以上ある</li>
                         <li><i class="fas fa-check"></i> <strong>2×2分割表:</strong> 特に2×2の場合は最も正確な結果が得られます</li>
-                        <li><i class="fas fa-check"></i> <strong>正確なp値が必要:</strong> カイ二乗近似では不十分な場合</li>
+                        <li><i class="fas fa-check"></i> <strong>カイ二乗近似が不安定:</strong> 期待度数の条件を満たさない場合</li>
                     </ul>
                     <h4>カイ二乗検定との違い</h4>
                     <ul>
                         <li><strong>カイ二乗検定:</strong> 大標本近似。期待度数が十分大きい場合に有効。計算が高速。</li>
-                        <li><strong>フィッシャー正確検定:</strong> 正確確率。サンプルサイズに依存しない。テーブルが大きいと計算コスト増。</li>
+                        <li><strong>フィッシャー系の条件付き検定:</strong> 周辺度数を固定して確率を計算。大きなR×C表ではモンテカルロ推定を使用。</li>
                     </ul>
                     <h4>結果の読み方</h4>
                     <ul>

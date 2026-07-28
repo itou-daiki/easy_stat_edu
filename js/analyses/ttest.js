@@ -159,7 +159,7 @@ function runIndependentTTest(currentData) {
         const group1Values = group1Data.map(row => row[varName]).filter(v => v != null && !isNaN(v));
 
         if (group0Values.length < 2 || group1Values.length < 2) {
-            skippedVars.push(varName);
+            skippedVars.push(`${varName}（いずれかの群が2件未満）`);
             return;
         }
 
@@ -173,12 +173,16 @@ function runIndependentTTest(currentData) {
         const var2 = std2 * std2;
 
         const se_welch = Math.sqrt(var1 / n1 + var2 / n2);
+        const pooled_std = Math.sqrt(((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2));
+        if (!Number.isFinite(se_welch) || se_welch === 0 || !Number.isFinite(pooled_std) || pooled_std === 0) {
+            skippedVars.push(`${varName}（群内分散が0）`);
+            return;
+        }
         const t_stat = (mean1 - mean2) / se_welch;
         const df_numerator = (var1 / n1 + var2 / n2) ** 2;
         const df_denominator = (var1 / n1) ** 2 / (n1 - 1) + (var2 / n2) ** 2 / (n2 - 1);
         const df_welch = df_numerator / df_denominator;
         const p_value = jStat.studentt.cdf(-Math.abs(t_stat), df_welch) * 2;
-        const pooled_std = Math.sqrt(((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2));
         const cohens_d = Math.abs((mean1 - mean2) / pooled_std);
         let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.1 ? '†' : 'n.s.';
 
@@ -226,7 +230,7 @@ function runIndependentTTest(currentData) {
 
     if (skippedVars.length > 0) {
         resultsTableHtml += `<div class="warning-message" style="margin-top: 1rem; padding: 1rem; background-color: #fffbe6; border: 1px solid #fde68a; border-radius: 4px; color: #92400e;">
-            <strong>注意:</strong> 次の変数は、片方または両方のグループのサンプルサイズが2未満だったため、分析から除外されました: ${skippedVars.join(', ')}
+            <strong>注意:</strong> 次の変数は、t検定の計算条件を満たさないため除外されました: ${skippedVars.join(', ')}
         </div>`;
     }
 
@@ -240,6 +244,11 @@ function runIndependentTTest(currentData) {
         { label: groups[0], count: group0Data.length, color: '#11b981' },
         { label: groups[1], count: group1Data.length, color: '#f59e0b' }
     ]);
+
+    if (testResults.length === 0) {
+        document.getElementById('results-section').style.display = 'block';
+        return;
+    }
 
     displayInterpretation(testResults, groupVar, 'independent');
     displayVisualization(testResults, 'independent');
@@ -337,7 +346,7 @@ function runPairedTTest(currentData, pairs) {
             .filter(p => p.pre != null && !isNaN(p.pre) && p.post != null && !isNaN(p.post));
 
         if (pairedData.length < 2) {
-            skippedPairs.push(pairName);
+            skippedPairs.push(`${pairName}（有効ペアが2件未満）`);
             return;
         }
 
@@ -353,6 +362,10 @@ function runPairedTTest(currentData, pairs) {
         const diff = preValues.map((val, j) => val - postValues[j]);
         const diffMean = jStat.mean(diff);
         const diffStd = jStat.stdev(diff, true);
+        if (!Number.isFinite(diffStd) || diffStd === 0) {
+            skippedPairs.push(`${pairName}（差得点の分散が0）`);
+            return;
+        }
         const se = diffStd / Math.sqrt(n);
         const t_stat = diffMean / se;
         const df = n - 1;
@@ -395,13 +408,18 @@ function runPairedTTest(currentData, pairs) {
 
     if (skippedPairs.length > 0) {
         resultsTableHtml += `<div class="warning-message" style="margin-top: 1rem; padding: 1rem; background-color: #fffbe6; border: 1px solid #fde68a; border-radius: 4px; color: #92400e;">
-            <strong>注意:</strong> 次の変数ペアは、有効なデータが2件未満だったため、分析から除外されました: ${skippedPairs.join(', ')}
+            <strong>注意:</strong> 次の変数ペアは、t検定の計算条件を満たさないため除外されました: ${skippedPairs.join(', ')}
         </div>`;
     }
 
     document.getElementById('test-results-table').innerHTML = resultsTableHtml;
 
     renderSampleSizeInfo(resultsContainer, totalN);
+
+    if (testResults.length === 0) {
+        document.getElementById('results-section').style.display = 'block';
+        return;
+    }
 
     displayInterpretation(testResults, null, 'paired');
     displayVisualization(testResults, 'paired');
@@ -459,6 +477,10 @@ function runOneSampleTTest(currentData) {
     const n = values.length;
     const mean = jStat.mean(values);
     const std = jStat.stdev(values, true);
+    if (!Number.isFinite(std) || std === 0) {
+        alert(`変数「${varName}」の分散が0です。1サンプルt検定を計算できません。`);
+        return;
+    }
     const se = std / Math.sqrt(n);
     const t_stat = (mean - mu) / se;
     const df = n - 1;
@@ -620,7 +642,7 @@ function switchTestType(testType) {
 }
 
 export function render(container, currentData, characteristics) {
-    container.innerHTML = `
+    container.innerHTML = String.raw`
         <div class="ttest-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
@@ -648,7 +670,7 @@ export function render(container, currentData, characteristics) {
                     </ul>
                     <h4>結果の読み方</h4>
                     <ul>
-                        <li><strong>p値 (有意確率):</strong> 「0.05 (5%)」より小さければ、「統計的に意味のある差がある（有意差あり）」と判断します。</li>
+                        <li><strong>p値 (有意確率):</strong> 5%水準では、p &lt; 0.05を統計的に有意と判断します。差の重要性は効果量や信頼区間もあわせて確認します。</li>
                         <li><strong>効果量 (d):</strong> 差の「大きさ」を表します（データの数に関係ない指標）。0.2=小、0.5=中、0.8=大 が目安です。</li>
                     </ul>
                 </div>
@@ -670,7 +692,7 @@ export function render(container, currentData, characteristics) {
                                     <li>等分散を仮定しません。</li>
                                     <li>統計量: \( t = \frac{\bar{X}_1 - \bar{X}_2}{\sqrt{s_1^2/n_1 + s_2^2/n_2}} \)</li>
                                     <li>自由度: ウェルチ・サタスウェイトの式で近似</li>
-                                    <li>効果量 (Cohens d): プールされた標準偏差を使用 (\( d = \frac{\bar{X}_1 - \bar{X}_2}{SD_{pooled}} \))</li>
+                                    <li>効果量 (Cohen's d): プールされた標準偏差を使用 (\( d = \frac{\bar{X}_1 - \bar{X}_2}{SD_{pooled}} \))</li>
                                 </ul>
                             </li>
                             <li><strong>対応のある2群:</strong> 差分の1標本t検定

@@ -1,7 +1,7 @@
 // ==========================================
 // Imports
 // ==========================================
-import { showError, showLoadingMessage, hideLoadingMessage, toggleCollapsible, renderDataPreview, renderSummaryStatistics, renderDataOverview, installVisualizationEditors } from './utils.js';
+import { showError, showLoadingMessage, hideLoadingMessage, toggleCollapsible, renderDataPreview, renderSummaryStatistics, renderDataOverview, installVisualizationEditors, typesetMathIn } from './utils.js';
 
 // ==========================================
 // Global Variables & Exports for Modules
@@ -1324,6 +1324,7 @@ async function showAnalysisView(analysisType) {
         const analysisModule = await import(modulePath);
         installVisualizationEditors(analysisContent);
         analysisModule.render(analysisContent, currentData, dataCharacteristics);
+        void typesetMathIn(analysisContent);
         injectAnalysisVisualIfMissing(analysisContent, analysisType);
         updateAIAssistVisibility();
     } catch (error) {

@@ -37,9 +37,9 @@ function runSimpleRegression(currentData) {
         numerator += (x[i] - xMean) * (y[i] - yMean);
         denominator += (x[i] - xMean) ** 2;
     }
-    if (denominator === 0) {
-        // 説明変数が定数（分散0）の場合、回帰は不可能
-        throw new Error('説明変数の分散が0です。すべて同じ値のため回帰分析を実行できません。');
+    if (denominator <= Number.EPSILON) {
+        alert(`説明変数「${xVar}」の分散が0です。異なる値を含む変数を選択してください。`);
+        return;
     }
     const b1 = numerator / denominator;
     const b0 = yMean - b1 * xMean;
@@ -55,6 +55,10 @@ function runSimpleRegression(currentData) {
         fittedValues.push(yPred);
         rss += (y[i] - yPred) ** 2;
         tss += (y[i] - yMean) ** 2;
+    }
+    if (tss <= Number.EPSILON) {
+        alert(`目的変数「${yVar}」の分散が0です。回帰の当てはまりや係数検定を計算できません。`);
+        return;
     }
     const r2 = 1 - (rss / tss);
     const correlation = jStat.corrcoeff(x, y);
@@ -291,7 +295,7 @@ function plotResidualsVsFitted(fitted, residuals) {
 export function render(container, currentData, characteristics) {
     const { numericColumns } = characteristics;
 
-    container.innerHTML = `
+    container.innerHTML = String.raw`
         <div class="regression-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
@@ -309,25 +313,21 @@ export function render(container, currentData, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 単回帰分析 (Simple Linear Regression) とは？</strong>
-                        <p>「あるデータ（説明変数）から、別のデータ（目的変数）を予測する式」を作る分析です。「予測」や「要因の影響度」を知りたいときに使います。</p>
+                        <p>「あるデータ（説明変数）」と「別のデータ（目的変数）」の直線的な関連を表し、予測式を作る分析です。</p>
                         <img src="image/regression_simple.png" alt="単回帰分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
                         <li><i class="fas fa-check"></i> 「広告費」から、来月の「売上」を予測したいとき</li>
-                        <li><i class="fas fa-check"></i> 「駅からの距離」が「家賃」にどれくらい影響するか知りたいとき</li>
+                        <li><i class="fas fa-check"></i> 「駅からの距離」と「家賃」がどのように関連するか知りたいとき</li>
                     </ul>
                     <h4>主な指標</h4>
                     <ul>
-                        <li><strong>決定係数 (R²):</strong> 予測の「精度」を表します（0から1）。目安として0.5以上あると予測精度が良いとされます。</li>
-                        <li><strong>回帰係数:</strong> 「Xが1増えるとYがこれだけ増える」という影響の大きさを表します。</li>
+                        <li><strong>決定係数 (R²):</strong> 標本内で目的変数の変動を説明した割合です。新しいデータでの予測精度そのものではありません。</li>
+                        <li><strong>回帰係数:</strong> 説明変数が1増えたときに、目的変数の予測値がどれくらい変化するかを表します。</li>
+                        <li><strong>p値:</strong> 傾きが0という仮説に対する統計的な証拠を確認します。</li>
                     </ul>
-                    <h4>主な指標</h4>
-                    <ul>
-                        <li><strong>決定係数 (R²):</strong> モデルの当てはまりの良さ（予測精度）。1に近いほど精度が高いです。</li>
-                        <li><strong>回帰係数:</strong> 説明変数が1増えたときに、目的変数がどれくらい増えるかを表します。</li>
-                        <li><strong>p値:</strong> その関係が偶然でないかどうかを示します。</li>
-                    </ul>
+                    <p style="color: #6b7280; font-size: 0.9rem;">回帰だけでは因果関係を判断できません。予測性能は別データでの検証が必要です。</p>
                 </div>
             </div>
 

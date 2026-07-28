@@ -4,7 +4,7 @@
  * @description クロス集計表を用いた変数間の関連性検定
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors, buildContingencyTable, calculateResidualPValues, formatPValue, getSignificanceSymbol } from '../utils.js';
 
 /**
  * カイ二乗検定を実行
@@ -23,28 +23,23 @@ function runChiSquare(currentData) {
         return;
     }
 
-    // クロス集計表の作成
-    const rowValues = currentData.map(d => d[rowVar]);
-    const colValues = currentData.map(d => d[colVar]);
-    // ユニークな値を取得（ソート）
-    const rowKeys = [...new Set(rowValues)].filter(v => v != null).sort();
-    const colKeys = [...new Set(colValues)].filter(v => v != null).sort();
+    const {
+        rowKeys,
+        colKeys,
+        observed,
+        rowTotals,
+        colTotals,
+        expected,
+        total,
+        excludedRows
+    } = buildContingencyTable(currentData, rowVar, colVar);
 
-    const observed = rowKeys.map(r => {
-        return colKeys.map(c => {
-            return currentData.filter(d => d[rowVar] === r && d[colVar] === c).length;
-        });
-    });
+    if (rowKeys.length < 2 || colKeys.length < 2) {
+        alert('カイ二乗検定には、両方の変数で2つ以上の有効なカテゴリが必要です。欠損値とカテゴリを確認してください。');
+        return;
+    }
 
-    // カイ二乗検定計算
-    const rowTotals = observed.map(row => row.reduce((a, b) => a + b, 0));
-    const colTotals = colKeys.map((_, i) => observed.reduce((sum, row) => sum + row[i], 0));
-    const total = rowTotals.reduce((a, b) => a + b, 0);
-
-    const expected = rowKeys.map((_, i) => {
-        return colKeys.map((_, j) => (rowTotals[i] * colTotals[j]) / total);
-    });
-
+    // Pearsonのカイ二乗統計量。2×2では効果量と補正なし参考値に用いる。
     let chiSquare = 0;
     expected.forEach((row, i) => {
         row.forEach((exp, j) => {
@@ -76,30 +71,27 @@ function runChiSquare(currentData) {
         });
         adjResiduals.push(rowRes);
     });
+    const residualPValues = calculateResidualPValues(adjResiduals);
 
     // Assumption Check: Expected Frequency < 5
-    let cellsCount = 0;
-    let smallExpCount = 0;
-    expected.forEach(row => {
-        row.forEach(exp => {
-            cellsCount++;
-            if (exp < 5) smallExpCount++;
-        });
-    });
+    const expectedValues = expected.flat();
+    const cellsCount = expectedValues.length;
+    const smallExpCount = expectedValues.filter(exp => exp < 5).length;
     const smallExpRate = (smallExpCount / cellsCount) * 100;
+    const minExpected = Math.min(...expectedValues);
 
     // Yates' Continuity Correction (Only for 2x2) and Odds Ratio
     let yatesChiSquare = null;
     let yatesPValue = null;
     let oddsRatio = null;
-    let phiCoef = null;
 
     if (rowKeys.length === 2 && colKeys.length === 2) {
         let yatesSum = 0;
         expected.forEach((row, i) => {
             row.forEach((exp, j) => {
                 if (exp > 0) {
-                    yatesSum += Math.pow(Math.abs(observed[i][j] - exp) - 0.5, 2) / exp;
+                    const correctedDifference = Math.max(0, Math.abs(observed[i][j] - exp) - 0.5);
+                    yatesSum += Math.pow(correctedDifference, 2) / exp;
                 }
             });
         });
@@ -115,12 +107,33 @@ function runChiSquare(currentData) {
         if (b * c !== 0) {
             oddsRatio = (a * d) / (b * c);
         }
-
-        // ファイ係数は2x2ではクラメールのVと同じ
-        phiCoef = cramersV;
     }
 
-    displayChiSquareResult(chiSquare, df, pValue, cramersV, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, smallExpRate, yatesChiSquare, yatesPValue, oddsRatio, phiCoef);
+    const is2x2 = rowKeys.length === 2 && colKeys.length === 2;
+    const reportedChiSquare = is2x2 ? yatesChiSquare : chiSquare;
+    const reportedPValue = is2x2 ? yatesPValue : pValue;
+
+    displayChiSquareResult(
+        reportedChiSquare,
+        df,
+        reportedPValue,
+        cramersV,
+        rowKeys,
+        colKeys,
+        observed,
+        expected,
+        adjResiduals,
+        residualPValues,
+        rowVar,
+        colVar,
+        smallExpRate,
+        minExpected,
+        chiSquare,
+        pValue,
+        is2x2,
+        oddsRatio,
+        excludedRows
+    );
 
     // Generate APA Table (Crosstab with Counts and %)
     // Header: [RowVar, ...ColKeys, Total]
@@ -136,8 +149,11 @@ function runChiSquare(currentData) {
         return row;
     });
 
-    const pText = pValue < 0.001 ? '< .001' : `= ${pValue.toFixed(3)}`;
-    const noteAPA = `<em>Note</em>. Values are N (Row %). &chi;<sup>2</sup>(${df}, <em>N</em> = ${total}) = ${chiSquare.toFixed(2)}, <em>p</em> ${pText}, Cramer's <em>V</em> = ${cramersV.toFixed(2)}.`;
+    const pText = formatPValue(reportedPValue, { includeP: false, html: true });
+    const methodText = is2x2
+        ? `Yates continuity-corrected &chi;<sup>2</sup>(1, <em>N</em> = ${total}) = ${reportedChiSquare.toFixed(2)}, <em>p</em> ${pText}; uncorrected Pearson &chi;<sup>2</sup> = ${chiSquare.toFixed(2)}`
+        : `&chi;<sup>2</sup>(${df}, <em>N</em> = ${total}) = ${reportedChiSquare.toFixed(2)}, <em>p</em> ${pText}`;
+    const noteAPA = `<em>Note</em>. Values are N (Row %). ${methodText}, Cramer's <em>V</em> = ${cramersV.toFixed(2)}.`;
 
     setTimeout(() => {
         const container = document.getElementById('reporting-table-container-chi');
@@ -147,18 +163,28 @@ function runChiSquare(currentData) {
     }, 0);
 }
 
-function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expected, adjResiduals, rowVar, colVar, smallExpRate, yatesChi, yatesP, oddsRatio, phiCoef) {
+function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expected, adjResiduals, residualPValues, rowVar, colVar, smallExpRate, minExpected, pearsonChi, pearsonP, isYatesPrimary, oddsRatio, excludedRows) {
     const container = document.getElementById('chi-results');
     const omnibusSignificant = p < 0.05;
 
     // Warning for Assumption
     let warningHtml = '';
-    if (smallExpRate > 20) {
+    if (minExpected < 1 || smallExpRate > 20) {
+        const assumptionDetails = [
+            minExpected < 1 ? `最小期待度数が1未満です（${minExpected.toFixed(2)}）` : '',
+            smallExpRate > 20 ? `期待度数5未満のセルが${smallExpRate.toFixed(1)}%あります` : ''
+        ].filter(Boolean).join('。');
         warningHtml = `
             <div style="background-color: #fffbe6; border: 1px solid #fde68a; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; color: #92400e;">
-                <strong><i class="fas fa-exclamation-triangle"></i> 注意: 期待度数が5未満のセルが ${smallExpRate.toFixed(1)}% あります。</strong><br>
-                カイ二乗検定の前提条件（全体の20%以下）を満たしていません。結果の信頼性が低い可能性があります。<br>
+                <strong><i class="fas fa-exclamation-triangle"></i> カイ二乗近似の前提を確認してください。</strong><br>
+                ${assumptionDetails}。一般的な目安（期待度数1未満のセルなし、5未満のセルが20%以下）を満たしていません。<br>
                 サンプルサイズを増やすか、「フィッシャーの正確確率検定」の使用を検討してください。
+            </div>`;
+    }
+    if (excludedRows > 0) {
+        warningHtml += `
+            <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1rem; color: #1e3a8a;">
+                2変数のどちらかが欠損している ${excludedRows} 行を除外し、有効ケースで分析しました。
             </div>`;
     }
 
@@ -188,18 +214,20 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
             const obs = observed[i][j];
             const exp = expected[i][j];
             const res = adjResiduals[i][j];
+            const residualP = residualPValues[i][j];
             rowSum += obs;
 
-            // 残差による色付け。全体検定が非有意のときは、有意差ではなく探索的な目安として示す。
+            // 全体検定とセルごとの多重性を踏まえて色付けする。
             let style = '';
-            if (omnibusSignificant && res > 1.96) style = 'background: #dbeafe; color: #1e40af; font-weight: bold;'; // 有意に多い
-            else if (omnibusSignificant && res < -1.96) style = 'background: #fee2e2; color: #991b1b; font-weight: bold;'; // 有意に少ない
-            else if (!omnibusSignificant && Math.abs(res) > 1.96) style = 'background: #fef3c7; color: #92400e; font-weight: bold;'; // 参考: 残差が大きい
+            if (omnibusSignificant && residualP.adjusted < 0.05 && res > 0) style = 'background: #dbeafe; color: #1e40af; font-weight: bold;';
+            else if (omnibusSignificant && residualP.adjusted < 0.05 && res < 0) style = 'background: #fee2e2; color: #991b1b; font-weight: bold;';
+            else if (residualP.raw < 0.05) style = 'background: #fef3c7; color: #92400e; font-weight: bold;';
 
             html += `
                 <td style="${style}">
                     <div>${obs} <span style="font-size:0.8em; color:#666;">(${exp.toFixed(1)})</span></div>
                     <div style="font-size:0.8em;">z=${res.toFixed(1)}</div>
+                    <div style="font-size:0.72em; color:#64748b;">${residualP.method === 'holm' ? 'p<sub>Holm</sub>' : 'p<sub>cell</sub>'}${formatPValue(residualP.adjusted, { includeP: false, html: true })}</div>
                 </td>
             `;
         });
@@ -211,27 +239,27 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
                 </table>
             </div>
             <p style="margin-top: 0.5rem; color: #666; font-size: 0.8rem;">
-                上段: 観測度数 (期待度数), 下段: 調整済み標準化残差 (z)。<br>
+                上段: 観測度数 (期待度数), 下段: 調整済み標準化残差 (z) とセルp値。<br>
                 ${omnibusSignificant
-                    ? 'z &gt; 1.96 (青) は有意に多い、z &lt; -1.96 (赤) は有意に少ない組み合わせを示します。'
-                    : '全体検定が5%水準で有意でないため、|z| &gt; 1.96 のセルがあっても有意な偏りとは断定しません。該当セルは黄色で探索的な目安として示します。'}
+                    ? (isYatesPrimary
+                        ? '2×2表のセルp値が .05 未満の多い組み合わせを青、少ない組み合わせを赤で示します。'
+                        : 'Holm補正後のセルp値が .05 未満の多い組み合わせを青、少ない組み合わせを赤で示します。未補正でのみ .05 未満のセルは黄色です。')
+                    : '全体検定が5%水準で有意でないため、セルの未補正p値が .05 未満でも有意な偏りとは断定しません。該当セルは黄色で探索的な目安として示します。'}
             </p>
         </div>
     `;
 
     // 2. 検定結果の統合テーブル・統計量一覧
-    let yatesHtml = '';
+    let referenceHtml = '';
     let orHtml = '';
-    if (rowKeys.length === 2 && colKeys.length === 2) {
-        if (yatesChi !== null) {
-            yatesHtml = `
-                <div class="data-stat-card" style="background: #f0f9ff; border: 1px solid #bae6fd; text-align: center;">
-                    <div class="stat-label">Yates補正 χ² (2x2)</div>
-                    <div class="stat-value">${yatesChi.toFixed(2)}</div>
-                    <div class="stat-sub" style="font-size: 0.8rem; color: #666;">${yatesP < 0.001 ? 'p &lt; .001' : 'p = ' + yatesP.toFixed(4)} ${yatesP < 0.01 ? '**' : (yatesP < 0.05 ? '*' : (yatesP < 0.1 ? '†' : 'n.s.'))}</div>
-                </div>
-            `;
-        }
+    if (isYatesPrimary) {
+        referenceHtml = `
+            <div class="data-stat-card" style="background: #f8fafc; border: 1px solid #cbd5e1; text-align: center;">
+                <div class="stat-label">Pearson χ²（補正なし・参考）</div>
+                <div class="stat-value">${pearsonChi.toFixed(2)}</div>
+                <div class="stat-sub" style="font-size: 0.8rem; color: #666;">${formatPValue(pearsonP, { html: true, digits: 4 })} ${getSignificanceSymbol(pearsonP)}</div>
+            </div>
+        `;
         if (oddsRatio !== null) {
             orHtml = `
                 <div class="data-stat-card" style="text-align: center;">
@@ -248,9 +276,10 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
                 <i class="fas fa-clipboard-check"></i> 検定結果
             </h4>
             <div class="data-stats-grid" style="justify-items: center;">
-                <div class="data-stat-card" style="text-align: center;">
-                    <div class="stat-label">カイ二乗値 (χ²)</div>
+                <div class="data-stat-card" style="text-align: center;${isYatesPrimary ? ' background: #f0f9ff; border: 2px solid #7dd3fc;' : ''}">
+                    <div class="stat-label">カイ二乗値 (χ²)${isYatesPrimary ? '・Yates補正' : ''}</div>
                     <div class="stat-value">${chi2.toFixed(2)}</div>
+                    ${isYatesPrimary ? '<div class="stat-sub" style="font-size: 0.8rem; color: #475569;">2×2の主結果</div>' : ''}
                 </div>
                 <div class="data-stat-card" style="text-align: center;">
                     <div class="stat-label">自由度 (df)</div>
@@ -258,15 +287,16 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
                 </div>
                 <div class="data-stat-card" style="text-align: center;">
                     <div class="stat-label">p値</div>
-                    <div class="stat-value" style="${p < 0.05 ? 'color: #ef4444;' : ''}">${p < 0.001 ? '&lt; .001' : p.toFixed(4)} ${p < 0.01 ? '**' : (p < 0.05 ? '*' : (p < 0.1 ? '†' : 'n.s.'))}</div>
+                    <div class="stat-value" style="${p < 0.05 ? 'color: #ef4444;' : ''}">${p < 0.001 ? '&lt; .001' : p.toFixed(4)} ${getSignificanceSymbol(p)}</div>
                 </div>
                 <div class="data-stat-card" style="text-align: center;">
                     <div class="stat-label">${rowKeys.length === 2 && colKeys.length === 2 ? 'ファイ係数 (φ) / CramerのV' : 'クラメールのV'}</div>
                     <div class="stat-value">${v.toFixed(3)}</div>
                 </div>
                 ${orHtml}
-                ${yatesHtml}
+                ${referenceHtml}
             </div>
+            ${isYatesPrimary ? '<p style="margin: 1rem 0 0; color: #64748b; font-size: 0.85rem;">2×2表ではYatesの連続性補正を主結果として表示します。補正なしPearson値は比較用です。効果量φ / CramerのVは補正なしχ²から算出します。</p>' : ''}
         </div>
     `;
 
@@ -357,7 +387,7 @@ function plotHeatmap(observed, colKeys, rowKeys, rowVar, colVar) {
 export function render(container, currentData, characteristics) {
     const { categoricalColumns } = characteristics;
 
-    container.innerHTML = `
+    container.innerHTML = String.raw`
         <div class="chisquare-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">

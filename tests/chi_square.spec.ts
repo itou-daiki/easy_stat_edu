@@ -25,6 +25,19 @@ function createBorderlineChiSquareCsv() {
     return rows.join('\n');
 }
 
+function createYatesBorderlineCsv() {
+    const rows = ['群,結果'];
+    [
+        ['A', 'あり', 2],
+        ['A', 'なし', 8],
+        ['B', 'あり', 13],
+        ['B', 'なし', 7],
+    ].forEach(([group, outcome, count]) => {
+        for (let i = 0; i < Number(count); i++) rows.push(`${group},${outcome}`);
+    });
+    return rows.join('\n');
+}
+
 test.describe('Chi-Square Test Verification', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
@@ -108,5 +121,29 @@ test.describe('Chi-Square Test Verification', () => {
         expect(highlightCounts.exploratory).toBeGreaterThan(0);
         expect(highlightCounts.significantHigh).toBe(0);
         expect(highlightCounts.significantLow).toBe(0);
+    });
+
+    test('should use Yates correction as the primary result for a 2x2 table', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
+        await page.locator('#main-data-file').setInputFiles({
+            name: 'chi_square_yates_borderline.csv',
+            mimeType: 'text/csv',
+            buffer: Buffer.from(createYatesBorderlineCsv(), 'utf8'),
+        });
+        await navigateToFeature(page, 'chi_square');
+
+        await selectStandardOption(page, '#row-var', '群', 'label');
+        await selectStandardOption(page, '#col-var', '結果', 'label');
+        await page.click('#run-chi-btn');
+
+        const results = page.locator('#analysis-results');
+        await expect(results).toBeVisible();
+        const primaryCard = results.locator('.data-stat-card', { hasText: 'カイ二乗値' });
+        await expect(primaryCard).toContainText('Yates補正');
+        await expect(primaryCard.locator('.stat-value')).toHaveText('3.75');
+        await expect(results.locator('.data-stat-card', { hasText: 'p値' }).locator('.stat-value')).toContainText('0.0528');
+        await expect(results.locator('.data-stat-card', { hasText: 'Pearson χ²' })).toContainText('5.40');
+        await expect(results).toContainText('5%水準で有意な関連は確認されませんでした');
     });
 });

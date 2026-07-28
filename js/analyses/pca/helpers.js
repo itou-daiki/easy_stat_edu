@@ -32,7 +32,11 @@ export function performPCA(variables, currentData) {
     variables.forEach(v => {
         const vals = validData.map(r => r[v]);
         means.push(jStat.mean(vals));
-        stds.push(jStat.stdev(vals, true));
+        const sd = jStat.stdev(vals, true);
+        if (!Number.isFinite(sd) || sd === 0) {
+            throw new Error(`変数「${v}」の分散が0です。異なる値を含む変数を選択してください。`);
+        }
+        stds.push(sd);
     });
 
     // 行列データの作成 (標準化)

@@ -389,13 +389,14 @@
             <div class="sidebar-group">
                 <div class="sidebar-group-title">1. 分析前のつまずき解消</div>
                 <a href="#prep-data" class="sidebar-link"><i class="fas fa-file-excel"></i> 正しいExcelの作り方</a>
+                <a href="#input-output" class="sidebar-link"><i class="fas fa-keyboard"></i> 入力・図表編集・保存</a>
                 <a href="#prep-types" class="sidebar-link"><i class="fas fa-shapes"></i> 「数値」と「カテゴリ」</a>
                 <a href="#prep-pvalue" class="sidebar-link"><i class="fas fa-lightbulb"></i> 専門用語「p値」の意味</a>
             </div>
 
             <div class="sidebar-group">
                 <div class="sidebar-group-title">2. 便利な下準備（ユーティリティ）</div>
-                <a href="#util-support" class="sidebar-link"><i class="fas fa-magic"></i> AI分析サポーター</a>
+                <a href="#util-support" class="sidebar-link"><i class="fas fa-magic"></i> 分析サポーター</a>
                 <a href="#util-process" class="sidebar-link"><i class="fas fa-filter"></i> データの整形・欠損処理</a>
                 <a href="#util-merge" class="sidebar-link"><i class="fas fa-object-group"></i> データの結合</a>
                 <a href="#util-score" class="sidebar-link"><i class="fas fa-calculator"></i> 因子得点の算出</a>
@@ -446,15 +447,35 @@
 
             <section id="quick-start" class="content-section">
                 <h2><i class="fas fa-route"></i> 3分で始める基本手順</h2>
-                <p>迷ったときは、この順番で進めると大きく外しません。easyStatはブラウザ内で計算するため、読み込んだデータを分析用サーバーへ送信しません。</p>
+                <p>迷ったときは、この順番で進めると大きく外しません。通常の統計計算・テキストマイニング・図表作成はブラウザ内で行い、読み込んだデータをeasyStat独自の分析サーバーへ送信しません。</p>
 
                 <div class="step-list">
                     <div class="step-item"><strong>データを読み込む・入力する</strong><br>トップ画面でExcel・CSVを選ぶか、「表を入力」のセルへ直接入力・貼り付けします。練習したい場合はデモデータを使えます。</div>
                     <div class="step-item"><strong>データ概要を確認する</strong><br>列名、数値・カテゴリの判定、欠損値の数を見ます。ここで変数の種類が違って見える場合は、先にデータ整形を使います。</div>
-                    <div class="step-item"><strong>目的に合う分析を選ぶ</strong><br>わからない場合は「AI分析サポーター」を開き、候補を確認します。自分で選ぶ場合は次の早見表を使います。</div>
+                    <div class="step-item"><strong>目的に合う分析を選ぶ</strong><br>わからない場合は「分析サポーター」を開き、候補を確認します。自分で選ぶ場合は次の早見表を使います。</div>
                     <div class="step-item"><strong>変数を選んで実行する</strong><br>目的変数、説明変数、グループ変数など、画面に表示された選択欄を順に指定します。</div>
                     <div class="step-item"><strong>p値・効果量・グラフを一緒に見る</strong><br>p値だけで判断せず、平均差、相関係数、オッズ比、効果量、グラフの形も確認します。</div>
                 </div>
+                <div class="alert-box">
+                    <strong>任意のGemini解釈補助：</strong> APIキーを設定して「解釈を生成」または追加質問を実行した場合だけ、画面に示したデータプレビュー先頭10件、要約統計量、分析手法、結果のテキスト要約をGoogle Gemini APIへ送信します。共有端末では利用後にAPIキーを削除してください。
+                </div>
+            </section>
+
+            <section id="input-output" class="content-section">
+                <h2><i class="fas fa-keyboard"></i> 入力・図表編集・保存</h2>
+                <h3>ファイルがない場合</h3>
+                <ul>
+                    <li>トップ画面の「表を入力」で、見出しとデータをセルへ直接入力できます。</li>
+                    <li>Excelやスプレッドシートで範囲をコピーし、左上のセルへ貼り付けると行列を保って入力できます。</li>
+                    <li>矢印キー、Enter、Tabでセルを移動できます。1行目は列名、2行目以降は1人・1件につき1行にします。</li>
+                    <li>テキストマイニングだけを行う場合は、「直接入力」へ1行1文書で文章を貼り付けることもできます。</li>
+                </ul>
+                <h3>図表を整える</h3>
+                <ul>
+                    <li>各図表の「図の表示設定」を開くと、タイトル、軸ラベル、凡例を表示・編集できます。</li>
+                    <li>幅、高さ、縦横比を変更し、レポートやスライドに合う大きさへ調整できます。</li>
+                    <li>画像保存前に、タイトル・凡例・色分けの説明と文字の重なりを確認してください。</li>
+                </ul>
             </section>
 
             <section id="choose-analysis" class="content-section">
@@ -657,12 +678,12 @@
 
             <section id="prep-pvalue" class="content-section">
                 <h2><i class="fas fa-lightbulb"></i> 統計用語の基礎：p値と有意差</h2>
-                <p>この先、色々な表で <strong>p値 (p-value)</strong> という数字が出てきます。<br>これは<strong>「たまたま偶然、この結果になった確率」</strong>を表します。難しい数式は知らなくて大丈夫です。</p>
+                <p>この先、色々な表で <strong>p値 (p-value)</strong> という数字が出てきます。p値は、<strong>「差や関連がない」と仮定したときに、今回と同じか、それ以上に極端な結果が得られる確率</strong>です。結果が偶然だった確率や、仮説が正しい確率そのものではありません。</p>
                 <div style="padding: 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-                    <h4 style="margin-top: 0;">これだけ覚えてください！</h4>
+                    <h4 style="margin-top: 0;">5%水準で判断する場合</h4>
                     <p style="margin-bottom: 0;">
                         p値 が <strong>0.05 より小さい (p < 0.05) </strong> かどうかを探します。<br>
-                        0.05より小さければ、「偶然起きたにしては珍しすぎる！よって意味のある違いだ！」と判断します（これを<strong>有意差がある</strong>と言います）。見つけやすいように <code>*</code> のマークが付きます。
+                        0.05より小さければ、設定した帰無仮説に対して<strong>統計的に有意</strong>と判断します。これは差や関連の大きさ、実践的な重要性を保証しません。0.05以上でも「差がない」「同じ」と証明されたわけではありません。
                     </p>
                 </div>
                 <div class="alert-box">
@@ -674,8 +695,8 @@
                  2. 便利な下準備
             ============================== -->
             <section id="util-support" class="content-section">
-                <h2><i class="fas fa-magic"></i> AI分析サポーター</h2>
-                <p><strong>目的：</strong>「どう分析すればいいか見当もつかない」時に、AI（システム）が自動でできそうな分析を提案してくれます。</p>
+                <h2><i class="fas fa-magic"></i> 分析サポーター</h2>
+                <p><strong>目的：</strong>「どの分析が目的とデータに合うかわからない」時に、変数型や条件に基づくルールで候補を提案します。外部AIへデータを送る機能ではありません。</p>
                 <p><strong>使い方：</strong>データを読み込んだら、まずはこれを開いてみてください。「この分析を使う」ボタンでそのまま画面へ移動できます。</p>
                 <div class="mini-checklist">
                     <strong>提案結果を見るコツ</strong>
@@ -690,7 +711,7 @@
             <section id="util-process" class="content-section">
                 <h2><i class="fas fa-filter"></i> データの整形・欠損処理</h2>
                 <p><strong>目的：</strong>分析を始める前に、データをきれいにしたり、必要な列だけを抽出したりします。<br>
-                （「空白があるとめちゃくちゃになる分析」のために、事前に空白行を消したりします）</p>
+                欠損の扱いを分析前に決め、除外後の有効ケース数を確認します。</p>
                 <table class="manual-table">
                     <thead>
                         <tr>
@@ -776,13 +797,13 @@
             ============================== -->
             <section id="goal-compare-2" class="content-section">
                 <h2><i class="fas fa-vial"></i> 2つのグループを比べる (t検定 / U検定)</h2>
-                <p><strong>目的：</strong>「男性と女性」「A組とB組」など、<strong>2つのグループ</strong>で、点数（平均点）に意味のある差があるか調べたい。</p>
+                <p><strong>目的：</strong>「男性と女性」「A組とB組」など、<strong>2つのグループ</strong>で点数の分布や平均に差があるか調べたい。</p>
                 
                 <h3>どれを使えばいい？</h3>
                 <ul style="line-height: 1.8;">
-                    <li><strong>対応なし t検定：</strong> 全くの別グループ（男女など）を比べる王道パターン。<span class="data-badge numeric">点数の列</span> と <span class="data-badge category">男女の列</span> を選びます。</li>
+                    <li><strong>対応なし t検定：</strong> 別々の対象からなる2群（男女など）の平均を比べます。<span class="data-badge numeric">点数の列</span> と <span class="data-badge category">群の列</span> を選びます。</li>
                     <li><strong>対応あり t検定：</strong> 同じ人たちの「事前テストと事後テスト」を比べるパターン。<span class="data-badge numeric">事前点数</span> と <span class="data-badge numeric">事後点数</span> を選びます。</li>
-                    <li><strong>マン・ホイットニーのU検定（ノンパラメトリック）：</strong> データが極端に偏っていて、平均値で比べるのが怪しい時のt検定の代わり。順位（どちらが上か）で戦わせます。</li>
+                    <li><strong>マン・ホイットニーのU検定（ノンパラメトリック）：</strong> 独立2群を順位に置き換えて分布の位置を比較します。分布形状が大きく異なる場合は、単純な中央値差として解釈しません。</li>
                     <li><strong>ウィルコクソン符号順位検定：</strong> 同じ人の事前・事後を比べたいが、差の分布が偏っている時に使います。</li>
                 </ul>
                 <p><strong>迷ったら：</strong> 「別々の人を比べる」のか「同じ人の前後を比べる」のかを先に決めてください。ここを間違えると、結果の意味が変わります。</p>
@@ -794,9 +815,9 @@
 
                 <h3>どれを使えばいい？</h3>
                 <ul style="line-height: 1.8;">
-                    <li><strong>一要因分散分析 (ANOVA)：</strong> 3つ以上のクラス間で点数を比べる王道パターン。<span class="data-badge numeric">点数の列</span> と <span class="data-badge category">クラスの列</span> を選びます。</li>
-                    <li><strong>二要因分散分析：</strong> 「勉強法の違い(A/B)」×「性別(男女)」の2つの原因が、どう影響し合っているか（交互作用）を検証します。</li>
-                    <li><strong>クラスカル・ウォリス検定（ノンパラメトリック）：</strong> データに偏りがある時のANOVAの代用品です。</li>
+                    <li><strong>一要因分散分析 (ANOVA)：</strong> 1つのグループ変数で3群以上の平均を比較します。<span class="data-badge numeric">点数の列</span> と <span class="data-badge category">クラスの列</span> を選びます。</li>
+                    <li><strong>二要因分散分析：</strong> 「勉強法(A/B)」×「性別(男女)」の2要因について、主効果と組合せによる交互作用を検討します。</li>
+                    <li><strong>クラスカル・ウォリス検定（ノンパラメトリック）：</strong> 独立3群以上を順位で比較します。</li>
                 </ul>
                 <p><strong>結果の見方：</strong> まず分散分析表の p値 で「どこかの組に差がある」ことを見つけます。その後、下に出てくる「事後検定（多重比較）」の表を見て、「具体的にA組とC組の間に差がある」という結論を出します。</p>
             </section>
@@ -812,7 +833,7 @@
                 <h3>どれを使えばいい？</h3>
                 <ul style="line-height: 1.8;">
                     <li><strong>クロス集計：</strong> まずは「男性の犬好きは何人？」のように人数の内訳（表と帯グラフ）を出したい時。</li>
-                    <li><strong>カイ二乗検定：</strong> その人数の偏りが「偶然なのか、本当に性別と好みが関連している（意味のある偏り）のか」を p値 で白黒つけたい時。</li>
+                    <li><strong>カイ二乗検定：</strong> 観測度数と、独立を仮定した期待度数のずれから、カテゴリ間の関連を検定します。2×2表ではYates補正を主結果とし、R×C表のセル判定にはHolm補正後のp値を表示します。</li>
                     <li><strong>フィッシャーの正確確率検定：</strong> カイ二乗検定と同じですが、人数が数人〜数十人と極端に少ない時に使います。</li>
                     <li><strong>マクネマー検定：</strong> 同じ人たちの「賛成・反対」が、イベントの前後でどう変化したかを調べる時に使います。</li>
                 </ul>
@@ -830,13 +851,13 @@
             </section>
 
             <section id="goal-predict" class="content-section">
-                <h2><i class="fas fa-chart-line"></i> 未来を予測する・影響度を知る (回帰分析)</h2>
-                <p><strong>目的：</strong>「勉強時間」や「過去の成績」をもとに、未来の「テストの点数」を推測する数式を作りたい。</p>
+                <h2><i class="fas fa-chart-line"></i> 結果を説明・予測する (回帰分析)</h2>
+                <p><strong>目的：</strong>「勉強時間」や「過去の成績」と「テストの点数」の関連を数式で表し、条件を与えたときの値を予測したい。</p>
                 
                 <h3>どれを使えばいい？</h3>
                 <ul style="line-height: 1.8;">
-                    <li><strong>単回帰分析：</strong> 原因(X)が1つ、結果の数値(Y)が1つの場合。（例: 勉強時間 → テスト点数）</li>
-                    <li><strong>重回帰分析：</strong> 原因(X)が複数ある場合。結果の表の「標準化偏回帰係数(β)」を見ると、どの原因が一番テストの点数に強い影響を与えたかのランキングが作れます。</li>
+                    <li><strong>単回帰分析：</strong> 説明変数(X)が1つ、数値の目的変数(Y)が1つの場合。（例: 勉強時間とテスト点数）</li>
+                    <li><strong>重回帰分析：</strong> 説明変数(X)が複数ある場合。標準化偏回帰係数(β)は、他の変数を一定とした標本内の関連を尺度をそろえて比較する目安です。</li>
                     <li><strong>ロジスティック回帰分析：</strong> 結果(Y)が「合格/不合格」のような<strong>2択（カテゴリ）</strong>の場合。その確率を予測します。</li>
                 </ul>
                 <div class="alert-box">
@@ -863,7 +884,15 @@
                 <h2><i class="fas fa-font"></i> 時系列 / テキストマイニング</h2>
                 <ul style="line-height: 1.8;">
                     <li><strong>時系列データ分析：</strong> 「1年間の毎月の売上」など、時間経過のトレンドや周期を見ます。<span class="data-badge numeric">数値</span>が必要です。</li>
-                    <li><strong>テキストマイニング：</strong> アンケートの「自由記述欄」に書かれた文章を解析し、よく使われている単語を大きな文字（ワードクラウド）で表示します。<span class="data-badge category">テキストが入った列</span>を選ぶか、「直接入力」に1行1文書で文章を入力します。</li>
+                    <li><strong>テキストマイニング：</strong> <span class="data-badge category">テキスト列</span>を選ぶか、「直接入力」に1行1文書で文章を入力します。出現頻度、文書頻度、TF-IDF、品詞別ランキング、KWIC、共起を確認できます。</li>
+                </ul>
+                <h3>テキスト結果の読み方</h3>
+                <ul>
+                    <li>頻度ワードクラウドの大きさは出現回数、TF-IDFワードクラウドの大きさは文書を特徴づける度合いです。</li>
+                    <li>語の色は品詞を表します。画像下の凡例で、名詞・動詞・形容詞などを確認します。</li>
+                    <li>共起ネットワークは、同じ文に現れた語のJaccard係数を表示します。線があるだけで意味的・因果的な関係があるとは限りません。</li>
+                    <li>カテゴリ列を指定すると、カテゴリごとのワードクラウドと共起ネットワークが連続表示されます。各群の文書数が大きく異なる場合は、頻度だけでなくTF-IDFと原文も確認します。</li>
+                    <li>ノードや語を選び、KWICで前後文脈を読んでから解釈します。</li>
                 </ul>
                 <div class="mini-checklist">
                     <strong>データ準備のコツ</strong>
@@ -912,8 +941,8 @@
                 <div class="faq-item">
                     <div class="faq-q"><i class="fas fa-q"></i> パラメトリックとかノンパラメトリックって何？</div>
                     <div class="faq-a">
-                        パラメトリック＝「データの形が普通の山型（ベルカーブ）で、平均値で比べても大丈夫」な時の一般的な手法。<br>
-                        ノンパラメトリック＝「超すごい人が1人だけいて平均値がおかしくなっている」など、データが歪んでいる時に順位を使って比べる安全な手法です。
+                        パラメトリック手法は、分布や分散などの前提を置いて平均・分散を扱う方法です。<br>
+                        ノンパラメトリック手法は順位などを使い、分布への仮定を比較的少なくする方法です。ただし、常に安全・高性能という意味ではなく、研究目的とデータの形に合わせて選びます。
                     </div>
                 </div>
 

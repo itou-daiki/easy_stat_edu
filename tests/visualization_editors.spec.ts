@@ -153,7 +153,6 @@ test.describe('Editable visualization and table labels', () => {
         const wordCloudEditor = canvasEditors.first();
         await wordCloudEditor.locator('summary').click();
         await wordCloudEditor.locator('[data-visualization-input="title"]').fill('自由記述の頻出語');
-        await wordCloudEditor.locator('[data-visualization-control="legend"]').uncheck();
         await wordCloudEditor.locator('[data-visualization-input="width"]').evaluate(input => {
             const range = input as HTMLInputElement;
             range.value = '70';
@@ -161,11 +160,11 @@ test.describe('Editable visualization and table labels', () => {
             range.dispatchEvent(new Event('change', { bubbles: true }));
         });
         await wordCloudEditor.locator('[data-visualization-input="aspect-ratio"]').selectOption('1:1');
-        await expect(page.locator('#overall-wordcloud-legend')).toBeHidden();
         await expect.poll(async () => page.locator('#overall-wordcloud').evaluate(canvas => {
             const rect = canvas.getBoundingClientRect();
             return Math.round((rect.width / rect.height) * 100) / 100;
         })).toBe(1);
+        await expect(page.locator('#overall-wordcloud-legend')).toBeVisible();
 
         const wordCloudSize = await page.locator('#overall-wordcloud').evaluate(canvas => {
             const target = canvas as HTMLCanvasElement;
@@ -180,11 +179,13 @@ test.describe('Editable visualization and table labels', () => {
         ]);
         await titledWordCloudDownload.saveAs(titledWordCloudPath);
         const titledWordCloud = await readPngInfo(titledWordCloudPath);
-        expect(titledWordCloud.width).toBe(wordCloudSize.width);
+        expect(titledWordCloud.width).toBeGreaterThan(wordCloudSize.width);
         expect(titledWordCloud.height).toBeGreaterThan(wordCloudSize.height);
+        expect(titledWordCloud.width / titledWordCloud.height).toBe(1);
         expect(titledWordCloud.bytes).toBeGreaterThan(20_000);
 
         await wordCloudEditor.locator('[data-visualization-control="title"]').uncheck();
+        await wordCloudEditor.locator('[data-visualization-control="legend"]').uncheck();
         const plainWordCloudPath = path.join(artifactDir, 'wordcloud-title-and-legend-hidden.png');
         const [plainWordCloudDownload] = await Promise.all([
             page.waitForEvent('download'),
@@ -198,7 +199,6 @@ test.describe('Editable visualization and table labels', () => {
         const networkEditor = canvasEditors.nth(2);
         await networkEditor.locator('summary').click();
         await networkEditor.locator('[data-visualization-input="title"]').fill('語のつながり');
-        await networkEditor.locator('[data-visualization-control="legend"]').uncheck();
         await networkEditor.locator('[data-visualization-input="width"]').evaluate(input => {
             const range = input as HTMLInputElement;
             range.value = '80';
@@ -214,6 +214,7 @@ test.describe('Editable visualization and table labels', () => {
                 fits: container.scrollWidth <= container.clientWidth + 1
             };
         })).toEqual({ ratio: 1.78, fits: true });
+        await expect(page.locator('#overall-network-legend')).toBeVisible();
         const networkSize = await page.locator('#overall-network canvas').evaluate(canvas => {
             const target = canvas as HTMLCanvasElement;
             return { width: target.width, height: target.height };
@@ -225,10 +226,12 @@ test.describe('Editable visualization and table labels', () => {
         ]);
         await networkDownload.saveAs(networkPath);
         const networkPng = await readPngInfo(networkPath);
-        expect(networkPng.width).toBe(networkSize.width);
+        expect(networkPng.width).toBeGreaterThan(networkSize.width);
         expect(networkPng.height).toBeGreaterThan(networkSize.height);
+        expect(Math.abs(networkPng.width / networkPng.height - 16 / 9)).toBeLessThan(0.001);
 
         await networkEditor.locator('[data-visualization-control="title"]').uncheck();
+        await networkEditor.locator('[data-visualization-control="legend"]').uncheck();
         const plainNetworkPath = path.join(artifactDir, 'network-resized-16x9.png');
         const [plainNetworkDownload] = await Promise.all([
             page.waitForEvent('download'),

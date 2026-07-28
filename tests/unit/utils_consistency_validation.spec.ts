@@ -49,11 +49,14 @@ test.describe('Utils & Cross-Module Consistency', () => {
                 src.indexOf('evaluatePValue'),
                 src.indexOf('evaluatePValue') + 500
             );
+            const constantsResponse = await page.goto('/js/analyses/constants.js');
+            const constantsSource = await constantsResponse!.text();
 
             // Should NOT have *** as a return value
             expect(evalSection).not.toContain('"***"');
-            // Should use ** as maximum significance level
-            expect(evalSection).toContain('"**"');
+            expect(evalSection).toContain('getSignificanceSymbol(p)');
+            expect(constantsSource).toContain("STRONG: '**'");
+            expect(constantsSource).not.toContain("STRONG: '***'");
         });
     });
 

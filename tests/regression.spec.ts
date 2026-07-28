@@ -58,4 +58,12 @@ test.describe('Regression Analysis Verification', () => {
         expect(textContent).toContain('非標準化係数');
         expect(textContent).toContain('調整済み R²');
     });
+
+    test('should guard zero-variance variables before rendering NaN', async ({ page }) => {
+        const response = await page.goto('/js/analyses/regression_simple.js');
+        const source = await response!.text();
+        expect(source).toContain('説明変数「${xVar}」の分散が0です');
+        expect(source).toContain('目的変数「${yVar}」の分散が0です');
+        expect(source).not.toContain("throw new Error('説明変数の分散が0");
+    });
 });

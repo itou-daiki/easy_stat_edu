@@ -2,6 +2,10 @@
 // UI Helpers
 // ==========================================
 import { MultiSelect } from './components/MultiSelect.js';
+import { getSignificanceSymbol } from './analyses/constants.js';
+import { performHolmCorrection } from './utils/stat_distributions.js';
+
+export { getSignificanceSymbol };
 
 /**
  * Toggles the visibility of a collapsible section.
@@ -41,6 +45,166 @@ export function hideLoadingMessage() {
 export function showError(message) {
     alert(`エラー: ${message}`);
     hideLoadingMessage();
+}
+
+/**
+ * 空欄として扱うセルかを判定する。0 や false は有効値として保持する。
+ * @param {*} value - セル値
+ * @returns {boolean}
+ */
+export function isMissingCell(value) {
+    return value == null || (typeof value === 'string' && value.trim() === '');
+}
+
+function compareCategoryValues(a, b) {
+    return String(a).localeCompare(String(b), 'ja', {
+        numeric: true,
+        sensitivity: 'base'
+    });
+}
+
+/**
+ * 2つのカテゴリ変数から、リストワイズ除外済みの分割表を作成する。
+ * @param {Array<Object>} data - 行データ
+ * @param {string} rowVar - 行変数
+ * @param {string} colVar - 列変数
+ * @returns {object}
+ */
+export function buildContingencyTable(data, rowVar, colVar) {
+    const sourceRows = Array.isArray(data) ? data : [];
+    const validRows = sourceRows.filter(row => (
+        row
+        && !isMissingCell(row[rowVar])
+        && !isMissingCell(row[colVar])
+    ));
+    const rowKeys = [...new Set(validRows.map(row => row[rowVar]))].sort(compareCategoryValues);
+    const colKeys = [...new Set(validRows.map(row => row[colVar]))].sort(compareCategoryValues);
+    const rowIndex = new Map(rowKeys.map((value, index) => [value, index]));
+    const colIndex = new Map(colKeys.map((value, index) => [value, index]));
+    const observed = Array.from({ length: rowKeys.length }, () => new Array(colKeys.length).fill(0));
+
+    validRows.forEach(row => {
+        observed[rowIndex.get(row[rowVar])][colIndex.get(row[colVar])]++;
+    });
+
+    const rowTotals = observed.map(row => row.reduce((sum, value) => sum + value, 0));
+    const colTotals = colKeys.map((_, col) => (
+        observed.reduce((sum, row) => sum + row[col], 0)
+    ));
+    const total = validRows.length;
+    const expected = rowKeys.map((_, row) => (
+        colKeys.map((__, col) => (
+            total > 0 ? (rowTotals[row] * colTotals[col]) / total : 0
+        ))
+    ));
+
+    return {
+        rowKeys,
+        colKeys,
+        observed,
+        rowTotals,
+        colTotals,
+        expected,
+        total,
+        validRows,
+        excludedRows: sourceRows.length - validRows.length
+    };
+}
+
+/**
+ * 調整済み標準化残差からセルごとの両側p値を求める。
+ * 2×2表は独立な対比が1つなので補正せず、R×C表は全セルを1族としてHolm補正する。
+ * @param {number[][]} residuals - 調整済み標準化残差
+ * @returns {Array<Array<{raw: number, adjusted: number, method: string}>>}
+ */
+export function calculateResidualPValues(residuals) {
+    const rowCount = residuals.length;
+    const colCount = residuals[0]?.length || 0;
+    const cells = residuals.flatMap((row, rowIndex) => (
+        row.map((z, colIndex) => {
+            const raw = Number.isFinite(z)
+                ? Math.min(1, Math.max(0, 2 * (1 - jStat.normal.cdf(Math.abs(z), 0, 1))))
+                : NaN;
+            return { rowIndex, colIndex, p: raw };
+        })
+    ));
+    const is2x2 = rowCount === 2 && colCount === 2;
+    const adjustedCells = is2x2
+        ? cells.map(cell => ({ ...cell, p_holm: cell.p }))
+        : performHolmCorrection(cells);
+    const result = Array.from({ length: rowCount }, () => new Array(colCount));
+
+    adjustedCells.forEach(cell => {
+        result[cell.rowIndex][cell.colIndex] = {
+            raw: cell.p,
+            adjusted: cell.p_holm,
+            method: is2x2 ? 'none-2x2' : 'holm'
+        };
+    });
+    return result;
+}
+
+/**
+ * p値を画面・報告表で共通利用できる形式へ整形する。
+ * @param {number} p - p値
+ * @param {object} options - 表示オプション
+ * @returns {string}
+ */
+export function formatPValue(p, options = {}) {
+    const { digits = 3, includeP = true, html = false } = options;
+    const value = Number(p);
+    const prefix = includeP ? (html ? '<em>p</em> ' : 'p ') : '';
+    if (!Number.isFinite(value) || value < 0 || value > 1) return `${prefix}= -`;
+    if (value < 0.001) return `${prefix}${html ? '&lt;' : '<'} .001`;
+    return `${prefix}= ${value.toFixed(digits)}`;
+}
+
+let mathJaxPromise = null;
+
+/**
+ * TeX区切りを含む要素だけMathJaxで整形する。
+ * 読み込みに失敗した場合は元の式を残し、分析画面の表示を継続する。
+ * @param {HTMLElement} root - 数式を含む可能性があるルート要素
+ * @returns {Promise<boolean>}
+ */
+export async function typesetMathIn(root) {
+    if (!root || !/\\[\(\[]/.test(root.textContent || '')) return false;
+
+    if (!mathJaxPromise) {
+        if (window.MathJax?.typesetPromise) {
+            mathJaxPromise = Promise.resolve(window.MathJax);
+        } else {
+            window.MathJax = {
+                tex: {
+                    inlineMath: [['\\(', '\\)']],
+                    displayMath: [['\\[', '\\]']]
+                },
+                startup: { typeset: false }
+            };
+            mathJaxPromise = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+                script.async = true;
+                script.onload = () => resolve(window.MathJax);
+                script.onerror = () => reject(new Error('MathJaxを読み込めませんでした。'));
+                document.head.appendChild(script);
+            }).catch(error => {
+                console.warn(error.message);
+                mathJaxPromise = null;
+                return null;
+            });
+        }
+    }
+
+    const mathJax = await mathJaxPromise;
+    if (!mathJax?.typesetPromise || !root.isConnected) return false;
+    try {
+        await mathJax.typesetPromise([root]);
+        return true;
+    } catch (error) {
+        console.warn('数式を整形できませんでした。', error);
+        return false;
+    }
 }
 
 /**
@@ -2452,11 +2616,12 @@ export const InterpretationHelper = {
     evaluatePValue(p) {
         if (p == null || !Number.isFinite(Number(p)) || p < 0 || p > 1) return { text: "-", isSignificant: false, stars: "", invalid: true };
         p = Number(p);
-        if (p < 0.001) return { text: "p < .001", isSignificant: true, stars: "**" };
-        if (p < 0.01) return { text: "p < .01", isSignificant: true, stars: "**" };
-        if (p < 0.05) return { text: "p < .05", isSignificant: true, stars: "*" };
-        if (p < 0.1) return { text: "p < .10", isSignificant: false, stars: "†" }; // 傾向
-        return { text: "n.s.", isSignificant: false, stars: "" };
+        const symbol = getSignificanceSymbol(p);
+        return {
+            text: formatPValue(p),
+            isSignificant: p < 0.05,
+            stars: symbol === 'n.s.' ? '' : symbol
+        };
     },
 
     /**
@@ -2486,9 +2651,10 @@ export const InterpretationHelper = {
             text += `統計的に有意な<strong>${strength}${direction}の相関</strong>が見られました (<em>r</em> = ${r.toFixed(2)}, ${pEval.text})。`;
             if (r > 0) text += `<br>つまり、<strong>${var1}が高いほど、${var2}も高い</strong>傾向があります。`;
             else text += `<br>つまり、<strong>${var1}が高いほど、${var2}は低い</strong>傾向があります。`;
+            text += '<br>相関だけでは因果関係は判断できません。';
         } else {
-            text += `統計的に有意な相関は見られませんでした (<em>r</em> = ${r.toFixed(2)}, <em>p</em> = ${p.toFixed(2)})。`;
-            text += `<br>2つの変数の間に関連性があるとは言えません。`;
+            text += `5%水準で有意な相関を示す十分な証拠は得られませんでした (<em>r</em> = ${r.toFixed(2)}, ${formatPValue(p, { html: true })})。`;
+            text += '<br>これは、相関がないことや2変数が無関係であることを証明するものではありません。';
         }
         return text;
     },
@@ -2524,10 +2690,10 @@ export const InterpretationHelper = {
             const high = mean1 > mean2 ? g1 : g2;
             const low = mean1 > mean2 ? g2 : g1;
             return `${varText}<strong>${high}は${low}よりも有意に高い</strong>値を示しました (${pEval.text}${dText})。<br>` +
-                `平均値の差は統計的に意味があると言えます。`;
+                '差の実質的な大きさは、効果量や信頼区間とあわせて判断してください。';
         } else {
-            return `${varText}「<strong>${g1}</strong>」と「<strong>${g2}</strong>」の間に、統計的に有意な差は見られませんでした (<em>p</em> = ${p.toFixed(2)}${dText})。<br>` +
-                `平均値の違いは偶然の範囲内である可能性があります。`;
+            return `${varText}「<strong>${g1}</strong>」と「<strong>${g2}</strong>」の平均差について、5%水準で有意差を示す十分な証拠は得られませんでした (${formatPValue(p, { html: true })}${dText})。<br>` +
+                '2群の平均が等しいことを証明する結果ではありません。';
         }
     },
 
@@ -2557,11 +2723,10 @@ export const InterpretationHelper = {
 
         if (pEval.isSignificant) {
             return `${varText}要因「<strong>${factorName}</strong>」による<strong>主効果は有意</strong>でした (${pEval.text}${etaText})。<br>` +
-                `つまり、グループ間で平均値に統計的な差があると言えます。<br>` +
-                `どのグループ間に差があるか確認するには、多重比較の結果を参照してください。`;
+                '少なくとも1群の平均が異なる可能性があります。どの群間に差があるかは多重比較で確認し、実質的な大きさは効果量とあわせて判断してください。';
         } else {
-            return `${varText}要因「<strong>${factorName}</strong>」による有意な主効果は見られませんでした (<em>p</em> = ${p.toFixed(2)}${etaText})。<br>` +
-                `グループ間の平均値に統計的な違いがあるとは言えません。`;
+            return `${varText}要因「<strong>${factorName}</strong>」による主効果について、5%水準で有意差を示す十分な証拠は得られませんでした (${formatPValue(p, { html: true })}${etaText})。<br>` +
+                '各群の平均が等しいことを証明する結果ではありません。';
         }
     },
 
@@ -2618,24 +2783,25 @@ export const InterpretationHelper = {
 
         if (pEval.isSignificant) {
             text += `回帰モデルは<strong>統計的に有意</strong>であり (${pEval.text})、`;
-            text += `説明変数は「<strong>${depVar}</strong>」の変動の約<strong>${(r2 * 100).toFixed(1)}%</strong>を説明しています (R²=${r2.toFixed(2)})。<br>`;
+            text += `標本内では、説明変数が「<strong>${depVar}</strong>」の変動の約<strong>${(r2 * 100).toFixed(1)}%</strong>を説明しています (R²=${r2.toFixed(2)})。<br>`;
 
             const sigCoeffs = coeffs.filter(c => c.p < 0.05);
             if (sigCoeffs.length > 0) {
-                text += `特に、以下の変数が有意な影響を与えています：<ul style='margin-top:0.5rem; margin-bottom: 0;'>`;
+                text += `他の説明変数を一定としたとき、以下の変数が有意な関連を示しています：<ul style='margin-top:0.5rem; margin-bottom: 0;'>`;
                 sigCoeffs.forEach(c => {
-                    const dir = c.beta > 0 ? "正（増加させる）" : "負（減少させる）";
+                    const dir = c.beta > 0 ? "正の関連" : "負の関連";
                     const standardizedInfo = c.stdBeta !== undefined ? `標準化係数 β=${c.stdBeta.toFixed(2)}` : `係数 B=${c.beta.toFixed(2)}`;
-                    text += `<li><strong>${c.name}</strong>：${dir}影響 (${standardizedInfo})</li>`;
+                    text += `<li><strong>${c.name}</strong>：${dir} (${standardizedInfo})</li>`;
                 });
                 text += `</ul>`;
             } else {
-                text += `ただし、個々の説明変数で単独で有意な影響を示したものはありませんでした（多重共線性などの可能性があります）。`;
+                text += `ただし、個々の説明変数で単独に有意な関連を示したものはありませんでした（多重共線性なども確認してください）。`;
             }
         } else {
-            text += `回帰モデルは統計的に有意ではありませんでした (${pEval.text})。<br>`;
-            text += `選択された説明変数では、「<strong>${depVar}</strong>」を十分に予測できない可能性があります。`;
+            text += `回帰モデルについて、5%水準で有意な関連を示す十分な証拠は得られませんでした (${formatPValue(p, { html: true })})。<br>`;
+            text += `予測性能がないことを証明する結果ではありません。検証用データでの評価も必要です。`;
         }
+        text += '<br>回帰係数は、研究計画や交絡の検討なしに因果効果とは解釈できません。';
         return text;
     },
 

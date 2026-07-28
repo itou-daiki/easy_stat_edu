@@ -127,6 +127,26 @@ function runFactorAnalysis(currentData) {
         return;
     }
 
+    const validRows = currentData.filter(row => (
+        variables.every(variable => (
+            row[variable] != null
+            && row[variable] !== ''
+            && Number.isFinite(Number(row[variable]))
+        ))
+    ));
+    if (validRows.length < 3) {
+        alert('選択した全変数に値があるデータが3件未満です。欠損値を確認してください。');
+        return;
+    }
+    const constantVariables = variables.filter(variable => {
+        const values = validRows.map(row => Number(row[variable]));
+        return jStat.stdev(values, true) === 0;
+    });
+    if (constantVariables.length > 0) {
+        alert(`分散が0の変数は因子分析に使用できません: ${constantVariables.join(', ')}`);
+        return;
+    }
+
     try {
         const result = exactFactors(variables, numFactors, currentData);
         let loadings = result.loadings;

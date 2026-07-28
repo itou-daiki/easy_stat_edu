@@ -1031,7 +1031,7 @@ function switchTestType(testType) {
 export function render(container, currentData, characteristics) {
     const { numericColumns, categoricalColumns } = characteristics;
 
-    container.innerHTML = `
+    container.innerHTML = String.raw`
     <div class="anova-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">

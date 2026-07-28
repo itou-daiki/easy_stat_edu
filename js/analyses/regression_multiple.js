@@ -242,7 +242,7 @@ function runMultipleRegression(currentData) {
 export function render(container, currentData, characteristics) {
     const { numericColumns } = characteristics;
 
-    container.innerHTML = `
+    container.innerHTML = String.raw`
         <div class="regression-container">
             <div style="background: #1e90ff; color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0; font-size: 1.5rem; font-weight: bold;">
@@ -260,9 +260,9 @@ export function render(container, currentData, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 重回帰分析 (Multiple Regression Analysis) とは？</strong>
-                        <p>「複数の要因（説明変数）」が「1つの結果（目的変数）」にどう影響するかを調べる分析です。「美味しいカレーの味（結果）」は「スパイスの量」と「煮込み時間」（要因）で決まる、というようなイメージです。</p>
+                        <p>複数の説明変数と1つの目的変数の関連を同時に扱い、他の説明変数を一定とした係数と予測式を求める分析です。</p>
                         <img src="image/regression_multiple.png" alt="重回帰分析の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
-                        <p><strong>パス図について:</strong> どの要因の影響が強いかを矢印の太さで図示します（影響が弱いものは表示されません）。</p>
+                        <p><strong>パス図について:</strong> 標準化偏回帰係数の絶対値を矢印の太さで図示します。有意でない係数や交絡を含め、因果関係を示す図ではありません。</p>
                     </div>
                 </div>
             </div>
