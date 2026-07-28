@@ -281,7 +281,10 @@ function setupEventListeners() {
     });
 
     tabularDataGrid?.addEventListener('focusin', handleTabularGridFocus);
-    tabularDataGrid?.addEventListener('click', handleTabularGridFocus);
+    tabularDataGrid?.addEventListener('click', handleTabularGridClick);
+    tabularDataGrid?.addEventListener('dblclick', handleTabularGridDoubleClick);
+    tabularDataGrid?.addEventListener('beforeinput', handleTabularGridBeforeInput);
+    tabularDataGrid?.addEventListener('compositionstart', handleTabularGridCompositionStart);
     tabularDataGrid?.addEventListener('input', handleTabularGridInput);
     tabularDataGrid?.addEventListener('blur', handleTabularGridBlur, true);
     tabularDataGrid?.addEventListener('paste', handleTabularGridPaste);
@@ -437,7 +440,9 @@ function createTabularGridCell(rowIndex, columnIndex, value) {
     cell.dataset.gridCell = 'true';
     cell.dataset.gridRow = String(rowIndex);
     cell.dataset.gridColumn = String(columnIndex);
+    cell.dataset.gridMode = 'navigation';
     cell.setAttribute('role', 'gridcell');
+    cell.setAttribute('aria-selected', 'false');
     cell.setAttribute(
         'aria-label',
         rowIndex === 0
@@ -600,10 +605,14 @@ function setActiveTabularGridCell(cell) {
     const previousCell = tabularDataGrid?.querySelector('.tabular-grid-cell.active');
     if (previousCell && previousCell !== cell) {
         previousCell.classList.remove('active');
+        previousCell.classList.remove('editing');
+        previousCell.dataset.gridMode = 'navigation';
         previousCell.tabIndex = -1;
+        previousCell.setAttribute('aria-selected', 'false');
     }
     cell.classList.add('active');
     cell.tabIndex = 0;
+    cell.setAttribute('aria-selected', 'true');
     activeTabularGridPosition = {
         row: Number(cell.dataset.gridRow),
         column: Number(cell.dataset.gridColumn)
@@ -611,23 +620,57 @@ function setActiveTabularGridCell(cell) {
     updateTabularGridToolbarState();
 }
 
-function focusTabularGridCell(rowIndex, columnIndex) {
+function setTabularGridCellMode(cell, mode) {
+    if (!cell?.matches?.('[data-grid-cell]')) return;
+    const isEditing = mode === 'editing';
+    cell.dataset.gridMode = isEditing ? 'editing' : 'navigation';
+    cell.classList.toggle('editing', isEditing);
+}
+
+function placeCaretAtEnd(cell) {
+    const selection = window.getSelection();
+    if (!selection || !document.createRange) return;
+    const range = document.createRange();
+    range.selectNodeContents(cell);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+}
+
+function clearTabularGridTextSelection() {
+    const selection = window.getSelection();
+    if (selection?.rangeCount) selection.removeAllRanges();
+}
+
+function focusTabularGridCell(rowIndex, columnIndex, { mode = 'navigation' } = {}) {
     if (!tabularGridBody) return;
     const cell = tabularGridBody.querySelector(
         `[data-grid-cell][data-grid-row="${rowIndex}"][data-grid-column="${columnIndex}"]`
     );
     if (!cell) return;
     setActiveTabularGridCell(cell);
+    setTabularGridCellMode(cell, mode);
     cell.focus();
+    if (mode === 'editing') placeCaretAtEnd(cell);
+    else clearTabularGridTextSelection();
+}
 
-    const selection = window.getSelection();
-    if (selection && document.createRange) {
-        const range = document.createRange();
-        range.selectNodeContents(cell);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
+function startTabularGridCellEditing(cell, { replace = false, preserveSelection = false } = {}) {
+    if (!cell?.matches?.('[data-grid-cell]')) return;
+    setActiveTabularGridCell(cell);
+    setTabularGridCellMode(cell, 'editing');
+    cell.focus();
+    if (replace) {
+        cell.textContent = '';
+        updateTableInputState();
     }
+    if (!preserveSelection) placeCaretAtEnd(cell);
+}
+
+function stopTabularGridCellEditing(cell) {
+    if (!cell?.matches?.('[data-grid-cell]')) return;
+    setTabularGridCellMode(cell, 'navigation');
+    clearTabularGridTextSelection();
 }
 
 function handleTabularGridFocus(event) {
@@ -635,10 +678,37 @@ function handleTabularGridFocus(event) {
     if (cell && tabularDataGrid?.contains(cell)) setActiveTabularGridCell(cell);
 }
 
+function handleTabularGridClick(event) {
+    const cell = event.target.closest?.('[data-grid-cell]');
+    if (!cell || !tabularDataGrid?.contains(cell)) return;
+    setActiveTabularGridCell(cell);
+    if (cell.dataset.gridMode !== 'editing') stopTabularGridCellEditing(cell);
+}
+
+function handleTabularGridDoubleClick(event) {
+    const cell = event.target.closest?.('[data-grid-cell]');
+    if (!cell || !tabularDataGrid?.contains(cell)) return;
+    startTabularGridCellEditing(cell, { preserveSelection: true });
+}
+
+function handleTabularGridBeforeInput(event) {
+    const cell = event.target.closest?.('[data-grid-cell]');
+    if (!cell || cell.dataset.gridMode === 'editing') return;
+    if (!String(event.inputType || '').startsWith('insert')) return;
+    startTabularGridCellEditing(cell, { replace: true });
+}
+
+function handleTabularGridCompositionStart(event) {
+    const cell = event.target.closest?.('[data-grid-cell]');
+    if (!cell || cell.dataset.gridMode === 'editing') return;
+    startTabularGridCellEditing(cell, { replace: true });
+}
+
 function handleTabularGridInput(event) {
     const cell = event.target.closest?.('[data-grid-cell]');
     if (!cell) return;
     setActiveTabularGridCell(cell);
+    setTabularGridCellMode(cell, 'editing');
     updateTableInputState();
 }
 
@@ -649,6 +719,7 @@ function handleTabularGridBlur(event) {
     if (cell.childNodes.length !== 1 || cell.firstChild?.nodeType !== Node.TEXT_NODE) {
         cell.textContent = value;
     }
+    stopTabularGridCellEditing(cell);
 }
 
 function parseTabularGridText(value) {
@@ -792,6 +863,7 @@ function handleTabularGridKeydown(event) {
     if (!cell) return;
     const row = Number(cell.dataset.gridRow);
     const column = Number(cell.dataset.gridColumn);
+    const isEditing = cell.dataset.gridMode === 'editing';
 
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
         if (!loadPastedDataBtn.disabled) {
@@ -799,6 +871,72 @@ function handleTabularGridKeydown(event) {
             loadPastedTable();
         }
         return;
+    }
+
+    if (event.key === 'F2') {
+        event.preventDefault();
+        if (isEditing) stopTabularGridCellEditing(cell);
+        else startTabularGridCellEditing(cell);
+        return;
+    }
+
+    if (event.key === 'Escape' && isEditing) {
+        event.preventDefault();
+        stopTabularGridCellEditing(cell);
+        return;
+    }
+
+    if (!isEditing) {
+        const arrowMovement = {
+            ArrowLeft: [0, -1],
+            ArrowRight: [0, 1],
+            ArrowUp: [-1, 0],
+            ArrowDown: [1, 0]
+        }[event.key];
+
+        if (arrowMovement) {
+            event.preventDefault();
+            const nextRow = Math.min(
+                tabularGridRowCount - 1,
+                Math.max(0, row + arrowMovement[0])
+            );
+            const nextColumn = Math.min(
+                tabularGridColumnCount - 1,
+                Math.max(0, column + arrowMovement[1])
+            );
+            if (nextRow !== row || nextColumn !== column) {
+                focusTabularGridCell(nextRow, nextColumn);
+            }
+            return;
+        }
+
+        if (event.key === 'Home' || event.key === 'End') {
+            event.preventDefault();
+            const isGridBoundary = event.ctrlKey || event.metaKey;
+            focusTabularGridCell(
+                isGridBoundary && event.key === 'Home' ? 0
+                    : isGridBoundary && event.key === 'End' ? tabularGridRowCount - 1
+                        : row,
+                event.key === 'Home' ? 0 : tabularGridColumnCount - 1
+            );
+            return;
+        }
+
+        if (event.key === 'Backspace' || event.key === 'Delete') {
+            event.preventDefault();
+            cell.textContent = '';
+            updateTableInputState();
+            return;
+        }
+
+        const startsTextInput = event.key.length === 1
+            && !event.metaKey
+            && !event.ctrlKey
+            && !event.altKey;
+        if (startsTextInput) {
+            startTabularGridCellEditing(cell, { replace: true });
+            return;
+        }
     }
 
     if (event.key === 'Enter') {
@@ -813,6 +951,7 @@ function handleTabularGridKeydown(event) {
         return;
     }
 
+    if (isEditing && event.key !== 'Tab') return;
     if (event.key !== 'Tab') return;
     if (event.shiftKey && row === 0 && column === 0) return;
     event.preventDefault();

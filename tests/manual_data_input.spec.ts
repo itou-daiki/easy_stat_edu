@@ -98,6 +98,62 @@ test.describe('Manual data input', () => {
         await expect(page.locator('#load-pasted-data-btn')).toBeDisabled();
     });
 
+    test('supports spreadsheet-style arrow navigation and explicit cell editing', async ({ page }) => {
+        await page.locator('#data-source-paste-tab').click();
+
+        const cell = (row, column) => page.locator(
+            `[data-grid-cell][data-grid-row="${row}"][data-grid-column="${column}"]`
+        );
+        await cell(0, 0).click();
+        await expect(cell(0, 0)).toBeFocused();
+        await expect(cell(0, 0)).toHaveAttribute('data-grid-mode', 'navigation');
+
+        await page.keyboard.press('ArrowRight');
+        await expect(cell(0, 1)).toBeFocused();
+        await page.keyboard.press('ArrowDown');
+        await expect(cell(1, 1)).toBeFocused();
+        await page.keyboard.press('ArrowLeft');
+        await expect(cell(1, 0)).toBeFocused();
+        await page.keyboard.press('ArrowUp');
+        await expect(cell(0, 0)).toBeFocused();
+
+        await page.keyboard.press('End');
+        await expect(cell(0, 4)).toBeFocused();
+        await page.keyboard.press('Home');
+        await expect(cell(0, 0)).toBeFocused();
+        await page.keyboard.press('Control+End');
+        await expect(cell(7, 4)).toBeFocused();
+        await page.keyboard.press('Control+Home');
+        await expect(cell(0, 0)).toBeFocused();
+
+        await page.keyboard.press('F2');
+        await expect(cell(0, 0)).toHaveAttribute('data-grid-mode', 'editing');
+        await page.keyboard.press('ArrowRight');
+        await expect(cell(0, 0)).toBeFocused();
+        await page.keyboard.press('Escape');
+        await expect(cell(0, 0)).toHaveAttribute('data-grid-mode', 'navigation');
+        await page.keyboard.press('ArrowRight');
+        await expect(cell(0, 1)).toBeFocused();
+
+        await page.keyboard.type('score');
+        await expect(cell(0, 1)).toHaveText('score');
+        await expect(cell(0, 1)).toHaveAttribute('data-grid-mode', 'editing');
+        await page.keyboard.press('Enter');
+        await expect(cell(1, 1)).toBeFocused();
+        await expect(cell(1, 1)).toHaveAttribute('data-grid-mode', 'navigation');
+
+        await cell(1, 1).dblclick();
+        await expect(cell(1, 1)).toHaveAttribute('data-grid-mode', 'editing');
+
+        await page.keyboard.press('Escape');
+        await page.keyboard.press('ArrowRight');
+        await expect(cell(1, 2)).toBeFocused();
+        await cell(1, 2).dispatchEvent('compositionstart');
+        await expect(cell(1, 2)).toHaveAttribute('data-grid-mode', 'editing');
+        await page.keyboard.insertText('得点');
+        await expect(cell(1, 2)).toHaveText('得点');
+    });
+
     test('preserves quoted commas and supplies names for blank or duplicate headers', async ({ page }) => {
         const parsed = await page.evaluate(() => {
             return window.parseTabularText([
