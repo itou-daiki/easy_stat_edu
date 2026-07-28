@@ -28,6 +28,8 @@ export const STOP_WORDS = new Set([
     // その他一般的すぎる語
     'それ', 'これ', 'あれ', 'どれ', 'なに', 'どう', 'そう', 'ああ',
     'とき', 'ところ', 'ほう', 'ほど', 'まま', 'よる', 'なか', 'うち', 'つもり',
+    'そのため', 'そのために', 'ために', 'ことに', 'ものに', 'ながら', 'かって',
+    'について', 'に対して', 'において',
     // TinySegmenterで出やすい機能語・接尾的な断片
     'たけど', 'だけど', 'やすいけど', 'しやすい', 'にくい', 'がつい',
     'やすい', 'づらい', 'られる', 'くれる', 'される', 'できる'
@@ -36,8 +38,6 @@ export const STOP_WORDS = new Set([
 // ======================================================================
 // トークナイザー
 // ======================================================================
-
-const KUROMOJI_DIC_PATH = 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/';
 
 /** @type {Object|null} 正規化済みトークナイザー */
 let tokenizer = null;
@@ -62,6 +62,38 @@ export function getTokenizerInfo() {
 }
 
 /**
+ * ブラウザ内蔵の単語分割器を、アプリ共通のトークン形式へ変換する。
+ * 外部辞書を読み込まないため、静的ホスティングでもすぐに利用できる。
+ * @param {Function} [SegmenterConstructor]
+ * @returns {Object|null}
+ */
+export function createIntlSegmenterTokenizer(
+    SegmenterConstructor = globalThis.Intl?.Segmenter
+) {
+    if (typeof SegmenterConstructor !== 'function') return null;
+
+    try {
+        const segmenter = new SegmenterConstructor('ja', { granularity: 'word' });
+        return {
+            engine: 'intl-segmenter',
+            analyze(text) {
+                return [...segmenter.segment(String(text || ''))]
+                    .filter(part => part.isWordLike !== false && /\S/u.test(part.segment))
+                    .map(part => ({
+                        surface_form: part.segment,
+                        basic_form: part.segment,
+                        pos: '',
+                        pos_detail_1: ''
+                    }));
+            }
+        };
+    } catch (error) {
+        console.warn('Intl.Segmenter initialization failed. Falling back locally.', error);
+        return null;
+    }
+}
+
+/**
  * トークナイザーを初期化
  * @param {Function} [statusCallback] - ステータス更新コールバック
  * @returns {Promise<void>}
@@ -69,39 +101,23 @@ export function getTokenizerInfo() {
 export async function initTokenizer(statusCallback) {
     if (tokenizer) return;
 
-    if (statusCallback) statusCallback('日本語形態素辞書を読み込み中...');
+    if (statusCallback) statusCallback('日本語テキスト解析を準備中...');
 
-    if (typeof kuromoji !== 'undefined') {
-        try {
-            const kuromojiTokenizer = await new Promise((resolve, reject) => {
-                kuromoji.builder({ dicPath: KUROMOJI_DIC_PATH }).build((error, builtTokenizer) => {
-                    if (error) reject(error);
-                    else resolve(builtTokenizer);
-                });
-            });
-
-            tokenizer = {
-                engine: 'kuromoji',
-                analyze(text) {
-                    return kuromojiTokenizer.tokenize(String(text || ''));
-                }
-            };
-            tokenizerInfo = {
-                engine: 'kuromoji',
-                label: 'Kuromoji（IPADIC・基本形／品詞対応）',
-                hasMorphology: true,
-                warning: ''
-            };
-            if (statusCallback) statusCallback('形態素解析エンジンの準備完了');
-            return;
-        } catch (error) {
-            console.warn('Kuromoji initialization failed. Falling back to TinySegmenter.', error);
-            tokenizerInfo.warning = 'Kuromoji辞書を読み込めなかったため、簡易分かち書きを使用しています。';
-        }
+    const intlTokenizer = createIntlSegmenterTokenizer();
+    if (intlTokenizer) {
+        tokenizer = intlTokenizer;
+        tokenizerInfo = {
+            engine: 'intl-segmenter',
+            label: 'ブラウザ内蔵（高速分かち書き）',
+            hasMorphology: false,
+            warning: '品詞は語形から推定し、活用形は原則として別の語として集計します。'
+        };
+        if (statusCallback) statusCallback('高速解析エンジンの準備完了');
+        return;
     }
 
     if (typeof TinySegmenter === 'undefined') {
-        throw new Error('日本語形態素解析ライブラリを読み込めませんでした');
+        throw new Error('日本語テキスト解析機能を読み込めませんでした');
     }
 
     const tinySegmenter = new TinySegmenter();
@@ -118,11 +134,11 @@ export async function initTokenizer(statusCallback) {
     };
     tokenizerInfo = {
         engine: 'tiny-segmenter',
-        label: 'TinySegmenter（簡易分かち書き）',
+        label: 'TinySegmenter（ローカル分かち書き）',
         hasMorphology: false,
-        warning: tokenizerInfo.warning || '簡易分かち書きのため、基本形と品詞は推定値です。'
+        warning: '品詞は語形から推定し、活用形は原則として別の語として集計します。'
     };
-    if (statusCallback) statusCallback('簡易解析エンジンの準備完了');
+    if (statusCallback) statusCallback('ローカル解析エンジンの準備完了');
 }
 
 // ======================================================================
@@ -589,41 +605,48 @@ export function buildCooccurrenceEdges(sentences, topWords, options = {}) {
     const maxEdges = options.maxEdges ?? 80;
     const minCooccurrence = Math.max(1, options.minCooccurrence ?? 1);
     const filterMode = options.filterMode || 'top';
-    const words = Array.isArray(topWords) ? topWords : [];
+    const words = [...new Set(Array.isArray(topWords) ? topWords : [])];
     const edges = [];
-    const wordPresence = {};
+    const wordIndexes = new Map(words.map((word, index) => [word, index]));
+    const presenceCounts = Object.fromEntries(words.map(word => [word, 0]));
+    const pairCounts = new Map();
 
-    words.forEach(w => { wordPresence[w] = new Set(); });
+    (Array.isArray(sentences) ? sentences : []).forEach(tokens => {
+        const activeIndexes = [...new Set((tokens || [])
+            .map(token => wordIndexes.get(token))
+            .filter(index => index !== undefined))]
+            .sort((a, b) => a - b);
 
-    (Array.isArray(sentences) ? sentences : []).forEach((tokens, sIdx) => {
-        new Set(tokens || []).forEach(w => {
-            if (wordPresence[w]) wordPresence[w].add(sIdx);
+        activeIndexes.forEach(index => {
+            presenceCounts[words[index]]++;
         });
+        for (let i = 0; i < activeIndexes.length; i++) {
+            for (let j = i + 1; j < activeIndexes.length; j++) {
+                const key = `${activeIndexes[i]}:${activeIndexes[j]}`;
+                pairCounts.set(key, (pairCounts.get(key) || 0) + 1);
+            }
+        }
     });
 
-    for (let i = 0; i < words.length; i++) {
-        for (let j = i + 1; j < words.length; j++) {
-            const w1 = words[i];
-            const w2 = words[j];
-            const set1 = wordPresence[w1];
-            const set2 = wordPresence[w2];
-            let intersection = 0;
-            set1.forEach(id => { if (set2.has(id)) intersection++; });
-
-            if (intersection < minCooccurrence) continue;
-            const union = new Set([...set1, ...set2]).size;
-            const weight = union > 0 ? intersection / union : 0;
-            if (filterMode === 'threshold' && weight < threshold) continue;
-            edges.push({
-                from: w1,
-                to: w2,
-                weight,
-                intersection,
-                fromCount: set1.size,
-                toCount: set2.size
-            });
-        }
-    }
+    pairCounts.forEach((intersection, key) => {
+        if (intersection < minCooccurrence) return;
+        const [fromIndex, toIndex] = key.split(':').map(Number);
+        const from = words[fromIndex];
+        const to = words[toIndex];
+        const fromCount = presenceCounts[from];
+        const toCount = presenceCounts[to];
+        const union = fromCount + toCount - intersection;
+        const weight = union > 0 ? intersection / union : 0;
+        if (filterMode === 'threshold' && weight < threshold) return;
+        edges.push({
+            from,
+            to,
+            weight,
+            intersection,
+            fromCount,
+            toCount
+        });
+    });
 
     return edges
         .sort((a, b) => b.weight - a.weight || b.intersection - a.intersection || a.from.localeCompare(b.from, 'ja'))

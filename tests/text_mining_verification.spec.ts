@@ -80,14 +80,15 @@ test.describe('Text Mining Advanced Verification', () => {
         await expect(page.locator('button.tab-btn', { hasText: '全体分析' })).toBeVisible();
 
         // 7. Verify Overall Analysis (Default Tab) - Wait for this FIRST to ensure analysis is done
-        // Tokenizer loading might take time, so we wait for the canvas
+        // The local tokenizer should initialize without a remote dictionary.
         // Skipping container check as it was flaky; verify content instead
         await expect(page.locator('#tm-overall canvas#overall-wordcloud')).toBeVisible({ timeout: 60000 });
         await expect(page.locator('#tm-overall canvas#overall-wordcloud-tfidf')).toBeVisible({ timeout: 60000 });
         await expect(page.locator('#tm-overall #overall-network canvas')).toBeVisible();
         await expect(page.locator('#tm-overall', { hasText: '品詞別ランキング' })).toBeVisible();
         await expect(page.locator('#tm-overall', { hasText: '色分けの意味' })).toBeVisible();
-        await expect(page.locator('#tm-overall', { hasText: 'Kuromoji（IPADIC・基本形／品詞対応）' })).toBeVisible();
+        await expect(page.locator('#tm-overall', { hasText: 'ブラウザ内蔵（高速分かち書き）' })).toBeVisible();
+        await expect(page.locator('#tm-overall', { hasText: '品詞別ランキング（推定）' })).toBeVisible();
         await expect(page.locator('#overall-wordcloud-legend')).toContainText('名詞');
         await expect(page.locator('#overall-wordcloud-legend')).toContainText('大きさ');
 
@@ -230,7 +231,11 @@ test.describe('Text Mining Advanced Verification', () => {
         });
 
         // 11. Check for critical errors
-        const criticalErrors = consoleErrors.filter(e => e.includes('TinySegmenter') || e.includes('Failed'));
+        const criticalErrors = consoleErrors.filter(e =>
+            e.includes('TinySegmenter')
+            || e.includes('Intl.Segmenter')
+            || e.includes('Failed')
+        );
         expect(criticalErrors).toHaveLength(0);
     });
 });

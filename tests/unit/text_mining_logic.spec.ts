@@ -4,6 +4,7 @@ import {
     isContentToken,
     inferPartOfSpeech,
     mapPartOfSpeech,
+    createIntlSegmenterTokenizer,
     analyzeDocument,
     computeTermMetrics,
     computeCategorySpecificity,
@@ -14,6 +15,16 @@ import {
 import { detectCommunities } from '../../js/analyses/text_mining/visualization.js';
 
 test.describe('Text mining logic', () => {
+    test('keeps the static app free from a remote morphology dictionary dependency', async ({ request }) => {
+        const indexResponse = await request.get('/');
+        const helperResponse = await request.get('/js/analyses/text_mining/helpers.js');
+        const source = `${await indexResponse.text()}\n${await helperResponse.text()}`;
+
+        expect(source.toLowerCase()).not.toContain('kuromoji@');
+        expect(source).not.toContain('builder({');
+        expect(source).not.toContain('dicPath');
+    });
+
     test('normalizes tokens and filters non-content tokens', () => {
         expect(normalizeToken(' ＩＣＴ! ')).toBe('ict');
         expect(normalizeToken('タブレット。')).toBe('タブレット');
@@ -77,6 +88,26 @@ test.describe('Text mining logic', () => {
             expect.objectContaining({ term: '楽しい', pos: 'adjective' }),
             expect.objectContaining({ term: 'ict', pos: 'alnum' })
         ]);
+    });
+
+    test('segments Japanese locally without downloading a morphology dictionary', () => {
+        const localTokenizer = createIntlSegmenterTokenizer(Intl.Segmenter);
+        expect(localTokenizer?.engine).toBe('intl-segmenter');
+
+        const terms = analyzeDocument(
+            'データ分析の授業が楽しい。ICTも活用した。',
+            localTokenizer
+        ).map(token => token.term);
+        expect(terms).toEqual(expect.arrayContaining([
+            'データ',
+            '分析',
+            '授業',
+            '楽しい',
+            'ict',
+            '活用'
+        ]));
+        expect(terms).not.toContain('の');
+        expect(terms).not.toContain('が');
     });
 
     test('builds sentence-level Jaccard co-occurrence edges', () => {

@@ -24,10 +24,28 @@ const dataSourceFileTab = document.getElementById('data-source-file-tab');
 const dataSourcePasteTab = document.getElementById('data-source-paste-tab');
 const fileInputPanel = document.getElementById('file-input-panel');
 const pasteInputPanel = document.getElementById('paste-input-panel');
-const tabularDataInput = document.getElementById('tabular-data-input');
+const tabularDataGrid = document.getElementById('tabular-data-grid');
+const tabularGridColumnHeaders = document.getElementById('tabular-grid-column-headers');
+const tabularGridBody = document.getElementById('tabular-grid-body');
 const loadPastedDataBtn = document.getElementById('load-pasted-data-btn');
 const clearTableInputBtn = document.getElementById('clear-table-input-btn');
 const tableInputStatus = document.getElementById('table-input-status');
+const addTableRowBtn = document.getElementById('add-table-row-btn');
+const addTableColumnBtn = document.getElementById('add-table-column-btn');
+const deleteTableRowBtn = document.getElementById('delete-table-row-btn');
+const deleteTableColumnBtn = document.getElementById('delete-table-column-btn');
+
+const DEFAULT_TABULAR_GRID_ROWS = 8;
+const DEFAULT_TABULAR_GRID_COLUMNS = 5;
+const MIN_TABULAR_GRID_ROWS = 2;
+const MIN_TABULAR_GRID_COLUMNS = 1;
+const MAX_TABULAR_GRID_ROWS = 5000;
+const MAX_TABULAR_GRID_COLUMNS = 100;
+const MAX_TABULAR_GRID_CELLS = 50000;
+
+let tabularGridRowCount = DEFAULT_TABULAR_GRID_ROWS;
+let tabularGridColumnCount = DEFAULT_TABULAR_GRID_COLUMNS;
+let activeTabularGridPosition = null;
 
 const GEMINI_API_KEY_STORAGE = 'easyStat.geminiApiKey';
 const GEMINI_PRIMARY_MODEL = 'gemini-3-flash-preview';
@@ -244,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.upload-text').textContent = 'ここにファイルをドラッグ＆ドロップ';
 
     enhanceAnalysisCards();
+    initializeTabularGrid();
     setupEventListeners();
     setupAISupport();
 });
@@ -255,21 +274,26 @@ function setupEventListeners() {
     dataSourceFileTab?.addEventListener('click', () => setDataInputMode('file'));
     dataSourcePasteTab?.addEventListener('click', () => {
         setDataInputMode('paste');
-        tabularDataInput?.focus();
+        focusTabularGridCell(
+            activeTabularGridPosition?.row ?? 0,
+            activeTabularGridPosition?.column ?? 0
+        );
     });
 
-    tabularDataInput?.addEventListener('input', updateTableInputState);
-    tabularDataInput?.addEventListener('keydown', event => {
-        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && !loadPastedDataBtn.disabled) {
-            event.preventDefault();
-            loadPastedTable();
-        }
-    });
+    tabularDataGrid?.addEventListener('focusin', handleTabularGridFocus);
+    tabularDataGrid?.addEventListener('click', handleTabularGridFocus);
+    tabularDataGrid?.addEventListener('input', handleTabularGridInput);
+    tabularDataGrid?.addEventListener('blur', handleTabularGridBlur, true);
+    tabularDataGrid?.addEventListener('paste', handleTabularGridPaste);
+    tabularDataGrid?.addEventListener('keydown', handleTabularGridKeydown);
+    addTableRowBtn?.addEventListener('click', addTabularGridRow);
+    addTableColumnBtn?.addEventListener('click', addTabularGridColumn);
+    deleteTableRowBtn?.addEventListener('click', deleteActiveTabularGridRow);
+    deleteTableColumnBtn?.addEventListener('click', deleteActiveTabularGridColumn);
     loadPastedDataBtn?.addEventListener('click', loadPastedTable);
     clearTableInputBtn?.addEventListener('click', () => {
-        tabularDataInput.value = '';
-        updateTableInputState();
-        tabularDataInput.focus();
+        resetTabularGrid();
+        focusTabularGridCell(0, 0);
     });
 
     uploadBtn.addEventListener('click', () => fileInput.click());
@@ -295,8 +319,12 @@ function setupEventListeners() {
         const pastedText = event.dataTransfer.getData('text/plain');
         if (pastedText) {
             setDataInputMode('paste');
-            tabularDataInput.value = pastedText;
-            updateTableInputState();
+            try {
+                populateTabularGridFromText(pastedText);
+            } catch (error) {
+                console.error(error);
+                showError(error.message || '表データを貼り付けできませんでした。');
+            }
         }
     });
     demoBtn.addEventListener('click', () => {
@@ -366,22 +394,481 @@ function setDataInputMode(mode) {
     if (pasteInputPanel) pasteInputPanel.hidden = !showPasteInput;
 }
 
+function tabularGridColumnLabel(index) {
+    let value = index + 1;
+    let label = '';
+    while (value > 0) {
+        value -= 1;
+        label = String.fromCharCode(65 + (value % 26)) + label;
+        value = Math.floor(value / 26);
+    }
+    return label;
+}
+
+function hasTabularGridValue(value) {
+    return value != null && String(value).trim() !== '';
+}
+
+function normalizeTabularGridCellValue(value) {
+    return String(value ?? '')
+        .replace(/\u00a0/g, ' ')
+        .replace(/\r\n|\r/g, '\n');
+}
+
+function assertTabularGridSize(rowCount, columnCount) {
+    if (rowCount > MAX_TABULAR_GRID_ROWS) {
+        throw new Error(`表入力は最大${MAX_TABULAR_GRID_ROWS.toLocaleString()}行です。より大きなデータはファイルから読み込んでください。`);
+    }
+    if (columnCount > MAX_TABULAR_GRID_COLUMNS) {
+        throw new Error(`表入力は最大${MAX_TABULAR_GRID_COLUMNS.toLocaleString()}列です。より大きなデータはファイルから読み込んでください。`);
+    }
+    if (rowCount * columnCount > MAX_TABULAR_GRID_CELLS) {
+        throw new Error(`表入力は最大${MAX_TABULAR_GRID_CELLS.toLocaleString()}セルです。より大きなデータはファイルから読み込んでください。`);
+    }
+}
+
+function createTabularGridCell(rowIndex, columnIndex, value) {
+    const cell = document.createElement('td');
+    const columnLabel = tabularGridColumnLabel(columnIndex);
+    cell.className = `tabular-grid-cell${rowIndex === 0 ? ' tabular-grid-header-cell' : ''}`;
+    cell.contentEditable = 'plaintext-only';
+    cell.spellcheck = false;
+    cell.tabIndex = rowIndex === 0 && columnIndex === 0 ? 0 : -1;
+    cell.dataset.gridCell = 'true';
+    cell.dataset.gridRow = String(rowIndex);
+    cell.dataset.gridColumn = String(columnIndex);
+    cell.setAttribute('role', 'gridcell');
+    cell.setAttribute(
+        'aria-label',
+        rowIndex === 0
+            ? `${columnLabel}列の列名`
+            : `${rowIndex + 1}行 ${columnLabel}列`
+    );
+    cell.textContent = normalizeTabularGridCellValue(value);
+    return cell;
+}
+
+function renderTabularGrid(matrix = [], {
+    rowCount = DEFAULT_TABULAR_GRID_ROWS,
+    columnCount = DEFAULT_TABULAR_GRID_COLUMNS
+} = {}) {
+    if (!tabularDataGrid || !tabularGridColumnHeaders || !tabularGridBody) return;
+
+    const matrixColumnCount = matrix.reduce(
+        (maximum, row) => Math.max(maximum, Array.isArray(row) ? row.length : 0),
+        0
+    );
+    tabularGridRowCount = Math.max(MIN_TABULAR_GRID_ROWS, rowCount, matrix.length);
+    tabularGridColumnCount = Math.max(
+        MIN_TABULAR_GRID_COLUMNS,
+        columnCount,
+        matrixColumnCount
+    );
+    assertTabularGridSize(tabularGridRowCount, tabularGridColumnCount);
+    activeTabularGridPosition = null;
+
+    const cornerHeader = document.createElement('th');
+    cornerHeader.className = 'tabular-grid-corner';
+    cornerHeader.setAttribute('aria-label', '行番号');
+    cornerHeader.setAttribute('role', 'columnheader');
+    cornerHeader.textContent = '#';
+
+    const columnHeaderFragment = document.createDocumentFragment();
+    columnHeaderFragment.appendChild(cornerHeader);
+    for (let columnIndex = 0; columnIndex < tabularGridColumnCount; columnIndex += 1) {
+        const header = document.createElement('th');
+        header.className = 'tabular-grid-column-header';
+        header.scope = 'col';
+        header.setAttribute('role', 'columnheader');
+        header.textContent = tabularGridColumnLabel(columnIndex);
+        columnHeaderFragment.appendChild(header);
+    }
+    tabularGridColumnHeaders.replaceChildren(columnHeaderFragment);
+
+    const bodyFragment = document.createDocumentFragment();
+    for (let rowIndex = 0; rowIndex < tabularGridRowCount; rowIndex += 1) {
+        const row = document.createElement('tr');
+        row.dataset.gridRow = String(rowIndex);
+
+        const rowHeader = document.createElement('th');
+        rowHeader.className = `tabular-grid-row-header${rowIndex === 0 ? ' tabular-grid-name-row-header' : ''}`;
+        rowHeader.scope = 'row';
+        rowHeader.setAttribute('role', 'rowheader');
+
+        const rowNumber = document.createElement('span');
+        rowNumber.textContent = String(rowIndex + 1);
+        rowHeader.appendChild(rowNumber);
+        if (rowIndex === 0) {
+            const nameMarker = document.createElement('small');
+            nameMarker.textContent = '列名';
+            rowHeader.appendChild(nameMarker);
+        }
+        row.appendChild(rowHeader);
+
+        for (let columnIndex = 0; columnIndex < tabularGridColumnCount; columnIndex += 1) {
+            row.appendChild(createTabularGridCell(
+                rowIndex,
+                columnIndex,
+                matrix[rowIndex]?.[columnIndex] ?? ''
+            ));
+        }
+        bodyFragment.appendChild(row);
+    }
+    tabularGridBody.replaceChildren(bodyFragment);
+    tabularDataGrid.setAttribute('aria-rowcount', String(tabularGridRowCount + 1));
+    tabularDataGrid.setAttribute('aria-colcount', String(tabularGridColumnCount + 1));
+    updateTableInputState();
+    updateTabularGridToolbarState();
+}
+
+function initializeTabularGrid() {
+    renderTabularGrid();
+}
+
+function readTabularGridMatrix() {
+    if (!tabularGridBody) return [];
+    return Array.from(tabularGridBody.rows).map(row => (
+        Array.from(row.querySelectorAll('[data-grid-cell]')).map(cell => (
+            normalizeTabularGridCellValue(cell.textContent)
+        ))
+    ));
+}
+
+function getUsedTabularGridDimensions(matrix = readTabularGridMatrix()) {
+    let lastRow = -1;
+    let lastColumn = -1;
+    matrix.forEach((row, rowIndex) => {
+        row.forEach((value, columnIndex) => {
+            if (!hasTabularGridValue(value)) return;
+            lastRow = Math.max(lastRow, rowIndex);
+            lastColumn = Math.max(lastColumn, columnIndex);
+        });
+    });
+    return {
+        rowCount: lastRow + 1,
+        columnCount: lastColumn + 1
+    };
+}
+
 function updateTableInputState() {
-    if (!tabularDataInput || !loadPastedDataBtn || !clearTableInputBtn || !tableInputStatus) return;
-    const value = tabularDataInput.value;
-    const hasInput = value.trim().length > 0;
-    loadPastedDataBtn.disabled = !hasInput;
+    if (!loadPastedDataBtn || !clearTableInputBtn || !tableInputStatus) return;
+    const matrix = readTabularGridMatrix();
+    const usedDimensions = getUsedTabularGridDimensions(matrix);
+    const hasInput = usedDimensions.rowCount > 0;
+    const hasHeader = matrix[0]?.some(hasTabularGridValue) ?? false;
+    const populatedDataRows = matrix.slice(1).filter(row => row.some(hasTabularGridValue)).length;
+    const canLoad = hasHeader && populatedDataRows > 0;
+
+    loadPastedDataBtn.disabled = !canLoad;
     clearTableInputBtn.disabled = !hasInput;
 
     if (!hasInput) {
-        tableInputStatus.textContent = 'タブ区切り・カンマ区切りに対応';
+        tableInputStatus.textContent = '0行 × 0列';
+        return;
+    }
+    if (!hasHeader) {
+        tableInputStatus.textContent = '1行目に列名が必要です';
+        return;
+    }
+    tableInputStatus.textContent = `${populatedDataRows.toLocaleString()}行 × ${usedDimensions.columnCount.toLocaleString()}列`;
+}
+
+function updateTabularGridToolbarState() {
+    const hasActiveCell = activeTabularGridPosition !== null;
+    if (deleteTableRowBtn) {
+        deleteTableRowBtn.disabled = !hasActiveCell || tabularGridRowCount <= MIN_TABULAR_GRID_ROWS;
+    }
+    if (deleteTableColumnBtn) {
+        deleteTableColumnBtn.disabled = !hasActiveCell || tabularGridColumnCount <= MIN_TABULAR_GRID_COLUMNS;
+    }
+    if (addTableRowBtn) {
+        addTableRowBtn.disabled = (
+            tabularGridRowCount >= MAX_TABULAR_GRID_ROWS
+            || (tabularGridRowCount + 1) * tabularGridColumnCount > MAX_TABULAR_GRID_CELLS
+        );
+    }
+    if (addTableColumnBtn) {
+        addTableColumnBtn.disabled = (
+            tabularGridColumnCount >= MAX_TABULAR_GRID_COLUMNS
+            || tabularGridRowCount * (tabularGridColumnCount + 1) > MAX_TABULAR_GRID_CELLS
+        );
+    }
+}
+
+function setActiveTabularGridCell(cell) {
+    if (!cell?.matches?.('[data-grid-cell]')) return;
+    const previousCell = tabularDataGrid?.querySelector('.tabular-grid-cell.active');
+    if (previousCell && previousCell !== cell) {
+        previousCell.classList.remove('active');
+        previousCell.tabIndex = -1;
+    }
+    cell.classList.add('active');
+    cell.tabIndex = 0;
+    activeTabularGridPosition = {
+        row: Number(cell.dataset.gridRow),
+        column: Number(cell.dataset.gridColumn)
+    };
+    updateTabularGridToolbarState();
+}
+
+function focusTabularGridCell(rowIndex, columnIndex) {
+    if (!tabularGridBody) return;
+    const cell = tabularGridBody.querySelector(
+        `[data-grid-cell][data-grid-row="${rowIndex}"][data-grid-column="${columnIndex}"]`
+    );
+    if (!cell) return;
+    setActiveTabularGridCell(cell);
+    cell.focus();
+
+    const selection = window.getSelection();
+    if (selection && document.createRange) {
+        const range = document.createRange();
+        range.selectNodeContents(cell);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+}
+
+function handleTabularGridFocus(event) {
+    const cell = event.target.closest?.('[data-grid-cell]');
+    if (cell && tabularDataGrid?.contains(cell)) setActiveTabularGridCell(cell);
+}
+
+function handleTabularGridInput(event) {
+    const cell = event.target.closest?.('[data-grid-cell]');
+    if (!cell) return;
+    setActiveTabularGridCell(cell);
+    updateTableInputState();
+}
+
+function handleTabularGridBlur(event) {
+    const cell = event.target.closest?.('[data-grid-cell]');
+    if (!cell) return;
+    const value = normalizeTabularGridCellValue(cell.textContent);
+    if (cell.childNodes.length !== 1 || cell.firstChild?.nodeType !== Node.TEXT_NODE) {
+        cell.textContent = value;
+    }
+}
+
+function parseTabularGridText(value) {
+    const source = trimOuterBlankLines(value);
+    if (!source) return [];
+    if (!source.includes('\t') && !source.includes('\n')) return [[source]];
+
+    if (!globalThis.XLSX) {
+        return source.split('\n').map(row => row.split('\t'));
+    }
+
+    const readOptions = { type: 'string', raw: true };
+    if (source.includes('\t')) readOptions.FS = '\t';
+    const workbook = globalThis.XLSX.read(source, readOptions);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = globalThis.XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        raw: true,
+        defval: '',
+        blankrows: true
+    });
+    while (rows.length > 0 && !rows[rows.length - 1].some(hasTabularGridValue)) rows.pop();
+    return rows.map(row => row.map(normalizeTabularGridCellValue));
+}
+
+function populateTabularGridFromText(value, startRow = 0, startColumn = 0) {
+    const pastedMatrix = parseTabularGridText(value);
+    if (pastedMatrix.length === 0) return;
+
+    const pastedColumnCount = pastedMatrix.reduce(
+        (maximum, row) => Math.max(maximum, row.length),
+        0
+    );
+    const nextRowCount = Math.max(tabularGridRowCount, startRow + pastedMatrix.length);
+    const nextColumnCount = Math.max(
+        tabularGridColumnCount,
+        startColumn + pastedColumnCount
+    );
+    assertTabularGridSize(nextRowCount, nextColumnCount);
+
+    const matrix = readTabularGridMatrix();
+    while (matrix.length < nextRowCount) {
+        matrix.push(Array(tabularGridColumnCount).fill(''));
+    }
+    matrix.forEach(row => {
+        while (row.length < nextColumnCount) row.push('');
+    });
+
+    pastedMatrix.forEach((row, rowOffset) => {
+        row.forEach((cellValue, columnOffset) => {
+            matrix[startRow + rowOffset][startColumn + columnOffset] = cellValue;
+        });
+    });
+
+    renderTabularGrid(matrix, {
+        rowCount: nextRowCount,
+        columnCount: nextColumnCount
+    });
+    focusTabularGridCell(startRow, startColumn);
+}
+
+function handleTabularGridPaste(event) {
+    const cell = event.target.closest?.('[data-grid-cell]');
+    if (!cell) return;
+    const pastedText = event.clipboardData?.getData('text/plain');
+    if (pastedText == null) return;
+    event.preventDefault();
+
+    try {
+        populateTabularGridFromText(
+            pastedText,
+            Number(cell.dataset.gridRow),
+            Number(cell.dataset.gridColumn)
+        );
+    } catch (error) {
+        console.error(error);
+        showError(error.message || '表データを貼り付けできませんでした。');
+    }
+}
+
+function addTabularGridRow({ focusColumn = activeTabularGridPosition?.column ?? 0 } = {}) {
+    try {
+        const nextRowCount = tabularGridRowCount + 1;
+        assertTabularGridSize(nextRowCount, tabularGridColumnCount);
+        const matrix = readTabularGridMatrix();
+        matrix.push(Array(tabularGridColumnCount).fill(''));
+        renderTabularGrid(matrix, {
+            rowCount: nextRowCount,
+            columnCount: tabularGridColumnCount
+        });
+        focusTabularGridCell(nextRowCount - 1, Math.min(focusColumn, tabularGridColumnCount - 1));
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
+function addTabularGridColumn({ focusRow = activeTabularGridPosition?.row ?? 0 } = {}) {
+    try {
+        const nextColumnCount = tabularGridColumnCount + 1;
+        assertTabularGridSize(tabularGridRowCount, nextColumnCount);
+        const matrix = readTabularGridMatrix();
+        matrix.forEach(row => row.push(''));
+        renderTabularGrid(matrix, {
+            rowCount: tabularGridRowCount,
+            columnCount: nextColumnCount
+        });
+        focusTabularGridCell(Math.min(focusRow, tabularGridRowCount - 1), nextColumnCount - 1);
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
+function deleteActiveTabularGridRow() {
+    if (!activeTabularGridPosition || tabularGridRowCount <= MIN_TABULAR_GRID_ROWS) return;
+    const { row, column } = activeTabularGridPosition;
+    const matrix = readTabularGridMatrix();
+    matrix.splice(row, 1);
+    const nextRowCount = tabularGridRowCount - 1;
+    renderTabularGrid(matrix, {
+        rowCount: nextRowCount,
+        columnCount: tabularGridColumnCount
+    });
+    focusTabularGridCell(Math.min(row, nextRowCount - 1), column);
+}
+
+function deleteActiveTabularGridColumn() {
+    if (!activeTabularGridPosition || tabularGridColumnCount <= MIN_TABULAR_GRID_COLUMNS) return;
+    const { row, column } = activeTabularGridPosition;
+    const matrix = readTabularGridMatrix();
+    matrix.forEach(matrixRow => matrixRow.splice(column, 1));
+    const nextColumnCount = tabularGridColumnCount - 1;
+    renderTabularGrid(matrix, {
+        rowCount: tabularGridRowCount,
+        columnCount: nextColumnCount
+    });
+    focusTabularGridCell(row, Math.min(column, nextColumnCount - 1));
+}
+
+function handleTabularGridKeydown(event) {
+    const cell = event.target.closest?.('[data-grid-cell]');
+    if (!cell) return;
+    const row = Number(cell.dataset.gridRow);
+    const column = Number(cell.dataset.gridColumn);
+
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+        if (!loadPastedDataBtn.disabled) {
+            event.preventDefault();
+            loadPastedTable();
+        }
         return;
     }
 
-    const physicalRows = value.split(/\r\n|\r|\n/).filter(line => line.trim() !== '').length;
-    const format = value.includes('\t') ? 'タブ区切り' : 'カンマ区切り';
-    tableInputStatus.textContent = `${format}・入力 ${physicalRows.toLocaleString()}行`;
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        const nextRow = event.shiftKey ? row - 1 : row + 1;
+        if (nextRow < 0) return;
+        if (nextRow >= tabularGridRowCount) {
+            addTabularGridRow({ focusColumn: column });
+        } else {
+            focusTabularGridCell(nextRow, column);
+        }
+        return;
+    }
+
+    if (event.key !== 'Tab') return;
+    if (event.shiftKey && row === 0 && column === 0) return;
+    event.preventDefault();
+
+    let nextRow = row;
+    let nextColumn = column + (event.shiftKey ? -1 : 1);
+    if (nextColumn >= tabularGridColumnCount) {
+        nextColumn = 0;
+        nextRow += 1;
+    } else if (nextColumn < 0) {
+        nextColumn = tabularGridColumnCount - 1;
+        nextRow -= 1;
+    }
+
+    if (nextRow >= tabularGridRowCount) {
+        addTabularGridRow({ focusColumn: nextColumn });
+    } else {
+        focusTabularGridCell(nextRow, nextColumn);
+    }
 }
+
+function escapeTabularGridCell(value) {
+    const normalized = normalizeTabularGridCellValue(value);
+    if (!/[\t\n"]/.test(normalized)) return normalized;
+    return `"${normalized.replace(/"/g, '""')}"`;
+}
+
+function serializeTabularGrid() {
+    const matrix = readTabularGridMatrix();
+    const { rowCount, columnCount } = getUsedTabularGridDimensions(matrix);
+    if (rowCount === 0 || columnCount === 0) return '';
+    return matrix.slice(0, rowCount).map(row => (
+        row.slice(0, columnCount).map(escapeTabularGridCell).join('\t')
+    )).join('\n');
+}
+
+function resetTabularGrid() {
+    renderTabularGrid([], {
+        rowCount: DEFAULT_TABULAR_GRID_ROWS,
+        columnCount: DEFAULT_TABULAR_GRID_COLUMNS
+    });
+}
+
+window.getTabularGridData = readTabularGridMatrix;
+window.setTabularGridData = matrix => {
+    const safeMatrix = Array.isArray(matrix)
+        ? matrix.map(row => Array.isArray(row) ? row : [row])
+        : [];
+    renderTabularGrid(safeMatrix, {
+        rowCount: Math.max(DEFAULT_TABULAR_GRID_ROWS, safeMatrix.length),
+        columnCount: Math.max(
+            DEFAULT_TABULAR_GRID_COLUMNS,
+            safeMatrix.reduce((maximum, row) => Math.max(maximum, row.length), 0)
+        )
+    });
+};
 
 function trimOuterBlankLines(value) {
     const lines = String(value ?? '').replace(/^\uFEFF/, '').split(/\r\n|\r|\n/);
@@ -439,17 +926,19 @@ function loadPastedTable() {
     const originalButtonHtml = loadPastedDataBtn.innerHTML;
     loadPastedDataBtn.disabled = true;
     loadPastedDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 読み込み中...';
+    let loadedMessage = '';
 
     try {
-        const parsed = parseTabularText(tabularDataInput.value);
-        processData('貼り付けデータ', parsed.data);
-        tableInputStatus.textContent = `${parsed.data.length.toLocaleString()}行 × ${parsed.headers.length.toLocaleString()}列を読み込みました`;
+        const parsed = parseTabularText(serializeTabularGrid());
+        processData('表入力データ', parsed.data);
+        loadedMessage = `${parsed.data.length.toLocaleString()}行 × ${parsed.headers.length.toLocaleString()}列を読み込みました`;
     } catch (error) {
         console.error(error);
         showError(error.message || '表形式データの読み込みに失敗しました。');
     } finally {
         loadPastedDataBtn.innerHTML = originalButtonHtml;
-        loadPastedDataBtn.disabled = tabularDataInput.value.trim().length === 0;
+        updateTableInputState();
+        if (loadedMessage) tableInputStatus.textContent = loadedMessage;
     }
 }
 

@@ -34,7 +34,7 @@ const COMMUNITY_COLORS = [
     '#be123c'
 ];
 
-function normalizeWordWeights(wordCounts, limit = 70) {
+function normalizeWordWeights(wordCounts, limit = 55) {
     const cleaned = (Array.isArray(wordCounts) ? wordCounts : [])
         .map(([word, weight]) => [String(word), Number(weight)])
         .filter(([word, weight]) => word.length > 0 && Number.isFinite(weight) && weight > 0)
@@ -97,10 +97,10 @@ function renderWordCloudLegend(canvas, posByWord, words, metricLabel) {
  */
 export function displayWordCloud(canvasId, wordCounts, onClick, options = {}) {
     const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
+    if (!canvas) return Promise.resolve();
 
-    const scale = 3;
-    const weightedWords = normalizeWordWeights(wordCounts, options.limit || 70);
+    const scale = 2;
+    const weightedWords = normalizeWordWeights(wordCounts, options.limit || 55);
     const metricLabel = options.metricLabel || '値が大きい語ほど大きく表示';
     const renderAtSize = (dimensions = null) => {
         const parentWidth = canvas.parentElement?.clientWidth
@@ -121,32 +121,58 @@ export function displayWordCloud(canvasId, wordCounts, onClick, options = {}) {
 
         if (weightedWords.length === 0) {
             drawCanvasMessage(canvas, '表示できる単語がありません', scale, width, height);
-            return;
+            return Promise.resolve();
         }
 
-        WordCloud(canvas, {
-            list: weightedWords,
-            gridSize: Math.round(10 * scale),
-            weightFactor: size => size * scale,
-            minSize: 11 * scale,
-            fontFamily: '"Helvetica Neue", "Yu Gothic", sans-serif',
-            color: word => {
-                const pos = options.posByWord?.[String(word)] || 'other';
-                return POS_STYLES[pos]?.color || POS_STYLES.other.color;
-            },
-            backgroundColor: '#f8fafc',
-            rotateRatio: 0,
-            shrinkToFit: true,
-            drawOutOfBound: false,
-            click: item => {
-                if (item?.[0] && typeof onClick === 'function') onClick(item[0]);
-            },
-            hover: window.drawBox ? window.drawBox : undefined
+        return new Promise((resolve, reject) => {
+            let settled = false;
+            const cleanup = () => {
+                window.clearTimeout(timeoutId);
+                canvas.removeEventListener('wordcloudstop', finish);
+                canvas.removeEventListener('wordcloudabort', finish);
+            };
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                resolve();
+            };
+            const timeoutId = window.setTimeout(finish, 5000);
+            canvas.addEventListener('wordcloudstop', finish);
+            canvas.addEventListener('wordcloudabort', finish);
+
+            try {
+                WordCloud(canvas, {
+                    list: weightedWords,
+                    gridSize: Math.round(10 * scale),
+                    weightFactor: size => size * scale,
+                    minSize: 11 * scale,
+                    fontFamily: '"Helvetica Neue", "Yu Gothic", sans-serif',
+                    color: word => {
+                        const pos = options.posByWord?.[String(word)] || 'other';
+                        return POS_STYLES[pos]?.color || POS_STYLES.other.color;
+                    },
+                    backgroundColor: '#f8fafc',
+                    rotateRatio: 0,
+                    shrinkToFit: true,
+                    drawOutOfBound: false,
+                    click: item => {
+                        if (item?.[0] && typeof onClick === 'function') onClick(item[0]);
+                    },
+                    hover: window.drawBox ? window.drawBox : undefined
+                });
+            } catch (error) {
+                settled = true;
+                cleanup();
+                reject(error);
+            }
         });
     };
 
-    canvas.__easyStatResizeFigure = renderAtSize;
-    renderAtSize();
+    canvas.__easyStatResizeFigure = dimensions => {
+        void renderAtSize(dimensions);
+    };
+    return renderAtSize();
 }
 
 /**
@@ -580,7 +606,12 @@ export function plotCooccurrenceNetwork(
                     springLength: 125,
                     damping: 0.5
                 },
-                stabilization: { enabled: true, iterations: 700, fit: true },
+                stabilization: {
+                    enabled: true,
+                    iterations: 280,
+                    updateInterval: 40,
+                    fit: true
+                },
                 minVelocity: 0.5
             },
             interaction: {
@@ -597,10 +628,17 @@ export function plotCooccurrenceNetwork(
             onClick(params.nodes[0]);
         }
     });
-    network.once('stabilizationIterationsDone', () => {
+    let networkSettled = false;
+    const finishStabilization = () => {
+        if (networkSettled) return;
+        networkSettled = true;
+        window.clearTimeout(stabilizationTimeout);
+        network.stopSimulation();
         network.fit({ animation: false });
         network.setOptions({ physics: false });
-    });
+    };
+    const stabilizationTimeout = window.setTimeout(finishStabilization, 2500);
+    network.once('stabilizationIterationsDone', finishStabilization);
     container.__easyStatResizeFigure = dimensions => {
         const width = Math.max(280, Math.round(dimensions?.width || container.clientWidth || 720));
         const height = Math.max(240, Math.round(dimensions?.height || container.clientHeight || 500));

@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20260728-viz-size-editor">
+    <link rel="stylesheet" href="css/style.css?v=20260729-tabular-grid">
 
     <!-- vis.js for network graphs -->
     <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
@@ -242,18 +242,47 @@
                     <div class="paste-input-heading">
                         <div>
                             <h3><i class="fas fa-table"></i> 表形式データ</h3>
-                            <p>1行目を列名として読み込みます</p>
+                            <p>1行目: 列名</p>
                         </div>
                         <button type="button" id="clear-table-input-btn" class="icon-button-subtle"
                             aria-label="入力を消去" title="入力を消去" disabled>
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
-                    <label for="tabular-data-input" class="sr-only">表形式データを入力</label>
-                    <textarea id="tabular-data-input" rows="9" spellcheck="false"
-                        placeholder="学年	得点	自由記述&#10;1年	72	授業が分かりやすい&#10;2年	81	実習が楽しい"></textarea>
+                    <div class="tabular-grid-toolbar" role="toolbar" aria-label="表の編集">
+                        <button type="button" id="add-table-row-btn" class="tabular-grid-action"
+                            aria-label="行を追加" title="行を追加">
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                            <span>行</span>
+                        </button>
+                        <button type="button" id="add-table-column-btn" class="tabular-grid-action"
+                            aria-label="列を追加" title="列を追加">
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                            <span>列</span>
+                        </button>
+                        <span class="tabular-grid-toolbar-divider" aria-hidden="true"></span>
+                        <button type="button" id="delete-table-row-btn" class="tabular-grid-action"
+                            aria-label="選択中の行を削除" title="選択中の行を削除" disabled>
+                            <i class="fas fa-minus" aria-hidden="true"></i>
+                            <span>行</span>
+                        </button>
+                        <button type="button" id="delete-table-column-btn" class="tabular-grid-action"
+                            aria-label="選択中の列を削除" title="選択中の列を削除" disabled>
+                            <i class="fas fa-minus" aria-hidden="true"></i>
+                            <span>列</span>
+                        </button>
+                    </div>
+                    <div id="tabular-grid-shell" class="tabular-grid-shell">
+                        <table id="tabular-data-grid" class="tabular-data-grid" role="grid"
+                            aria-label="表形式データを入力">
+                            <thead>
+                                <tr id="tabular-grid-column-headers"></tr>
+                            </thead>
+                            <tbody id="tabular-grid-body"></tbody>
+                        </table>
+                    </div>
                     <div class="paste-input-footer">
-                        <span id="table-input-status" role="status" aria-live="polite">タブ区切り・カンマ区切りに対応</span>
+                        <span id="table-input-status" role="status" aria-live="polite">0行 × 0列</span>
                         <button type="button" id="load-pasted-data-btn" class="btn-upload" disabled>
                             <i class="fas fa-arrow-right"></i> このデータを読み込む
                         </button>
@@ -672,7 +701,7 @@
                     <ul>
                         <li>Excel形式（.xlsx, .xls）</li>
                         <li>CSV形式（.csv）</li>
-                        <li>Excelからコピーした表、またはタブ・カンマ区切りの表形式データ</li>
+                        <li>セルへ直接入力した表、Excelから貼り付けた表、タブ・カンマ区切りの表形式データ</li>
                         <li>テキストマイニング画面での文章の直接入力</li>
                     </ul>
 
@@ -755,7 +784,7 @@
                         <div class="step-content">
                             <h5>データを用意</h5>
                             <p>
-                                「ファイル」からExcel・CSVを読み込むか、「表を入力」にExcelの表を貼り付けます。
+                                「ファイル」からExcel・CSVを読み込むか、「表を入力」のセルへ直接入力・貼り付けします。
                                 テキストマイニングは、分析画面で文章を直接入力することもできます。
                             </p>
                         </div>
@@ -997,7 +1026,6 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
     <script src="js/lib/tiny-segmenter.js"></script>
     <!-- WordCloud2.js Production Build -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
@@ -1011,7 +1039,7 @@
             }
         }
     </script>
-    <script type="module" src="js/main.js?v=20260728-viz-size-editor-c"></script>
+    <script type="module" src="js/main.js?v=20260729-tabular-grid"></script>
 </body>
 
 </html>

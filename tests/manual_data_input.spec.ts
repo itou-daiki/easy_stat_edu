@@ -10,6 +10,9 @@ test.describe('Manual data input', () => {
     test('loads an Excel-style tabular paste into the shared analysis data flow', async ({ page }) => {
         await page.locator('#data-source-paste-tab').click();
         await expect(page.locator('#paste-input-panel')).toBeVisible();
+        await expect(page.locator('#tabular-data-grid')).toBeVisible();
+        await expect(page.locator('#tabular-grid-body tr')).toHaveCount(8);
+        await expect(page.locator('.tabular-grid-column-header')).toHaveCount(5);
 
         const excelPaste = [
             '群\t得点\t自由記述',
@@ -18,12 +21,23 @@ test.describe('Manual data input', () => {
             'A\t15\tデータから発見できた',
             'B\t25\t実習が楽しい'
         ].join('\n');
-        await page.locator('#tabular-data-input').fill(excelPaste);
-        await expect(page.locator('#table-input-status')).toContainText('タブ区切り');
+        const firstCell = page.locator('[data-grid-cell][data-grid-row="0"][data-grid-column="0"]');
+        await firstCell.evaluate((element, pastedText) => {
+            const clipboardData = new DataTransfer();
+            clipboardData.setData('text/plain', pastedText);
+            element.dispatchEvent(new ClipboardEvent('paste', {
+                bubbles: true,
+                cancelable: true,
+                clipboardData
+            }));
+        }, excelPaste);
+        await expect(page.locator('#table-input-status')).toHaveText('4行 × 3列');
+        await expect(page.locator('[data-grid-cell][data-grid-row="0"][data-grid-column="2"]')).toHaveText('自由記述');
+        await expect(page.locator('[data-grid-cell][data-grid-row="4"][data-grid-column="2"]')).toHaveText('実習が楽しい');
         await page.locator('#load-pasted-data-btn').click();
 
         await expect(page.locator('#main-file-info')).toBeVisible();
-        await expect(page.locator('#main-file-info')).toContainText('貼り付けデータ');
+        await expect(page.locator('#main-file-info')).toContainText('表入力データ');
         await expect(page.locator('#table-input-status')).toHaveText('4行 × 3列を読み込みました');
         await expect(page.locator('#dataframe-container')).toContainText('データ分析が楽しい');
         await expect(page.locator('.feature-card[data-analysis="ttest"]')).not.toHaveClass(/disabled/);
@@ -34,6 +48,54 @@ test.describe('Manual data input', () => {
         await expect(page.locator('#text-var option[value="自由記述"]')).toHaveCount(1);
         await expect(page.locator('#category-var option[value="群"]')).toHaveCount(1);
         await expect(page.locator('#category-var option[value="自由記述"]')).toHaveCount(0);
+    });
+
+    test('supports direct cell editing and row or column operations', async ({ page }) => {
+        await page.locator('#data-source-paste-tab').click();
+
+        const firstCell = page.locator('[data-grid-cell][data-grid-row="0"][data-grid-column="0"]');
+        await firstCell.evaluate(element => {
+            const clipboardData = new DataTransfer();
+            clipboardData.setData('text/plain', '説明, 補足');
+            element.dispatchEvent(new ClipboardEvent('paste', {
+                bubbles: true,
+                cancelable: true,
+                clipboardData
+            }));
+        });
+        await expect(firstCell).toHaveText('説明, 補足');
+        await expect(page.locator('[data-grid-cell][data-grid-row="0"][data-grid-column="1"]')).toBeEmpty();
+        await page.locator('#clear-table-input-btn').click();
+
+        await page.locator('[data-grid-cell][data-grid-row="0"][data-grid-column="0"]').fill('群');
+        await page.locator('[data-grid-cell][data-grid-row="0"][data-grid-column="1"]').fill('得点');
+        await page.locator('[data-grid-cell][data-grid-row="1"][data-grid-column="0"]').fill('A');
+        await page.locator('[data-grid-cell][data-grid-row="1"][data-grid-column="1"]').fill('10');
+        await expect(page.locator('#table-input-status')).toHaveText('1行 × 2列');
+        await expect(page.locator('#load-pasted-data-btn')).toBeEnabled();
+
+        await page.locator('#add-table-row-btn').click();
+        await expect(page.locator('#tabular-grid-body tr')).toHaveCount(9);
+        await page.locator('#add-table-column-btn').click();
+        await expect(page.locator('.tabular-grid-column-header')).toHaveCount(6);
+
+        await page.locator('#delete-table-row-btn').click();
+        await expect(page.locator('#tabular-grid-body tr')).toHaveCount(8);
+        await page.locator('#delete-table-column-btn').click();
+        await expect(page.locator('.tabular-grid-column-header')).toHaveCount(5);
+
+        await page.setViewportSize({ width: 390, height: 844 });
+        const mobileLayout = await page.evaluate(() => ({
+            pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            gridScrolls: document.querySelector('#tabular-grid-shell').scrollWidth
+                > document.querySelector('#tabular-grid-shell').clientWidth
+        }));
+        expect(mobileLayout.pageOverflow).toBeLessThanOrEqual(1);
+        expect(mobileLayout.gridScrolls).toBe(true);
+
+        await page.locator('#clear-table-input-btn').click();
+        await expect(page.locator('#table-input-status')).toHaveText('0行 × 0列');
+        await expect(page.locator('#load-pasted-data-btn')).toBeDisabled();
     });
 
     test('preserves quoted commas and supplies names for blank or duplicate headers', async ({ page }) => {
@@ -93,5 +155,29 @@ test.describe('Manual data input', () => {
             return document.documentElement.scrollWidth - document.documentElement.clientWidth;
         });
         expect(overflow).toBeLessThanOrEqual(1);
+    });
+
+    test('keeps large direct text analysis responsive without a remote dictionary', async ({ page }) => {
+        test.setTimeout(120000);
+        const dialogs = [];
+        page.on('dialog', async dialog => {
+            dialogs.push(dialog.message());
+            await dialog.accept();
+        });
+
+        await page.locator('.feature-card[data-analysis="text_mining"]').click();
+        const documents = Array.from({ length: 1000 }, (_, index) =>
+            `${index % 2 === 0 ? '数学' : '英語'}の授業でデータ分析とグラフ作成を実習した`
+        );
+        await page.locator('#tm-direct-text').fill(documents.join('\n'));
+        await page.locator('#run-text-btn').click();
+
+        await expect(page.locator('#tm-overall .tm-section-title')).toContainText(
+            'N=1000',
+            { timeout: 30000 }
+        );
+        await expect(page.locator('.tm-engine-name')).toHaveText('ブラウザ内蔵（高速分かち書き）');
+        await expect(page.locator('#run-text-btn')).toBeEnabled();
+        expect(dialogs).toEqual([]);
     });
 });

@@ -13,12 +13,12 @@ import {
     computeTermMetrics,
     computeCategorySpecificity,
     buildGroupComparisonRows
-} from './text_mining/helpers.js?v=tm-logic-20260728f';
+} from './text_mining/helpers.js?v=tm-fast-20260729a';
 import {
     displayWordCloud,
     plotCooccurrenceNetwork,
     POS_STYLES
-} from './text_mining/visualization.js?v=tm-logic-20260728f';
+} from './text_mining/visualization.js?v=tm-fast-20260729a';
 
 const POS_ORDER = [
     'noun',
@@ -65,8 +65,8 @@ function clampInteger(value, fallback, min, max) {
 function readAnalysisSettings() {
     return {
         minFrequency: clampInteger(document.getElementById('tm-min-frequency')?.value, 2, 1, 1000),
-        networkTermLimit: clampInteger(document.getElementById('tm-network-term-limit')?.value, 45, 10, 80),
-        networkEdgeLimit: clampInteger(document.getElementById('tm-network-edge-limit')?.value, 60, 10, 200),
+        networkTermLimit: clampInteger(document.getElementById('tm-network-term-limit')?.value, 35, 10, 80),
+        networkEdgeLimit: clampInteger(document.getElementById('tm-network-edge-limit')?.value, 50, 10, 200),
         minCooccurrence: clampInteger(document.getElementById('tm-min-cooccurrence')?.value, 2, 1, 100),
         cooccurrenceUnit: document.getElementById('tm-cooccurrence-unit')?.value === 'document'
             ? 'document'
@@ -95,6 +95,36 @@ function buildAnalyzedItem(item, tokenizer, extractionOptions) {
         tokens: sentences.flatMap(sentence => sentence.tokens),
         terms: sentences.flatMap(sentence => sentence.terms)
     };
+}
+
+function yieldToBrowser() {
+    return new Promise(resolve => window.setTimeout(resolve, 0));
+}
+
+async function analyzeItemsInChunks(rawItems, tokenizer, extractionOptions, updateStatus) {
+    const items = [];
+    const total = rawItems.length;
+    let batchStartedAt = performance.now();
+
+    await yieldToBrowser();
+    for (let index = 0; index < total; index++) {
+        items.push(buildAnalyzedItem(rawItems[index], tokenizer, extractionOptions));
+
+        const processed = index + 1;
+        const shouldYield = processed === total
+            || processed % 24 === 0
+            || performance.now() - batchStartedAt >= 12;
+        if (!shouldYield) continue;
+
+        const progress = Math.round(processed / total * 100);
+        updateStatus?.(`テキストを解析中... ${progress}%`);
+        if (processed < total) {
+            await yieldToBrowser();
+            batchStartedAt = performance.now();
+        }
+    }
+
+    return items;
 }
 
 function buildPartOfSpeechLookup(items) {
@@ -514,7 +544,7 @@ function renderPartOfSpeechRanking(termFreq, posByWord, tokenizerInfo, minFreque
                     <h6>品詞別ランキング${tokenizerInfo.hasMorphology ? '' : '（推定）'}</h6>
                     <p>${tokenizerInfo.hasMorphology
                         ? '形態素解析の基本形と品詞タグを使用しています。'
-                        : '簡易分かち書き時のみ、語形から品詞を推定します。'}</p>
+                        : '高速分かち書きの語形から、大まかな品詞を推定しています。'}</p>
                 </div>
             </div>
             <div class="tm-pos-grid">${columns || '<p>表示できる語がありません。</p>'}</div>
@@ -615,11 +645,16 @@ async function analyzeAndRender(items, container, prefix, context) {
     `);
 
     const showKwic = word => openKwicPanel(word, items);
-    displayWordCloud(frequencyCloudId, frequencyWords, showKwic, {
+    context.updateStatus?.('頻度ワードクラウドを描画中...');
+    await yieldToBrowser();
+    await displayWordCloud(frequencyCloudId, frequencyWords, showKwic, {
         posByWord: context.posByWord,
         metricLabel: '出現回数が多い語ほど大きく表示'
     });
-    displayWordCloud(
+
+    context.updateStatus?.('重要語ワードクラウドを描画中...');
+    await yieldToBrowser();
+    await displayWordCloud(
         secondCloudId,
         secondCloudIsFeature ? positiveFeatureWords : tfidfWords,
         showKwic,
@@ -646,6 +681,8 @@ async function analyzeAndRender(items, container, prefix, context) {
     const networkTerms = frequencyWords
         .slice(0, context.settings.networkTermLimit)
         .map(([word]) => word);
+    context.updateStatus?.('共起ネットワークを描画中...');
+    await yieldToBrowser();
     plotCooccurrenceNetwork(
         networkId,
         cooccurrenceUnits,
@@ -660,7 +697,7 @@ async function analyzeAndRender(items, container, prefix, context) {
     );
 
     bindTermLinks(container, items);
-    await Promise.resolve();
+    await yieldToBrowser();
 }
 
 function activateTab(tabId, renderCategorySections) {
@@ -738,7 +775,7 @@ async function runTextMining(currentData) {
     });
 
     try {
-        updateStatus('形態素解析器を準備中...');
+        updateStatus('日本語テキスト解析を準備中...');
         if (!getTokenizer()) await initTokenizer(updateStatus);
         const tokenizer = getTokenizer();
         const tokenizerInfo = getTokenizerInfo();
@@ -756,12 +793,17 @@ async function runTextMining(currentData) {
             })).filter(item => item.text.length > 0);
         if (rawItems.length === 0) throw new Error('有効なテキストデータがありません');
 
-        updateStatus('基本形と品詞を解析中...');
+        updateStatus('テキストを解析中... 0%');
         const extractionOptions = {
             forceTerms: settings.forceTerms,
             stopWords: settings.stopWords
         };
-        const items = rawItems.map(item => buildAnalyzedItem(item, tokenizer, extractionOptions));
+        const items = await analyzeItemsInChunks(
+            rawItems,
+            tokenizer,
+            extractionOptions,
+            updateStatus
+        );
         const posByWord = buildPartOfSpeechLookup(items);
         const globalMetrics = computeTermMetrics(items.map(item => item.terms));
         const categorySpecificity = categoryVar
@@ -785,7 +827,8 @@ async function runTextMining(currentData) {
             settings,
             tokenizerInfo,
             posByWord,
-            globalMetrics
+            globalMetrics,
+            updateStatus
         });
 
         if (categoryVar) {
@@ -899,7 +942,7 @@ export function render(container, currentData, characteristics) {
         <div class="text-mining-container">
             <div class="analysis-title-banner">
                 <h3><i class="fas fa-comment-dots"></i> テキストマイニング</h3>
-                <p>基本形・品詞・文書頻度・特徴語・共起関係をブラウザ内で分析します</p>
+                <p>分かち書き・文書頻度・特徴語・共起関係をブラウザ内で高速に分析します</p>
             </div>
 
             <div class="collapsible-section info-sections" style="margin-bottom:2rem;">
@@ -911,6 +954,7 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> KH Coder型の探索手順</strong>
                         <p>頻度や特徴度で注目語を見つけ、KWICで原文を確認し、共起ネットワークで語同士の文脈を探索します。</p>
+                        <p>外部の大容量辞書は読み込まず、ブラウザ内蔵の日本語分割機能を使用します。品詞は語形からの推定です。</p>
                     </div>
                     <h4>集計単位と指標</h4>
                     <ul>
@@ -971,11 +1015,11 @@ export function render(container, currentData, characteristics) {
                         </label>
                         <label>
                             <span>ネットワークの語数</span>
-                            <input type="number" id="tm-network-term-limit" value="45" min="10" max="80">
+                            <input type="number" id="tm-network-term-limit" value="35" min="10" max="80">
                         </label>
                         <label>
                             <span>表示する線の上限</span>
-                            <input type="number" id="tm-network-edge-limit" value="60" min="10" max="200">
+                            <input type="number" id="tm-network-edge-limit" value="50" min="10" max="200">
                         </label>
                         <label>
                             <span>最小共起回数</span>
