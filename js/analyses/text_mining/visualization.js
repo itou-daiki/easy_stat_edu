@@ -34,6 +34,21 @@ const COMMUNITY_COLORS = [
     '#be123c'
 ];
 
+export function createNetworkTooltip(lines) {
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tm-network-tooltip';
+    tooltip.setAttribute('role', 'tooltip');
+
+    lines.forEach((line, index) => {
+        const row = document.createElement('div');
+        if (index === 0) row.className = 'tm-network-tooltip-title';
+        row.textContent = String(line);
+        tooltip.appendChild(row);
+    });
+
+    return tooltip;
+}
+
 function normalizeWordWeights(wordCounts, limit = 55) {
     const cleaned = (Array.isArray(wordCounts) ? wordCounts : [])
         .map(([word, weight]) => [String(word), Number(weight)])
@@ -553,7 +568,11 @@ export function plotCooccurrenceNetwork(
         id,
         label: id,
         value: Math.sqrt((termFreq[id] || 1) / maxFrequency) * 45 + 8,
-        title: `${id}<br>出現回数: ${termFreq[id] || 0}<br>媒介中心性: ${betweenness[id].toFixed(3)}`,
+        title: createNetworkTooltip([
+            id,
+            `出現回数: ${termFreq[id] || 0}`,
+            `媒介中心性: ${betweenness[id].toFixed(3)}`
+        ]),
         color: {
             background: colorByCommunity[communities[id]],
             border: '#ffffff',
@@ -576,7 +595,10 @@ export function plotCooccurrenceNetwork(
         from: edge.from,
         to: edge.to,
         value: edge.weight,
-        title: `Jaccard係数: ${edge.weight.toFixed(3)}<br>共起: ${edge.intersection} ${unitLabel}`,
+        title: createNetworkTooltip([
+            `Jaccard係数: ${edge.weight.toFixed(3)}`,
+            `共起: ${edge.intersection} ${unitLabel}`
+        ]),
         color: { color: '#94a3b8', highlight: '#2563eb', opacity: 0.72 }
     }));
 

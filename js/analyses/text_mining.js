@@ -18,7 +18,7 @@ import {
     displayWordCloud,
     plotCooccurrenceNetwork,
     POS_STYLES
-} from './text_mining/visualization.js?v=tm-fast-20260729a';
+} from './text_mining/visualization.js?v=tm-fast-20260729b';
 
 const POS_ORDER = [
     'noun',

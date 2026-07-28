@@ -1372,6 +1372,17 @@ button:disabled {
     cursor: text;
 }
 
+.vis-tooltip .tm-network-tooltip {
+    display: grid;
+    gap: 2px;
+    line-height: 1.45;
+}
+
+.vis-tooltip .tm-network-tooltip-title {
+    color: #111827;
+    font-weight: 700;
+}
+
 .tabular-grid-header-cell {
     background: #ecfdf5;
     border-bottom-color: #86cbb0;

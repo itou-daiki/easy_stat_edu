@@ -234,6 +234,35 @@ test.describe('Text mining logic', () => {
         expect(communities['数学']).not.toBe(communities['英語']);
     });
 
+    test('renders network tooltips as safe multi-line DOM content', async ({ page }) => {
+        await page.goto('/');
+        const tooltip = await page.evaluate(async () => {
+            const { createNetworkTooltip } = await import(
+                '/js/analyses/text_mining/visualization.js?tooltip-test'
+            );
+            const element = createNetworkTooltip([
+                '教材',
+                '出現回数: 7',
+                '媒介中心性: 0.000'
+            ]);
+            return {
+                role: element.getAttribute('role'),
+                lines: Array.from(element.children).map(child => child.textContent),
+                text: element.textContent,
+                html: element.innerHTML
+            };
+        });
+
+        expect(tooltip.role).toBe('tooltip');
+        expect(tooltip.lines).toEqual([
+            '教材',
+            '出現回数: 7',
+            '媒介中心性: 0.000'
+        ]);
+        expect(tooltip.text).not.toContain('<br>');
+        expect(tooltip.html).not.toContain('<br>');
+    });
+
     test('splits Japanese and ASCII sentence punctuation', () => {
         expect(splitTextIntoSentences('楽しいです。難しいです!でも便利です\n質問できます。')).toEqual([
             '楽しいです',
