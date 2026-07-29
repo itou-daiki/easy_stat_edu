@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20260730-ai-support-v2">
+    <link rel="stylesheet" href="css/style.css?v=20260730-ai-support-v3">
 
     <!-- vis.js for network graphs -->
     <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
@@ -203,9 +203,9 @@
                         <label class="ai-setting-toggle" for="persist-gemini-key-input">
                             <input type="checkbox" id="persist-gemini-key-input"
                                 data-visualization-control data-ai-control>
-                            <span>この端末に保存する</span>
+                            <span>APIキーをブラウザに保存する（次回も使う）</span>
                         </label>
-                        <span>オフ（推奨）では、このタブを閉じるとキーを削除します。</span>
+                        <span>オフ（推奨）：APIキーは一時保存され、このタブを閉じると削除されます。</span>
                     </div>
                 </div>
             </div>
@@ -1168,12 +1168,12 @@
     <script type="importmap">
         {
             "imports": {
-                "./js/utils.js": "./js/utils.js?v=20260730-ai-support-v2",
-                "./js/ai_support.js": "./js/ai_support.js?v=20260730-ai-support-v2"
+                "./js/utils.js": "./js/utils.js?v=20260730-ai-support-v3",
+                "./js/ai_support.js": "./js/ai_support.js?v=20260730-ai-support-v3"
             }
         }
     </script>
-    <script type="module" src="js/main.js?v=20260730-ai-support-v2"></script>
+    <script type="module" src="js/main.js?v=20260730-ai-support-v3"></script>
 </body>
 
 </html>

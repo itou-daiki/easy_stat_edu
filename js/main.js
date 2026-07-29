@@ -1465,8 +1465,8 @@ function setupAISupport() {
         geminiApiKeyInput.value = '';
         geminiApiKeyInput.placeholder = '保存済みのAPIキーがあります（変更する場合は再入力）';
         const storageLabel = aiState.keyStorageMode === 'device'
-            ? 'この端末に保存しました。共有端末では利用後に削除してください。'
-            : 'このタブだけに設定しました。タブを閉じると削除されます。';
+            ? 'このブラウザに保存しました。次回も利用できます。共有PCでは使用後に削除してください。'
+            : '一時保存しました。このタブを閉じると削除されます。';
         setAIOutput(`Gemini APIキーを設定しました。${storageLabel}`, 'system');
         updateAIConfigStatus();
         updateAIAssistVisibility();
@@ -1478,11 +1478,11 @@ function setupAISupport() {
         if (aiState.keyStorageMode === 'device') {
             localStorage.setItem(GEMINI_API_KEY_STORAGE, aiState.apiKey);
             sessionStorage.removeItem(GEMINI_API_KEY_SESSION_STORAGE);
-            setAIOutput('APIキーの保存先をこの端末に変更しました。共有端末では利用後に削除してください。', 'system');
+            setAIOutput('APIキーをこのブラウザに保存しました。次回も利用できます。共有PCでは使用後に削除してください。', 'system');
         } else {
             sessionStorage.setItem(GEMINI_API_KEY_SESSION_STORAGE, aiState.apiKey);
             localStorage.removeItem(GEMINI_API_KEY_STORAGE);
-            setAIOutput('APIキーの保存先をこのタブだけに変更しました。タブを閉じると削除されます。', 'system');
+            setAIOutput('APIキーを一時保存に変更しました。このタブを閉じると削除されます。', 'system');
         }
         updateAIConfigStatus();
     });
@@ -1604,7 +1604,7 @@ function updateAIConfigStatus() {
     const active = Boolean(aiState.apiKey);
     aiStatusBadge.textContent = !active
         ? '未設定'
-        : (aiState.keyStorageMode === 'device' ? 'この端末' : 'このタブ');
+        : (aiState.keyStorageMode === 'device' ? 'ブラウザ保存中' : '一時保存中');
     aiStatusBadge.classList.toggle('active', active);
     aiStatusBadge.classList.toggle('inactive', !active);
 }

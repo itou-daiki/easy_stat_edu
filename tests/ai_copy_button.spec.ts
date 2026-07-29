@@ -63,7 +63,7 @@ async function configureApiKey(page, { persist = false, key = 'test-api-key' } =
     await page.locator('#persist-gemini-key-input').setChecked(persist);
     await page.locator('#gemini-api-key-input').fill(key);
     await page.locator('#save-gemini-key-btn').click();
-    await expect(page.locator('#ai-status-badge')).toHaveText(persist ? 'この端末' : 'このタブ');
+    await expect(page.locator('#ai-status-badge')).toHaveText(persist ? 'ブラウザ保存中' : '一時保存中');
 }
 
 async function selectSupportVariable(page, name) {
@@ -189,8 +189,12 @@ test.describe('AI support logic', () => {
 });
 
 test.describe('AI support UI and context', () => {
-    test('stores the API key in the tab by default and on the device only by choice', async ({ page }) => {
+    test('stores the API key temporarily by default and in the browser only by choice', async ({ page }) => {
         await loadDemoData(page);
+        await expect(page.locator('label[for="persist-gemini-key-input"]'))
+            .toContainText('APIキーをブラウザに保存する（次回も使う）');
+        await expect(page.locator('.ai-key-storage'))
+            .toContainText('このタブを閉じると削除されます');
         await configureApiKey(page);
 
         let storage = await page.evaluate(() => ({
@@ -201,7 +205,7 @@ test.describe('AI support UI and context', () => {
 
         await page.reload();
         await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
-        await expect(page.locator('#ai-status-badge')).toHaveText('このタブ');
+        await expect(page.locator('#ai-status-badge')).toHaveText('一時保存中');
         await configureApiKey(page, { persist: true, key: 'device-api-key' });
         storage = await page.evaluate(() => ({
             session: sessionStorage.getItem('easyStat.geminiApiKey.session'),
