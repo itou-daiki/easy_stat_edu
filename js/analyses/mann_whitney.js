@@ -4,7 +4,7 @@
  * @description 2群間のノンパラメトリック検定（順序尺度・非正規分布用）
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, getAcademicLayout, academicColors, InterpretationHelper, showError, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getAcademicLayout, academicColors, InterpretationHelper, showError, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 
 /**
  * 要約統計量の計算と表示
@@ -403,7 +403,7 @@ function displayVisualization(testResults) {
         const title = titleControl.checked ? `分布の比較: ${result.varName}` : '';
 
         const layout = getAcademicLayout({
-            title: getBottomTitleAnnotation(title),
+            title,
             yaxis: {
                 title: axisControl.checked ? result.varName : '',
                 zeroline: false
@@ -434,7 +434,14 @@ function displayVisualization(testResults) {
             p: result.p_value
         }];
 
-        addSignificanceBrackets(layout, pairs, result.groups, yMax, yRange);
+        addSignificanceBrackets(
+            layout,
+            pairs,
+            result.groups,
+            yMax,
+            yRange,
+            { yMin, baselineZero: false }
+        );
 
         const config = createPlotlyConfig('Mann-Whitney_U', result.varName);
 
@@ -447,7 +454,7 @@ function displayVisualization(testResults) {
             const title = titleControl.checked ? `分布の比較: ${result.varName}` : '';
 
             const updateObj = {
-                title: getBottomTitleAnnotation(title),
+                'title.text': title,
                 'yaxis.title': axisControl.checked ? result.varName : ''
             };
 

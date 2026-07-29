@@ -102,7 +102,73 @@ async function auditRenderedSurface(page: Page, label: string) {
 
         const plots = Array.from(document.querySelectorAll('.js-plotly-plot')).filter(isVisible).map((plot, index) => {
             const rect = plot.getBoundingClientRect();
-            return { index, width: rect.width, height: rect.height };
+            const plotArea = plot.querySelector('.nsewdrag')?.getBoundingClientRect() || null;
+            const labelSelector = [
+                '.gtitle',
+                '.xtitle',
+                '.ytitle',
+                '.annotation-text',
+                '.xtick text',
+                '.ytick text',
+                '.legendtext'
+            ].join(',');
+            const labelsOutside = Array.from(plot.querySelectorAll(labelSelector))
+                .filter(isVisible)
+                .map(label => {
+                    const labelRect = label.getBoundingClientRect();
+                    return {
+                        text: (label.textContent || '').replace(/\s+/g, ' ').trim(),
+                        left: labelRect.left - rect.left,
+                        right: rect.right - labelRect.right,
+                        top: labelRect.top - rect.top,
+                        bottom: rect.bottom - labelRect.bottom
+                    };
+                })
+                .filter(label => (
+                    label.left < -2
+                    || label.right < -2
+                    || label.top < -2
+                    || label.bottom < -2
+                ));
+            const bracketGaps = Array.from(plot.querySelectorAll('.annotation-text'))
+                .filter(node => /^(?:\*{1,3}|†|n\.s\.)$/.test(node.textContent?.trim() || ''))
+                .map(node => {
+                    const annotationRect = node.getBoundingClientRect();
+                    return {
+                        top: plotArea ? annotationRect.top - plotArea.top : -1,
+                        bottom: plotArea ? plotArea.bottom - annotationRect.bottom : -1
+                    };
+                });
+            const fullLayout = (plot as any)._fullLayout || {};
+            const expectedAxisEditors = ['x', 'y'].reduce((count, orientation) => {
+                const axisKeys = Object.keys(fullLayout)
+                    .filter(key => new RegExp(`^${orientation}axis\\d*$`).test(key));
+                if (axisKeys.length !== 1) return count;
+                const axis = fullLayout[axisKeys[0]] || {};
+                const title = typeof axis.title === 'object'
+                    ? String(axis.title?.text || '').trim()
+                    : String(axis.title || '').trim();
+                const editable = ['linear', 'log', 'date'].includes(axis.type)
+                    && axis.visible !== false
+                    && (axis.showticklabels !== false || title);
+                return count + (editable ? 1 : 0);
+            }, 0);
+            const editor = plot.previousElementSibling?.matches('[data-editor-kind="plotly"]')
+                ? plot.previousElementSibling
+                : null;
+            const actualAxisEditors = editor?.querySelectorAll('.visualization-axis-range-row').length || 0;
+            return {
+                index,
+                width: rect.width,
+                height: rect.height,
+                horizontalOverflow: (plot as HTMLElement).scrollWidth - (plot as HTMLElement).clientWidth,
+                plotAreaWidth: plotArea?.width || 0,
+                plotAreaHeight: plotArea?.height || 0,
+                labelsOutside,
+                bracketGaps,
+                expectedAxisEditors,
+                actualAxisEditors
+            };
         });
 
         const images = Array.from(document.querySelectorAll('img')).filter(isVisible).map((img, index) => {
@@ -176,6 +242,18 @@ async function auditRenderedSurface(page: Page, label: string) {
     for (const plot of audit.plots) {
         expect(plot.width, `${label}: plot ${plot.index} width`).toBeGreaterThan(200);
         expect(plot.height, `${label}: plot ${plot.index} height`).toBeGreaterThan(120);
+        expect(plot.horizontalOverflow, `${label}: plot ${plot.index} should fit its container`).toBeLessThanOrEqual(1);
+        expect(plot.plotAreaWidth, `${label}: plot ${plot.index} drawing width`).toBeGreaterThan(80);
+        expect(plot.plotAreaHeight, `${label}: plot ${plot.index} drawing height`).toBeGreaterThan(60);
+        expect(plot.labelsOutside, `${label}: plot ${plot.index} labels should stay inside the figure`).toEqual([]);
+        expect(
+            plot.actualAxisEditors,
+            `${label}: plot ${plot.index} should expose every applicable numeric/date axis range`
+        ).toBe(plot.expectedAxisEditors);
+        for (const gap of plot.bracketGaps) {
+            expect(gap.top, `${label}: plot ${plot.index} bracket top clearance`).toBeGreaterThanOrEqual(6);
+            expect(gap.bottom, `${label}: plot ${plot.index} bracket should stay in plot area`).toBeGreaterThanOrEqual(0);
+        }
     }
     for (const image of audit.images) {
         expect(image.complete, `${label}: image ${image.index} should finish loading`).toBe(true);

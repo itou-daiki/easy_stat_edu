@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20260729-custom-aspect-ratio">
+    <link rel="stylesheet" href="css/style.css?v=20260729-axis-range-headroom">
 
     <!-- vis.js for network graphs -->
     <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
@@ -896,7 +896,8 @@
                                 <h5>入力・可視化・解釈の横断改善</h5>
                                 <ul>
                                     <li><strong>入力方法の拡充:</strong> 表形式の直接入力、Excelからの貼り付け、テキストの直接入力に対応</li>
-                                    <li><strong>図表編集:</strong> 図表タイトル、軸ラベル、凡例、画像サイズ・比率の編集とPNG保存に対応</li>
+                                    <li><strong>図表編集:</strong> 図表タイトル、軸ラベル、凡例、数値・日付軸の範囲、画像サイズ・比率の編集とPNG保存に対応</li>
+                                    <li><strong>描画品質:</strong> ブラケット・有意記号・軸ラベルの余白を自動調整し、保存画像でも枠外への欠けを防止</li>
                                     <li><strong>テキストマイニング:</strong> 高速なブラウザ内分割、品詞別ランキング、KWIC、カテゴリ比較、ワードクラウド、共起ネットワークを改善</li>
                                     <li><strong>分析精度:</strong> カイ二乗検定の2×2補正、残差の多重比較補正、欠損値処理、解釈上の注意を統一</li>
                                 </ul>
@@ -1090,11 +1091,11 @@
     <script type="importmap">
         {
             "imports": {
-                "./js/utils.js": "./js/utils.js?v=20260729-custom-aspect-ratio"
+                "./js/utils.js": "./js/utils.js?v=20260729-axis-range-headroom"
             }
         }
     </script>
-    <script type="module" src="js/main.js?v=20260729-custom-aspect-ratio"></script>
+    <script type="module" src="js/main.js?v=20260729-axis-range-headroom"></script>
 </body>
 
 </html>

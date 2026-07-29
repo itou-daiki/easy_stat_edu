@@ -5,7 +5,7 @@
  *              3群以上の場合はペアワイズWilcoxon検定（Holm補正）による事後検定を実施
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getBottomTitleAnnotation, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 import { performHolmCorrection } from '../utils/stat_distributions.js';
 
 // ==========================================
@@ -715,7 +715,7 @@ function displayVisualization(vizResults) {
         const title = titleControl.checked ? `分布の比較: ${vr.var1} vs ${vr.var2}` : '';
 
         const layout = getAcademicLayout({
-            title: getBottomTitleAnnotation(title),
+            title,
             yaxis: {
                 title: axisControl.checked ? '値' : '',
                 zeroline: false
@@ -733,7 +733,14 @@ function displayVisualization(vizResults) {
             significance: vr.significance,
             p: vr.p_value
         }];
-        addSignificanceBrackets(layout, pairs, [vr.var1, vr.var2], yMax, yRange);
+        addSignificanceBrackets(
+            layout,
+            pairs,
+            [vr.var1, vr.var2],
+            yMax,
+            yRange,
+            { yMin, baselineZero: false }
+        );
 
         const config = createPlotlyConfig('Wilcoxon_Signed_Rank', `${vr.var1}_vs_${vr.var2}`);
         Plotly.newPlot(plotId, [trace1, trace2], layout, config);
@@ -762,7 +769,7 @@ function displayVisualization(vizResults) {
         const diffTitle = titleControl.checked ? `差の分布: ${vr.var1} - ${vr.var2}` : '';
 
         const diffLayout = getAcademicLayout({
-            title: getBottomTitleAnnotation(diffTitle),
+            title: diffTitle,
             xaxis: {
                 title: axisControl.checked ? `差 (${vr.var1} - ${vr.var2})` : '',
                 zeroline: true
@@ -789,13 +796,13 @@ function displayVisualization(vizResults) {
         vizResults.forEach((vr, index) => {
             const boxTitle = titleControl.checked ? `分布の比較: ${vr.var1} vs ${vr.var2}` : '';
             Plotly.relayout(`plot-box-${index}`, {
-                title: getBottomTitleAnnotation(boxTitle),
+                'title.text': boxTitle,
                 'yaxis.title': axisControl.checked ? '値' : ''
             });
 
             const diffTitle = titleControl.checked ? `差の分布: ${vr.var1} - ${vr.var2}` : '';
             Plotly.relayout(`plot-diff-${index}`, {
-                title: getBottomTitleAnnotation(diffTitle),
+                'title.text': diffTitle,
                 'xaxis.title': axisControl.checked ? `差 (${vr.var1} - ${vr.var2})` : '',
                 'yaxis.title': axisControl.checked ? '度数' : ''
             });

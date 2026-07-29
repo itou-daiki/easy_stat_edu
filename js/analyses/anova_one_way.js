@@ -383,12 +383,22 @@ function displayANOVAVisualization(results, testType) {
         // Add significance brackets using the standardized helper
         // We need to calculate yMax and yRange for the helper
         const yMax = Math.max(...res.groupMeans.map((m, i) => m + res.groupSEs[i]));
-        const yMin = 0; // Bar plots usually start at 0
-        const yRange = yMax - yMin; // Simplified for bar chart
+        const yMin = Math.min(
+            0,
+            ...res.groupMeans.map((m, i) => m - res.groupSEs[i])
+        );
+        const yRange = yMax - yMin;
 
         // Group name to index map (or just pass array if helper supports it)
         // Helper supports array of names for index lookup
-        addSignificanceBrackets(layout, res.sigPairs, res.groups, yMax, yRange);
+        addSignificanceBrackets(
+            layout,
+            res.sigPairs,
+            res.groups,
+            yMax,
+            yRange,
+            { yMin }
+        );
 
         // Initial toggle state
         const showAxisLabels = axisControl?.checked ?? true;
@@ -986,6 +996,11 @@ function runOneWayRepeatedANOVA(currentData) {
         };
 
         const yMax = Math.max(...conditionMeans.map((m, i) => m + conditionStds[i] / Math.sqrt(N)));
+        const yMin = Math.min(
+            0,
+            ...conditionMeans.map((m, i) => m - conditionStds[i] / Math.sqrt(N))
+        );
+        const yRange = yMax - yMin;
         const layout = getAcademicLayout({
             title: `平均値の比較 (Set ${setIndex + 1})`,
             xaxis: { title: '条件' },
@@ -999,7 +1014,14 @@ function runOneWayRepeatedANOVA(currentData) {
             ...p,
             significance: p.p < 0.01 ? '**' : p.p < 0.05 ? '*' : p.p < 0.1 ? '†' : 'n.s.'
         }));
-        addSignificanceBrackets(layout, sigPairsWithSig, dependentVars, yMax, yMax * 0.2);
+        addSignificanceBrackets(
+            layout,
+            sigPairsWithSig,
+            dependentVars,
+            yMax,
+            yRange,
+            { yMin }
+        );
 
         Plotly.newPlot(plotContainer.id, [trace], layout, createPlotlyConfig(`ANOVA_Set_${setIndex + 1}`, `anova_set_${setIndex + 1}`));
     });

@@ -226,11 +226,11 @@ function runWelchTTest(vals1, vals2) {
     return { t, df, p };
 }
 
-function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellStats) {
+export function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellStats) {
     const shapes = [];
     const annotations = [];
 
-    // Determine max height for each X-category to clear bars
+    // Error bars and zero baseline define a stable scale for every category.
     const maxValsAtX = levels2.map(l2 => {
         const means = levels1.map(l1 => cellStats[l1][l2].mean);
         const ses = levels1.map(l1 => {
@@ -239,19 +239,47 @@ function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellStats) {
         });
         return Math.max(...means.map((m, i) => m + ses[i]));
     });
+    const minValsAtX = levels2.map(l2 => {
+        const means = levels1.map(l1 => cellStats[l1][l2].mean);
+        const ses = levels1.map(l1 => {
+            const s = cellStats[l1][l2];
+            return s.n > 0 ? s.std / Math.sqrt(s.n) : 0;
+        });
+        return Math.min(...means.map((m, i) => m - ses[i]));
+    });
+    const dataMinimum = Math.min(0, ...minValsAtX);
+    const dataMaximum = Math.max(0, ...maxValsAtX);
+    const magnitude = Math.max(Math.abs(dataMinimum), Math.abs(dataMaximum), 1);
+    const dataRange = Math.max(dataMaximum - dataMinimum, magnitude * 0.1);
+    const groupBandWidth = 0.8 / Math.max(levels1.length, 1);
+    const getGroupOffset = groupIndex => (
+        -0.4 + groupBandWidth * (groupIndex + 0.5)
+    );
 
     const stackHeight = [];
 
     sigPairs.forEach(pair => {
         const xIdx = pair.xIndex;
-        const currentMaxY = maxValsAtX[xIdx];
+        const group1Index = levels1.findIndex(level => String(level) === String(pair.g1));
+        const group2Index = levels1.findIndex(level => String(level) === String(pair.g2));
+        if (
+            !Number.isInteger(xIdx)
+            || xIdx < 0
+            || xIdx >= levels2.length
+            || group1Index < 0
+            || group2Index < 0
+            || group1Index === group2Index
+        ) {
+            return;
+        }
+        const currentMaxY = Math.max(0, maxValsAtX[xIdx]);
 
         if (!stackHeight[xIdx]) stackHeight[xIdx] = 0;
         stackHeight[xIdx]++;
 
-        const yOffset = currentMaxY * 0.1 + (stackHeight[xIdx] * currentMaxY * 0.15);
+        const yOffset = dataRange * (0.06 + stackHeight[xIdx] * 0.1);
         const bracketY = currentMaxY + yOffset;
-        const legHeight = currentMaxY * 0.05;
+        const legHeight = dataRange * 0.03;
 
         // Simplify significance text
         let text;
@@ -259,26 +287,36 @@ function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellStats) {
         else if (pair.p < 0.05) text = '*';
         else text = '†';
 
-        const xCenter = xIdx;
-        const halfWidth = 0.2;
+        const x1 = xIdx + getGroupOffset(group1Index);
+        const x2 = xIdx + getGroupOffset(group2Index);
+        const bracketStart = Math.min(x1, x2);
+        const bracketEnd = Math.max(x1, x2);
+        const xCenter = (bracketStart + bracketEnd) / 2;
 
-        // Simple Bracket
+        // Match Plotly's default grouped-bar band (0.8) so each pair connects
+        // the actual bar centers even when the between-subject factor has 3+ levels.
         shapes.push({
             type: 'line',
-            x0: xCenter - halfWidth, y0: bracketY,
-            x1: xCenter + halfWidth, y1: bracketY,
+            x0: bracketStart, y0: bracketY,
+            x1: bracketEnd, y1: bracketY,
+            xref: 'x',
+            yref: 'y',
             line: { color: 'black', width: 2 }
         });
         shapes.push({
             type: 'line',
-            x0: xCenter - halfWidth, y0: bracketY - legHeight,
-            x1: xCenter - halfWidth, y1: bracketY,
+            x0: bracketStart, y0: bracketY - legHeight,
+            x1: bracketStart, y1: bracketY,
+            xref: 'x',
+            yref: 'y',
             line: { color: 'black', width: 2 }
         });
         shapes.push({
             type: 'line',
-            x0: xCenter + halfWidth, y0: bracketY - legHeight,
-            x1: xCenter + halfWidth, y1: bracketY,
+            x0: bracketEnd, y0: bracketY - legHeight,
+            x1: bracketEnd, y1: bracketY,
+            xref: 'x',
+            yref: 'y',
             line: { color: 'black', width: 2 }
         });
 
@@ -288,20 +326,27 @@ function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellStats) {
             text: text,
             showarrow: false,
             font: { size: 14, color: 'black', weight: 'bold' },
+            xref: 'x',
+            yref: 'y',
+            xanchor: 'center',
+            yanchor: 'bottom',
             _annotationType: 'bracket'
         });
     });
 
     // Calculate recommended max Y for yaxis range
-    let recommendedMaxY = Math.max(...maxValsAtX);
+    let recommendedMaxY = dataMaximum;
     annotations.forEach(a => {
         if (a._annotationType === 'bracket' && a.y > recommendedMaxY) {
             recommendedMaxY = a.y;
         }
     });
-    recommendedMaxY *= 1.1; // Add 10% buffer
+    recommendedMaxY += dataRange * 0.12;
+    const recommendedMinY = dataMinimum < 0
+        ? dataMinimum - dataRange * 0.06
+        : 0;
 
-    return { shapes, annotations, recommendedMaxY };
+    return { shapes, annotations, recommendedMaxY, recommendedMinY };
 }
 
 // ======================================================================
@@ -925,7 +970,17 @@ function renderTwoWayANOVAVisualization(results) {
                     });
                 });
 
-                const { shapes, annotations, recommendedMaxY } = generateBracketsForGroupedPlot(res.sigPairs || [], res.levels1, res.levels2, res.cellStats);
+                const {
+                    shapes,
+                    annotations,
+                    recommendedMaxY,
+                    recommendedMinY
+                } = generateBracketsForGroupedPlot(
+                    res.sigPairs || [],
+                    res.levels1,
+                    res.levels2,
+                    res.cellStats
+                );
 
                 const tategakiTitle = getTategakiAnnotation(res.depVar);
                 if (tategakiTitle) {
@@ -940,7 +995,7 @@ function renderTwoWayANOVAVisualization(results) {
 
                 const yaxisConfig = { title: '', rangemode: 'tozero' };
                 if (recommendedMaxY) {
-                    yaxisConfig.range = [0, recommendedMaxY];
+                    yaxisConfig.range = [recommendedMinY, recommendedMaxY];
                 }
 
                 const layout = getAcademicLayout({
@@ -953,6 +1008,8 @@ function renderTwoWayANOVAVisualization(results) {
                     annotations: annotations,
                     margin: { l: 100, b: 100 }
                 });
+                layout._recommendedMaxY = recommendedMaxY;
+                layout._recommendedMinY = recommendedMinY;
 
                 const showAxisLabels = axisControl?.checked ?? true;
                 const showBottomTitle = titleControl?.checked ?? true;

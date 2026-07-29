@@ -1,7 +1,12 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs/promises';
 import path from 'path';
-import { navigateToFeature, uploadFile } from './utils/test-helpers';
+import {
+    navigateToFeature,
+    selectStandardOption,
+    selectVariables,
+    uploadFile
+} from './utils/test-helpers';
 
 async function readPngInfo(filePath: string) {
     const buffer = await fs.readFile(filePath);
@@ -155,6 +160,161 @@ test.describe('Editable visualization and table labels', () => {
             const box = await firstPlot.boundingBox();
             return box ? Math.round((box.width / box.height) * 100) / 100 : 0;
         }).toBe(1.25);
+    });
+
+    test('edits numeric axis ranges and keeps significance annotations inside the graph', async ({ page }) => {
+        await uploadFile(page, 'datasets/demo_all_analysis.csv');
+        await navigateToFeature(page, 'eda');
+        const categoryPlot = page.locator('#cat-plot-0');
+        await expect(categoryPlot).toBeVisible({ timeout: 15000 });
+        const categoryEditor = categoryPlot.locator(
+            'xpath=preceding-sibling::details[@data-editor-kind="plotly"][1]'
+        );
+        await expect(categoryEditor).toBeVisible({ timeout: 10000 });
+        await categoryEditor.locator('summary').click();
+        await expect(categoryEditor.locator('[data-visualization-input="xaxis-range-auto"]')).toHaveCount(0);
+        const categoryYAuto = categoryEditor.locator('[data-visualization-input="yaxis-range-auto"]');
+        await expect(categoryYAuto).toBeChecked();
+        await categoryYAuto.uncheck();
+        await categoryEditor.locator('[data-visualization-input="yaxis-range-min"]').fill('-5');
+        await categoryEditor.locator('[data-visualization-input="yaxis-range-max"]').fill('30');
+        await expect.poll(async () => categoryPlot.evaluate(plot => (
+            (plot as any).layout.yaxis.range.map((value: number) => Math.round(value * 100) / 100)
+        ))).toEqual([-5, 30]);
+
+        await page.click('button.tab-button[data-tab="two-vars"]');
+        await selectStandardOption(page, '#two-var-1', '数学', 'label');
+        await selectStandardOption(page, '#two-var-2', '英語', 'label');
+        await page.click('#plot-two-vars-btn');
+        const scatterPlot = page.locator('#two-vars-plot');
+        await expect(scatterPlot).toBeVisible();
+        const scatterEditor = scatterPlot.locator(
+            'xpath=preceding-sibling::details[@data-editor-kind="plotly"][1]'
+        );
+        await expect(scatterEditor).toBeVisible({ timeout: 10000 });
+        await scatterEditor.locator('summary').click();
+        await expect(scatterEditor.locator('[data-visualization-input="xaxis-range-auto"]')).toBeChecked();
+        await expect(scatterEditor.locator('[data-visualization-input="yaxis-range-auto"]')).toBeChecked();
+        expect(await scatterEditor.evaluate(element => (
+            element.scrollWidth <= element.clientWidth + 1
+        ))).toBe(true);
+
+        const negativeRows = [
+            '群,得点',
+            'A,-24', 'A,-23', 'A,-22', 'A,-21', 'A,-20', 'A,-19',
+            'B,-8', 'B,-7', 'B,-6', 'B,-5', 'B,-4', 'B,-3'
+        ].join('\n');
+        await page.locator('.btn-back').click();
+        await page.locator('#main-data-file').setInputFiles({
+            name: 'negative_significant.csv',
+            mimeType: 'text/csv',
+            buffer: Buffer.from(negativeRows, 'utf8')
+        });
+        await navigateToFeature(page, 'ttest');
+        await selectStandardOption(page, '#group-var', '群', 'label');
+        await selectVariables(page, ['得点']);
+        await page.click('#run-independent-btn');
+
+        const bracketPlot = page.locator('#plot-0');
+        await expect(bracketPlot).toBeVisible({ timeout: 10000 });
+        const bracketEditor = bracketPlot.locator(
+            'xpath=preceding-sibling::details[@data-editor-kind="plotly"][1]'
+        );
+        await expect(bracketEditor).toBeVisible({ timeout: 10000 });
+        await bracketEditor.locator('summary').click();
+        const bracketYAuto = bracketEditor.locator('[data-visualization-input="yaxis-range-auto"]');
+        await expect(bracketYAuto).toBeChecked();
+
+        const placement = await bracketPlot.evaluate(plot => {
+            const plotArea = plot.querySelector('.nsewdrag')?.getBoundingClientRect();
+            const annotation = Array.from(plot.querySelectorAll('.annotation-text'))
+                .find(node => /^[*†]/.test(node.textContent?.trim() || ''))
+                ?.getBoundingClientRect();
+            const range = (plot as any).layout.yaxis.range;
+            const lowerErrorBound = Math.min(
+                ...(plot as any).data[0].y.map((value: number, index: number) => (
+                    value - (plot as any).data[0].error_y.array[index]
+                ))
+            );
+            return {
+                annotationTopGap: plotArea && annotation ? annotation.top - plotArea.top : -1,
+                annotationBottomGap: plotArea && annotation ? plotArea.bottom - annotation.bottom : -1,
+                lowerErrorBound,
+                range
+            };
+        });
+        expect(placement.annotationTopGap).toBeGreaterThanOrEqual(8);
+        expect(placement.annotationBottomGap).toBeGreaterThanOrEqual(0);
+        expect(placement.range[0]).toBeLessThan(placement.lowerErrorBound);
+        expect(placement.range[1]).toBeGreaterThan(0);
+
+        await bracketYAuto.uncheck();
+        const safeMaximum = Number(
+            await bracketEditor.locator('[data-visualization-input="yaxis-range-max"]').inputValue()
+        );
+        await bracketEditor.locator('[data-visualization-input="yaxis-range-max"]').fill(
+            String(safeMaximum - 1)
+        );
+        await expect(bracketEditor.locator('.visualization-axis-range-error')).toContainText(
+            'ブラケットと注釈を表示するため'
+        );
+        await bracketEditor.locator('[data-visualization-input="yaxis-range-max"]').fill(
+            String(safeMaximum + 5)
+        );
+        await expect(bracketEditor.locator('.visualization-axis-range-error')).toBeHidden();
+        await expect.poll(async () => bracketPlot.evaluate(plot => (
+            Math.round((plot as any).layout.yaxis.range[1] * 100) / 100
+        ))).toBe(Math.round((safeMaximum + 5) * 100) / 100);
+
+        const artifactDir = path.join(process.cwd(), 'output/playwright/visualization-editors');
+        await fs.mkdir(artifactDir, { recursive: true });
+        const bracketPlotPath = path.join(artifactDir, 'negative-bar-with-bracket.png');
+        const [bracketDownload] = await Promise.all([
+            page.waitForEvent('download'),
+            bracketPlot.locator('.modebar-btn[data-title="Download plot as a png"]').click()
+        ]);
+        await bracketDownload.saveAs(bracketPlotPath);
+        const bracketPng = await readPngInfo(bracketPlotPath);
+        expect(bracketPng.width).toBeGreaterThan(600);
+        expect(bracketPng.height).toBeGreaterThan(300);
+        expect(bracketPng.bytes).toBeGreaterThan(10_000);
+
+        await bracketYAuto.check();
+        await expect.poll(async () => bracketPlot.evaluate(plot => {
+            const recommendation = Number((plot as any).__easyStatPlotSpec?.layout?._recommendedMaxY);
+            return (plot as any).layout.yaxis.range[1] >= recommendation;
+        })).toBe(true);
+
+        await page.setViewportSize({ width: 390, height: 844 });
+        await expect.poll(async () => bracketPlot.evaluate(plot => {
+            const figure = plot.getBoundingClientRect();
+            const plotArea = plot.querySelector('.nsewdrag')?.getBoundingClientRect();
+            const outsideLabels = Array.from(plot.querySelectorAll(
+                '.gtitle,.xtitle,.ytitle,.annotation-text,.xtick text,.ytick text'
+            )).filter(node => {
+                const rect = node.getBoundingClientRect();
+                return (
+                    rect.left < figure.left - 2
+                    || rect.right > figure.right + 2
+                    || rect.top < figure.top - 2
+                    || rect.bottom > figure.bottom + 2
+                );
+            }).length;
+            return {
+                figureHeight: Math.round(figure.height),
+                plotAreaHeight: Math.round(plotArea?.height || 0),
+                outsideLabels,
+                overflow: plot.scrollWidth - plot.clientWidth
+            };
+        })).toEqual({
+            figureHeight: 320,
+            plotAreaHeight: expect.any(Number),
+            outsideLabels: 0,
+            overflow: 0
+        });
+        expect(await bracketPlot.evaluate(plot => (
+            plot.querySelector('.nsewdrag')?.getBoundingClientRect().height || 0
+        ))).toBeGreaterThan(90);
     });
 
     test('applies canvas title and legend settings to saved text-mining PNGs', async ({ page }) => {

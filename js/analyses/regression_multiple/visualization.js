@@ -18,8 +18,8 @@ export function plotCombinedPathDiagram(independentVars, allResults) {
 
     // --- サイズ計算 ---
     // 変数ノード1つあたり十分な縦幅を確保
-    const pxPerNode = 100;
-    const height = Math.max(500, maxSide * pxPerNode + 200);
+    const pxPerNode = 90;
+    const height = Math.max(380, maxSide * pxPerNode + 180);
     container.style.height = `${height}px`;
 
     const xNodes = [];

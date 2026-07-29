@@ -4,7 +4,7 @@
  * @module ttest/visualization
  */
 
-import { createPlotlyConfig, createVisualizationControls, getBottomTitleAnnotation, addSignificanceBrackets, getAcademicLayout, academicColors } from '../../utils.js';
+import { createPlotlyConfig, createVisualizationControls, addSignificanceBrackets, getAcademicLayout, academicColors } from '../../utils.js';
 
 // ======================================================================
 // 可視化
@@ -70,7 +70,10 @@ export function displayVisualization(testResults, testType) {
             }];
 
             const yMax = Math.max(...meanValues.map((m, i) => m + errorValues[i]));
-            const yMin = 0;
+            const yMin = Math.min(
+                0,
+                ...meanValues.map((m, i) => m - errorValues[i])
+            );
             const yRange = yMax - yMin;
 
             let xAxisTitle = '';
@@ -87,7 +90,7 @@ export function displayVisualization(testResults, testType) {
             }
 
             layout = getAcademicLayout({
-                title: getBottomTitleAnnotation(title),
+                title,
                 xaxis: { title: xAxisTitle },
                 yaxis: { title: yAxisTitle },
                 shapes: shapes,
@@ -95,7 +98,14 @@ export function displayVisualization(testResults, testType) {
                 margin: { t: 60, b: 80, l: 60, r: 20 }
             });
 
-            addSignificanceBrackets(layout, pairs, groupNames, yMax, yRange);
+            addSignificanceBrackets(
+                layout,
+                pairs,
+                groupNames,
+                yMax,
+                yRange,
+                { yMin }
+            );
             config = createPlotlyConfig('t-test_bar', result.varName);
 
         } else if (testType === 'one-sample') {
@@ -119,7 +129,7 @@ export function displayVisualization(testResults, testType) {
             title = titleControl.checked ? `1サンプルt検定: ${result.varName}` : '';
 
             layout = getAcademicLayout({
-                title: getBottomTitleAnnotation(title),
+                title,
                 xaxis: { title: result.varName },
                 yaxis: { title: 'Value' },
                 showlegend: true,
@@ -138,7 +148,7 @@ export function displayVisualization(testResults, testType) {
         testResults.forEach((result, index) => {
             const plotId = `plot-${index}`;
             const title = titleControl.checked ? `平均値の比較: ${result.varName}` : '';
-            Plotly.relayout(plotId, { title: getBottomTitleAnnotation(title) });
+            Plotly.relayout(plotId, { 'title.text': title });
         });
     };
 

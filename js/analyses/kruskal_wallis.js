@@ -4,7 +4,7 @@
  * @description 3群以上のノンパラメトリック検定（一元配置分散分析の順位版）
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getBottomTitleAnnotation, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 
 // `displaySummaryStatistics` is no longer needed as we use an integrated table.
 
@@ -506,7 +506,7 @@ function displayVisualization(testResults, groupVar) {
         const yRange = yMax - yMin;
 
         const layout = getAcademicLayout({
-            title: getBottomTitleAnnotation(title),
+            title,
             yaxis: {
                 title: axisControl.checked ? result.varName : '',
                 zeroline: false
@@ -555,7 +555,14 @@ function displayVisualization(testResults, groupVar) {
             }
 
             if (pairs.length > 0) {
-                addSignificanceBrackets(layout, pairs, result.groups, yMax, yRange);
+                addSignificanceBrackets(
+                    layout,
+                    pairs,
+                    result.groups,
+                    yMax,
+                    yRange,
+                    { yMin, baselineZero: false }
+                );
             }
         }
 
@@ -568,7 +575,7 @@ function displayVisualization(testResults, groupVar) {
             const plotId = `plot-${index}`;
             const title = titleControl.checked ? `分布の比較: ${result.varName}` : '';
             Plotly.relayout(plotId, {
-                title: getBottomTitleAnnotation(title),
+                'title.text': title,
                 'yaxis.title': axisControl.checked ? result.varName : '',
                 'xaxis.title': axisControl.checked ? groupVar : ''
             });

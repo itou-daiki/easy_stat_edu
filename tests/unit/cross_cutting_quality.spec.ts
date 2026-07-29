@@ -27,12 +27,15 @@ test.describe('Cross-cutting quality contracts', () => {
         expect(readme).toContain('分析・データ処理モジュール: 23機能');
         expect(readme).toContain('任意のGemini解釈補助');
         expect(readme).toContain('任意入力の縦横比');
+        expect(readme).toContain('数値・日付軸の最小値／最大値');
         expect(readme).toContain('完全なオフライン動作は保証されません');
         expect(readme).not.toContain('サーバーへのデータ送信は一切行わず');
         expect(features).toContain('Yatesの連続性補正を主結果');
         expect(features).toContain('カテゴリごとのワードクラウドと共起ネットワークを連続表示');
+        expect(features).toContain('必要な上限より小さい最大値を設定できません');
         expect(manual).toContain('入力・図表編集・保存');
         expect(manual).toContain('品詞別ランキング');
+        expect(manual).toContain('データの一部が見えなくなったり差が実際より大きく見えたりします');
         expect(manual).not.toContain('AI分析サポーター');
         expect(manual).not.toContain('めちゃくちゃ');
         expect(manual).not.toContain('王道パターン');
@@ -77,6 +80,87 @@ test.describe('Cross-cutting quality contracts', () => {
         expect(frames.custom.width / frames.custom.height).toBeCloseTo(5 / 4, 12);
         expect(frames.invalid).toMatchObject({ width: 580, height: 1048, contentX: 0 });
         expect(frames.auto).toMatchObject({ width: 580, height: 1048, contentX: 0 });
+    });
+
+    test('significance brackets reserve space without clipping negative data', async ({ page }) => {
+        await page.goto('/');
+        const result = await page.evaluate(async () => {
+            const { addSignificanceBrackets } = await import('/js/utils.js');
+            const boxLayout = { yaxis: {}, shapes: [], annotations: [] };
+            addSignificanceBrackets(
+                boxLayout,
+                [{ g1: 'A', g2: 'B', significance: '*', p: 0.02 }],
+                ['A', 'B'],
+                -2,
+                4,
+                { yMin: -6, baselineZero: false }
+            );
+
+            const barLayout = { yaxis: {}, shapes: [], annotations: [] };
+            addSignificanceBrackets(
+                barLayout,
+                [{ g1: 'A', g2: 'B', significance: '**', p: 0.001 }],
+                ['A', 'B'],
+                -2,
+                4,
+                { yMin: -6 }
+            );
+
+            const constantLayout = { yaxis: {}, shapes: [], annotations: [] };
+            addSignificanceBrackets(
+                constantLayout,
+                [{ g1: 'A', g2: 'B', significance: '†', p: 0.08 }],
+                ['A', 'B'],
+                0,
+                0,
+                { yMin: 0 }
+            );
+            return { boxLayout, barLayout, constantLayout };
+        });
+
+        const boxAnnotation = result.boxLayout.annotations[0];
+        expect(result.boxLayout.yaxis.range[0]).toBeLessThan(-6);
+        expect(result.boxLayout.yaxis.range[1]).toBeGreaterThan(boxAnnotation.y);
+        expect(boxAnnotation).toMatchObject({ xref: 'x', yref: 'y', yanchor: 'bottom' });
+
+        const barAnnotation = result.barLayout.annotations[0];
+        expect(result.barLayout.yaxis.range[0]).toBeLessThanOrEqual(-6);
+        expect(result.barLayout.yaxis.range[1]).toBeGreaterThan(barAnnotation.y);
+        expect(result.barLayout.yaxis.range[1]).toBeGreaterThan(0);
+
+        expect(result.constantLayout.yaxis.range.every(Number.isFinite)).toBe(true);
+        expect(result.constantLayout.yaxis.range[1]).toBeGreaterThan(
+            result.constantLayout.annotations[0].y
+        );
+    });
+
+    test('grouped ANOVA brackets connect the compared bars with three or more groups', async ({ page }) => {
+        await page.goto('/');
+        const result = await page.evaluate(async () => {
+            const { generateBracketsForGroupedPlot } = await import('/js/analyses/anova_two_way.js');
+            const cellStats = {
+                A: { Pre: { mean: 10, std: 1, n: 10 } },
+                B: { Pre: { mean: 12, std: 1, n: 10 } },
+                C: { Pre: { mean: 14, std: 1, n: 10 } }
+            };
+            return generateBracketsForGroupedPlot(
+                [
+                    { xIndex: 0, g1: 'A', g2: 'B', p: 0.01 },
+                    { xIndex: 0, g1: 'B', g2: 'C', p: 0.02 }
+                ],
+                ['A', 'B', 'C'],
+                ['Pre'],
+                cellStats
+            );
+        });
+
+        const firstHorizontal = result.shapes[0];
+        const secondHorizontal = result.shapes[3];
+        expect(firstHorizontal.x0).toBeCloseTo(-0.8 / 3, 8);
+        expect(firstHorizontal.x1).toBeCloseTo(0, 8);
+        expect(secondHorizontal.x0).toBeCloseTo(0, 8);
+        expect(secondHorizontal.x1).toBeCloseTo(0.8 / 3, 8);
+        expect(result.recommendedMaxY).toBeGreaterThan(result.annotations[1].y);
     });
 
     test('residual cell p-values use Holm correction for RxC but not redundant 2x2 cells', async ({ page }) => {

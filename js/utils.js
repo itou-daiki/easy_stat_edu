@@ -1111,6 +1111,7 @@ export function getAcademicLayout(overrides = {}) {
             linecolor: '#333',
             linewidth: 1,
             mirror: true,
+            automargin: true,
             gridcolor: '#e0e0e0',
             gridwidth: 1,
             zeroline: false,
@@ -1121,6 +1122,7 @@ export function getAcademicLayout(overrides = {}) {
             linecolor: '#333',
             linewidth: 1,
             mirror: true,
+            automargin: true,
             gridcolor: '#e0e0e0',
             gridwidth: 1,
             zeroline: false,
@@ -1223,6 +1225,109 @@ const RATIO_VISUALIZATION_HEIGHT_LIMITS = Object.freeze({
 });
 let visualizationEditorSequence = 0;
 
+function getTraceYBounds(data) {
+    let minimum = Infinity;
+    let maximum = -Infinity;
+
+    (Array.isArray(data) ? data : []).forEach(trace => {
+        const values = Array.isArray(trace?.y) ? trace.y : [];
+        const errors = Array.isArray(trace?.error_y?.array) ? trace.error_y.array : [];
+        const errorsMinus = Array.isArray(trace?.error_y?.arrayminus)
+            ? trace.error_y.arrayminus
+            : errors;
+
+        values.forEach((value, index) => {
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) return;
+            const errorPlus = Number(errors[index]);
+            const errorMinus = Number(errorsMinus[index]);
+            minimum = Math.min(
+                minimum,
+                numeric - (Number.isFinite(errorMinus) ? Math.abs(errorMinus) : 0)
+            );
+            maximum = Math.max(
+                maximum,
+                numeric + (Number.isFinite(errorPlus) ? Math.abs(errorPlus) : 0)
+            );
+        });
+
+        if (trace?.type === 'bar') {
+            minimum = Math.min(minimum, 0);
+            maximum = Math.max(maximum, 0);
+        }
+    });
+
+    return {
+        minimum: Number.isFinite(minimum) ? minimum : null,
+        maximum: Number.isFinite(maximum) ? maximum : null
+    };
+}
+
+function ensurePlotlyAnnotationSpace(layout, data) {
+    const nextLayout = layout || {};
+    const annotations = Array.isArray(nextLayout.annotations) ? nextLayout.annotations : [];
+    const hasBottomTitle = annotations.some(annotation =>
+        annotation?._annotationType === 'bottomTitle' && annotation.visible !== false
+    );
+    const hasVerticalTitle = annotations.some(annotation =>
+        annotation?._annotationType === 'tategaki' && annotation.visible !== false
+    );
+
+    if (hasBottomTitle || hasVerticalTitle) {
+        nextLayout.margin = { ...(nextLayout.margin || {}) };
+        if (hasBottomTitle) {
+            nextLayout.margin.b = Math.max(Number(nextLayout.margin.b) || 0, 120);
+        }
+        if (hasVerticalTitle) {
+            nextLayout.margin.l = Math.max(Number(nextLayout.margin.l) || 0, 90);
+        }
+    }
+
+    const bracketYValues = annotations
+        .filter(annotation =>
+            annotation?._annotationType === 'bracket'
+            && annotation.visible !== false
+            && (!annotation.yref || annotation.yref === 'y')
+        )
+        .map(annotation => Number(annotation.y))
+        .filter(Number.isFinite);
+    if (bracketYValues.length === 0) return nextLayout;
+
+    const dataBounds = getTraceYBounds(data);
+    const bracketMaximum = Math.max(...bracketYValues);
+    const referenceMinimum = dataBounds.minimum ?? Math.min(0, bracketMaximum);
+    const referenceMaximum = Math.max(dataBounds.maximum ?? bracketMaximum, bracketMaximum);
+    const magnitude = Math.max(
+        Math.abs(referenceMinimum),
+        Math.abs(referenceMaximum),
+        Number.EPSILON
+    );
+    const dataSpan = Math.max(referenceMaximum - referenceMinimum, magnitude * 0.1);
+    const recommendedMaximum = bracketMaximum + dataSpan * 0.12;
+    const existingRange = Array.isArray(nextLayout.yaxis?.range)
+        ? nextLayout.yaxis.range.map(Number)
+        : null;
+    const existingMinimum = existingRange && Number.isFinite(existingRange[0])
+        ? existingRange[0]
+        : (referenceMinimum >= 0
+            ? 0
+            : referenceMinimum - dataSpan * 0.08);
+    const existingMaximum = existingRange && Number.isFinite(existingRange[1])
+        ? existingRange[1]
+        : referenceMaximum;
+
+    nextLayout.yaxis = {
+        ...(nextLayout.yaxis || {}),
+        autorange: false,
+        range: [existingMinimum, Math.max(existingMaximum, recommendedMaximum)]
+    };
+    nextLayout._recommendedMaxY = Math.max(
+        Number(nextLayout._recommendedMaxY) || -Infinity,
+        recommendedMaximum
+    );
+    return nextLayout;
+}
+
 function installPlotlySpecCapture() {
     if (!window.Plotly || window.Plotly.__easyStatSpecCaptureInstalled) return;
 
@@ -1231,10 +1336,13 @@ function installPlotlySpecCapture() {
         const target = typeof graphDiv === 'string'
             ? document.getElementById(graphDiv)
             : graphDiv;
-        const spec = { data, layout: layout || {}, config };
+        const normalizedLayout = ensurePlotlyAnnotationSpace(layout || {}, data);
+        const spec = { data, layout: normalizedLayout, config };
         const existingState = target ? plotEditorStates.get(target) : null;
         const reapplyEditorState = Boolean(existingState && !existingState.isEditorRedraw);
-        const result = originalNewPlot.apply(this, arguments);
+        const args = Array.from(arguments);
+        args[2] = normalizedLayout;
+        const result = originalNewPlot.apply(this, args);
         if (target) {
             target.__easyStatPlotSpec = spec;
             capturedPlotSpecs.set(target, spec);
@@ -1387,6 +1495,104 @@ function appendVisualizationToggle(fields, options) {
     field.appendChild(label);
     fields.appendChild(field);
     return checkbox;
+}
+
+function appendVisualizationAxisRangeFields(fields, descriptors) {
+    const editableDescriptors = descriptors.filter(Boolean);
+    if (editableDescriptors.length === 0) return null;
+
+    const idPrefix = `visualization-editor-${++visualizationEditorSequence}-axis-range`;
+    const group = document.createElement('fieldset');
+    group.className = 'visualization-item-editor-axis-range';
+    const legend = document.createElement('legend');
+    legend.textContent = '軸の表示範囲';
+    const controls = document.createElement('div');
+    controls.className = 'visualization-axis-range-controls';
+    const rows = new Map();
+
+    editableDescriptors.forEach(descriptor => {
+        const row = document.createElement('div');
+        row.className = 'visualization-axis-range-row';
+        row.dataset.axisKey = descriptor.key;
+
+        const axisLabel = document.createElement('span');
+        axisLabel.className = 'visualization-axis-range-name';
+        axisLabel.textContent = descriptor.label;
+
+        const autoLabel = document.createElement('label');
+        autoLabel.className = 'visualization-item-editor-toggle visualization-axis-range-auto';
+        const autoCheckbox = document.createElement('input');
+        autoCheckbox.type = 'checkbox';
+        autoCheckbox.id = `${idPrefix}-${descriptor.key}-auto`;
+        autoCheckbox.checked = descriptor.initialAuto;
+        autoCheckbox.dataset.visualizationInput = `${descriptor.key}-range-auto`;
+        const autoText = document.createElement('span');
+        autoText.textContent = '自動';
+        autoLabel.htmlFor = autoCheckbox.id;
+        autoLabel.append(autoCheckbox, autoText);
+
+        const createRangePart = (kind, labelText, value) => {
+            const label = document.createElement('label');
+            label.className = 'visualization-axis-range-part';
+            label.htmlFor = `${idPrefix}-${descriptor.key}-${kind}`;
+            const text = document.createElement('span');
+            text.textContent = labelText;
+            const input = document.createElement('input');
+            input.type = descriptor.inputType;
+            input.id = `${idPrefix}-${descriptor.key}-${kind}`;
+            input.className = 'visualization-item-editor-input';
+            input.value = value;
+            input.disabled = descriptor.initialAuto;
+            input.dataset.visualizationInput = `${descriptor.key}-range-${kind}`;
+            input.setAttribute('aria-label', `${descriptor.label}の${labelText}`);
+            if (descriptor.inputType === 'number') {
+                input.step = 'any';
+                input.inputMode = 'decimal';
+            } else {
+                input.placeholder = '例: 2026-07-29';
+            }
+            label.append(text, input);
+            return { label, input };
+        };
+
+        const minimumPart = createRangePart(
+            'min',
+            '最小値',
+            descriptor.initialDisplayRange[0]
+        );
+        const maximumPart = createRangePart(
+            'max',
+            '最大値',
+            descriptor.initialDisplayRange[1]
+        );
+        const error = document.createElement('output');
+        error.className = 'visualization-axis-range-error';
+        error.id = `${idPrefix}-${descriptor.key}-error`;
+        error.hidden = true;
+        error.setAttribute('aria-live', 'polite');
+        minimumPart.input.setAttribute('aria-describedby', error.id);
+        maximumPart.input.setAttribute('aria-describedby', error.id);
+
+        row.append(
+            axisLabel,
+            autoLabel,
+            minimumPart.label,
+            maximumPart.label,
+            error
+        );
+        controls.appendChild(row);
+        rows.set(descriptor.key, {
+            descriptor,
+            autoCheckbox,
+            minimumInput: minimumPart.input,
+            maximumInput: maximumPart.input,
+            error
+        });
+    });
+
+    group.append(legend, controls);
+    fields.appendChild(group);
+    return { group, rows };
 }
 
 function appendVisualizationSizeFields(fields, options) {
@@ -1610,8 +1816,11 @@ function resolveVisualizationDimensions(target, controls, defaults) {
     if (ratioKey === 'custom') {
         height = clampVisualizationValue(controls.heightInput.value, 240, 1000, defaults.height);
     } else {
+        const responsiveAutoMinimum = width < 360
+            ? 320
+            : (width < 560 ? 300 : 240);
         const heightLimits = ratioKey === 'auto'
-            ? { minimum: 240, maximum: 1000 }
+            ? { minimum: responsiveAutoMinimum, maximum: 1000 }
             : RATIO_VISUALIZATION_HEIGHT_LIMITS;
         height = clampVisualizationValue(
             Math.round(width / Math.max(ratio || defaults.aspectRatio, 0.1)),
@@ -1752,6 +1961,223 @@ function setTypedAnnotation(annotations, type, template, text, visible) {
     return next;
 }
 
+function getPlotlyAxisKeys(layout, orientation) {
+    const pattern = new RegExp(`^${orientation}axis\\d*$`);
+    return Object.keys(layout || {}).filter(key => pattern.test(key));
+}
+
+function formatPlotlyRangeNumber(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return '';
+    if (numeric === 0) return '0';
+    const absolute = Math.abs(numeric);
+    if (absolute >= 1e7 || absolute < 1e-5) {
+        return numeric.toExponential(6).replace(/\.?0+e/, 'e');
+    }
+    return String(Number(numeric.toPrecision(10)));
+}
+
+function rangeValueToDisplay(value, type) {
+    if (type === 'date') return String(value ?? '');
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return '';
+    return formatPlotlyRangeNumber(type === 'log' ? 10 ** numeric : numeric);
+}
+
+function resolvePlotlyAxisRangeDescriptor(plot, capturedLayout, orientation) {
+    const layout = plot.layout || {};
+    const fullLayout = plot._fullLayout || {};
+    const axisKeys = Array.from(new Set([
+        ...getPlotlyAxisKeys(layout, orientation),
+        ...getPlotlyAxisKeys(capturedLayout, orientation),
+        ...getPlotlyAxisKeys(fullLayout, orientation)
+    ])).filter(key => fullLayout[key] || layout[key] || capturedLayout?.[key]);
+    if (axisKeys.length !== 1) return null;
+
+    const key = axisKeys[0];
+    const fullAxis = fullLayout[key] || {};
+    const liveAxis = layout[key] || {};
+    const capturedAxis = capturedLayout?.[key] || {};
+    const type = fullAxis.type || liveAxis.type || capturedAxis.type || 'linear';
+    if (!['linear', 'log', 'date'].includes(type)) return null;
+
+    const title = getTitleText(liveAxis.title)
+        || getTitleText(capturedAxis.title)
+        || getTitleText(fullAxis.title);
+    if (fullAxis.visible === false || (fullAxis.showticklabels === false && !title)) {
+        return null;
+    }
+
+    const inputAxis = [liveAxis, capturedAxis].find(axis =>
+        axis && (Array.isArray(axis.range) || axis.autorange !== undefined)
+    ) || {};
+    const autorange = inputAxis.autorange;
+    const inputRange = Array.isArray(inputAxis.range) && inputAxis.range.length >= 2
+        ? inputAxis.range.slice(0, 2)
+        : null;
+    const rangeIsActive = Boolean(
+        inputRange
+        && autorange !== true
+        && autorange !== 'reversed'
+    );
+    const displayedRange = rangeIsActive
+        ? inputRange
+        : (Array.isArray(fullAxis.range) ? fullAxis.range.slice(0, 2) : null);
+    if (!displayedRange || displayedRange.length < 2) return null;
+
+    const reversed = autorange === 'reversed'
+        || (
+            type !== 'date'
+            && Number(displayedRange[0]) > Number(displayedRange[1])
+        );
+    const orderedRange = reversed
+        ? [displayedRange[1], displayedRange[0]]
+        : displayedRange;
+    const recommendedMaximum = orientation === 'y'
+        ? Math.max(
+            Number(layout._recommendedMaxY) || -Infinity,
+            Number(capturedLayout?._recommendedMaxY) || -Infinity
+        )
+        : null;
+    const managedAutoRange = (
+        Number.isFinite(recommendedMaximum)
+        && inputRange
+        && type !== 'date'
+    )
+        ? inputRange.slice(0, 2)
+        : null;
+
+    return {
+        key,
+        label: `${orientation.toUpperCase()}軸`,
+        type,
+        inputType: type === 'date' ? 'text' : 'number',
+        initialAuto: Boolean(managedAutoRange) || !rangeIsActive,
+        initialDisplayRange: orderedRange.map(value => rangeValueToDisplay(value, type)),
+        reversed,
+        autoMode: managedAutoRange
+            ? false
+            : (autorange === 'reversed' ? 'reversed' : true),
+        managedAutoRange,
+        recommendedMaximum: Number.isFinite(recommendedMaximum)
+            ? recommendedMaximum
+            : null
+    };
+}
+
+function setAxisRangeError(row, message = '') {
+    row.error.textContent = message;
+    row.error.hidden = !message;
+    [row.minimumInput, row.maximumInput].forEach(input => {
+        input.setCustomValidity(message);
+        input.setAttribute('aria-invalid', String(Boolean(message)));
+    });
+}
+
+function parseAxisRangeValue(value, type) {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+    if (type === 'date') {
+        const timestamp = Date.parse(raw);
+        return Number.isFinite(timestamp)
+            ? { comparable: timestamp, plotValue: raw }
+            : null;
+    }
+
+    const numeric = Number(raw);
+    if (!Number.isFinite(numeric) || (type === 'log' && numeric <= 0)) return null;
+    return {
+        comparable: numeric,
+        plotValue: type === 'log' ? Math.log10(numeric) : numeric
+    };
+}
+
+function appendPlotlyAxisRangeUpdates(update, controls) {
+    if (!controls) return;
+
+    controls.rows.forEach(row => {
+        const { descriptor } = row;
+        const key = descriptor.key;
+        row.minimumInput.disabled = row.autoCheckbox.checked;
+        row.maximumInput.disabled = row.autoCheckbox.checked;
+
+        if (row.autoCheckbox.checked) {
+            setAxisRangeError(row);
+            update[`${key}.range`] = descriptor.managedAutoRange
+                ? descriptor.managedAutoRange.slice()
+                : null;
+            update[`${key}.autorange`] = descriptor.autoMode;
+            return;
+        }
+
+        const minimum = parseAxisRangeValue(row.minimumInput.value, descriptor.type);
+        const maximum = parseAxisRangeValue(row.maximumInput.value, descriptor.type);
+        if (!minimum || !maximum) {
+            setAxisRangeError(
+                row,
+                descriptor.type === 'date'
+                    ? '最小値と最大値を日付として入力してください。'
+                    : '最小値と最大値を数値で入力してください。'
+            );
+            return;
+        }
+        if (minimum.comparable >= maximum.comparable) {
+            setAxisRangeError(row, '最大値は最小値より大きくしてください。');
+            return;
+        }
+        if (
+            descriptor.recommendedMaximum !== null
+            && descriptor.type !== 'date'
+            && maximum.comparable < descriptor.recommendedMaximum
+        ) {
+            setAxisRangeError(
+                row,
+                `ブラケットと注釈を表示するため、最大値は${formatPlotlyRangeNumber(descriptor.recommendedMaximum)}以上にしてください。`
+            );
+            return;
+        }
+
+        setAxisRangeError(row);
+        update[`${key}.autorange`] = false;
+        update[`${key}.range`] = descriptor.reversed
+            ? [maximum.plotValue, minimum.plotValue]
+            : [minimum.plotValue, maximum.plotValue];
+    });
+}
+
+function bindVisualizationAxisRangeControls(controls, apply) {
+    if (!controls) return;
+    let timer = null;
+    const scheduleApply = () => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(apply, 100);
+    };
+
+    controls.rows.forEach(row => {
+        row.autoCheckbox.addEventListener('change', () => {
+            row.minimumInput.disabled = row.autoCheckbox.checked;
+            row.maximumInput.disabled = row.autoCheckbox.checked;
+            apply();
+        });
+        [row.minimumInput, row.maximumInput].forEach(input => {
+            input.addEventListener('input', scheduleApply);
+            input.addEventListener('change', apply);
+        });
+    });
+}
+
+function resetVisualizationAxisRangeControls(controls) {
+    if (!controls) return;
+    controls.rows.forEach(row => {
+        row.autoCheckbox.checked = row.descriptor.initialAuto;
+        row.minimumInput.value = row.descriptor.initialDisplayRange[0];
+        row.maximumInput.value = row.descriptor.initialDisplayRange[1];
+        row.minimumInput.disabled = row.descriptor.initialAuto;
+        row.maximumInput.disabled = row.descriptor.initialAuto;
+        setAxisRangeError(row);
+    });
+}
+
 function mergePlotlyLayoutUpdate(layout, update) {
     const next = { ...(layout || {}) };
     if (Object.prototype.hasOwnProperty.call(update, 'title.text')) {
@@ -1788,6 +2214,12 @@ function mergePlotlyLayoutUpdate(layout, update) {
     if (Object.prototype.hasOwnProperty.call(update, 'margin.b')) {
         next.margin = { ...(next.margin || {}), b: update['margin.b'] };
     }
+    Object.entries(update).forEach(([path, value]) => {
+        const match = path.match(/^([xy]axis\d*)\.(range|autorange)$/);
+        if (!match) return;
+        const [, axisKey, property] = match;
+        next[axisKey] = { ...(next[axisKey] || {}), [property]: value };
+    });
     return next;
 }
 
@@ -1820,6 +2252,46 @@ function resizePlotlyTarget(plot) {
     });
 }
 
+function wrapVisualizationTitle(text, figureWidth) {
+    const sourceLines = String(text ?? '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .split('\n');
+    if (figureWidth >= 520) return sourceLines.join('<br>');
+
+    const maximumCharacters = Math.max(8, Math.floor((figureWidth - 32) / 16));
+    return sourceLines
+        .flatMap(line => {
+            const characters = Array.from(line);
+            if (characters.length <= maximumCharacters) return [line];
+            const chunks = [];
+            for (let index = 0; index < characters.length; index += maximumCharacters) {
+                chunks.push(characters.slice(index, index + maximumCharacters).join(''));
+            }
+            return chunks;
+        })
+        .join('<br>');
+}
+
+function positionBottomTitleAnnotations(annotations, dimensions, layout) {
+    const margins = layout?.margin || {};
+    const left = Math.max(Number(margins.l) || 0, 0);
+    const right = Math.max(Number(margins.r) || 0, 0);
+    const paperWidth = Math.max(dimensions.width - left - right, 1);
+    const figureCenterInPaper = (dimensions.width / 2 - left) / paperWidth;
+    const titleWidth = Math.max(dimensions.width - 32, 80);
+
+    return annotations.map(annotation => (
+        annotation?._annotationType === 'bottomTitle'
+            ? {
+                ...annotation,
+                x: figureCenterInPaper,
+                width: titleWidth,
+                align: 'center'
+            }
+            : annotation
+    ));
+}
+
 function applyPlotEditorState(state) {
     const plot = state.target;
     if (!plot?.isConnected || !window.Plotly) return;
@@ -1842,23 +2314,36 @@ function applyPlotEditorState(state) {
     let annotationsChanged = false;
 
     if (state.titleSource === 'annotation') {
+        const displayTitle = wrapVisualizationTitle(
+            state.titleInput.value,
+            dimensions.width
+        );
         annotations = setTypedAnnotation(
             annotations,
             'bottomTitle',
             state.titleAnnotation,
-            state.titleInput.value,
+            displayTitle,
             state.titleCheckbox.checked
         );
+        annotations = positionBottomTitleAnnotations(
+            annotations,
+            dimensions,
+            plot.layout || state.plotSpec?.layout
+        );
         annotationsChanged = true;
+        const titleLineCount = Math.max(displayTitle.split('<br>').length, 1);
         update['margin.b'] = state.titleCheckbox.checked
             ? Math.max(
                 state.defaultBottomMargin,
                 120,
+                96 + titleLineCount * 20,
                 Math.round(dimensions.height * 0.22)
             )
             : state.defaultBottomMargin;
     } else {
-        update['title.text'] = state.titleCheckbox.checked ? state.titleInput.value : '';
+        update['title.text'] = state.titleCheckbox.checked
+            ? wrapVisualizationTitle(state.titleInput.value, dimensions.width)
+            : '';
     }
 
     update['xaxis.title.text'] = state.xCheckbox.checked ? state.xInput.value : '';
@@ -1880,6 +2365,7 @@ function applyPlotEditorState(state) {
     if (state.legendCheckbox) {
         update.showlegend = state.legendCheckbox.checked;
     }
+    appendPlotlyAxisRangeUpdates(update, state.axisRangeControls);
     if (annotationsChanged) update.annotations = annotations;
 
     try {
@@ -2036,6 +2522,10 @@ function enhancePlotlyFigure(plot, root, installation) {
             checked: fullLayout.showlegend ?? layout.showlegend ?? true
         })
         : null;
+    const axisRangeControls = appendVisualizationAxisRangeFields(editor.fields, [
+        resolvePlotlyAxisRangeDescriptor(plot, capturedLayout, 'x'),
+        resolvePlotlyAxisRangeDescriptor(plot, capturedLayout, 'y')
+    ]);
     const sizeControls = appendVisualizationSizeFields(editor.fields, {
         widthPercent: sizeDefaults.widthPercent,
         aspectRatio: 'auto',
@@ -2057,6 +2547,7 @@ function enhancePlotlyFigure(plot, root, installation) {
         yCheckbox: yField.checkbox,
         yInput: yField.input,
         legendCheckbox,
+        axisRangeControls,
         sizeControls,
         sizeDefaults,
         plotSpec: capturedSpec,
@@ -2092,6 +2583,7 @@ function enhancePlotlyFigure(plot, root, installation) {
         });
         input.addEventListener('change', apply);
     });
+    bindVisualizationAxisRangeControls(axisRangeControls, apply);
     bindVisualizationSizeControls(sizeControls, apply);
 
     appendVisualizationResetButton(editor.body, () => {
@@ -2104,6 +2596,7 @@ function enhancePlotlyFigure(plot, root, installation) {
         if (state.legendCheckbox) {
             state.legendCheckbox.checked = state.defaults.legendVisible;
         }
+        resetVisualizationAxisRangeControls(state.axisRangeControls);
         state.sizeControls.widthInput.value = String(state.defaults.widthPercent);
         state.sizeControls.ratioSelect.value = state.defaults.aspectRatio;
         state.sizeControls.ratioWidthInput.value = String(state.defaults.customRatioWidth);
@@ -2484,27 +2977,30 @@ export function createVisualizationControls(container) {
  * @param {Object|Array} xMap - Mapping of group names to x-coordinates (or array of group names in order).
  * @param {number} yMax - The maximum y-value of the data (baseline for brackets).
  * @param {number} yRange - The total range of the y-axis (used for scaling offsets).
+ * @param {Object} options - yMin and baselineZero options for the visible range.
  */
-export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange) {
+export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange, options = {}) {
     if (!pairs || pairs.length === 0) return;
 
-    // Filter significant pairs
-    const significantPairs = pairs.filter(p => p.significance && p.significance !== 'n.s.');
+    const significantPairs = pairs
+        .filter(p => p.significance && p.significance !== 'n.s.')
+        .map(pair => ({
+            ...pair,
+            x1: Array.isArray(xMap) ? xMap.indexOf(pair.g1) : xMap[pair.g1],
+            x2: Array.isArray(xMap) ? xMap.indexOf(pair.g2) : xMap[pair.g2]
+        }))
+        .filter(pair => (
+            Number.isFinite(pair.x1)
+            && Number.isFinite(pair.x2)
+            && pair.x1 !== pair.x2
+        ));
     if (significantPairs.length === 0) return;
-
-    // x-coordinate helper
-    const getX = (groupName) => {
-        if (Array.isArray(xMap)) {
-            return xMap.indexOf(groupName);
-        }
-        return xMap[groupName];
-    };
 
     // Sort pairs by span (distance between groups) ascending
     // This ensures smaller brackets are drawn first (lower), and larger ones stack above.
     significantPairs.sort((a, b) => {
-        const spanA = Math.abs(getX(a.g1) - getX(a.g2));
-        const spanB = Math.abs(getX(b.g1) - getX(b.g2));
+        const spanA = Math.abs(a.x1 - a.x2);
+        const spanB = Math.abs(b.x1 - b.x2);
         return spanA - spanB;
     });
 
@@ -2513,26 +3009,41 @@ export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange) {
     if (!layout.annotations) layout.annotations = [];
 
     // Configuration for spacing
-    const bracketHeight = yRange * 0.03; // Height of the bracket "legs"
-    const textOffset = yRange * 0.02;   // Distance text is above the bracket
-    const stackStep = yRange * 0.08;    // Vertical space reserved for each level of brackets
+    const numericMax = Number(yMax);
+    const numericMin = Number(options.yMin);
+    const lowerDataBound = Number.isFinite(numericMin)
+        ? numericMin
+        : Math.min(0, Number.isFinite(numericMax) ? numericMax : 0);
+    const upperDataBound = options.baselineZero !== false
+        ? Math.max(0, Number.isFinite(numericMax) ? numericMax : 0)
+        : (Number.isFinite(numericMax) ? numericMax : 0);
+    const magnitude = Math.max(
+        Math.abs(lowerDataBound),
+        Math.abs(upperDataBound),
+        1
+    );
+    const scaleRange = Number.isFinite(Number(yRange)) && Number(yRange) > 0
+        ? Number(yRange)
+        : magnitude * 0.1;
+    const bracketHeight = scaleRange * 0.03;
+    const textOffset = scaleRange * 0.02;
+    const stackStep = scaleRange * 0.08;
 
     // Track the "skyline" (current max height) for each x-position
     // Assuming x-coordinates are integers 0, 1, 2... for groups
     const numGroups = Array.isArray(xMap) ? xMap.length : Object.keys(xMap).length;
-    const columnHeights = new Array(numGroups).fill(yMax);
+    const columnHeights = new Array(numGroups).fill(upperDataBound);
 
     // Track max occupied height for layout range update
-    let maxOccupiedY = yMax;
+    let maxOccupiedY = upperDataBound;
 
     significantPairs.forEach(pair => {
-        const x1 = getX(pair.g1);
-        const x2 = getX(pair.g2);
+        const { x1, x2 } = pair;
         const start = Math.min(x1, x2);
         const end = Math.max(x1, x2);
 
         // Find the current max height in the span [start, end]
-        let currentLevelHeight = 0;
+        let currentLevelHeight = -Infinity;
         for (let i = start; i <= end; i++) {
             if (columnHeights[i] > currentLevelHeight) {
                 currentLevelHeight = columnHeights[i];
@@ -2540,7 +3051,11 @@ export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange) {
         }
 
         // Determine drawing position (add step)
-        const drawY = currentLevelHeight + stackStep;
+        const drawY = (
+            Number.isFinite(currentLevelHeight)
+                ? currentLevelHeight
+                : maxOccupiedY
+        ) + stackStep;
         const textY = drawY + textOffset;
 
         // Draw bracket line (path)
@@ -2566,6 +3081,8 @@ export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange) {
             text: text,
             showarrow: false,
             font: { size: 14, color: 'black' },
+            xref: 'x',
+            yref: 'y',
             xanchor: 'center',
             yanchor: 'bottom',
             _annotationType: 'bracket'
@@ -2573,7 +3090,7 @@ export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange) {
 
         // Update column heights for the spanned range
         // The text occupies some space, so we reserve up to textY + limits
-        const nextBaseline = textY + (yRange * 0.02); // Small buffer above text
+        const nextBaseline = textY + (scaleRange * 0.02);
         for (let i = start; i <= end; i++) {
             columnHeights[i] = nextBaseline;
         }
@@ -2586,18 +3103,25 @@ export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange) {
     // Update layout yaxis range to accommodate brackets and annotation text.
     // Plotly auto-range includes shapes (data coords) but NOT annotations.
     // We must explicitly set the range to ensure bracket text is visible.
-    const recommendedMaxY = maxOccupiedY + (yRange * 0.05);
+    const recommendedMaxY = maxOccupiedY + (scaleRange * 0.12);
+    const paddedMinimum = options.baselineZero !== false
+        ? (
+            lowerDataBound < 0
+                ? lowerDataBound - (scaleRange * 0.06)
+                : 0
+        )
+        : lowerDataBound - (scaleRange * 0.08);
 
-    if (!layout.yaxis.range) {
-        // For bar charts (most common use case), minimum is 0.
-        // Set explicit range so bracket annotations are never cut off.
-        layout.yaxis.range = [0, recommendedMaxY];
+    layout.yaxis = layout.yaxis || {};
+    if (!Array.isArray(layout.yaxis.range)) {
+        layout.yaxis.range = [paddedMinimum, recommendedMaxY];
     } else {
+        layout.yaxis.range[0] = Math.min(layout.yaxis.range[0], paddedMinimum);
         layout.yaxis.range[1] = Math.max(layout.yaxis.range[1], recommendedMaxY);
     }
 
-    // Attach recommended max y to layout for caller usage if needed
     layout._recommendedMaxY = recommendedMaxY;
+    layout._recommendedMinY = paddedMinimum;
 }
 
 
