@@ -49,7 +49,7 @@ test.describe('T-Test Feature', () => {
         expect(textContent).toContain('df');
         expect(textContent).toContain('p');
         expect(textContent).toContain('効果量(d)');
-        expect(textContent).toContain('95% CI');
+        expect(textContent).toContain('平均差の95% CI');
 
         // テーブルが横に並んでいる（1つのテーブルにまとまっている）ことを確認
         const tableHeaders = await page.locator('#results-section table.analysis-table th').allTextContents();
@@ -93,6 +93,7 @@ test.describe('T-Test Feature', () => {
         expect(textContent).toContain('ペア'); // or 変数
         expect(textContent).toContain('平均');
         expect(textContent).toContain('SD');
+        expect(textContent).toContain('平均差の95% CI');
         expect(textContent).toContain('t');
         expect(textContent).toContain('df');
         expect(textContent).toContain('p');

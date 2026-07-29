@@ -111,7 +111,8 @@ function geminiResponse(text, modelVersion = 'gemini-3.6-flash') {
         usageMetadata: {
             promptTokenCount: 1200,
             candidatesTokenCount: 420,
-            totalTokenCount: 1620
+            thoughtsTokenCount: 80,
+            totalTokenCount: 1700
         },
         modelVersion
     };
@@ -124,20 +125,35 @@ test.describe('AI support logic', () => {
 
         expect(helperSource).toContain("GEMINI_PRIMARY_MODEL = 'gemini-3.6-flash'");
         expect(helperSource).toContain("GEMINI_FALLBACK_MODEL = 'gemini-3.5-flash-lite'");
-        expect(helperSource).toContain("thinkingLevel: 'medium'");
+        expect(helperSource).toContain("thinkingLevel = 'medium'");
         expect(helperSource).not.toContain('temperature:');
         expect(helperSource).not.toContain('topP:');
         expect(helperSource).not.toContain('topK:');
         expect(mainSource).toContain('shouldTryFallbackGeminiModel');
+        expect(mainSource).toContain('有意でない理由を標本数だけで説明せず');
+        expect(mainSource).toContain('analysis.reviewProtocol');
+        expect(mainSource).toContain("thinkingLevel: 'low'");
 
         await page.goto('/');
-        const body = await page.evaluate(async () => {
+        const requestSettings = await page.evaluate(async () => {
             const module = await import('/js/ai_support.js?request-body-test');
-            return module.createGeminiRequestBody('test', 1000, { structured: true });
+            return {
+                structured: module.createGeminiRequestBody('test', 1000, {
+                    structured: true
+                }),
+                chat: module.createGeminiRequestBody('test', 1000, {
+                    thinkingLevel: 'low'
+                }),
+                normalized: module.normalizeAIAnswerText(
+                    '結果は $N = 30$、$p > .05$、\\(d = .50 \\sim .56\\) です。'
+                )
+            };
         });
-        expect(body.generationConfig.thinkingConfig.thinkingLevel).toBe('medium');
-        expect(body.generationConfig.responseFormat.text.mimeType).toBe('application/json');
-        expect(body.generationConfig.responseFormat.text.schema.required).toContain('validityChecks');
+        expect(requestSettings.structured.generationConfig.thinkingConfig.thinkingLevel).toBe('medium');
+        expect(requestSettings.structured.generationConfig.responseFormat.text.mimeType).toBe('application/json');
+        expect(requestSettings.structured.generationConfig.responseFormat.text.schema.required).toContain('validityChecks');
+        expect(requestSettings.chat.generationConfig.thinkingConfig.thinkingLevel).toBe('low');
+        expect(requestSettings.normalized).toBe('結果は N = 30、p > .05、d = .50 ～ .56 です。');
     });
 
     test('detects and masks likely personal information without treating width as an ID', async ({ page }) => {
@@ -244,6 +260,9 @@ test.describe('AI support UI and context', () => {
         expect(copiedText).toContain('全体で900〜1400字程度');
         expect(copiedText).toContain('"rawDataIncluded": false');
         expect(copiedText).toContain('"dataPreview": []');
+        expect(copiedText).toContain('"reviewProtocol"');
+        expect(copiedText).not.toContain('図の表示設定');
+        expect(copiedText).not.toContain('軸ラベルを表示');
         expect(copiedText).not.toContain('タブレットを使った授業がとても分かりやすかった');
     });
 
@@ -266,6 +285,8 @@ test.describe('AI support UI and context', () => {
         expect(preview.analysisResultTables.flatMap(table => table.rows)
             .some(row => row.some(value => value === 'ID'))).toBe(false);
         expect(preview.analysisResults).not.toContain('ID 30 15.5000');
+        expect(preview.analysisResults).not.toContain('図の表示設定');
+        expect(preview.analysisResults).not.toContain('軸ラベルを表示');
 
         await page.locator('#ai-include-raw-preview').check();
         await page.locator('#ai-preview-context-btn').click();
@@ -414,7 +435,8 @@ test.describe('Gemini request flows', () => {
         await expect(page.locator('#ai-assist-output')).toContainText('根拠: 相関行列');
         await expect(page.locator('.ai-response-verification')).toContainText('必ず画面の結果表と照合');
         await expect(page.locator('.ai-response-meta')).toContainText('Gemini 3.6 Flash');
-        await expect(page.locator('.ai-response-meta')).toContainText('1,620');
+        await expect(page.locator('.ai-response-meta')).toContainText('合計 1,700');
+        await expect(page.locator('.ai-response-meta')).toContainText('入力 1,200 / 回答 420 / 推論 80');
 
         expect(requestUrl).toContain('/gemini-3.6-flash:generateContent');
         expect(requestUrl).not.toContain('test-api-key');
@@ -427,9 +449,11 @@ test.describe('Gemini request flows', () => {
 
     test('falls back to Gemini 3.5 Flash-Lite when the primary model is unavailable', async ({ page }) => {
         const requestUrls = [];
+        const requestBodies = [];
         await page.route('https://generativelanguage.googleapis.com/**', async route => {
             const url = route.request().url();
             requestUrls.push(url);
+            requestBodies.push(route.request().postDataJSON());
             if (url.includes('gemini-3.6-flash')) {
                 await route.fulfill({
                     status: 404,
@@ -441,7 +465,10 @@ test.describe('Gemini request flows', () => {
             await route.fulfill({
                 status: 200,
                 contentType: 'application/json',
-                body: JSON.stringify(geminiResponse('数学と英語には強い正の相関があります。', 'gemini-3.5-flash-lite'))
+                body: JSON.stringify(geminiResponse(
+                    '数学と英語には $r = .99$ の強い正の相関があります。',
+                    'gemini-3.5-flash-lite'
+                ))
             });
         });
 
@@ -451,11 +478,16 @@ test.describe('Gemini request flows', () => {
         await openAIPanel(page);
         await page.getByRole('button', { name: '200字で要約' }).click();
 
-        await expect(page.locator('#ai-assist-output')).toContainText('数学と英語には強い正の相関', { timeout: 10000 });
+        await expect(page.locator('#ai-assist-output')).toContainText('数学と英語には r = .99 の強い正の相関', { timeout: 10000 });
+        await expect(page.locator('#ai-assist-output')).not.toContainText('$r = .99$');
         await expect(page.locator('.ai-response-meta')).toContainText('Gemini 3.5 Flash-Lite');
         expect(requestUrls).toHaveLength(2);
         expect(requestUrls[0]).toContain('gemini-3.6-flash');
         expect(requestUrls[1]).toContain('gemini-3.5-flash-lite');
+        expect(requestBodies.every(body => (
+            body.generationConfig.thinkingConfig.thinkingLevel === 'low'
+        ))).toBe(true);
+        expect(requestBodies[0].contents[0].parts[0].text).toContain('180～220字程度');
     });
 
     test('lets the user cancel a request without exposing a raw API error', async ({ page }) => {

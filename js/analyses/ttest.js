@@ -144,7 +144,7 @@ function runIndependentTTest(currentData) {
                         <th>df</th>
                         <th>p<br><small>(Levene p)</small></th>
                         <th>効果量(d)</th>
-                        <th>95% CI</th>
+                        <th>平均差の<br>95% CI</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -327,7 +327,7 @@ function runPairedTTest(currentData, pairs) {
                         <th>df</th>
                         <th>p</th>
                         <th>効果量(dz)</th>
-                        <th>95% CI</th>
+                        <th>平均差の<br>95% CI</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -517,7 +517,7 @@ function runOneSampleTTest(currentData) {
                             <th>df</th>
                             <th>p</th>
                             <th>効果量(d)</th>
-                            <th>95% CI</th>
+                            <th>平均差の<br>95% CI</th>
                         </tr>
                     </thead>
                     <tbody>

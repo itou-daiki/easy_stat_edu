@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20260730-ai-support-v3">
+    <link rel="stylesheet" href="css/style.css?v=20260730-ai-support-v4">
 
     <!-- vis.js for network graphs -->
     <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
@@ -959,6 +959,8 @@
                                     <li>結果表の根拠と対応した構造化解釈、妥当性チェック、レポート例を追加</li>
                                     <li>原データを初期状態で除外し、機微情報候補の自動マスクと送信前プレビューに対応</li>
                                     <li>説明レベル、定型質問、生成中止、会話消去、結果更新時の再分析案内を追加</li>
+                                    <li>分析手法別の確認順序を追加し、有意でない理由や効果量の過剰解釈を抑制</li>
+                                    <li>追加質問を軽量化し、入力・回答・推論トークンの内訳表示に対応</li>
                                     <li>Gemini 3.6 FlashとGemini 3.5 Flash-Liteに対応</li>
                                 </ul>
                             </div>
@@ -1168,12 +1170,12 @@
     <script type="importmap">
         {
             "imports": {
-                "./js/utils.js": "./js/utils.js?v=20260730-ai-support-v3",
-                "./js/ai_support.js": "./js/ai_support.js?v=20260730-ai-support-v3"
+                "./js/utils.js": "./js/utils.js?v=20260730-ai-support-v4",
+                "./js/ai_support.js": "./js/ai_support.js?v=20260730-ai-support-v4"
             }
         }
     </script>
-    <script type="module" src="js/main.js?v=20260730-ai-support-v3"></script>
+    <script type="module" src="js/main.js?v=20260730-ai-support-v4"></script>
 </body>
 
 </html>
