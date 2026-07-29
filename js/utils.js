@@ -1213,6 +1213,14 @@ const VISUALIZATION_ASPECT_RATIOS = Object.freeze({
     '3:2': 3 / 2,
     '1:1': 1
 });
+const DEFAULT_CUSTOM_ASPECT_RATIO = Object.freeze({
+    width: 16,
+    height: 9
+});
+const RATIO_VISUALIZATION_HEIGHT_LIMITS = Object.freeze({
+    minimum: 120,
+    maximum: 2000
+});
 let visualizationEditorSequence = 0;
 
 function installPlotlySpecCapture() {
@@ -1426,7 +1434,8 @@ function appendVisualizationSizeFields(fields, options) {
         ['4:3', '4:3（標準）'],
         ['3:2', '3:2'],
         ['1:1', '1:1（正方形）'],
-        ['custom', '高さを指定']
+        ['custom-ratio', '任意比率を入力'],
+        ['custom', '高さを直接指定']
     ].forEach(([value, label]) => {
         const option = document.createElement('option');
         option.value = value;
@@ -1434,7 +1443,60 @@ function appendVisualizationSizeFields(fields, options) {
         ratioSelect.appendChild(option);
     });
     ratioSelect.value = options.aspectRatio || 'auto';
-    ratioControl.append(ratioLabel, ratioSelect);
+
+    const ratioInputs = document.createElement('div');
+    ratioInputs.className = 'visualization-ratio-inputs';
+    ratioInputs.hidden = ratioSelect.value !== 'custom-ratio';
+
+    const ratioWidthLabel = document.createElement('label');
+    ratioWidthLabel.className = 'visualization-ratio-part';
+    ratioWidthLabel.htmlFor = `${idPrefix}-ratio-width`;
+    const ratioWidthText = document.createElement('span');
+    ratioWidthText.textContent = '横';
+    const ratioWidthInput = document.createElement('input');
+    ratioWidthInput.type = 'number';
+    ratioWidthInput.id = `${idPrefix}-ratio-width`;
+    ratioWidthInput.className = 'visualization-item-editor-input';
+    ratioWidthInput.min = '0.1';
+    ratioWidthInput.max = '100';
+    ratioWidthInput.step = 'any';
+    ratioWidthInput.inputMode = 'decimal';
+    ratioWidthInput.value = formatVisualizationRatioPart(
+        options.customRatioWidth ?? DEFAULT_CUSTOM_ASPECT_RATIO.width
+    );
+    ratioWidthInput.disabled = ratioInputs.hidden;
+    ratioWidthInput.dataset.visualizationInput = 'ratio-width';
+    ratioWidthInput.setAttribute('aria-label', '横の比率');
+    ratioWidthLabel.append(ratioWidthText, ratioWidthInput);
+
+    const ratioSeparator = document.createElement('span');
+    ratioSeparator.className = 'visualization-ratio-separator';
+    ratioSeparator.textContent = ':';
+    ratioSeparator.setAttribute('aria-hidden', 'true');
+
+    const ratioHeightLabel = document.createElement('label');
+    ratioHeightLabel.className = 'visualization-ratio-part';
+    ratioHeightLabel.htmlFor = `${idPrefix}-ratio-height`;
+    const ratioHeightText = document.createElement('span');
+    ratioHeightText.textContent = '縦';
+    const ratioHeightInput = document.createElement('input');
+    ratioHeightInput.type = 'number';
+    ratioHeightInput.id = `${idPrefix}-ratio-height`;
+    ratioHeightInput.className = 'visualization-item-editor-input';
+    ratioHeightInput.min = '0.1';
+    ratioHeightInput.max = '100';
+    ratioHeightInput.step = 'any';
+    ratioHeightInput.inputMode = 'decimal';
+    ratioHeightInput.value = formatVisualizationRatioPart(
+        options.customRatioHeight ?? DEFAULT_CUSTOM_ASPECT_RATIO.height
+    );
+    ratioHeightInput.disabled = ratioInputs.hidden;
+    ratioHeightInput.dataset.visualizationInput = 'ratio-height';
+    ratioHeightInput.setAttribute('aria-label', '縦の比率');
+    ratioHeightLabel.append(ratioHeightText, ratioHeightInput);
+
+    ratioInputs.append(ratioWidthLabel, ratioSeparator, ratioHeightLabel);
+    ratioControl.append(ratioLabel, ratioSelect, ratioInputs);
 
     const heightControl = document.createElement('div');
     heightControl.className = 'visualization-size-control';
@@ -1456,13 +1518,31 @@ function appendVisualizationSizeFields(fields, options) {
     controls.append(widthControl, ratioControl, heightControl);
     group.append(legend, controls);
     fields.appendChild(group);
-    return { widthInput, widthOutput, ratioSelect, heightInput };
+    return {
+        widthInput,
+        widthOutput,
+        ratioSelect,
+        ratioInputs,
+        ratioWidthInput,
+        ratioHeightInput,
+        heightInput
+    };
 }
 
 function clampVisualizationValue(value, minimum, maximum, fallback) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return fallback;
     return Math.min(maximum, Math.max(minimum, numeric));
+}
+
+function normalizeVisualizationRatioPart(value, fallback) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric <= 0) return fallback;
+    return Math.round(Math.min(100, Math.max(0.1, numeric)) * 1000) / 1000;
+}
+
+function formatVisualizationRatioPart(value) {
+    return String(Number(normalizeVisualizationRatioPart(value, 1).toFixed(3)));
 }
 
 function getVisualizationParentWidth(target) {
@@ -1512,28 +1592,52 @@ function resolveVisualizationDimensions(target, controls, defaults) {
         availableWidth * widthPercent / 100
     ));
     const ratioKey = controls.ratioSelect.value;
+    const usesCustomRatio = ratioKey === 'custom-ratio';
+    const ratioWidth = normalizeVisualizationRatioPart(
+        controls.ratioWidthInput.value,
+        DEFAULT_CUSTOM_ASPECT_RATIO.width
+    );
+    const ratioHeight = normalizeVisualizationRatioPart(
+        controls.ratioHeightInput.value,
+        DEFAULT_CUSTOM_ASPECT_RATIO.height
+    );
     const ratio = ratioKey === 'auto'
         ? defaults.aspectRatio
-        : VISUALIZATION_ASPECT_RATIOS[ratioKey];
-    const height = ratioKey === 'custom'
-        ? clampVisualizationValue(controls.heightInput.value, 240, 1000, defaults.height)
-        : clampVisualizationValue(
+        : (usesCustomRatio
+            ? ratioWidth / ratioHeight
+            : VISUALIZATION_ASPECT_RATIOS[ratioKey]);
+    let height;
+    if (ratioKey === 'custom') {
+        height = clampVisualizationValue(controls.heightInput.value, 240, 1000, defaults.height);
+    } else {
+        const heightLimits = ratioKey === 'auto'
+            ? { minimum: 240, maximum: 1000 }
+            : RATIO_VISUALIZATION_HEIGHT_LIMITS;
+        height = clampVisualizationValue(
             Math.round(width / Math.max(ratio || defaults.aspectRatio, 0.1)),
-            240,
-            1000,
+            heightLimits.minimum,
+            heightLimits.maximum,
             defaults.height
         );
+    }
 
     controls.widthInput.value = String(widthPercent);
     controls.widthOutput.textContent = `${widthPercent}%`;
     controls.heightInput.disabled = ratioKey !== 'custom';
+    controls.ratioInputs.hidden = !usesCustomRatio;
+    controls.ratioWidthInput.disabled = !usesCustomRatio;
+    controls.ratioHeightInput.disabled = !usesCustomRatio;
+    controls.ratioWidthInput.value = formatVisualizationRatioPart(ratioWidth);
+    controls.ratioHeightInput.value = formatVisualizationRatioPart(ratioHeight);
     if (ratioKey !== 'custom') controls.heightInput.value = String(Math.round(height));
 
     return {
         widthPercent,
         width,
         height: Math.round(height),
-        aspectRatio: ratioKey
+        aspectRatio: usesCustomRatio
+            ? `${formatVisualizationRatioPart(ratioWidth)}:${formatVisualizationRatioPart(ratioHeight)}`
+            : ratioKey
     };
 }
 
@@ -1562,6 +1666,10 @@ function bindVisualizationSizeControls(controls, apply) {
     });
     controls.widthInput.addEventListener('change', apply);
     controls.ratioSelect.addEventListener('change', apply);
+    controls.ratioWidthInput.addEventListener('input', scheduleApply);
+    controls.ratioWidthInput.addEventListener('change', apply);
+    controls.ratioHeightInput.addEventListener('input', scheduleApply);
+    controls.ratioHeightInput.addEventListener('change', apply);
     controls.heightInput.addEventListener('input', scheduleApply);
     controls.heightInput.addEventListener('change', apply);
 }
@@ -1962,6 +2070,8 @@ function enhancePlotlyFigure(plot, root, installation) {
             legendVisible: legendCheckbox?.checked ?? false,
             widthPercent: sizeDefaults.widthPercent,
             aspectRatio: 'auto',
+            customRatioWidth: DEFAULT_CUSTOM_ASPECT_RATIO.width,
+            customRatioHeight: DEFAULT_CUSTOM_ASPECT_RATIO.height,
             height: sizeDefaults.height
         }
     };
@@ -1996,6 +2106,8 @@ function enhancePlotlyFigure(plot, root, installation) {
         }
         state.sizeControls.widthInput.value = String(state.defaults.widthPercent);
         state.sizeControls.ratioSelect.value = state.defaults.aspectRatio;
+        state.sizeControls.ratioWidthInput.value = String(state.defaults.customRatioWidth);
+        state.sizeControls.ratioHeightInput.value = String(state.defaults.customRatioHeight);
         state.sizeControls.heightInput.value = String(state.defaults.height);
         apply();
     });
@@ -2137,6 +2249,8 @@ function enhanceCanvasFigure(target, root, installation) {
         if (legendCheckbox) legendCheckbox.checked = true;
         sizeControls.widthInput.value = String(sizeDefaults.widthPercent);
         sizeControls.ratioSelect.value = 'auto';
+        sizeControls.ratioWidthInput.value = String(DEFAULT_CUSTOM_ASPECT_RATIO.width);
+        sizeControls.ratioHeightInput.value = String(DEFAULT_CUSTOM_ASPECT_RATIO.height);
         sizeControls.heightInput.value = String(sizeDefaults.height);
         apply();
     });

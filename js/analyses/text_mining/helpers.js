@@ -657,12 +657,40 @@ export function buildCooccurrenceEdges(sentences, topWords, options = {}) {
 // 画像ダウンロード
 // ======================================================================
 
-const CANVAS_EXPORT_ASPECT_DIMENSIONS = Object.freeze({
-    '16:9': [16, 9],
-    '4:3': [4, 3],
-    '3:2': [3, 2],
-    '1:1': [1, 1]
-});
+function greatestCommonDivisor(left, right) {
+    let a = Math.abs(Math.round(left));
+    let b = Math.abs(Math.round(right));
+    while (b > 0) {
+        [a, b] = [b, a % b];
+    }
+    return Math.max(a, 1);
+}
+
+function parseCanvasAspectDimensions(aspectRatioKey) {
+    const match = String(aspectRatioKey || '').trim().match(
+        /^(\d+(?:\.\d{1,3})?):(\d+(?:\.\d{1,3})?)$/
+    );
+    if (!match) return null;
+
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+        return null;
+    }
+
+    const decimals = Math.min(
+        3,
+        Math.max(
+            (match[1].split('.')[1] || '').length,
+            (match[2].split('.')[1] || '').length
+        )
+    );
+    const scale = 10 ** decimals;
+    const scaledWidth = Math.max(1, Math.round(width * scale));
+    const scaledHeight = Math.max(1, Math.round(height * scale));
+    const divisor = greatestCommonDivisor(scaledWidth, scaledHeight);
+    return [scaledWidth / divisor, scaledHeight / divisor];
+}
 
 /**
  * 固定比率が選ばれている場合、タイトル・凡例を含む保存画像全体の比率を保つ。
@@ -680,7 +708,7 @@ export function resolveCanvasExportFrame(
     const topHeight = Math.max(0, Math.round(Number(titleHeight) || 0));
     const bottomHeight = Math.max(0, Math.round(Number(legendHeight) || 0));
     const naturalHeight = topHeight + contentHeight + bottomHeight;
-    const ratioDimensions = CANVAS_EXPORT_ASPECT_DIMENSIONS[aspectRatioKey];
+    const ratioDimensions = parseCanvasAspectDimensions(aspectRatioKey);
 
     let width = contentWidth;
     let height = naturalHeight;

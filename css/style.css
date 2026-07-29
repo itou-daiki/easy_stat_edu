@@ -2908,6 +2908,32 @@ table tr:hover {
     font-weight: 700;
 }
 
+.visualization-ratio-inputs {
+    align-items: end;
+    display: grid;
+    gap: 0.35rem;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.visualization-ratio-inputs[hidden] {
+    display: none;
+}
+
+.visualization-ratio-part {
+    color: #475569;
+    display: grid;
+    font-size: 0.72rem;
+    font-weight: 700;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.visualization-ratio-separator {
+    color: #64748b;
+    font-weight: 700;
+    padding-bottom: 0.55rem;
+}
+
 .visualization-size-range {
     align-items: center;
     display: grid;

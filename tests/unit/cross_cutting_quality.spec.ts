@@ -26,6 +26,7 @@ test.describe('Cross-cutting quality contracts', () => {
 
         expect(readme).toContain('分析・データ処理モジュール: 23機能');
         expect(readme).toContain('任意のGemini解釈補助');
+        expect(readme).toContain('任意入力の縦横比');
         expect(readme).toContain('完全なオフライン動作は保証されません');
         expect(readme).not.toContain('サーバーへのデータ送信は一切行わず');
         expect(features).toContain('Yatesの連続性補正を主結果');
@@ -64,6 +65,8 @@ test.describe('Cross-cutting quality contracts', () => {
             return {
                 square: resolveCanvasExportFrame(580, 580, 144, 324, '1:1'),
                 wide: resolveCanvasExportFrame(960, 540, 72, 210, '16:9'),
+                custom: resolveCanvasExportFrame(720, 480, 90, 180, '2.5:2'),
+                invalid: resolveCanvasExportFrame(580, 580, 144, 324, '任意'),
                 auto: resolveCanvasExportFrame(580, 580, 144, 324, 'auto')
             };
         });
@@ -71,6 +74,8 @@ test.describe('Cross-cutting quality contracts', () => {
         expect(frames.square.width).toBe(frames.square.height);
         expect(frames.square.contentX).toBeGreaterThan(0);
         expect(frames.wide.width / frames.wide.height).toBeCloseTo(16 / 9, 12);
+        expect(frames.custom.width / frames.custom.height).toBeCloseTo(5 / 4, 12);
+        expect(frames.invalid).toMatchObject({ width: 580, height: 1048, contentX: 0 });
         expect(frames.auto).toMatchObject({ width: 580, height: 1048, contentX: 0 });
     });
 

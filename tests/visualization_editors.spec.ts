@@ -111,7 +111,28 @@ test.describe('Editable visualization and table labels', () => {
             return box ? Math.round((box.width / box.height) * 100) / 100 : 0;
         }).toBe(1);
 
+        await editor.locator('[data-visualization-input="aspect-ratio"]').selectOption('custom-ratio');
+        await expect(editor.locator('.visualization-ratio-inputs')).toBeVisible();
+        await editor.locator('[data-visualization-input="ratio-width"]').fill('5');
+        await editor.locator('[data-visualization-input="ratio-height"]').fill('4');
+        await expect.poll(async () => {
+            const box = await firstPlot.boundingBox();
+            return box ? Math.round((box.width / box.height) * 100) / 100 : 0;
+        }).toBe(1.25);
+        await expect(firstPlot).toHaveAttribute('data-visual-aspect-ratio', '5:4');
+
+        const customPlotPath = path.join(artifactDir, 'eda-custom-5x4-plot.png');
+        const [customPlotDownload] = await Promise.all([
+            page.waitForEvent('download'),
+            firstPlot.locator('.modebar-btn[data-title="Download plot as a png"]').click()
+        ]);
+        await customPlotDownload.saveAs(customPlotPath);
+        const customPlotPng = await readPngInfo(customPlotPath);
+        expect(Math.abs(customPlotPng.width / customPlotPng.height - 5 / 4)).toBeLessThan(0.02);
+
         await editor.locator('[data-visualization-input="aspect-ratio"]').selectOption('custom');
+        await expect(editor.locator('.visualization-ratio-inputs')).toBeHidden();
+        await expect(editor.locator('[data-visualization-input="height"]')).toBeEnabled();
         await editor.locator('[data-visualization-input="height"]').fill('360');
         await expect.poll(async () => Math.round((await firstPlot.boundingBox())?.height || 0)).toBe(360);
 
@@ -125,9 +146,15 @@ test.describe('Editable visualization and table labels', () => {
         await expect(firstPlot.locator('.xtitle')).toHaveText('性別区分');
         await expect(firstPlot.locator('.annotation-text')).toContainText(['人数', '性別の回答数']);
 
+        await editor.locator('[data-visualization-input="aspect-ratio"]').selectOption('custom-ratio');
+        await expect(editor.locator('.visualization-ratio-inputs')).toBeVisible();
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(editor).toBeVisible();
         expect(await editor.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+        await expect.poll(async () => {
+            const box = await firstPlot.boundingBox();
+            return box ? Math.round((box.width / box.height) * 100) / 100 : 0;
+        }).toBe(1.25);
     });
 
     test('applies canvas title and legend settings to saved text-mining PNGs', async ({ page }) => {
@@ -230,6 +257,27 @@ test.describe('Editable visualization and table labels', () => {
         expect(networkPng.height).toBeGreaterThan(networkSize.height);
         expect(Math.abs(networkPng.width / networkPng.height - 16 / 9)).toBeLessThan(0.001);
 
+        await networkEditor.locator('[data-visualization-input="aspect-ratio"]').selectOption('custom-ratio');
+        await networkEditor.locator('[data-visualization-input="ratio-width"]').fill('5');
+        await networkEditor.locator('[data-visualization-input="ratio-height"]').fill('4');
+        await expect.poll(async () => page.locator('#overall-network').evaluate(container => {
+            const canvas = container.querySelector('canvas');
+            const rect = canvas?.getBoundingClientRect();
+            return {
+                ratio: rect ? Math.round((rect.width / rect.height) * 100) / 100 : 0,
+                exportRatio: canvas?.dataset.visualAspectRatio || ''
+            };
+        })).toEqual({ ratio: 1.25, exportRatio: '5:4' });
+        const customNetworkPath = path.join(artifactDir, 'network-custom-5x4.png');
+        const [customNetworkDownload] = await Promise.all([
+            page.waitForEvent('download'),
+            page.locator('.download-btn[data-target="overall-network"]').click()
+        ]);
+        await customNetworkDownload.saveAs(customNetworkPath);
+        const customNetworkPng = await readPngInfo(customNetworkPath);
+        expect(Math.abs(customNetworkPng.width / customNetworkPng.height - 5 / 4)).toBeLessThan(0.001);
+
+        await networkEditor.locator('[data-visualization-input="aspect-ratio"]').selectOption('16:9');
         await networkEditor.locator('[data-visualization-control="title"]').uncheck();
         await networkEditor.locator('[data-visualization-control="legend"]').uncheck();
         const plainNetworkPath = path.join(artifactDir, 'network-resized-16x9.png');
