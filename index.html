@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20260729-axis-range-headroom">
+    <link rel="stylesheet" href="css/style.css?v=20260730-ai-support-v2">
 
     <!-- vis.js for network graphs -->
     <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
@@ -165,7 +165,7 @@
                     <div>
                         <div class="ai-config-title-row">
                             <h3>生成AIによる解釈支援</h3>
-                            <span id="ai-status-badge" class="ai-status-badge inactive">無効</span>
+                            <span id="ai-status-badge" class="ai-status-badge inactive">未設定</span>
                         </div>
                         <p>Gemini APIキーを設定すると、分析結果の読み取りをAIが補助します。</p>
                     </div>
@@ -184,19 +184,29 @@
                         <i class="fas fa-up-right-from-square"></i> Google AI StudioでAPIキーを取得
                     </a>
                     <p class="ai-config-note">
-                        生成時には、データプレビュー先頭10件・要約統計量・分析手法・分析結果の要約をGemini APIへ送信します。
-                        使用モデルはGemini 3 Flash Previewです。利用できない場合はGemini 2.5 Flashに自動で切り替えます。
-                        個人情報を含むデータを扱う場合は、送信してよい内容か確認してください。
+                        初期設定では、分析対象列の要約統計量・結果表・妥当性チェックだけを送信し、原データ行や自由記述例は送りません。
+                        使用モデルはGemini 3.6 Flashで、利用できない場合はGemini 3.5 Flash-Liteへ切り替えます。
+                        この静的WebアプリではAPIキーを完全には隠せないため、Gemini API専用の制限付きキーを使用してください。
                     </p>
                 </div>
                 <div class="ai-config-controls">
-                    <input type="password" id="gemini-api-key-input" class="ai-key-input" placeholder="Gemini APIキーを入力">
+                    <input type="password" id="gemini-api-key-input" class="ai-key-input"
+                        placeholder="Gemini APIキーを入力" autocomplete="off" spellcheck="false"
+                        aria-label="Gemini APIキー">
                     <button type="button" id="save-gemini-key-btn" class="btn-ai-primary">
-                        <i class="fas fa-key"></i> 保存して有効化
+                        <i class="fas fa-key"></i> 設定
                     </button>
                     <button type="button" id="clear-gemini-key-btn" class="btn-ai-secondary">
-                        <i class="fas fa-trash-alt"></i> 無効化
+                        <i class="fas fa-trash-alt"></i> 削除
                     </button>
+                    <div class="ai-key-storage">
+                        <label class="ai-setting-toggle" for="persist-gemini-key-input">
+                            <input type="checkbox" id="persist-gemini-key-input"
+                                data-visualization-control data-ai-control>
+                            <span>この端末に保存する</span>
+                        </label>
+                        <span>オフ（推奨）では、このタブを閉じるとキーを削除します。</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -631,24 +641,72 @@
                 <i class="fas fa-wand-magic-sparkles"></i>
                 <span>AI解釈補助</span>
             </button>
-            <div class="ai-assist-panel">
+            <div class="ai-assist-panel" role="dialog" aria-modal="false"
+                aria-label="生成AIによる解釈の補助">
                 <div class="ai-assist-header">
                     <div>
                         <h4><i class="fas fa-wand-magic-sparkles"></i> 生成AIによる解釈の補助</h4>
-                        <p id="ai-assist-status">分析を実行後、結果の読み取りを生成できます。</p>
+                        <p id="ai-assist-status" aria-live="polite">分析を実行後、結果の読み取りを生成できます。</p>
                     </div>
-                    <button type="button" id="ai-assist-close" class="ai-icon-button" aria-label="閉じる">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div class="ai-header-actions">
+                        <button type="button" id="ai-clear-conversation-btn" class="ai-icon-button"
+                            aria-label="AIとの会話を消去" title="会話を消去" disabled>
+                            <i class="fas fa-rotate-left"></i>
+                        </button>
+                        <button type="button" id="ai-assist-close" class="ai-icon-button"
+                            aria-label="閉じる" title="閉じる">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="ai-context-note">
-                    <strong>利用できる内容:</strong>
-                    データプレビュー先頭10件、要約統計量、分析手法、分析結果のテキスト要約。APIキーがなくても、他の生成AIに貼り付ける用テキストをコピーできます。
+                    <strong>照合して利用:</strong>
+                    AIの説明は誤ることがあります。主要な数値・p値・効果量は画面の結果表で確認してください。
                 </div>
-                <div id="ai-assist-output" class="ai-assist-output">
+                <details class="ai-context-settings">
+                    <summary><i class="fas fa-sliders" aria-hidden="true"></i> 送信内容と説明設定</summary>
+                    <div class="ai-context-settings-body">
+                        <label class="ai-context-field" for="ai-explanation-level">
+                            <span>説明レベル</span>
+                            <select id="ai-explanation-level">
+                                <option value="simple">やさしく</option>
+                                <option value="standard" selected>標準</option>
+                                <option value="detailed">詳しく</option>
+                            </select>
+                        </label>
+                        <label class="ai-setting-toggle ai-raw-data-toggle" for="ai-include-raw-preview">
+                            <input type="checkbox" id="ai-include-raw-preview"
+                                data-visualization-control data-ai-control>
+                            <span>機微情報候補を自動マスクした原データ先頭10件を含める</span>
+                        </label>
+                        <p>原データを含めない場合も、分析対象列の要約統計量と画面の結果表は送信されます。この設定は分析を切り替えるとオフに戻ります。</p>
+                        <button type="button" id="ai-preview-context-btn" class="btn-ai-secondary"
+                            aria-expanded="false" aria-controls="ai-context-preview" disabled>
+                            <i class="fas fa-eye"></i> 送信内容を確認
+                        </button>
+                        <div id="ai-context-preview" class="ai-context-preview" role="region"
+                            aria-label="生成AIへ渡す内容" hidden>
+                            <p id="ai-context-summary" class="ai-context-summary"></p>
+                            <pre id="ai-context-preview-json"></pre>
+                        </div>
+                    </div>
+                </details>
+                <div id="ai-assist-output" class="ai-assist-output" role="log"
+                    aria-live="polite" aria-busy="false">
                     <div class="ai-chat-message assistant">
                         APIキーがある場合は「解釈を生成」や追加質問ができます。APIキーがない場合は「AI用テキストをコピー」して、ChatGPT、Gemini、Claudeなどに貼り付けて使えます。
                     </div>
+                </div>
+                <div class="ai-quick-actions" aria-label="よく使う質問">
+                    <button type="button" class="btn-ai-secondary" data-ai-question="この結果をレポート用に200字程度でまとめてください。" disabled>
+                        <i class="fas fa-file-lines"></i> 200字で要約
+                    </button>
+                    <button type="button" class="btn-ai-secondary" data-ai-question="この分析の前提条件と注意点を優先して説明してください。" disabled>
+                        <i class="fas fa-shield-halved"></i> 前提を確認
+                    </button>
+                    <button type="button" class="btn-ai-secondary" data-ai-question="この結果を踏まえて次に行う分析や確認を提案してください。" disabled>
+                        <i class="fas fa-arrow-right"></i> 次の分析
+                    </button>
                 </div>
                 <div class="ai-chat-input-area">
                     <textarea id="ai-chat-input" class="ai-chat-input" rows="2" placeholder="例: この結果をレポート用に短く書くと？ / 有意でない結果はどう説明する？"></textarea>
@@ -662,6 +720,9 @@
                     </button>
                     <button type="button" id="ai-generate-interpretation-btn" class="btn-ai-primary">
                         <i class="fas fa-sparkles"></i> 解釈を生成
+                    </button>
+                    <button type="button" id="ai-cancel-request-btn" class="btn-ai-cancel" hidden>
+                        <i class="fas fa-stop"></i> 中止
                     </button>
                     <button type="button" id="ai-copy-interpretation-btn" class="btn-ai-secondary" disabled>
                         <i class="fas fa-copy"></i> コピー
@@ -692,7 +753,7 @@
                     <ul>
                         <li><strong>完全ブラウザベース:</strong> インストール不要、Webブラウザだけで利用可能</li>
                         <li><strong>端末内で分析:</strong> 通常の統計分析・テキストマイニングでは、入力データを分析用サーバーへ送信しません</li>
-                        <li><strong>任意の生成AI支援:</strong> Gemini APIキーを設定して解釈支援を実行した場合のみ、データの先頭10行と分析結果の要約をGemini APIへ送信します</li>
+                        <li><strong>任意の生成AI支援:</strong> 実行時だけ分析対象列の要約と結果をGemini APIへ送信します。原データ行は初期設定では送信しません</li>
                         <li><strong>豊富な分析機能:</strong> データ整形から多変量解析、テキストマイニングまで23機能</li>
                         <li><strong>日本語対応:</strong> UIと分析結果の解釈がすべて日本語</li>
                         <li><strong>教育的:</strong> 統計手法の説明と結果の解釈を提供</li>
@@ -887,6 +948,22 @@
                 </div>
                 <div class="collapsible-content collapsed">
                     <div class="changelog">
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.8.0</span>
+                                <span class="changelog-date">2026年7月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>生成AIによる解釈支援を強化</h5>
+                                <ul>
+                                    <li>結果表の根拠と対応した構造化解釈、妥当性チェック、レポート例を追加</li>
+                                    <li>原データを初期状態で除外し、機微情報候補の自動マスクと送信前プレビューに対応</li>
+                                    <li>説明レベル、定型質問、生成中止、会話消去、結果更新時の再分析案内を追加</li>
+                                    <li>Gemini 3.6 FlashとGemini 3.5 Flash-Liteに対応</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <div class="changelog-entry">
                             <div class="changelog-header">
                                 <span class="changelog-version">v1.7.0</span>
@@ -1091,11 +1168,12 @@
     <script type="importmap">
         {
             "imports": {
-                "./js/utils.js": "./js/utils.js?v=20260729-axis-range-headroom"
+                "./js/utils.js": "./js/utils.js?v=20260730-ai-support-v2",
+                "./js/ai_support.js": "./js/ai_support.js?v=20260730-ai-support-v2"
             }
         }
     </script>
-    <script type="module" src="js/main.js?v=20260729-axis-range-headroom"></script>
+    <script type="module" src="js/main.js?v=20260730-ai-support-v2"></script>
 </body>
 
 </html>

@@ -225,6 +225,7 @@ test.describe('Smoke Tests for all Analyses', () => {
             if (analysis.resultSelector) {
                 await expect(page.locator(analysis.resultSelector)).toBeVisible({ timeout: 60000 });
             }
+            await expect(page.locator('#ai-copy-context-btn')).toBeEnabled({ timeout: 10000 });
 
             // Re-running an analysis must update the existing visualization controls.
             if (analysis.name !== 'EDA' && analysis.runBtn) {

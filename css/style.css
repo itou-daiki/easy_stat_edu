@@ -559,6 +559,31 @@ body {
     align-items: center;
 }
 
+.ai-key-storage {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.75rem;
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.ai-setting-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #334155;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.ai-setting-toggle input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: #2563eb;
+}
+
 .ai-key-input {
     width: 100%;
     min-width: 0;
@@ -570,6 +595,7 @@ body {
 
 .btn-ai-primary,
 .btn-ai-secondary,
+.btn-ai-cancel,
 .ai-icon-button {
     border-radius: 8px;
     font-weight: 700;
@@ -603,8 +629,21 @@ body {
     background: #f8fafc;
 }
 
+.btn-ai-cancel {
+    border: 1px solid #dc2626;
+    background: white;
+    color: #b91c1c;
+    padding: 0.7rem 0.9rem;
+}
+
+.btn-ai-cancel:hover {
+    background: #fef2f2;
+}
+
 .btn-ai-primary:disabled,
-.btn-ai-secondary:disabled {
+.btn-ai-secondary:disabled,
+.btn-ai-cancel:disabled,
+.ai-icon-button:disabled {
     opacity: 0.55;
     cursor: not-allowed;
     transform: none;
@@ -615,7 +654,7 @@ body {
     right: 1.5rem;
     bottom: 1.5rem;
     z-index: 9000;
-    width: min(520px, calc(100vw - 2rem));
+    width: min(560px, calc(100vw - 2rem));
 }
 
 .ai-assist-toggle {
@@ -687,6 +726,12 @@ body {
     color: #1d4ed8;
 }
 
+.ai-header-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex: 0 0 auto;
+}
+
 .ai-context-note {
     padding: 0.75rem 1rem;
     background: #fffbeb;
@@ -696,9 +741,106 @@ body {
     flex: 0 0 auto;
 }
 
+.ai-context-settings {
+    flex: 0 0 auto;
+    border-bottom: 1px solid #e2e8f0;
+    background: white;
+    max-height: 210px;
+    overflow-y: auto;
+}
+
+.ai-context-settings summary {
+    padding: 0.65rem 1rem;
+    color: #334155;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    list-style-position: inside;
+}
+
+.ai-context-settings summary i {
+    margin-right: 0.35rem;
+    color: #2563eb;
+}
+
+.ai-context-settings-body {
+    padding: 0 1rem 0.85rem;
+    display: grid;
+    grid-template-columns: minmax(140px, 0.75fr) minmax(0, 1.25fr);
+    gap: 0.65rem 0.85rem;
+    align-items: center;
+}
+
+.ai-context-field {
+    display: grid;
+    gap: 0.3rem;
+    color: #475569;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.ai-context-field select {
+    min-width: 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0.5rem 0.6rem;
+    background: white;
+    color: #1e293b;
+    font: inherit;
+}
+
+.ai-raw-data-toggle {
+    align-self: end;
+    min-height: 38px;
+    font-size: 0.8rem;
+}
+
+.ai-context-settings-body > p {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: #64748b;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.ai-context-settings-body > .btn-ai-secondary {
+    grid-column: 1 / -1;
+    justify-self: start;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.8rem;
+}
+
+.ai-context-preview {
+    grid-column: 1 / -1;
+    min-width: 0;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 0.65rem;
+}
+
+.ai-context-summary {
+    margin: 0 0 0.5rem;
+    color: #334155;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.ai-context-preview pre {
+    margin: 0;
+    max-height: 170px;
+    overflow: auto;
+    border-radius: 6px;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 0.65rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.72rem;
+    line-height: 1.45;
+}
+
 .ai-assist-output {
     flex: 1 1 auto;
-    min-height: 180px;
+    min-height: 140px;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 1rem;
@@ -707,6 +849,25 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+}
+
+.ai-response-verification {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.ai-response-meta {
+    color: #64748b;
+    font-size: 0.75rem;
+    text-align: right;
 }
 
 .ai-assist-output p {
@@ -832,6 +993,21 @@ body {
     flex: 0 0 auto;
 }
 
+.ai-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.65rem 1rem 0;
+    border-top: 1px solid #e2e8f0;
+    background: white;
+    flex: 0 0 auto;
+}
+
+.ai-quick-actions .btn-ai-secondary {
+    padding: 0.45rem 0.6rem;
+    font-size: 0.76rem;
+}
+
 .ai-chat-input {
     width: 100%;
     min-width: 0;
@@ -846,11 +1022,55 @@ body {
 
 .ai-assist-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
     padding: 0.9rem 1rem 1rem;
     border-top: 1px solid #e2e8f0;
     background: #f8fafc;
     flex: 0 0 auto;
+}
+
+.ai-assist-panel [hidden] {
+    display: none !important;
+}
+
+@media (max-height: 900px) {
+    .ai-assist-header {
+        padding: 0.75rem;
+    }
+
+    .ai-context-note {
+        padding: 0.55rem 0.75rem;
+    }
+
+    .ai-context-settings {
+        max-height: 150px;
+    }
+
+    .ai-context-settings summary {
+        padding: 0.55rem 0.75rem;
+    }
+
+    .ai-context-settings-body {
+        padding: 0 0.75rem 0.65rem;
+    }
+
+    .ai-assist-output {
+        min-height: 100px;
+        padding: 0.75rem;
+    }
+
+    .ai-quick-actions {
+        padding: 0.5rem 0.75rem 0;
+    }
+
+    .ai-chat-input-area {
+        padding: 0.6rem 0.75rem;
+    }
+
+    .ai-assist-actions {
+        padding: 0.65rem 0.75rem 0.75rem;
+    }
 }
 
 /* 分析エリア */
@@ -985,11 +1205,22 @@ body {
     }
 
     .ai-assist-actions {
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 
-    .ai-chat-input-area {
+    .ai-assist-actions #ai-copy-context-btn {
+        grid-column: 1 / -1;
+    }
+
+    .ai-context-settings-body {
         grid-template-columns: 1fr;
+    }
+
+    .ai-context-settings-body > p,
+    .ai-context-settings-body > .btn-ai-secondary,
+    .ai-context-preview {
+        grid-column: 1;
     }
 
     .category-cards {

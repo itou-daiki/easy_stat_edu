@@ -125,8 +125,10 @@ export function displayWordCloud(canvasId, wordCounts, onClick, options = {}) {
         const defaultHeight = width < 520 ? 330 : 390;
         const height = Math.max(240, Math.round(dimensions?.height || defaultHeight));
 
-        canvas.width = width * scale;
-        canvas.height = height * scale;
+        // CSS layout can produce a sub-pixel bounding box, so keep one backing
+        // pixel of headroom to guarantee at least 2x output on every browser.
+        canvas.width = width * scale + 1;
+        canvas.height = height * scale + 1;
         canvas.style.width = `${width}px`;
         canvas.style.maxWidth = '100%';
         canvas.style.height = `${height}px`;
