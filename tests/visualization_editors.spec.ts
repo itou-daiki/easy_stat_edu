@@ -317,6 +317,223 @@ test.describe('Editable visualization and table labels', () => {
         ))).toBeGreaterThan(90);
     });
 
+    test('switches mean bars to raw-data box plots without losing figure settings', async ({ page }) => {
+        const rows = [
+            '群,得点',
+            'A,10', 'A,11', 'A,12', 'A,13', 'A,14', 'A,15',
+            'B,25', 'B,26', 'B,27', 'B,28', 'B,29', 'B,30'
+        ].join('\n');
+        await page.locator('#main-data-file').setInputFiles({
+            name: 'bar_box_switch.csv',
+            mimeType: 'text/csv',
+            buffer: Buffer.from(rows, 'utf8')
+        });
+        await navigateToFeature(page, 'ttest');
+        await selectStandardOption(page, '#group-var', '群', 'label');
+        await selectVariables(page, ['得点']);
+        await page.click('#run-independent-btn');
+
+        const plot = page.locator('#plot-0');
+        await expect(plot).toBeVisible({ timeout: 10000 });
+        const editor = plot.locator(
+            'xpath=preceding-sibling::details[@data-editor-kind="plotly"][1]'
+        );
+        await expect(editor).toBeVisible({ timeout: 10000 });
+        await editor.locator('summary').click();
+        const viewSelect = editor.locator('[data-visualization-input="chart-view"]');
+        await expect(viewSelect).toHaveValue('bar');
+        await editor.locator('[data-visualization-input="y-axis"]').fill('共通得点');
+
+        await viewSelect.selectOption('box');
+        await expect(plot).toHaveAttribute('data-visualization-view', 'box');
+        await expect.poll(async () => plot.evaluate(element => ({
+            types: (element as any).data.map((trace: any) => trace.type),
+            observations: (element as any).data.reduce(
+                (sum: number, trace: any) => sum + (trace.y?.length || 0),
+                0
+            ),
+            yTitle: (element as any).layout.yaxis.title.text
+        }))).toEqual({
+            types: ['box', 'box'],
+            observations: 12,
+            yTitle: '共通得点'
+        });
+
+        const boxPlacement = await plot.evaluate(element => {
+            const figure = element.getBoundingClientRect();
+            const plotArea = element.querySelector('.nsewdrag')?.getBoundingClientRect();
+            const annotation = Array.from(element.querySelectorAll('.annotation-text'))
+                .find(node => /^[*†]/.test(node.textContent?.trim() || ''))
+                ?.getBoundingClientRect();
+            return {
+                annotationInside: Boolean(
+                    plotArea
+                    && annotation
+                    && annotation.top >= plotArea.top
+                    && annotation.bottom <= figure.bottom
+                ),
+                overflow: (element as HTMLElement).scrollWidth
+                    - (element as HTMLElement).clientWidth
+            };
+        });
+        expect(boxPlacement).toEqual({ annotationInside: true, overflow: 0 });
+
+        const artifactDir = path.join(process.cwd(), 'output/playwright/visualization-editors');
+        await fs.mkdir(artifactDir, { recursive: true });
+        const boxPlotPath = path.join(artifactDir, 'ttest-raw-box-plot.png');
+        const [boxDownload] = await Promise.all([
+            page.waitForEvent('download'),
+            plot.locator('.modebar-btn[data-title="Download plot as a png"]').click()
+        ]);
+        await boxDownload.saveAs(boxPlotPath);
+        const boxPng = await readPngInfo(boxPlotPath);
+        expect(boxPng.width).toBeGreaterThan(600);
+        expect(boxPng.height).toBeGreaterThan(300);
+        expect(boxPng.bytes).toBeGreaterThan(10_000);
+
+        await viewSelect.selectOption('bar');
+        await expect(plot).toHaveAttribute('data-visualization-view', 'bar');
+        await expect.poll(async () => plot.evaluate(element => ({
+            type: (element as any).data[0].type,
+            yTitle: (element as any).layout.yaxis.title.text
+        }))).toEqual({ type: 'bar', yTitle: '共通得点' });
+    });
+
+    test('applies labels, ranges, ratio, and height to every graph at once', async ({ page }) => {
+        const rows = [
+            '群,得点,満足度',
+            'A,40,50', 'A,42,52', 'A,44,54', 'A,46,56', 'A,48,58', 'A,50,60',
+            'B,65,75', 'B,67,77', 'B,69,79', 'B,71,81', 'B,73,83', 'B,75,85'
+        ].join('\n');
+        await page.locator('#main-data-file').setInputFiles({
+            name: 'bulk_figure_settings.csv',
+            mimeType: 'text/csv',
+            buffer: Buffer.from(rows, 'utf8')
+        });
+        await navigateToFeature(page, 'ttest');
+        await selectStandardOption(page, '#group-var', '群', 'label');
+        await selectVariables(page, ['得点', '満足度']);
+        await page.click('#run-independent-btn');
+
+        const plots = page.locator('#plots-container .js-plotly-plot');
+        await expect(plots).toHaveCount(2);
+        const bulkEditor = page.locator(
+            '#visualization-controls-container [data-editor-kind="bulk"]'
+        );
+        await expect(bulkEditor).toHaveCount(1);
+        await bulkEditor.locator('summary').click();
+        await bulkEditor.locator('[data-visualization-input="bulk-y-label"]').fill('共通尺度');
+        await bulkEditor.locator(
+            '[data-visualization-input="bulk-y-range-mode"]'
+        ).selectOption('manual');
+        await bulkEditor.locator(
+            '[data-visualization-input="bulk-y-range-min"]'
+        ).fill('0');
+        await bulkEditor.locator(
+            '[data-visualization-input="bulk-y-range-max"]'
+        ).fill('120');
+        await bulkEditor.locator(
+            '[data-visualization-control="bulk-size-enabled"]'
+        ).check();
+        await bulkEditor.locator(
+            '[data-visualization-input="aspect-ratio"]'
+        ).selectOption('4:3');
+        await bulkEditor.locator('.visualization-bulk-apply').click();
+        await expect(bulkEditor.locator('.visualization-bulk-status')).toContainText(
+            '2件の図へ反映'
+        );
+
+        await expect.poll(async () => plots.evaluateAll(elements =>
+            elements.map(element => {
+                const rect = element.getBoundingClientRect();
+                return {
+                    yTitle: (element as any).layout.yaxis.title.text,
+                    range: (element as any).layout.yaxis.range,
+                    ratio: Math.round((rect.width / rect.height) * 100) / 100
+                };
+            })
+        )).toEqual([
+            { yTitle: '共通尺度', range: [0, 120], ratio: 1.33 },
+            { yTitle: '共通尺度', range: [0, 120], ratio: 1.33 }
+        ]);
+
+        await bulkEditor.locator(
+            '[data-visualization-input="aspect-ratio"]'
+        ).selectOption('custom-ratio');
+        await bulkEditor.locator(
+            '[data-visualization-input="ratio-width"]'
+        ).fill('7');
+        await bulkEditor.locator(
+            '[data-visualization-input="ratio-height"]'
+        ).fill('4');
+        await bulkEditor.locator('.visualization-bulk-apply').click();
+        await expect.poll(async () => plots.evaluateAll(elements =>
+            elements.map(element => {
+                const rect = element.getBoundingClientRect();
+                return Math.round((rect.width / rect.height) * 100) / 100;
+            })
+        )).toEqual([1.75, 1.75]);
+
+        await bulkEditor.locator(
+            '[data-visualization-input="aspect-ratio"]'
+        ).selectOption('custom');
+        await bulkEditor.locator('[data-visualization-input="height"]').fill('360');
+        await bulkEditor.locator('.visualization-bulk-apply').click();
+        await expect.poll(async () => plots.evaluateAll(elements =>
+            elements.map(element => Math.round(element.getBoundingClientRect().height))
+        )).toEqual([360, 360]);
+
+        const firstEditor = plots.first().locator(
+            'xpath=preceding-sibling::details[@data-editor-kind="plotly"][1]'
+        );
+        await firstEditor.locator('summary').click();
+        await firstEditor.locator(
+            '[data-visualization-input="chart-view"]'
+        ).selectOption('box');
+        await expect.poll(async () => plots.first().evaluate(element => ({
+            view: (element as HTMLElement).dataset.visualizationView,
+            height: Math.round(element.getBoundingClientRect().height),
+            yTitle: (element as any).layout.yaxis.title.text,
+            range: (element as any).layout.yaxis.range
+        }))).toEqual({
+            view: 'box',
+            height: 360,
+            yTitle: '共通尺度',
+            range: [0, 120]
+        });
+    });
+
+    test('offers a raw-data box view for the EDA grouped mean chart', async ({ page }) => {
+        await uploadFile(page, 'datasets/demo_all_analysis.csv');
+        await navigateToFeature(page, 'eda');
+        await page.click('button.tab-button[data-tab="three-vars"]');
+        await selectStandardOption(page, '#grouped-cat-1', 'クラス', 'label');
+        await selectStandardOption(page, '#grouped-cat-2', '性別', 'label');
+        await selectStandardOption(page, '#grouped-num', '数学', 'label');
+        await page.click('#plot-grouped-bar-btn');
+
+        const plot = page.locator('#grouped-bar-plot');
+        await expect(plot).toBeVisible();
+        const editor = plot.locator(
+            'xpath=preceding-sibling::details[@data-editor-kind="plotly"][1]'
+        );
+        await expect(editor).toBeVisible({ timeout: 10000 });
+        await editor.locator('summary').click();
+        await editor.locator(
+            '[data-visualization-input="chart-view"]'
+        ).selectOption('box');
+        await expect(plot).toHaveAttribute('data-visualization-view', 'box');
+        const boxData = await plot.evaluate(element => ({
+            types: (element as any).data.map((trace: any) => trace.type),
+            observations: (element as any).data.reduce(
+                (sum: number, trace: any) => sum + (trace.y?.length || 0),
+                0
+            )
+        }));
+        expect(boxData.types.every((type: string) => type === 'box')).toBe(true);
+        expect(boxData.observations).toBeGreaterThan(20);
+    });
+
     test('applies canvas title and legend settings to saved text-mining PNGs', async ({ page }) => {
         await uploadFile(page, 'datasets/textmining_demo.xlsx');
         await navigateToFeature(page, 'text_mining');

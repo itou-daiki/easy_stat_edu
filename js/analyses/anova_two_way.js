@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, createPairSelector, createMultiPairSelector, addSignificanceBrackets, getAcademicLayout, academicColors } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, createPairSelector, createMultiPairSelector, addSignificanceBrackets, getAcademicLayout, academicColors, createBoxPlotView, registerPlotlyViewOptions } from '../utils.js';
 import { calculateTukeyP, performHolmCorrection } from '../utils/stat_distributions.js';
 // import { jStat } from 'jstat'; // Use global jStat
 
@@ -226,29 +226,38 @@ function runWelchTTest(vals1, vals2) {
     return { t, df, p };
 }
 
-export function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellStats) {
+export function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellStats, options = {}) {
     const shapes = [];
     const annotations = [];
 
-    // Error bars and zero baseline define a stable scale for every category.
+    const useRawValues = options.useRawValues === true;
+    const baselineZero = options.baselineZero !== false;
+    const getCellUpper = cell => {
+        if (useRawValues && Array.isArray(cell.values) && cell.values.length) {
+            return Math.max(...cell.values.map(Number).filter(Number.isFinite));
+        }
+        return cell.mean + (cell.n > 0 ? cell.std / Math.sqrt(cell.n) : 0);
+    };
+    const getCellLower = cell => {
+        if (useRawValues && Array.isArray(cell.values) && cell.values.length) {
+            return Math.min(...cell.values.map(Number).filter(Number.isFinite));
+        }
+        return cell.mean - (cell.n > 0 ? cell.std / Math.sqrt(cell.n) : 0);
+    };
+
+    // Error bars or raw observations define a stable scale for every category.
     const maxValsAtX = levels2.map(l2 => {
-        const means = levels1.map(l1 => cellStats[l1][l2].mean);
-        const ses = levels1.map(l1 => {
-            const s = cellStats[l1][l2];
-            return s.n > 0 ? s.std / Math.sqrt(s.n) : 0;
-        });
-        return Math.max(...means.map((m, i) => m + ses[i]));
+        return Math.max(...levels1.map(l1 => getCellUpper(cellStats[l1][l2])));
     });
     const minValsAtX = levels2.map(l2 => {
-        const means = levels1.map(l1 => cellStats[l1][l2].mean);
-        const ses = levels1.map(l1 => {
-            const s = cellStats[l1][l2];
-            return s.n > 0 ? s.std / Math.sqrt(s.n) : 0;
-        });
-        return Math.min(...means.map((m, i) => m - ses[i]));
+        return Math.min(...levels1.map(l1 => getCellLower(cellStats[l1][l2])));
     });
-    const dataMinimum = Math.min(0, ...minValsAtX);
-    const dataMaximum = Math.max(0, ...maxValsAtX);
+    const dataMinimum = baselineZero
+        ? Math.min(0, ...minValsAtX)
+        : Math.min(...minValsAtX);
+    const dataMaximum = baselineZero
+        ? Math.max(0, ...maxValsAtX)
+        : Math.max(...maxValsAtX);
     const magnitude = Math.max(Math.abs(dataMinimum), Math.abs(dataMaximum), 1);
     const dataRange = Math.max(dataMaximum - dataMinimum, magnitude * 0.1);
     const groupBandWidth = 0.8 / Math.max(levels1.length, 1);
@@ -272,7 +281,9 @@ export function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellS
         ) {
             return;
         }
-        const currentMaxY = Math.max(0, maxValsAtX[xIdx]);
+        const currentMaxY = baselineZero
+            ? Math.max(0, maxValsAtX[xIdx])
+            : maxValsAtX[xIdx];
 
         if (!stackHeight[xIdx]) stackHeight[xIdx] = 0;
         stackHeight[xIdx]++;
@@ -342,9 +353,9 @@ export function generateBracketsForGroupedPlot(sigPairs, levels1, levels2, cellS
         }
     });
     recommendedMaxY += dataRange * 0.12;
-    const recommendedMinY = dataMinimum < 0
-        ? dataMinimum - dataRange * 0.06
-        : 0;
+    const recommendedMinY = baselineZero
+        ? (dataMinimum < 0 ? dataMinimum - dataRange * 0.06 : 0)
+        : dataMinimum - dataRange * 0.08;
 
     return { shapes, annotations, recommendedMaxY, recommendedMinY };
 }
@@ -403,7 +414,7 @@ function runTwoWayIndependentANOVA(currentData) {
                 const cellData = validData.filter(d => d[factor1] === l1 && d[factor2] === l2).map(d => d[depVar]);
                 const mean = cellData.length > 0 ? jStat.mean(cellData) : 0;
                 const std = cellData.length > 1 ? jStat.stdev(cellData, true) : 0;
-                cellStats[l1][l2] = { mean, std, n: cellData.length };
+                cellStats[l1][l2] = { mean, std, n: cellData.length, values: cellData };
                 ssCells += cellData.length * Math.pow(mean - grandMean, 2);
             });
         });
@@ -1022,7 +1033,90 @@ function renderTwoWayANOVAVisualization(results) {
                     layout.annotations = layout.annotations.filter(a => a !== bottomTitle);
                 }
 
-                Plotly.newPlot(plotDiv, traces, layout, createPlotlyConfig('二要因分散分析', res.depVar));
+                const barConfig = createPlotlyConfig('二要因分散分析', res.depVar);
+                const boxView = createBoxPlotView(
+                    res.levels1.map((level1, level1Index) => ({
+                        name: level1,
+                        color: academicColors.palette[
+                            level1Index % academicColors.palette.length
+                        ],
+                        groups: res.levels2.map(level2 => ({
+                            label: level2,
+                            values: res.cellStats[level1][level2].values || []
+                        }))
+                    })),
+                    { showLegend: true }
+                );
+                const {
+                    shapes: boxShapes,
+                    annotations: boxAnnotations,
+                    recommendedMaxY: boxRecommendedMaxY,
+                    recommendedMinY: boxRecommendedMinY
+                } = generateBracketsForGroupedPlot(
+                    res.sigPairs || [],
+                    res.levels1,
+                    res.levels2,
+                    res.cellStats,
+                    { useRawValues: true, baselineZero: false }
+                );
+                const boxTategakiTitle = getTategakiAnnotation(res.depVar);
+                const boxGraphTitleText = `箱ひげ図: ${res.depVar}`;
+                const boxBottomTitle = getBottomTitleAnnotation(boxGraphTitleText);
+                if (showAxisLabels && boxTategakiTitle) {
+                    boxAnnotations.push(boxTategakiTitle);
+                }
+                if (showBottomTitle && boxBottomTitle) {
+                    boxAnnotations.push(boxBottomTitle);
+                }
+                const boxLayout = getAcademicLayout({
+                    title: '',
+                    xaxis: { title: showAxisLabels ? res.factor2 : '' },
+                    yaxis: {
+                        title: '',
+                        range: [boxRecommendedMinY, boxRecommendedMaxY]
+                    },
+                    legend: { title: { text: res.factor1 } },
+                    boxmode: 'group',
+                    shapes: boxShapes,
+                    annotations: boxAnnotations,
+                    margin: { l: 100, b: 100 }
+                });
+                boxLayout._recommendedMaxY = boxRecommendedMaxY;
+                boxLayout._recommendedMinY = boxRecommendedMinY;
+                const boxConfig = createPlotlyConfig(
+                    '二要因分散分析_箱ひげ図',
+                    res.depVar
+                );
+                registerPlotlyViewOptions(plotDiv, {
+                    defaultView: 'bar',
+                    views: [
+                        {
+                            key: 'bar',
+                            label: '棒グラフ（平均 ± SE）',
+                            data: traces,
+                            layout,
+                            config: barConfig,
+                            labels: {
+                                title: graphTitleText,
+                                x: res.factor2,
+                                y: res.depVar
+                            }
+                        },
+                        {
+                            key: 'box',
+                            label: '箱ひげ図（観測値）',
+                            data: boxView.traces,
+                            layout: boxLayout,
+                            config: boxConfig,
+                            labels: {
+                                title: boxGraphTitleText,
+                                x: res.factor2,
+                                y: res.depVar
+                            }
+                        }
+                    ]
+                });
+                Plotly.newPlot(plotDiv, traces, layout, barConfig);
             }
         }, 100);
     });
@@ -1162,7 +1256,12 @@ function runTwoWayMixedANOVA(currentData, withinFactor, mappings) {
                 const mean = jStat.mean(cellValues);
                 const n = cellValues.length;
                 const std = jStat.stdev(cellValues, true);
-                cellStats[g][withinLevels[vi]] = { mean, n, std };
+                cellStats[g][withinLevels[vi]] = {
+                    mean,
+                    n,
+                    std,
+                    values: cellValues
+                };
 
                 ssCells += n * Math.pow(mean - grandMean, 2);
             });
@@ -1623,6 +1722,7 @@ function runTwoWayRepeatedANOVA(currentData, factors, mapping) {
     f1.levels.forEach(l1 => {
         cellStats[l1] = {};
         f2.levels.forEach(l2 => {
+            const cellValues = validRows.map(r => r[mapping[`${l1}-${l2}`]]);
             cellStats[l1][l2] = {
                 mean: cellMeans[`${l1}-${l2}`],
                 n: realN,
@@ -1631,7 +1731,8 @@ function runTwoWayRepeatedANOVA(currentData, factors, mapping) {
                 // Or just show standard SD/SE?
                 // Standard is usually sufficient for simple viz, but specific 'within-subject CI' is better.
                 // We'll use standard SE here for consistency with other plots.
-                std: jStat.stdev(validRows.map(r => r[mapping[`${l1}-${l2}`]]), true)
+                std: jStat.stdev(cellValues, true),
+                values: cellValues
             };
         });
     });

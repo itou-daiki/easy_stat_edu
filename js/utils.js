@@ -1165,6 +1165,79 @@ export const academicColors = {
     divergingScale: [[0, '#b2182b'], [0.25, '#ef8a62'], [0.5, '#f7f7f7'], [0.75, '#67a9cf'], [1, '#2166ac']]
 };
 
+function withAlpha(color, alpha) {
+    const value = String(color || '').trim();
+    if (/^#[0-9a-f]{6}$/i.test(value)) {
+        const red = Number.parseInt(value.slice(1, 3), 16);
+        const green = Number.parseInt(value.slice(3, 5), 16);
+        const blue = Number.parseInt(value.slice(5, 7), 16);
+        return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+    }
+    return value || academicColors.boxFill;
+}
+
+/**
+ * Creates Plotly box traces from raw observations while preserving grouped
+ * category and legend semantics.
+ *
+ * @param {Array<{name?: string, color?: string, groups: Array<{label: string, values: number[]}>}>} series
+ * @param {{showLegend?: boolean, pointLimit?: number}} options
+ * @returns {{traces: Object[], minimum: number|null, maximum: number|null, count: number}}
+ */
+export function createBoxPlotView(series, options = {}) {
+    let minimum = Infinity;
+    let maximum = -Infinity;
+    let count = 0;
+    const pointLimit = Number.isFinite(Number(options.pointLimit))
+        ? Math.max(0, Number(options.pointLimit))
+        : 120;
+
+    const traces = (Array.isArray(series) ? series : []).map((item, seriesIndex) => {
+        const x = [];
+        const y = [];
+        (Array.isArray(item?.groups) ? item.groups : []).forEach(group => {
+            (Array.isArray(group?.values) ? group.values : []).forEach(value => {
+                const numeric = Number(value);
+                if (!Number.isFinite(numeric)) return;
+                x.push(String(group.label));
+                y.push(numeric);
+                minimum = Math.min(minimum, numeric);
+                maximum = Math.max(maximum, numeric);
+                count++;
+            });
+        });
+
+        const color = item?.color
+            || academicColors.palette[seriesIndex % academicColors.palette.length];
+        return {
+            x,
+            y,
+            type: 'box',
+            name: String(item?.name || ''),
+            showlegend: options.showLegend ?? Boolean(item?.name),
+            boxpoints: y.length <= pointLimit ? 'all' : 'outliers',
+            jitter: 0.24,
+            pointpos: 0,
+            marker: {
+                color,
+                opacity: 0.72,
+                size: 5,
+                line: { color, width: 0.6 }
+            },
+            fillcolor: withAlpha(color, 0.28),
+            line: { color, width: 1.5 },
+            hovertemplate: '%{x}<br>%{y}<extra>%{fullData.name}</extra>'
+        };
+    }).filter(trace => trace.y.length > 0);
+
+    return {
+        traces,
+        minimum: Number.isFinite(minimum) ? minimum : null,
+        maximum: Number.isFinite(maximum) ? maximum : null,
+        count
+    };
+}
+
 /**
  * Creates a standardized configuration object for Plotly charts.
  * Enables PNG download with a custom filename based on analysis name, variables, and timestamp.
@@ -1209,6 +1282,7 @@ export function createPlotlyConfig(analysisName, variables) {
 const visualizationEditorInstallations = new WeakMap();
 const capturedPlotSpecs = new WeakMap();
 const plotEditorStates = new WeakMap();
+const plotViewRegistrations = new WeakMap();
 const VISUALIZATION_ASPECT_RATIOS = Object.freeze({
     '16:9': 16 / 9,
     '4:3': 4 / 3,
@@ -1224,6 +1298,73 @@ const RATIO_VISUALIZATION_HEIGHT_LIMITS = Object.freeze({
     maximum: 2000
 });
 let visualizationEditorSequence = 0;
+
+function clonePlotlyViewValue(value) {
+    if (typeof structuredClone === 'function') {
+        try {
+            return structuredClone(value);
+        } catch {
+            // Plotly specifications used here are plain objects; fall through.
+        }
+    }
+    if (Array.isArray(value)) return value.map(clonePlotlyViewValue);
+    if (value && typeof value === 'object') {
+        return Object.fromEntries(
+            Object.entries(value).map(([key, child]) => [key, clonePlotlyViewValue(child)])
+        );
+    }
+    return value;
+}
+
+function normalizePlotlyViewRegistration(options) {
+    const views = (Array.isArray(options?.views) ? options.views : [])
+        .filter(view => (
+            view
+            && String(view.key || '').trim()
+            && Array.isArray(view.data)
+            && view.layout
+        ))
+        .map(view => ({
+            key: String(view.key),
+            label: String(view.label || view.key),
+            data: view.data,
+            layout: view.layout,
+            config: view.config || {},
+            labels: {
+                title: String(view.labels?.title || ''),
+                x: String(view.labels?.x || ''),
+                y: String(view.labels?.y || '')
+            }
+        }));
+    if (views.length < 2) return null;
+
+    const requestedDefault = String(options?.defaultView || '');
+    const defaultView = views.some(view => view.key === requestedDefault)
+        ? requestedDefault
+        : views[0].key;
+    return { views, defaultView };
+}
+
+/**
+ * Registers semantically valid alternative representations for one Plotly
+ * figure. The common figure editor renders the selector and keeps label,
+ * range, and size edits while switching views.
+ *
+ * @param {HTMLElement|string} target
+ * @param {{defaultView?: string, views: Object[]}} options
+ * @returns {boolean}
+ */
+export function registerPlotlyViewOptions(target, options) {
+    const plot = typeof target === 'string' ? document.getElementById(target) : target;
+    const registration = normalizePlotlyViewRegistration(options);
+    if (!plot || !registration) return false;
+
+    plotViewRegistrations.set(plot, registration);
+    plot.dataset.visualizationView = registration.defaultView;
+    const state = plotEditorStates.get(plot);
+    if (state) attachPlotlyViewControls(state, registration);
+    return true;
+}
 
 function getTraceYBounds(data) {
     let minimum = Infinity;
@@ -1495,6 +1636,34 @@ function appendVisualizationToggle(fields, options) {
     field.appendChild(label);
     fields.appendChild(field);
     return checkbox;
+}
+
+function appendVisualizationSelectField(fields, options) {
+    const id = `visualization-editor-${++visualizationEditorSequence}-select`;
+    const field = document.createElement('div');
+    field.className = 'visualization-item-editor-field';
+    field.dataset.visualizationSelectField = options.key;
+
+    const label = document.createElement('label');
+    label.htmlFor = id;
+    label.className = 'visualization-item-editor-label';
+    label.textContent = options.label;
+
+    const select = document.createElement('select');
+    select.id = id;
+    select.className = 'visualization-item-editor-input';
+    select.dataset.visualizationInput = options.key;
+    (options.options || []).forEach(option => {
+        const element = document.createElement('option');
+        element.value = option.value;
+        element.textContent = option.label;
+        select.appendChild(element);
+    });
+    select.value = options.value;
+
+    field.append(label, select);
+    fields.appendChild(field);
+    return { field, select };
 }
 
 function appendVisualizationAxisRangeFields(fields, descriptors) {
@@ -1881,6 +2050,327 @@ function bindVisualizationSizeControls(controls, apply) {
     controls.ratioHeightInput.addEventListener('change', apply);
     controls.heightInput.addEventListener('input', scheduleApply);
     controls.heightInput.addEventListener('change', apply);
+}
+
+function appendBulkTextField(fields, key, labelText, placeholder) {
+    const id = `visualization-editor-${++visualizationEditorSequence}-${key}`;
+    const field = document.createElement('div');
+    field.className = 'visualization-item-editor-field';
+    const label = document.createElement('label');
+    label.className = 'visualization-item-editor-label';
+    label.htmlFor = id;
+    label.textContent = labelText;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = id;
+    input.className = 'visualization-item-editor-input';
+    input.dataset.visualizationInput = key;
+    input.placeholder = placeholder;
+    field.append(label, input);
+    fields.appendChild(field);
+    return input;
+}
+
+function appendBulkAxisRangeRow(container, orientation) {
+    const idPrefix = `visualization-editor-${++visualizationEditorSequence}-bulk-${orientation}`;
+    const row = document.createElement('div');
+    row.className = 'visualization-axis-range-row visualization-bulk-axis-range-row';
+
+    const axisName = document.createElement('span');
+    axisName.className = 'visualization-axis-range-name';
+    axisName.textContent = `${orientation.toUpperCase()}軸`;
+
+    const mode = document.createElement('select');
+    mode.id = `${idPrefix}-mode`;
+    mode.className = 'visualization-item-editor-input';
+    mode.dataset.visualizationInput = `bulk-${orientation}-range-mode`;
+    mode.setAttribute('aria-label', `${orientation.toUpperCase()}軸範囲の一括設定`);
+    [
+        ['keep', '変更しない'],
+        ['auto', '自動'],
+        ['manual', '範囲を指定']
+    ].forEach(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        mode.appendChild(option);
+    });
+
+    const createInput = (kind, labelText) => {
+        const label = document.createElement('label');
+        label.className = 'visualization-axis-range-part';
+        label.htmlFor = `${idPrefix}-${kind}`;
+        const text = document.createElement('span');
+        text.textContent = labelText;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = `${idPrefix}-${kind}`;
+        input.className = 'visualization-item-editor-input';
+        input.dataset.visualizationInput = `bulk-${orientation}-range-${kind}`;
+        input.disabled = true;
+        input.placeholder = kind === 'min' ? '最小値' : '最大値';
+        input.setAttribute('aria-label', `${orientation.toUpperCase()}軸の${labelText}`);
+        label.append(text, input);
+        return { label, input };
+    };
+    const minimum = createInput('min', '最小値');
+    const maximum = createInput('max', '最大値');
+    mode.addEventListener('change', () => {
+        const enabled = mode.value === 'manual';
+        minimum.input.disabled = !enabled;
+        maximum.input.disabled = !enabled;
+    });
+
+    row.append(axisName, mode, minimum.label, maximum.label);
+    container.appendChild(row);
+    return {
+        orientation,
+        mode,
+        minimumInput: minimum.input,
+        maximumInput: maximum.input
+    };
+}
+
+function copyVisualizationSizeControls(source, destination) {
+    destination.widthInput.value = source.widthInput.value;
+    destination.ratioSelect.value = source.ratioSelect.value;
+    destination.ratioWidthInput.value = source.ratioWidthInput.value;
+    destination.ratioHeightInput.value = source.ratioHeightInput.value;
+    destination.heightInput.value = source.heightInput.value;
+}
+
+function findAxisRangeRow(state, orientation) {
+    if (!state.axisRangeControls) return null;
+    return Array.from(state.axisRangeControls.rows.values()).find(row =>
+        String(row.descriptor?.key || '').startsWith(orientation)
+    ) || null;
+}
+
+function applyBulkAxisRange(state, bulkRow) {
+    if (bulkRow.mode.value === 'keep') return false;
+    const row = findAxisRangeRow(state, bulkRow.orientation);
+    if (!row) return false;
+
+    if (bulkRow.mode.value === 'auto') {
+        row.autoCheckbox.checked = true;
+        row.minimumInput.disabled = true;
+        row.maximumInput.disabled = true;
+        return true;
+    }
+
+    row.autoCheckbox.checked = false;
+    row.minimumInput.disabled = false;
+    row.maximumInput.disabled = false;
+    row.minimumInput.value = bulkRow.minimumInput.value.trim();
+    row.maximumInput.value = bulkRow.maximumInput.value.trim();
+    return true;
+}
+
+function validateBulkControls(controls) {
+    for (const row of controls.axisRows) {
+        if (row.mode.value !== 'manual') continue;
+        if (!row.minimumInput.value.trim() || !row.maximumInput.value.trim()) {
+            return `${row.orientation.toUpperCase()}軸は最小値と最大値の両方を入力してください。`;
+        }
+    }
+    return '';
+}
+
+function applyVisualizationBulkSettings(installation, controls) {
+    const validationMessage = validateBulkControls(controls);
+    if (validationMessage) {
+        controls.status.textContent = validationMessage;
+        controls.status.dataset.status = 'error';
+        return;
+    }
+
+    const title = controls.titleInput.value.trim();
+    const xLabel = controls.xLabelInput.value.trim();
+    const yLabel = controls.yLabelInput.value.trim();
+    let changedPlots = 0;
+    let changedCanvases = 0;
+
+    installation.plotStates.forEach(state => {
+        if (!state.target.isConnected) return;
+        let changed = false;
+        if (title) {
+            state.titleInput.value = title;
+            changed = true;
+        }
+        if (xLabel) {
+            state.xInput.value = xLabel;
+            changed = true;
+        }
+        if (yLabel) {
+            state.yInput.value = yLabel;
+            changed = true;
+        }
+        controls.axisRows.forEach(row => {
+            changed = applyBulkAxisRange(state, row) || changed;
+        });
+        if (controls.sizeEnabled.checked) {
+            copyVisualizationSizeControls(controls.sizeControls, state.sizeControls);
+            changed = true;
+        }
+        if (!changed) return;
+        applyPlotEditorState(state);
+        changedPlots++;
+    });
+
+    installation.sizeStates.forEach(state => {
+        if (!state.target.isConnected || state.kind !== 'canvas') return;
+        let changed = false;
+        if (title && state.titleInput) {
+            state.titleInput.value = title;
+            changed = true;
+        }
+        if (controls.sizeEnabled.checked) {
+            copyVisualizationSizeControls(controls.sizeControls, state.sizeControls);
+            changed = true;
+        }
+        if (!changed) return;
+        state.applySize();
+        changedCanvases++;
+    });
+
+    const invalidRanges = Array.from(installation.plotStates).filter(state =>
+        state.target.isConnected
+        && state.axisRangeControls
+        && Array.from(state.axisRangeControls.rows.values()).some(row => !row.error.hidden)
+    ).length;
+    const changedTotal = changedPlots + changedCanvases;
+    controls.status.dataset.status = invalidRanges ? 'warning' : 'success';
+    controls.status.textContent = invalidRanges
+        ? `${changedTotal}件へ反映しました。${invalidRanges}件の軸範囲は各図の注意を確認してください。`
+        : (changedTotal
+            ? `${changedTotal}件の図へ反映しました。`
+            : '変更する項目を入力または選択してください。');
+}
+
+function createVisualizationBulkEditor(installation) {
+    const editor = createVisualizationEditorShell('bulk', 'すべての図をまとめて設定');
+    editor.details.classList.add('visualization-bulk-editor');
+    editor.details.dataset.editorKind = 'bulk';
+
+    const note = document.createElement('p');
+    note.className = 'visualization-bulk-note';
+    note.textContent = '空欄のラベルと「変更しない」の軸は、各図の設定を保ちます。';
+    editor.fields.appendChild(note);
+
+    const titleInput = appendBulkTextField(
+        editor.fields,
+        'bulk-title',
+        '共通のグラフタイトル',
+        '空欄なら変更しない'
+    );
+    const xLabelInput = appendBulkTextField(
+        editor.fields,
+        'bulk-x-label',
+        '共通のX軸ラベル',
+        '空欄なら変更しない'
+    );
+    const yLabelInput = appendBulkTextField(
+        editor.fields,
+        'bulk-y-label',
+        '共通のY軸ラベル',
+        '空欄なら変更しない'
+    );
+
+    const axisGroup = document.createElement('fieldset');
+    axisGroup.className = 'visualization-item-editor-axis-range';
+    const axisLegend = document.createElement('legend');
+    axisLegend.textContent = '軸の表示範囲';
+    const axisContainer = document.createElement('div');
+    axisContainer.className = 'visualization-axis-range-controls';
+    const axisRows = [
+        appendBulkAxisRangeRow(axisContainer, 'x'),
+        appendBulkAxisRangeRow(axisContainer, 'y')
+    ];
+    axisGroup.append(axisLegend, axisContainer);
+    editor.fields.appendChild(axisGroup);
+
+    const sizeEnabledLabel = document.createElement('label');
+    sizeEnabledLabel.className = 'visualization-item-editor-toggle visualization-bulk-size-toggle';
+    const sizeEnabled = document.createElement('input');
+    sizeEnabled.type = 'checkbox';
+    sizeEnabled.dataset.visualizationControl = 'bulk-size-enabled';
+    const sizeEnabledText = document.createElement('span');
+    sizeEnabledText.textContent = '大きさ・縦横比・高さを一括変更';
+    sizeEnabledLabel.append(sizeEnabled, sizeEnabledText);
+    editor.fields.appendChild(sizeEnabledLabel);
+
+    const sizeControls = appendVisualizationSizeFields(editor.fields, {
+        widthPercent: 100,
+        aspectRatio: 'auto',
+        height: 420,
+        customRatioWidth: DEFAULT_CUSTOM_ASPECT_RATIO.width,
+        customRatioHeight: DEFAULT_CUSTOM_ASPECT_RATIO.height
+    });
+    const updateBulkSizeFields = () => {
+        const customRatio = sizeControls.ratioSelect.value === 'custom-ratio';
+        sizeControls.ratioInputs.hidden = !customRatio;
+        sizeControls.ratioWidthInput.disabled = !customRatio;
+        sizeControls.ratioHeightInput.disabled = !customRatio;
+        sizeControls.heightInput.disabled = sizeControls.ratioSelect.value !== 'custom';
+        sizeControls.widthOutput.textContent = `${sizeControls.widthInput.value}%`;
+    };
+    bindVisualizationSizeControls(sizeControls, updateBulkSizeFields);
+    updateBulkSizeFields();
+
+    const actions = document.createElement('div');
+    actions.className = 'visualization-item-editor-actions visualization-bulk-actions';
+    const status = document.createElement('output');
+    status.className = 'visualization-bulk-status';
+    status.setAttribute('aria-live', 'polite');
+    const applyButton = document.createElement('button');
+    applyButton.type = 'button';
+    applyButton.className = 'visualization-bulk-apply';
+    applyButton.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i><span>すべての図に適用</span>';
+    actions.append(status, applyButton);
+    editor.body.appendChild(actions);
+
+    const controls = {
+        titleInput,
+        xLabelInput,
+        yLabelInput,
+        axisRows,
+        sizeEnabled,
+        sizeControls,
+        status,
+        applyButton
+    };
+    applyButton.addEventListener('click', () => {
+        applyVisualizationBulkSettings(installation, controls);
+    });
+    return { editor: editor.details, controls };
+}
+
+function ensureVisualizationBulkEditor(target, installation) {
+    const hasFigures = installation.plotStates.size > 0 || installation.sizeStates.size > 0;
+    if (!hasFigures) return;
+    if (!installation.bulkEditor?.isConnected) {
+        const created = createVisualizationBulkEditor(installation);
+        installation.bulkEditor = created.editor;
+        installation.bulkControls = created.controls;
+    }
+
+    const preferredHost = target.querySelector('[data-visualization-controls="true"]');
+    if (preferredHost) {
+        if (installation.bulkEditor.parentElement !== preferredHost) {
+            preferredHost.appendChild(installation.bulkEditor);
+        }
+        return;
+    }
+
+    const firstItemEditor = target.querySelector(
+        '.visualization-item-editor:not(.visualization-bulk-editor)'
+    );
+    if (
+        firstItemEditor?.parentNode
+        && installation.bulkEditor.nextElementSibling !== firstItemEditor
+    ) {
+        firstItemEditor.parentNode.insertBefore(installation.bulkEditor, firstItemEditor);
+    }
 }
 
 function appendVisualizationResetButton(body, onReset) {
@@ -2424,6 +2914,132 @@ function applyPlotEditorState(state) {
     }
 }
 
+function synchronizePlotlyAxisRangeDescriptors(state) {
+    if (!state.axisRangeControls) return;
+    const capturedLayout = state.plotSpec?.layout || {};
+
+    state.axisRangeControls.rows.forEach(row => {
+        const orientation = String(row.descriptor?.key || '').startsWith('x') ? 'x' : 'y';
+        const nextDescriptor = resolvePlotlyAxisRangeDescriptor(
+            state.target,
+            capturedLayout,
+            orientation
+        );
+        if (!nextDescriptor) return;
+
+        const wasAuto = row.autoCheckbox.checked;
+        row.descriptor = nextDescriptor;
+        row.minimumInput.type = nextDescriptor.inputType;
+        row.maximumInput.type = nextDescriptor.inputType;
+        if (wasAuto) {
+            row.autoCheckbox.checked = true;
+            row.minimumInput.value = nextDescriptor.initialDisplayRange[0];
+            row.maximumInput.value = nextDescriptor.initialDisplayRange[1];
+            row.minimumInput.disabled = true;
+            row.maximumInput.disabled = true;
+            setAxisRangeError(row);
+        }
+    });
+}
+
+function updateViewDefaultLabel(input, previousValue, nextValue) {
+    if (input.value === previousValue) input.value = nextValue;
+}
+
+async function switchPlotlyView(state, requestedKey) {
+    const registration = state.viewRegistration;
+    const nextView = registration?.views.find(view => view.key === requestedKey);
+    if (!nextView || !state.target?.isConnected || !window.Plotly) return;
+
+    const previousKey = state.activeViewKey || registration.defaultView;
+    const previousLabels = state.currentViewLabels || state.defaults;
+    const nextLabels = nextView.labels || {};
+    updateViewDefaultLabel(state.titleInput, previousLabels.title || '', nextLabels.title || '');
+    updateViewDefaultLabel(state.xInput, previousLabels.x || '', nextLabels.x || '');
+    updateViewDefaultLabel(state.yInput, previousLabels.y || '', nextLabels.y || '');
+
+    state.defaults.title = nextLabels.title || '';
+    state.defaults.x = nextLabels.x || '';
+    state.defaults.y = nextLabels.y || '';
+    state.currentViewLabels = { ...nextLabels };
+    state.activeViewKey = nextView.key;
+    state.viewControl.select.disabled = true;
+
+    const data = clonePlotlyViewValue(nextView.data);
+    const layout = ensurePlotlyAnnotationSpace(
+        clonePlotlyViewValue(nextView.layout),
+        data
+    );
+    const config = clonePlotlyViewValue(nextView.config);
+    const nextSpec = { data, layout, config };
+
+    const nextBottomTitle = getTypedAnnotation(layout, 'bottomTitle');
+    const nextVerticalTitle = getTypedAnnotation(layout, 'tategaki');
+    const nextLayoutTitle = getTitleText(layout.title);
+    const nextYAxisTitle = getTitleText(layout.yaxis?.title);
+    state.titleSource = nextLayoutTitle
+        ? 'layout'
+        : (nextBottomTitle ? 'annotation' : state.titleSource);
+    state.ySource = nextYAxisTitle
+        ? 'axis'
+        : (nextVerticalTitle ? 'annotation' : state.ySource);
+    state.titleAnnotation = nextBottomTitle ? { ...nextBottomTitle } : state.titleAnnotation;
+    state.yAnnotation = nextVerticalTitle ? { ...nextVerticalTitle } : state.yAnnotation;
+    state.defaultBottomMargin = Number(layout.margin?.b) || state.defaultBottomMargin;
+    state.plotSpec = nextSpec;
+    state.target.__easyStatPlotSpec = nextSpec;
+    capturedPlotSpecs.set(state.target, nextSpec);
+    state.isEditorRedraw = true;
+
+    try {
+        await window.Plotly.react(state.target, data, layout, config);
+        state.target.dataset.visualizationView = nextView.key;
+        synchronizePlotlyAxisRangeDescriptors(state);
+        state.isEditorRedraw = false;
+        applyPlotEditorState(state);
+    } catch (error) {
+        state.activeViewKey = previousKey;
+        state.viewControl.select.value = previousKey;
+        state.isEditorRedraw = false;
+        console.warn('グラフの表示形式を切り替えられませんでした。', error);
+    } finally {
+        state.viewControl.select.disabled = false;
+    }
+}
+
+function attachPlotlyViewControls(state, registration) {
+    if (!state?.editor || !registration) return;
+    state.viewControl?.field?.remove();
+
+    const fields = state.editor.querySelector('.visualization-item-editor-fields');
+    if (!fields) return;
+    const activeViewKey = registration.views.some(view =>
+        view.key === state.target.dataset.visualizationView
+    )
+        ? state.target.dataset.visualizationView
+        : registration.defaultView;
+    const control = appendVisualizationSelectField(fields, {
+        key: 'chart-view',
+        label: '表示形式',
+        value: activeViewKey,
+        options: registration.views.map(view => ({
+            value: view.key,
+            label: view.label
+        }))
+    });
+    fields.prepend(control.field);
+
+    state.viewRegistration = registration;
+    state.viewControl = control;
+    state.activeViewKey = activeViewKey;
+    state.currentViewLabels = {
+        ...(registration.views.find(view => view.key === activeViewKey)?.labels || {})
+    };
+    control.select.addEventListener('change', () => {
+        void switchPlotlyView(state, control.select.value);
+    });
+}
+
 function enhancePlotlyFigure(plot, root, installation) {
     if (!plot || plot.dataset.visualizationEditorAttached) return true;
     if (!plot.querySelector('.main-svg')) return false;
@@ -2610,8 +3226,17 @@ function enhancePlotlyFigure(plot, root, installation) {
         return false;
     }
     installation.plotStates.add(state);
-    installation.sizeStates.add({ target: plot, applySize: apply });
+    installation.sizeStates.add({
+        target: plot,
+        applySize: apply,
+        sizeControls,
+        sizeDefaults,
+        titleInput: state.titleInput,
+        kind: 'plotly'
+    });
     plotEditorStates.set(plot, state);
+    const viewRegistration = plotViewRegistrations.get(plot);
+    if (viewRegistration) attachPlotlyViewControls(state, viewRegistration);
     apply();
     return true;
 }
@@ -2752,7 +3377,14 @@ function enhanceCanvasFigure(target, root, installation) {
         delete target.dataset.visualizationEditorAttached;
         return;
     }
-    installation.sizeStates.add({ target, applySize: apply });
+    installation.sizeStates.add({
+        target,
+        applySize: apply,
+        sizeControls,
+        sizeDefaults,
+        titleInput: titleField.input,
+        kind: 'canvas'
+    });
     apply();
 }
 
@@ -2783,6 +3415,8 @@ export function installVisualizationEditors(root) {
         lastWidth: target.getBoundingClientRect().width,
         refresh: null,
         masterListener: null,
+        bulkEditor: null,
+        bulkControls: null,
         api: null
     };
 
@@ -2806,6 +3440,7 @@ export function installVisualizationEditors(root) {
             if (figure.tagName === 'CANVAS' && figure.closest('.tm-network-canvas')) return;
             enhanceCanvasFigure(figure, target, installation);
         });
+        ensureVisualizationBulkEditor(target, installation);
         if (waitingForPlot) window.setTimeout(scheduleRefresh, 50);
     };
     installation.refresh = refresh;

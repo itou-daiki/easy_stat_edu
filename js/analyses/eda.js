@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, getAcademicLayout, academicColors } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, getAcademicLayout, academicColors, createBoxPlotView, registerPlotlyViewOptions } from '../utils.js';
 // Keep for now if needed later, or remove. Instructions say remove.
 // Actually, let's just remove the line if it's the only import.
 // Checking previous view... it is `import { renderDataOverview } from '../utils.js';`
@@ -724,7 +724,7 @@ function visualizeGroupedBarChart(currentData, characteristics) {
                 <select id="grouped-num" style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1rem; font-weight: 500;">${numOptions}</select>
             </div>
             <button id="plot-grouped-bar-btn" class="btn-analysis" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: bold;">
-                <i class="fas fa-chart-bar"></i> 棒グラフを表示
+                <i class="fas fa-chart-bar"></i> 比較グラフを表示
             </button>
             <div id="grouped-bar-result" style="margin-top: 1.5rem;"></div>
         </div>
@@ -825,7 +825,69 @@ function plotGroupedBarChart(currentData, cat1, cat2, numVar) {
         margin: { l: 100, b: 100 }
     });
 
-    Plotly.newPlot(plotId, traces, layout, createPlotlyConfig('EDA_グループ化棒グラフ', [cat1, cat2, numVar]));
+    const barConfig = createPlotlyConfig(
+        'EDA_グループ化棒グラフ',
+        [cat1, cat2, numVar]
+    );
+    const boxView = createBoxPlotView(
+        cat2Values.map((c2Val, index) => ({
+            name: c2Val,
+            color: academicColors.palette[index % academicColors.palette.length],
+            groups: [...new Set(aggregated.map(item => item.cat1))].sort().map(c1Val => {
+                const item = groupedData[`${c1Val}|${c2Val}`];
+                return { label: c1Val, values: item?.values || [] };
+            })
+        })),
+        { showLegend: true }
+    );
+    const boxGraphTitleText = `【${cat1}】と【${cat2}】による【${numVar}】の分布`;
+    const boxAnnotations = [];
+    const boxTategakiTitle = getTategakiAnnotation(numVar);
+    const boxBottomTitle = getBottomTitleAnnotation(boxGraphTitleText);
+    if (showAxisLabels && boxTategakiTitle) boxAnnotations.push(boxTategakiTitle);
+    if (showGraphTitle && boxBottomTitle) boxAnnotations.push(boxBottomTitle);
+    const boxLayout = getAcademicLayout({
+        title: '',
+        xaxis: { title: showAxisLabels ? cat1 : '' },
+        yaxis: { title: '' },
+        boxmode: 'group',
+        annotations: boxAnnotations,
+        margin: { l: 100, b: 100 }
+    });
+    const boxConfig = createPlotlyConfig(
+        'EDA_グループ化箱ひげ図',
+        [cat1, cat2, numVar]
+    );
+    registerPlotlyViewOptions(plotId, {
+        defaultView: 'bar',
+        views: [
+            {
+                key: 'bar',
+                label: '棒グラフ（平均値）',
+                data: traces,
+                layout,
+                config: barConfig,
+                labels: {
+                    title: graphTitleText,
+                    x: cat1,
+                    y: `平均: ${numVar}`
+                }
+            },
+            {
+                key: 'box',
+                label: '箱ひげ図（観測値）',
+                data: boxView.traces,
+                layout: boxLayout,
+                config: boxConfig,
+                labels: {
+                    title: boxGraphTitleText,
+                    x: cat1,
+                    y: numVar
+                }
+            }
+        ]
+    });
+    Plotly.newPlot(plotId, traces, layout, barConfig);
 }
 
 // タブ切り替え機能

@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20260730-ai-support-v4">
+    <link rel="stylesheet" href="css/style.css?v=20260730-visualization-v5">
 
     <!-- vis.js for network graphs -->
     <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
@@ -954,7 +954,7 @@
                                 <span class="changelog-date">2026年7月</span>
                             </div>
                             <div class="changelog-content">
-                                <h5>生成AIによる解釈支援を強化</h5>
+                                <h5>生成AIと可視化支援を強化</h5>
                                 <ul>
                                     <li>結果表の根拠と対応した構造化解釈、妥当性チェック、レポート例を追加</li>
                                     <li>原データを初期状態で除外し、機微情報候補の自動マスクと送信前プレビューに対応</li>
@@ -962,6 +962,8 @@
                                     <li>分析手法別の確認順序を追加し、有意でない理由や効果量の過剰解釈を抑制</li>
                                     <li>追加質問を軽量化し、入力・回答・推論トークンの内訳表示に対応</li>
                                     <li>Gemini 3.6 FlashとGemini 3.5 Flash-Liteに対応</li>
+                                    <li>生データを利用できる平均値棒グラフで、箱ひげ図への切替に対応</li>
+                                    <li>複数図のタイトル、軸ラベル、軸範囲、幅、比率、高さの一括設定に対応</li>
                                 </ul>
                             </div>
                         </div>
@@ -1170,12 +1172,12 @@
     <script type="importmap">
         {
             "imports": {
-                "./js/utils.js": "./js/utils.js?v=20260730-ai-support-v4",
-                "./js/ai_support.js": "./js/ai_support.js?v=20260730-ai-support-v4"
+                "./js/utils.js": "./js/utils.js?v=20260730-visualization-v5",
+                "./js/ai_support.js": "./js/ai_support.js?v=20260730-visualization-v5"
             }
         }
     </script>
-    <script type="module" src="js/main.js?v=20260730-ai-support-v4"></script>
+    <script type="module" src="js/main.js?v=20260730-visualization-v5"></script>
 </body>
 
 </html>

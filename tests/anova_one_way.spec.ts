@@ -34,6 +34,25 @@ test.describe('ANOVA One-Way Verification', () => {
         expect(textContent).toContain('F値');
 
         // Check plots
-        await expect(page.locator('#anova-plot-0')).toBeVisible();
+        const plot = page.locator('#anova-plot-0');
+        await expect(plot).toBeVisible();
+        const editor = plot.locator(
+            'xpath=preceding-sibling::details[@data-editor-kind="plotly"][1]'
+        );
+        await expect(editor).toBeVisible({ timeout: 10000 });
+        await editor.locator('summary').click();
+        await editor.locator(
+            '[data-visualization-input="chart-view"]'
+        ).selectOption('box');
+        await expect(plot).toHaveAttribute('data-visualization-view', 'box');
+        const boxData = await plot.evaluate(element => ({
+            types: (element as any).data.map((trace: any) => trace.type),
+            observations: (element as any).data.reduce(
+                (sum: number, trace: any) => sum + (trace.y?.length || 0),
+                0
+            )
+        }));
+        expect(boxData.types.every((type: string) => type === 'box')).toBe(true);
+        expect(boxData.observations).toBeGreaterThan(10);
     });
 });

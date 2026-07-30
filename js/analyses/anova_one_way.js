@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createMultiSetSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets, getAcademicLayout, academicColors } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createMultiSetSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets, getAcademicLayout, academicColors, createBoxPlotView, registerPlotlyViewOptions } from '../utils.js';
 import { calculateTukeyP, performHolmCorrection } from '../utils/stat_distributions.js';
 
 // Pairwise t-test helper for Between-Subjects (Independent)
@@ -412,7 +412,66 @@ function displayANOVAVisualization(results, testType) {
             layout.annotations = layout.annotations.filter(a => a !== bottomTitle);
         }
 
-        Plotly.newPlot(plotId, [trace], layout, createPlotlyConfig(`一要因分散分析: ${res.varName}`, res.varName));
+        const barConfig = createPlotlyConfig(`一要因分散分析: ${res.varName}`, res.varName);
+        const boxView = createBoxPlotView(
+            res.groups.map((group, groupIndex) => ({
+                name: group,
+                color: academicColors.palette[groupIndex % academicColors.palette.length],
+                groups: [{ label: group, values: res.groupData?.[group] || [] }]
+            })),
+            { showLegend: false }
+        );
+        const boxGraphTitleText = `分布の比較：${res.varName} by グループ`;
+        const boxTategakiTitle = getTategakiAnnotation(res.varName);
+        const boxBottomTitle = getBottomTitleAnnotation(boxGraphTitleText);
+        const boxAnnotations = [];
+        if (showAxisLabels && boxTategakiTitle) boxAnnotations.push(boxTategakiTitle);
+        if (showBottomTitle && boxBottomTitle) boxAnnotations.push(boxBottomTitle);
+        const boxLayout = getAcademicLayout({
+            title: '',
+            xaxis: { title: showAxisLabels ? 'Group' : '' },
+            yaxis: { title: '' },
+            boxmode: 'group',
+            shapes: [],
+            annotations: boxAnnotations,
+            margin: { t: 60, l: 100, b: 100 }
+        });
+        const boxMinimum = boxView.minimum ?? 0;
+        const boxMaximum = boxView.maximum ?? 0;
+        addSignificanceBrackets(
+            boxLayout,
+            res.sigPairs,
+            res.groups,
+            boxMaximum,
+            Math.max(boxMaximum - boxMinimum, 1),
+            { yMin: boxMinimum, baselineZero: false }
+        );
+        const boxConfig = createPlotlyConfig(
+            `一要因分散分析_箱ひげ図: ${res.varName}`,
+            res.varName
+        );
+        registerPlotlyViewOptions(plotId, {
+            defaultView: 'bar',
+            views: [
+                {
+                    key: 'bar',
+                    label: '棒グラフ（平均 ± SE）',
+                    data: [trace],
+                    layout,
+                    config: barConfig,
+                    labels: { title: graphTitleText, x: 'Group', y: res.varName }
+                },
+                {
+                    key: 'box',
+                    label: '箱ひげ図（観測値）',
+                    data: boxView.traces,
+                    layout: boxLayout,
+                    config: boxConfig,
+                    labels: { title: boxGraphTitleText, x: 'Group', y: res.varName }
+                }
+            ]
+        });
+        Plotly.newPlot(plotId, [trace], layout, barConfig);
 
         // Helper to update plots
         const updatePlots = () => {
@@ -598,6 +657,7 @@ function runOneWayIndependentANOVA(currentData) {
                 ...p,
                 significance: p.p < 0.01 ? '**' : p.p < 0.05 ? '*' : p.p < 0.1 ? '†' : 'n.s.'
             })),
+            groupData,
             method
         });
     });
@@ -1023,7 +1083,71 @@ function runOneWayRepeatedANOVA(currentData) {
             { yMin }
         );
 
-        Plotly.newPlot(plotContainer.id, [trace], layout, createPlotlyConfig(`ANOVA_Set_${setIndex + 1}`, `anova_set_${setIndex + 1}`));
+        const barConfig = createPlotlyConfig(
+            `ANOVA_Set_${setIndex + 1}`,
+            `anova_set_${setIndex + 1}`
+        );
+        const boxView = createBoxPlotView(
+            dependentVars.map((variable, variableIndex) => ({
+                name: variable,
+                color: academicColors.palette[variableIndex % academicColors.palette.length],
+                groups: [{
+                    label: variable,
+                    values: validData.map(row => row[variableIndex])
+                }]
+            })),
+            { showLegend: false }
+        );
+        const boxTitle = `分布の比較 (Set ${setIndex + 1})`;
+        const boxLayout = getAcademicLayout({
+            title: boxTitle,
+            xaxis: { title: '条件' },
+            yaxis: { title: '測定値' },
+            boxmode: 'group',
+            margin: { t: 60, l: 60, b: 60, r: 20 },
+            annotations: [],
+            shapes: []
+        });
+        const boxMinimum = boxView.minimum ?? 0;
+        const boxMaximum = boxView.maximum ?? 0;
+        addSignificanceBrackets(
+            boxLayout,
+            sigPairsWithSig,
+            dependentVars,
+            boxMaximum,
+            Math.max(boxMaximum - boxMinimum, 1),
+            { yMin: boxMinimum, baselineZero: false }
+        );
+        const boxConfig = createPlotlyConfig(
+            `ANOVA_Set_${setIndex + 1}_box`,
+            `anova_set_${setIndex + 1}`
+        );
+        registerPlotlyViewOptions(plotContainer.id, {
+            defaultView: 'bar',
+            views: [
+                {
+                    key: 'bar',
+                    label: '棒グラフ（平均 ± SE）',
+                    data: [trace],
+                    layout,
+                    config: barConfig,
+                    labels: {
+                        title: `平均値の比較 (Set ${setIndex + 1})`,
+                        x: '条件',
+                        y: '平均値 (+SEM)'
+                    }
+                },
+                {
+                    key: 'box',
+                    label: '箱ひげ図（観測値）',
+                    data: boxView.traces,
+                    layout: boxLayout,
+                    config: boxConfig,
+                    labels: { title: boxTitle, x: '条件', y: '測定値' }
+                }
+            ]
+        });
+        Plotly.newPlot(plotContainer.id, [trace], layout, barConfig);
     });
 }
 

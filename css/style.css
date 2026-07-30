@@ -3106,6 +3106,83 @@ table tr:hover {
     grid-template-columns: minmax(10.5rem, 1fr);
 }
 
+.visualization-item-editor-label {
+    color: #334155;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.visualization-bulk-editor {
+    flex: 1 0 100%;
+    margin: 0.15rem 0 0;
+    width: 100%;
+}
+
+.visualization-bulk-editor > summary {
+    background: #eef6ff;
+    color: #0c4a6e;
+}
+
+.visualization-bulk-note {
+    color: #64748b;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.visualization-bulk-axis-range-row {
+    grid-template-columns: 3rem minmax(9rem, 0.8fr) minmax(8rem, 1fr) minmax(8rem, 1fr);
+}
+
+.visualization-bulk-size-toggle {
+    border-top: 1px solid #dbe4ee;
+    color: #334155;
+    padding-top: 0.75rem;
+}
+
+.visualization-bulk-actions {
+    align-items: center;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.visualization-bulk-status {
+    color: #475569;
+    flex: 1 1 auto;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.visualization-bulk-status[data-status="success"] {
+    color: #047857;
+}
+
+.visualization-bulk-status[data-status="warning"],
+.visualization-bulk-status[data-status="error"] {
+    color: #b42318;
+    font-weight: 600;
+}
+
+.visualization-bulk-apply {
+    align-items: center;
+    background: #2563eb;
+    border: 1px solid #1d4ed8;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 0.82rem;
+    font-weight: 700;
+    gap: 0.45rem;
+    min-height: 2.25rem;
+    padding: 0.4rem 0.75rem;
+}
+
+.visualization-bulk-apply:hover {
+    background: #1d4ed8;
+}
+
 .visualization-item-editor-size {
     border: 0;
     border-top: 1px solid #dbe4ee;
@@ -3344,12 +3421,26 @@ table tr:hover {
         grid-template-columns: minmax(3rem, auto) minmax(5rem, 1fr);
     }
 
+    .visualization-bulk-axis-range-row {
+        grid-template-columns: minmax(3rem, auto) minmax(8rem, 1fr);
+    }
+
     .visualization-axis-range-part {
         grid-column: 1 / -1;
     }
 
     .visualization-axis-range-error {
         grid-column: 1 / -1;
+    }
+
+    .visualization-bulk-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .visualization-bulk-apply {
+        justify-content: center;
+        width: 100%;
     }
 }
 

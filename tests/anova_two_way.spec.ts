@@ -49,4 +49,21 @@ test('Two-Way Mixed ANOVA Verification', async ({ page }) => {
 
     // Check for standard result table section title
     await expect(page.locator('#test-results-section')).toContainText('分散分析表');
+
+    const plot = page.locator('#anova-plot-0');
+    await expect(plot).toBeVisible({ timeout: 10000 });
+    const editor = plot.locator(
+        'xpath=preceding-sibling::details[@data-editor-kind="plotly"][1]'
+    );
+    await expect(editor).toBeVisible({ timeout: 10000 });
+    await editor.locator('summary').click();
+    await editor.locator(
+        '[data-visualization-input="chart-view"]'
+    ).selectOption('box');
+    await expect(plot).toHaveAttribute('data-visualization-view', 'box');
+    const boxTypes = await plot.evaluate(element =>
+        (element as any).data.map((trace: any) => trace.type)
+    );
+    expect(boxTypes.length).toBeGreaterThan(0);
+    expect(boxTypes.every((type: string) => type === 'box')).toBe(true);
 });
