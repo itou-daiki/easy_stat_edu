@@ -39,7 +39,9 @@ test.describe('初学者向けの共通説明', () => {
     test('マニュアルにも初学者向け導線とAI説明レベルが記載されている', async ({ page }) => {
         await page.goto('/manual.html');
         const quickStart = page.locator('#quick-start');
-        await expect(quickStart).toContainText('「簡単に説明すると」を必要なときだけ開く');
+        await expect(quickStart).toContainText('2つの「簡単に説明すると」を必要なときだけ開く');
+        await expect(quickStart).toContainText('今回の結果を簡単に説明すると');
+        await expect(quickStart).toContainText('AIやAPIキーは不要');
         await expect(quickStart).toContainText('高校生向け（やさしく）');
         await expect(quickStart).toContainText('研究・論文向け（詳しく）');
     });
@@ -51,7 +53,7 @@ test.describe('初学者向けの共通説明', () => {
         const source = await page.evaluate(async () => (await fetch('/js/main.js')).text());
         const beginnerBlock = source
             .split('const BEGINNER_EXPLANATIONS = {')[1]
-            .split('\n};\n\nlet currentAnalysisType')[0];
+            .split('\n};\n\nconst RESULT_METRIC_DEFINITIONS')[0];
         const definedTypes = Array.from(beginnerBlock.matchAll(/^    ([a-z0-9_]+): \{/gm), match => match[1]);
 
         expect(analysisTypes).toHaveLength(23);

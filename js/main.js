@@ -453,8 +453,305 @@ const BEGINNER_EXPLANATIONS = {
     }
 };
 
+const RESULT_METRIC_DEFINITIONS = {
+    sample_size: {
+        label: 'N・件数',
+        pattern: /(?:\bN\s*[=＝]|有効N|サンプルサイズ|標本数|\d+\s*行)/i,
+        meaning: '分析に使えた人・行・文書などの数です。少ないほど結果の不確かさが大きくなりやすいため、欠損による除外数も確認します。'
+    },
+    missing: {
+        label: '欠損・除外',
+        pattern: /欠損|除外|無効/i,
+        meaning: '空欄などのため分析に使われなかったデータです。除外が多いと、残ったデータだけに偏った結果になることがあります。'
+    },
+    count: {
+        label: '度数',
+        pattern: /度数|人数|件数/i,
+        meaning: '各グループや組み合わせに入る実際の人数・件数です。割合を見る前に、極端に少ないセルがないか確認します。'
+    },
+    mean: {
+        label: '平均値',
+        pattern: /平均(?:値|差)?/i,
+        meaning: '値の合計を人数で割った代表値です。極端な値の影響を受けるため、分布や中央値も一緒に見ます。'
+    },
+    median: {
+        label: '中央値',
+        pattern: /中央値/i,
+        meaning: '小さい順に並べた中央の値です。外れ値の影響を受けにくく、順位にもとづく分析で特に役立ちます。'
+    },
+    sd: {
+        label: 'SD（標準偏差）',
+        pattern: /標準偏差|(?:^|[\s（(])SD(?:[\s）),]|$)/i,
+        meaning: '値が平均のまわりにどの程度ばらついているかを示します。大きいほど個人差や散らばりが大きい結果です。'
+    },
+    confidence_interval: {
+        label: '95%信頼区間',
+        pattern: /95\s*%\s*(?:CI|信頼区間)|信頼区間/i,
+        meaning: '推定値の不確かさを表す範囲です。一般に狭いほど推定が精密です。差の区間が0、比の区間が1をまたぐかも確認します。'
+    },
+    p_value: {
+        label: 'p値',
+        pattern: /(?:\bp\s*(?:[=＜<＞>]|値)|p値|有意水準)/i,
+        meaning: '「差や関連がない」と仮定したとき、今回と同じかそれ以上に極端な結果が出る確率です。p < .05は一つの目安で、「結果が偶然だった確率」ではありません。'
+    },
+    t_value: {
+        label: 't値',
+        pattern: /(?:\bt\s*[=＜<＞>]|t値|t検定)/i,
+        meaning: '平均差が、その推定誤差の何倍ほどあるかを表します。p値はt値と自由度から計算され、差の大きさ自体は効果量で確認します。'
+    },
+    f_value: {
+        label: 'F値',
+        pattern: /(?:\bF\s*[=＜<＞>]|F値)/,
+        meaning: 'グループやモデルが説明するばらつきを、説明できないばらつきと比べた値です。大きさだけでなく、自由度とp値を一緒に読みます。'
+    },
+    chi_square: {
+        label: 'χ²（カイ二乗値）',
+        pattern: /χ\s*[²2]|カイ二乗/i,
+        meaning: '観測された人数と、関連がない場合に期待される人数のずれを全体でまとめた値です。どのセルが違うかは残差で確認します。'
+    },
+    degrees_freedom: {
+        label: 'df（自由度）',
+        pattern: /(?:\bdf\b|自由度)/i,
+        meaning: '統計量の基準となる情報量です。通常は単独で良し悪しを判断せず、t値・F値・χ²値などと組み合わせてp値を求めます。'
+    },
+    cohens_d: {
+        label: 'd・dz（効果量）',
+        pattern: /(?:Cohen|効果量\s*\(?d|\bdz?\s*[=＝])/i,
+        meaning: '平均差を標準偏差の単位に直した値です。easyStatでは差の大きさを絶対値で表示するため、差の向きは各群・各時点の平均値で確認します。'
+    },
+    correlation_r: {
+        label: 'r・ρ（相関係数）',
+        pattern: /相関係数|(?:\br|ρ)\s*[=＝]/i,
+        meaning: '-1から1の範囲で、2変数の関係の向きと強さを示します。0に近いほど直線的・単調な関係が弱い値ですが、因果関係は示しません。'
+    },
+    rank_effect_r: {
+        label: 'r（順位にもとづく効果量）',
+        pattern: /効果量\s*r|\br\s*[=＝]/i,
+        meaning: '順位にもとづく差を標準化した大きさです。p値とは別に、差が実質的にどの程度あるかを確認します。'
+    },
+    eta_squared: {
+        label: 'η²・ηp²（効果量）',
+        pattern: /η|eta|効果量/i,
+        meaning: 'ANOVAで、結果のばらつきのうち要因と関係する割合を表す効果量です。偏η²は他の要因の影響を除いた割合なので、単純な割合とは区別します。'
+    },
+    epsilon_squared: {
+        label: 'ε²（効果量）',
+        pattern: /ε|epsilon|効果量/i,
+        meaning: 'Kruskal-Wallis検定で、群の違いに対応する順位のばらつきの大きさを表す効果量です。p値と別に実質的な差を確認します。'
+    },
+    cramer_v: {
+        label: 'CramerのV',
+        pattern: /Cramer|クラメール|(?:^|[\s（(,])V\s*[=＝]/i,
+        meaning: '2つのカテゴリ変数の関連の強さを0から1で示します。0に近いほど弱く、1に近いほど強い関連ですが、原因と結果は示しません。'
+    },
+    adjusted_residual: {
+        label: '調整済み残差 z',
+        pattern: /調整済み.*残差|標準化残差|\bz\s*[=＝]/i,
+        meaning: '各セルの人数が期待度数より多いか少ないかを示します。正は多い、負は少ない方向です。全体検定と多重比較補正を確認してから解釈します。'
+    },
+    odds_ratio: {
+        label: 'オッズ比',
+        pattern: /オッズ比|Odds Ratio|\bOR\s*[=＝]/i,
+        meaning: 'ある結果の起こりやすさをオッズで比べた倍率です。1は同程度、1より大きいと高い方向ですが、確率そのものの倍率ではありません。'
+    },
+    u_value: {
+        label: 'U値',
+        pattern: /(?:\bU\s*[=＝]|U値|Mann.?Whitney)/i,
+        meaning: '2群の値をまとめて順位にし、その順位の偏りを表す統計量です。差の向きは平均順位や中央値、差の大きさは効果量rで確認します。'
+    },
+    h_value: {
+        label: 'H値',
+        pattern: /(?:\bH\s*[=＝]|H値|Kruskal.?Wallis)/i,
+        meaning: '3群以上の順位のずれをまとめた統計量です。有意な場合も、どの群が違うかは事後比較で確認します。'
+    },
+    w_value: {
+        label: 'W・T値',
+        pattern: /(?:\bW\s*[=＝]|\bT\s*[=＝]|W値|符号付順位)/i,
+        meaning: '対応する2回の測定差を順位にして、増加側と減少側の偏りを表す統計量です。中央値と効果量も一緒に見ます。'
+    },
+    phi: {
+        label: 'φ（ファイ）',
+        pattern: /φ|ファイ|\bphi\s*[=＝]/i,
+        meaning: '2値データの関連や変化の大きさを表す効果量です。McNemar検定では、変化した組の偏りの大きさを確認する目安になります。'
+    },
+    r_squared: {
+        label: 'R²（決定係数）',
+        pattern: /R\s*[²2]|決定係数/i,
+        meaning: '標本内で、目的変数のばらつきをモデルがどの程度説明したかを示します。高くても因果関係や未知データでの予測精度は保証しません。'
+    },
+    coefficient_b: {
+        label: 'B（回帰係数）',
+        pattern: /回帰係数|(?:^|[\s（(])B\s*[=＝]/,
+        meaning: '他の条件を一定としたとき、説明変数が1単位増えると目的変数がどれだけ変わるかを示します。単位に依存します。'
+    },
+    standardized_beta: {
+        label: 'β（標準化係数）',
+        pattern: /標準化係数|β\s*[=＝]/i,
+        meaning: '変数の単位をそろえた回帰係数です。同じモデル内で関連の向きや相対的な大きさを比べる目安になります。'
+    },
+    standard_error: {
+        label: 'SE（標準誤差）',
+        pattern: /標準誤差|(?:^|[\s（(])SE(?:[\s）),]|$)/i,
+        meaning: '平均や係数などの推定値が、標本の取り方によってどの程度ぶれうるかを示します。小さいほど推定が精密です。'
+    },
+    vif: {
+        label: 'VIF',
+        pattern: /\bVIF\b/i,
+        meaning: '説明変数どうしが似すぎて、回帰係数が不安定になっていないかを示します。大きい場合は変数の重なりを確認します。'
+    },
+    pseudo_r_squared: {
+        label: '擬似R²',
+        pattern: /Nagelkerke|擬似R/i,
+        meaning: 'ロジスティック回帰が切片だけのモデルからどの程度改善したかを示す指標です。線形回帰のR²と同じ割合としては読みません。'
+    },
+    accuracy: {
+        label: '正解率',
+        pattern: /正解率|accuracy/i,
+        meaning: '予測が当たった割合です。多数派だけを予測する基準値と比べ、同じデータで学習・評価した値なら過大評価に注意します。'
+    },
+    factor_loading: {
+        label: '因子・主成分負荷量',
+        pattern: /因子負荷|主成分負荷|負荷量/i,
+        meaning: '各項目が因子や主成分とどの程度強く結び付くかを示します。絶対値が大きい項目を手がかりに軸の意味を考えます。'
+    },
+    communality: {
+        label: '共通性',
+        pattern: /共通性/i,
+        meaning: 'その項目のばらつきのうち、抽出した因子で説明される割合です。低い項目は因子構造で捉えにくい可能性があります。'
+    },
+    kmo: {
+        label: 'KMO',
+        pattern: /\bKMO\b/i,
+        meaning: '項目間の相関が因子分析に向いているかを0から1で示す目安です。一般に高いほど因子分析に適しています。'
+    },
+    eigenvalue: {
+        label: '固有値',
+        pattern: /固有値/i,
+        meaning: '各因子や主成分が受け持つ情報量です。因子数・主成分数を決める材料ですが、固有値だけで決めません。'
+    },
+    contribution_rate: {
+        label: '寄与率・累積寄与率',
+        pattern: /寄与率/i,
+        meaning: '各主成分が元データのばらつきを何%保っているかを示します。累積寄与率は採用した主成分までの合計です。'
+    },
+    acf: {
+        label: 'ACF（自己相関）',
+        pattern: /自己相関|\bACF\b|Lag\s*=/i,
+        meaning: '現在の値と、一定時点前の値との似かたを示します。特定の間隔で高い値が続くと、トレンドや周期性の手がかりになります。'
+    },
+    tf: {
+        label: 'TF（出現回数）',
+        pattern: /TF[＝=]|出現回数/i,
+        meaning: '分析対象内でその語が何回使われたかです。同じ文書での繰り返しも数えるため、文書の広がりはDFで確認します。'
+    },
+    document_frequency: {
+        label: 'DF（文書頻度）',
+        pattern: /DF[＝=]|文書数|文書率/i,
+        meaning: 'その語を含む文書の数や割合です。少数の文書だけで繰り返された語か、多くの文書に広がる語かを区別できます。'
+    },
+    tfidf: {
+        label: 'TF-IDF',
+        pattern: /TF-?IDF/i,
+        meaning: 'その文書・カテゴリでは多い一方、どこにでも出る語は小さくする重みです。値が大きくても重要性を確定せず、原文で意味を確認します。'
+    },
+    jaccard: {
+        label: 'Jaccard係数',
+        pattern: /Jaccard|ジャカード/i,
+        meaning: '2語が同じ文書・文に一緒に現れる割合を0から1で示します。高いほど共起しやすい関係ですが、意味の近さや因果関係は示しません。'
+    },
+    z_score: {
+        label: 'z（特徴度）',
+        pattern: /特徴度\s*z|標準化残差|\bz\s*[=＝]/i,
+        meaning: 'その語があるカテゴリで期待より多いか少ないかを標準化した値です。正は多い、負は少ない方向を示します。'
+    },
+    q_value: {
+        label: 'q値',
+        pattern: /q値|\bq\s*[=＜<]/i,
+        meaning: '多くの語を同時に比べた影響を補正したp値です。q < .05は、偽陽性の割合を抑えながら特徴語を選ぶ目安です。'
+    },
+    row_percentage: {
+        label: '行%',
+        pattern: /行%|行パーセント/i,
+        meaning: '各行を100%として、列カテゴリの内訳を比べる割合です。「行の中で何が多いか」を見るときに使います。'
+    },
+    column_percentage: {
+        label: '列%',
+        pattern: /列%|列パーセント/i,
+        meaning: '各列を100%として、行カテゴリの内訳を比べる割合です。「列の中で何が多いか」を見るときに使います。'
+    },
+    cronbach_alpha: {
+        label: 'α（信頼性係数）',
+        pattern: /Cronbach|信頼性係数|α\s*[=＝]/i,
+        meaning: '同じ尺度に入れた質問が、どの程度一貫して答えられているかの目安です。高ければ妥当な尺度だと自動的に決まるわけではありません。'
+    },
+    skewness: {
+        label: '歪度',
+        pattern: /歪度/i,
+        meaning: '分布の左右の偏りを示します。正なら右側、負なら左側に裾が長い傾向があります。'
+    },
+    kurtosis: {
+        label: '尖度',
+        pattern: /尖度/i,
+        meaning: '正規分布と比べた分布の尖りや裾の重さの目安です。外れ値候補や分布の形と一緒に確認します。'
+    }
+};
+
+const RESULT_METRICS_BY_ANALYSIS = {
+    analysis_support: ['sample_size', 'missing'],
+    data_processing: ['sample_size', 'missing'],
+    data_merge: ['sample_size', 'missing'],
+    factor_score: ['sample_size', 'mean', 'sd', 'cronbach_alpha', 'missing'],
+    eda: ['sample_size', 'mean', 'median', 'sd', 'skewness', 'kurtosis', 'missing'],
+    cross_tabulation: ['sample_size', 'count', 'row_percentage', 'column_percentage', 'missing'],
+    correlation: ['sample_size', 'correlation_r', 'p_value', 'confidence_interval'],
+    ttest: ['mean', 'sd', 't_value', 'degrees_freedom', 'p_value', 'confidence_interval', 'cohens_d'],
+    anova_one_way: ['mean', 'f_value', 'degrees_freedom', 'p_value', 'eta_squared', 'confidence_interval'],
+    anova_two_way: ['mean', 'f_value', 'degrees_freedom', 'p_value', 'eta_squared', 'confidence_interval'],
+    mann_whitney: ['median', 'u_value', 'p_value', 'rank_effect_r'],
+    kruskal_wallis: ['median', 'h_value', 'degrees_freedom', 'p_value', 'epsilon_squared'],
+    wilcoxon_signed_rank: ['median', 'w_value', 'p_value', 'rank_effect_r'],
+    mcnemar: ['count', 'chi_square', 'p_value', 'phi'],
+    chi_square: ['count', 'chi_square', 'degrees_freedom', 'p_value', 'cramer_v', 'adjusted_residual'],
+    fisher_exact: ['count', 'p_value', 'cramer_v', 'odds_ratio'],
+    regression_simple: ['sample_size', 'r_squared', 'coefficient_b', 'standard_error', 't_value', 'p_value', 'confidence_interval'],
+    regression_multiple: ['sample_size', 'r_squared', 'coefficient_b', 'standardized_beta', 'standard_error', 'vif', 'p_value'],
+    logistic_regression: ['sample_size', 'pseudo_r_squared', 'coefficient_b', 'standard_error', 'p_value', 'odds_ratio', 'accuracy'],
+    factor_analysis: ['sample_size', 'kmo', 'factor_loading', 'communality', 'eigenvalue'],
+    pca: ['sample_size', 'eigenvalue', 'contribution_rate', 'factor_loading'],
+    time_series: ['sample_size', 'mean', 'acf'],
+    text_mining: ['sample_size', 'tf', 'document_frequency', 'tfidf', 'jaccard', 'z_score', 'q_value']
+};
+
+const RESULT_ROOT_SELECTORS = [
+    '#analysis-results',
+    '#results-section',
+    '#crosstab-analysis-results',
+    '#mcnemar-analysis-results',
+    '#logistic-analysis-results',
+    '#fa-analysis-results',
+    '#ts-results-section',
+    '#merge-result-section',
+    '#fs-result-section',
+    '#recommendation-area',
+    '#processing-summary',
+    '#processed-data-overview-section',
+    '#eda-summary-stats',
+    '#two-vars-result',
+    '#grouped-bar-result'
+];
+
+const RESULT_INTERPRETATION_SELECTORS = [
+    '#interpretation-content',
+    '.interpretation-content',
+    '#correlation-interpretation',
+    '#factor-interpretation',
+    '#ts-interpretation'
+];
+
 let currentAnalysisType = null;
 let currentAnalysisTitle = '';
+let resultExplanationObserver = null;
+let resultExplanationTimer = null;
 const storedDeviceGeminiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE) || '';
 const storedSessionGeminiKey = sessionStorage.getItem(GEMINI_API_KEY_SESSION_STORAGE) || '';
 let aiState = {
@@ -1569,7 +1866,7 @@ async function showAnalysisView(analysisType) {
     const analysisArea = document.getElementById('analysis-area');
     const analysisContent = document.getElementById('analysis-content');
 
-
+    disconnectResultExplanationObserver();
     analysisContent.innerHTML = `<div class="loading"><i class="fas fa-spinner fa-spin"></i> 分析モジュールを読み込み中...</div>`;
 
     analysisHeader.style.display = 'flex';
@@ -1584,6 +1881,7 @@ async function showAnalysisView(analysisType) {
         void typesetMathIn(analysisContent);
         injectAnalysisVisualIfMissing(analysisContent, analysisType);
         injectBeginnerExplanation(analysisContent, analysisType);
+        installResultExplanationExpander(analysisContent, analysisType);
         updateAIAssistVisibility();
     } catch (error) {
         console.error(error);
@@ -1593,6 +1891,7 @@ async function showAnalysisView(analysisType) {
 }
 
 window.backToHome = () => {
+    disconnectResultExplanationObserver();
     currentAnalysisType = null;
     currentAnalysisTitle = '';
     resetAIConversation();
@@ -1658,7 +1957,7 @@ function injectBeginnerExplanation(container, analysisType) {
                 <i class="fas fa-lightbulb"></i>
             </span>
             <span class="beginner-explanation-label">
-                <strong>簡単に説明すると</strong>
+                <strong>この分析を簡単に説明すると</strong>
                 <small>高校生向けに、見る順番と注意点を確認</small>
             </span>
             <i class="fas fa-chevron-down beginner-explanation-chevron" aria-hidden="true"></i>
@@ -1705,6 +2004,268 @@ function injectBeginnerExplanation(container, analysisType) {
 
     if (analysisRoot) container.insertBefore(details, analysisRoot);
     else container.append(details);
+}
+
+function disconnectResultExplanationObserver() {
+    resultExplanationObserver?.disconnect();
+    resultExplanationObserver = null;
+    if (resultExplanationTimer) clearTimeout(resultExplanationTimer);
+    resultExplanationTimer = null;
+}
+
+function installResultExplanationExpander(container, analysisType) {
+    disconnectResultExplanationObserver();
+    if (!container) return;
+
+    const scheduleRefresh = () => {
+        if (resultExplanationTimer) clearTimeout(resultExplanationTimer);
+        resultExplanationTimer = setTimeout(() => {
+            resultExplanationTimer = null;
+            refreshResultExplanationExpander(container, analysisType);
+        }, 140);
+    };
+
+    resultExplanationObserver = new MutationObserver(scheduleRefresh);
+    resultExplanationObserver.observe(container, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
+    });
+    scheduleRefresh();
+}
+
+function findPrimaryResultRoot(container) {
+    for (const selector of RESULT_ROOT_SELECTORS) {
+        const candidates = Array.from(container.querySelectorAll(selector));
+        const result = candidates.find(element => {
+            return isElementVisible(element) && getResultSourceText(element).length >= 40;
+        });
+        if (result) return result;
+    }
+    return null;
+}
+
+function getResultSourceText(root) {
+    if (!root) return '';
+    const clone = root.cloneNode(true);
+    clone.querySelectorAll([
+        'script',
+        'style',
+        'button',
+        'input',
+        'select',
+        'textarea',
+        'canvas',
+        'svg',
+        'img',
+        '.loading',
+        '.beginner-explanation',
+        '.result-beginner-explanation',
+        '.visualization-item-editor',
+        '.visualization-controls',
+        '[data-visualization-controls]',
+        '#kwic-panel',
+        '#kwic-content',
+        '.kwic-overlay'
+    ].join(',')).forEach(element => element.remove());
+    return normalizeText(clone.textContent || '').slice(0, 40_000);
+}
+
+function refreshResultExplanationExpander(container, analysisType) {
+    if (!container || currentAnalysisType !== analysisType) return;
+    const resultRoot = findPrimaryResultRoot(container);
+    if (!resultRoot) return;
+
+    const sourceText = getResultSourceText(resultRoot);
+    if (sourceText.length < 40) return;
+    const fingerprint = fingerprintAIContext(`${analysisType}|${sourceText}`);
+    let details = container.querySelector(`[data-result-beginner-explanation="${analysisType}"]`);
+    if (details?.dataset.sourceFingerprint === fingerprint && resultRoot.contains(details)) return;
+
+    const wasOpen = Boolean(details?.open);
+    if (details && !resultRoot.contains(details)) {
+        details.remove();
+        details = null;
+    }
+    if (!details) {
+        details = document.createElement('details');
+        details.className = 'result-beginner-explanation';
+        details.dataset.resultBeginnerExplanation = analysisType;
+        resultRoot.prepend(details);
+    }
+
+    const explanationItems = extractResultInterpretationItems(resultRoot);
+    const resultItems = explanationItems.length > 0
+        ? explanationItems
+        : buildFallbackResultItems(resultRoot, analysisType);
+    const metrics = getVisibleResultMetrics(analysisType, sourceText);
+    const caution = getBeginnerExplanation(analysisType).caution;
+
+    details.dataset.sourceFingerprint = fingerprint;
+    details.innerHTML = `
+        <summary>
+            <span class="result-beginner-icon" aria-hidden="true">
+                <i class="fas fa-chart-line"></i>
+            </span>
+            <span class="result-beginner-label">
+                <strong>今回の結果を簡単に説明すると</strong>
+                <small>AIを使わず、画面の計算結果から自動説明</small>
+            </span>
+            <i class="fas fa-chevron-down result-beginner-chevron" aria-hidden="true"></i>
+        </summary>
+        <div class="result-beginner-body">
+            <p class="result-beginner-origin">
+                <i class="fas fa-calculator" aria-hidden="true"></i>
+                easyStat内の計算結果と固定ルールから作成しています。APIや外部の生成AIには送信していません。
+            </p>
+            <div class="result-beginner-grid">
+                <section aria-labelledby="result-summary-${analysisType}">
+                    <h4 id="result-summary-${analysisType}">
+                        <i class="fas fa-circle-check" aria-hidden="true"></i> 今回わかったこと
+                    </h4>
+                    <ul class="result-beginner-summary-list">
+                        ${resultItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+                    </ul>
+                </section>
+                <section aria-labelledby="result-metrics-${analysisType}">
+                    <h4 id="result-metrics-${analysisType}">
+                        <i class="fas fa-ruler-combined" aria-hidden="true"></i> この指標が何を示すか
+                    </h4>
+                    ${metrics.length > 0 ? `
+                        <dl class="result-metric-list">
+                            ${metrics.map(metric => `
+                                <div>
+                                    <dt>${escapeHtml(metric.label)}</dt>
+                                    <dd>${escapeHtml(metric.meaning)}</dd>
+                                </div>
+                            `).join('')}
+                        </dl>
+                    ` : `
+                        <p class="result-metric-empty">今回の要約では、個別に説明する統計指標は表示されていません。</p>
+                    `}
+                </section>
+            </div>
+            <section class="result-beginner-caution" aria-labelledby="result-caution-${analysisType}">
+                <h4 id="result-caution-${analysisType}">
+                    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i> 読み違えに注意
+                </h4>
+                <p>${escapeHtml(caution)}</p>
+            </section>
+            <p class="result-beginner-detail-note">
+                レポートでは、この要約だけでなく、結果表の数値、グラフ、標本数、前提条件も確認してください。
+            </p>
+        </div>
+    `;
+    details.open = wasOpen;
+}
+
+function extractResultInterpretationItems(resultRoot) {
+    const candidates = [];
+    RESULT_INTERPRETATION_SELECTORS.forEach(selector => {
+        resultRoot.querySelectorAll(selector).forEach(element => {
+            if (!element.closest('.result-beginner-explanation') && isElementVisible(element)) {
+                candidates.push(element);
+            }
+        });
+    });
+
+    resultRoot.querySelectorAll('h3, h4, h5, h6').forEach(heading => {
+        if (heading.closest('.result-beginner-explanation')) return;
+        const label = normalizeText(heading.textContent || '');
+        if (!/^(?:結果の解釈|解釈の補助|分析結果の解釈|因子(?:の)?解釈)/.test(label)) return;
+        const next = heading.nextElementSibling;
+        candidates.push(next && getVisibleText(next).length > 20 ? next : heading.parentElement);
+    });
+
+    const uniqueCandidates = [...new Set(candidates.filter(Boolean))];
+    const items = [];
+    uniqueCandidates.forEach(candidate => {
+        const directItems = Array.from(candidate.querySelectorAll(
+            ':scope > p, :scope > ul > li, :scope > ol > li, :scope > div > p, :scope > div > ul > li, :scope > div > ol > li'
+        ));
+        const textNodes = directItems.length > 0 ? directItems : [candidate];
+        textNodes.forEach(node => {
+            const cleaned = cleanResultExplanationText(getReadableText(node));
+            if (cleaned.length < 12) return;
+            const truncated = cleaned.length > 900 ? `${cleaned.slice(0, 897)}...` : cleaned;
+            if (!items.includes(truncated)) items.push(truncated);
+        });
+    });
+    return items.slice(0, 8);
+}
+
+function cleanResultExplanationText(text) {
+    return normalizeText(text)
+        .replace(/^(?:結果の解釈|解釈の補助|分析結果の解釈|因子(?:の)?解釈)\s*/u, '')
+        .replace(/^[:：・\s]+/, '')
+        .trim();
+}
+
+function buildFallbackResultItems(resultRoot, analysisType) {
+    if (analysisType === 'text_mining') {
+        const summaryValues = Array.from(resultRoot.querySelectorAll('.tm-summary-strip > div'))
+            .map(item => {
+                const label = normalizeText(item.querySelector('span')?.textContent || '');
+                const value = normalizeText(item.querySelector('strong')?.textContent || '');
+                return label && value ? `${label}: ${value}` : '';
+            })
+            .filter(Boolean)
+            .slice(0, 4);
+        const topTerms = Array.from(resultRoot.querySelectorAll('.tm-term-table tbody tr'))
+            .map(row => {
+                const cells = row.querySelectorAll('td');
+                const word = normalizeText(cells[0]?.textContent || '');
+                const frequency = normalizeText(cells[2]?.textContent || '');
+                return word && frequency ? `${word}（${frequency}回）` : '';
+            })
+            .filter(Boolean)
+            .slice(0, 5);
+        const items = [];
+        if (summaryValues.length > 0) items.push(`分析できた量は、${summaryValues.join('、')}です。`);
+        if (topTerms.length > 0) items.push(`出現回数が多い語は、${topTerms.join('、')}です。語の意味はKWICで元の文を確認します。`);
+        if (items.length > 0) return items;
+    }
+
+    const summarySelectors = [
+        '#merge-summary',
+        '#fs-summary',
+        '#processing-summary',
+        '.result-summary',
+        '.analysis-summary',
+        '.tm-method-note'
+    ];
+    const summaryNodes = [];
+    if (summarySelectors.some(selector => resultRoot.matches(selector))) summaryNodes.push(resultRoot);
+    summarySelectors.forEach(selector => resultRoot.querySelectorAll(selector).forEach(node => summaryNodes.push(node)));
+    const summaryItems = [...new Set(summaryNodes
+        .map(node => cleanResultExplanationText(getReadableText(node)))
+        .filter(text => text.length >= 12 && text.length <= 900))];
+    if (summaryItems.length > 0) return summaryItems.slice(0, 4);
+
+    const paragraphs = Array.from(resultRoot.querySelectorAll('p'))
+        .filter(paragraph => !paragraph.closest('.result-beginner-explanation') && isElementVisible(paragraph))
+        .map(paragraph => cleanResultExplanationText(getReadableText(paragraph)))
+        .filter(text => text.length >= 20 && text.length <= 500 && /\d|完了|結果|変数|カテゴリ|文書|行/.test(text));
+    if (paragraphs.length > 0) return [...new Set(paragraphs)].slice(0, 4);
+
+    const heading = Array.from(resultRoot.querySelectorAll('h3, h4, h5, h6'))
+        .filter(element => !element.closest('.result-beginner-explanation') && isElementVisible(element))
+        .map(element => normalizeText(element.textContent || ''))
+        .find(text => text && !/^(?:結果|可視化|設定)$/.test(text));
+    if (heading) {
+        return [`「${heading}」が表示されました。まず表の値とグラフの形を確認し、下の指標説明と注意点を合わせて読みます。`];
+    }
+    return ['分析結果が表示されました。表の主要な値、グラフの形、標本数の順に確認します。'];
+}
+
+function getVisibleResultMetrics(analysisType, sourceText) {
+    const metricKeys = RESULT_METRICS_BY_ANALYSIS[analysisType] || [];
+    return metricKeys
+        .map(key => RESULT_METRIC_DEFINITIONS[key])
+        .filter(metric => metric?.pattern?.test(sourceText))
+        .slice(0, 7);
 }
 
 // ==========================================
@@ -2040,7 +2601,7 @@ function computeAIResultFingerprint() {
     if (!content) return '';
     const resultRoot = content.querySelector('#analysis-results, #results-section, #recommendation-area, #processing-summary')
         || content;
-    const resultText = normalizeText(resultRoot.textContent || '').slice(0, 24_000);
+    const resultText = getResultSourceText(resultRoot).slice(0, 24_000);
     return fingerprintAIContext(`${currentAnalysisType || ''}|${resultText}`);
 }
 
@@ -2983,6 +3544,7 @@ function extractAnalysisResultText() {
         '.visualization-item-editor',
         '.visualization-controls',
         '.beginner-explanation',
+        '.result-beginner-explanation',
         '[data-visualization-controls]',
         '#kwic-panel',
         '#kwic-content',
