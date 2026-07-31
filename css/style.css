@@ -1056,12 +1056,16 @@ body {
     }
 
     .ai-assist-output {
-        min-height: 100px;
+        min-height: 80px;
         padding: 0.75rem;
     }
 
     .ai-quick-actions {
         padding: 0.5rem 0.75rem 0;
+    }
+
+    .ai-quick-actions .btn-ai-secondary {
+        padding: 0.4rem 0.55rem;
     }
 
     .ai-chat-input-area {
@@ -1113,6 +1117,146 @@ body {
     box-shadow: var(--shadow-md);
 }
 
+/* 初学者向けの共通説明 */
+.beginner-explanation {
+    margin: 0 0 2rem;
+    border: 1px solid #bbf7d0;
+    border-left: 4px solid #15803d;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.beginner-explanation > summary {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-height: 4.25rem;
+    padding: 0.8rem 1rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.beginner-explanation > summary::-webkit-details-marker {
+    display: none;
+}
+
+.beginner-explanation > summary:hover {
+    background: #f0fdf4;
+}
+
+.beginner-explanation > summary:focus-visible {
+    outline: 3px solid rgba(21, 128, 61, 0.28);
+    outline-offset: -3px;
+}
+
+.beginner-explanation-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 2.35rem;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 50%;
+    background: #fef3c7;
+    color: #a16207;
+    font-size: 1.05rem;
+}
+
+.beginner-explanation-label {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.beginner-explanation-label strong {
+    font-size: 1.05rem;
+    line-height: 1.35;
+}
+
+.beginner-explanation-label small {
+    margin-top: 0.1rem;
+    color: #475569;
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.beginner-explanation-chevron {
+    flex: 0 0 auto;
+    color: #64748b;
+    transition: transform 0.2s ease;
+}
+
+.beginner-explanation[open] .beginner-explanation-chevron {
+    transform: rotate(180deg);
+}
+
+.beginner-explanation-body {
+    padding: 1rem 1.15rem 1.1rem;
+    border-top: 1px solid #dcfce7;
+}
+
+.beginner-explanation-summary {
+    margin: 0 0 1rem;
+    color: #14532d;
+    font-size: 1.04rem;
+    font-weight: 600;
+}
+
+.beginner-explanation-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 1.5rem;
+}
+
+.beginner-explanation-grid section {
+    min-width: 0;
+}
+
+.beginner-explanation-grid h4 {
+    margin: 0 0 0.55rem;
+    color: #334155;
+    font-size: 0.98rem;
+}
+
+.beginner-explanation-grid h4 i {
+    width: 1.2rem;
+    color: #15803d;
+}
+
+.beginner-explanation-grid ol {
+    margin: 0;
+    padding-left: 1.45rem;
+}
+
+.beginner-explanation-grid li {
+    margin-bottom: 0.35rem;
+}
+
+.beginner-explanation-caution {
+    padding-left: 1rem;
+    border-left: 3px solid #f59e0b;
+}
+
+.beginner-explanation-caution h4 i {
+    color: #b45309;
+}
+
+.beginner-explanation-caution p {
+    margin: 0;
+}
+
+.beginner-explanation-detail-note {
+    margin: 1rem 0 0;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
+    color: #64748b;
+    font-size: 0.84rem;
+}
+
 /* フッター */
 .footer {
     background: var(--surface);
@@ -1158,6 +1302,18 @@ body {
 
     .analysis-area {
         padding: 1.5rem;
+    }
+
+    .beginner-explanation-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .beginner-explanation-caution {
+        padding-top: 0.85rem;
+        padding-left: 0;
+        border-top: 3px solid #f59e0b;
+        border-left: 0;
     }
 
     .ai-config-section {

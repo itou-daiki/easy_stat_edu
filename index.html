@@ -669,9 +669,9 @@
                         <label class="ai-context-field" for="ai-explanation-level">
                             <span>説明レベル</span>
                             <select id="ai-explanation-level">
-                                <option value="simple">やさしく</option>
+                                <option value="simple">高校生向け（やさしく）</option>
                                 <option value="standard" selected>標準</option>
-                                <option value="detailed">詳しく</option>
+                                <option value="detailed">研究・論文向け（詳しく）</option>
                             </select>
                         </label>
                         <label class="ai-setting-toggle ai-raw-data-toggle" for="ai-include-raw-preview">
@@ -698,6 +698,9 @@
                     </div>
                 </div>
                 <div class="ai-quick-actions" aria-label="よく使う質問">
+                    <button type="button" class="btn-ai-secondary" data-ai-question="高校生にもわかる言葉で、最初に結論を一文で示し、専門用語を短く説明しながらこの結果を解説してください。" disabled>
+                        <i class="fas fa-graduation-cap"></i> 高校生向け
+                    </button>
                     <button type="button" class="btn-ai-secondary" data-ai-question="この結果をレポート用に200字程度でまとめてください。" disabled>
                         <i class="fas fa-file-lines"></i> 200字で要約
                     </button>
@@ -930,7 +933,7 @@
                         <li><i class="fas fa-lightbulb"></i> 機密データでは生成AI支援を有効にせず、所属組織のデータ取扱規定も確認してください</li>
                         <li><i class="fas fa-lightbulb"></i> 初回表示にはCDNからライブラリやフォントを読み込むため、インターネット接続が必要です</li>
                         <li><i class="fas fa-lightbulb"></i> データ概要セクションは折りたたんでスペースを節約できます</li>
-                        <li><i class="fas fa-lightbulb"></i> 各分析には説明が表示され、統計手法を学びながら分析できます</li>
+                        <li><i class="fas fa-lightbulb"></i> 各分析の「簡単に説明すると」では、高校生向けに見る順番と注意点を確認できます</li>
                         <li><i class="fas fa-lightbulb"></i> p値が有意でない結果は「差や関連がない証明」ではなく、今回のデータでは十分な証拠を得られなかった結果です</li>
                         <li><i class="fas fa-lightbulb"></i> 観察データの相関や回帰だけでは因果関係を判断できません</li>
                     </ul>
@@ -962,6 +965,7 @@
                                     <li>分析手法別の確認順序を追加し、有意でない理由や効果量の過剰解釈を抑制</li>
                                     <li>追加質問を軽量化し、入力・回答・推論トークンの内訳表示に対応</li>
                                     <li>Gemini 3.6 FlashとGemini 3.5 Flash-Liteに対応</li>
+                                    <li>全23機能に高校生向けの「簡単に説明すると」を追加し、見る順番と注意点を共通表示</li>
                                     <li>生データを利用できる平均値棒グラフで、箱ひげ図への切替に対応</li>
                                     <li>複数図のタイトル、軸ラベル、軸範囲、幅、比率、高さの一括設定に対応</li>
                                 </ul>
