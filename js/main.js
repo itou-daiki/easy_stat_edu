@@ -314,7 +314,7 @@ const BEGINNER_EXPLANATIONS = {
             '平均差の95%信頼区間とp値を確認します。',
             '効果量 d（対応ありでは d<sub>z</sub>）で、差の大きさも確認します。'
         ],
-        caution: 'p値が0.05以上でも「同じ」と証明されたわけではありません。画面の95%信頼区間は平均差の区間で、効果量dの区間ではありません。'
+        caution: 'p値は「差がはっきりしているか」、効果量は「差がどのくらい大きいか」を見ます。そのため、p ≥ .05でも効果量が中程度になることがあり、矛盾ではありません。「同じ」と証明した結果でもありません。95%信頼区間も一緒に見ましょう。'
     },
     anova_one_way: {
         summary: '3つ以上のグループや条件の平均に、違いがありそうかをまとめて調べます。',
@@ -457,242 +457,242 @@ const RESULT_METRIC_DEFINITIONS = {
     sample_size: {
         label: 'N・件数',
         pattern: /(?:\bN\s*[=＝]|有効N|サンプルサイズ|標本数|\d+\s*行)/i,
-        meaning: '分析に使えた人・行・文書などの数です。少ないほど結果の不確かさが大きくなりやすいため、欠損による除外数も確認します。'
+        meaning: '分析に使った人・行・文書などの数です。少ないと結果がぶれやすくなります。'
     },
     missing: {
         label: '欠損・除外',
         pattern: /欠損|除外|無効/i,
-        meaning: '空欄などのため分析に使われなかったデータです。除外が多いと、残ったデータだけに偏った結果になることがあります。'
+        meaning: '空欄などで分析に使えなかったデータです。多いと結果に偏りが出ることがあります。'
     },
     count: {
         label: '度数',
         pattern: /度数|人数|件数/i,
-        meaning: '各グループや組み合わせに入る実際の人数・件数です。割合を見る前に、極端に少ないセルがないか確認します。'
+        meaning: '各グループや組み合わせに何人・何件あったかです。割合だけでなく、元の数も確認します。'
     },
     mean: {
         label: '平均値',
         pattern: /平均(?:値|差)?/i,
-        meaning: '値の合計を人数で割った代表値です。極端な値の影響を受けるため、分布や中央値も一緒に見ます。'
+        meaning: 'すべての値を足して人数で割った値です。グループの中心を見る目安ですが、極端な値に引っ張られます。'
     },
     median: {
         label: '中央値',
         pattern: /中央値/i,
-        meaning: '小さい順に並べた中央の値です。外れ値の影響を受けにくく、順位にもとづく分析で特に役立ちます。'
+        meaning: '小さい順に並べたときの真ん中の値です。極端に大きい・小さい値の影響を受けにくい指標です。'
     },
     sd: {
         label: 'SD（標準偏差）',
         pattern: /標準偏差|(?:^|[\s（(])SD(?:[\s）),]|$)/i,
-        meaning: '値が平均のまわりにどの程度ばらついているかを示します。大きいほど個人差や散らばりが大きい結果です。'
+        meaning: '値のばらつきです。小さいほど似た値が多く、大きいほど個人差があります。'
     },
     confidence_interval: {
         label: '95%信頼区間',
         pattern: /95\s*%\s*(?:CI|信頼区間)|信頼区間/i,
-        meaning: '推定値の不確かさを表す範囲です。一般に狭いほど推定が精密です。差の区間が0、比の区間が1をまたぐかも確認します。'
+        meaning: '平均差などの推定に、どのくらい幅があるかを示します。平均差の区間が0をまたぐと、差の向きははっきりしません。'
     },
     p_value: {
         label: 'p値',
         pattern: /(?:\bp\s*(?:[=＜<＞>]|値)|p値|有意水準)/i,
-        meaning: '「差や関連がない」と仮定したとき、今回と同じかそれ以上に極端な結果が出る確率です。p < .05は一つの目安で、「結果が偶然だった確率」ではありません。'
+        meaning: '「差や関連がない」と仮定したとき、今回と同じかそれ以上に差・関連が大きな結果が出る確率です。一般には .05 未満を目安にします。「差がない確率」ではありません。'
     },
     t_value: {
         label: 't値',
         pattern: /(?:\bt\s*[=＜<＞>]|t値|t検定)/i,
-        meaning: '平均差が、その推定誤差の何倍ほどあるかを表します。p値はt値と自由度から計算され、差の大きさ自体は効果量で確認します。'
+        meaning: '平均値の差が、人数とばらつきから見てどの程度はっきりしているかを表す値です。p値と一緒に見ます。'
     },
     f_value: {
         label: 'F値',
         pattern: /(?:\bF\s*[=＜<＞>]|F値)/,
-        meaning: 'グループやモデルが説明するばらつきを、説明できないばらつきと比べた値です。大きさだけでなく、自由度とp値を一緒に読みます。'
+        meaning: 'グループ間の違いを、グループ内のばらつきと比べた値です。p値と一緒に見ます。'
     },
     chi_square: {
         label: 'χ²（カイ二乗値）',
         pattern: /χ\s*[²2]|カイ二乗/i,
-        meaning: '観測された人数と、関連がない場合に期待される人数のずれを全体でまとめた値です。どのセルが違うかは残差で確認します。'
+        meaning: '実際の人数が、関連がない場合に予想される人数からどれだけずれたかを、表全体でまとめた値です。'
     },
     degrees_freedom: {
         label: 'df（自由度）',
         pattern: /(?:\bdf\b|自由度)/i,
-        meaning: '統計量の基準となる情報量です。通常は単独で良し悪しを判断せず、t値・F値・χ²値などと組み合わせてp値を求めます。'
+        meaning: 'p値を計算するときに使う値です。通常、この値だけで結果を判断することはありません。'
     },
     cohens_d: {
         label: 'd・dz（効果量）',
         pattern: /(?:Cohen|効果量\s*\(?d|\bdz?\s*[=＝])/i,
-        meaning: '平均差を標準偏差の単位に直した値です。easyStatでは差の大きさを絶対値で表示するため、差の向きは各群・各時点の平均値で確認します。'
+        meaning: '平均値の差がどれくらい大きいかを示します。目安は0.2で小、0.5で中、0.8で大です。どちらが高いかは平均値で確認します。'
     },
     correlation_r: {
         label: 'r・ρ（相関係数）',
         pattern: /相関係数|(?:\br|ρ)\s*[=＝]/i,
-        meaning: '-1から1の範囲で、2変数の関係の向きと強さを示します。0に近いほど直線的・単調な関係が弱い値ですが、因果関係は示しません。'
+        meaning: '2つの値が一緒に増減する向きと強さを、-1から1で示します。1や-1に近いほど強く、0に近いほど弱い関係です。'
     },
     rank_effect_r: {
         label: 'r（順位にもとづく効果量）',
         pattern: /効果量\s*r|\br\s*[=＝]/i,
-        meaning: '順位にもとづく差を標準化した大きさです。p値とは別に、差が実質的にどの程度あるかを確認します。'
+        meaning: '順位にもとづく2群の差の大きさです。0に近いほど小さく、絶対値が大きいほど差も大きいと考えます。'
     },
     eta_squared: {
         label: 'η²・ηp²（効果量）',
         pattern: /η|eta|効果量/i,
-        meaning: 'ANOVAで、結果のばらつきのうち要因と関係する割合を表す効果量です。偏η²は他の要因の影響を除いた割合なので、単純な割合とは区別します。'
+        meaning: 'ANOVAで、グループや条件の違いがどの程度大きいかを示します。値が大きいほど影響が大きい目安です。'
     },
     epsilon_squared: {
         label: 'ε²（効果量）',
         pattern: /ε|epsilon|効果量/i,
-        meaning: 'Kruskal-Wallis検定で、群の違いに対応する順位のばらつきの大きさを表す効果量です。p値と別に実質的な差を確認します。'
+        meaning: 'Kruskal-Wallis検定で、グループの違いがどの程度大きいかを示します。p値と一緒に見ます。'
     },
     cramer_v: {
         label: 'CramerのV',
         pattern: /Cramer|クラメール|(?:^|[\s（(,])V\s*[=＝]/i,
-        meaning: '2つのカテゴリ変数の関連の強さを0から1で示します。0に近いほど弱く、1に近いほど強い関連ですが、原因と結果は示しません。'
+        meaning: '2つのカテゴリの関連の強さを0から1で示します。0に近いほど弱く、1に近いほど強い関連です。'
     },
     adjusted_residual: {
         label: '調整済み残差 z',
         pattern: /調整済み.*残差|標準化残差|\bz\s*[=＝]/i,
-        meaning: '各セルの人数が期待度数より多いか少ないかを示します。正は多い、負は少ない方向です。全体検定と多重比較補正を確認してから解釈します。'
+        meaning: 'クロス表の各マスが、予想より多いか少ないかを示します。正なら多く、負なら少なく、絶対値が大きいほどずれが目立ちます。'
     },
     odds_ratio: {
         label: 'オッズ比',
         pattern: /オッズ比|Odds Ratio|\bOR\s*[=＝]/i,
-        meaning: 'ある結果の起こりやすさをオッズで比べた倍率です。1は同程度、1より大きいと高い方向ですが、確率そのものの倍率ではありません。'
+        meaning: '結果の起こりやすさをオッズで比べた値です。1なら同程度、1より大きければ高く、1より小さければ低い方向です。'
     },
     u_value: {
         label: 'U値',
         pattern: /(?:\bU\s*[=＝]|U値|Mann.?Whitney)/i,
-        meaning: '2群の値をまとめて順位にし、その順位の偏りを表す統計量です。差の向きは平均順位や中央値、差の大きさは効果量rで確認します。'
+        meaning: '2群の値を順位に置き換えて、順位の偏りを調べる値です。どちらが高いかは中央値や平均順位で確認します。'
     },
     h_value: {
         label: 'H値',
         pattern: /(?:\bH\s*[=＝]|H値|Kruskal.?Wallis)/i,
-        meaning: '3群以上の順位のずれをまとめた統計量です。有意な場合も、どの群が違うかは事後比較で確認します。'
+        meaning: '3群以上の順位の違いを、全体でまとめた値です。どの群が違うかは事後比較で確認します。'
     },
     w_value: {
         label: 'W・T値',
         pattern: /(?:\bW\s*[=＝]|\bT\s*[=＝]|W値|符号付順位)/i,
-        meaning: '対応する2回の測定差を順位にして、増加側と減少側の偏りを表す統計量です。中央値と効果量も一緒に見ます。'
+        meaning: '同じ人の2回の測定を比べ、増えた人と減った人の偏りを順位で調べる値です。'
     },
     phi: {
         label: 'φ（ファイ）',
         pattern: /φ|ファイ|\bphi\s*[=＝]/i,
-        meaning: '2値データの関連や変化の大きさを表す効果量です。McNemar検定では、変化した組の偏りの大きさを確認する目安になります。'
+        meaning: '「はい／いいえ」のような2値データで、関連や変化がどの程度大きいかを示します。'
     },
     r_squared: {
         label: 'R²（決定係数）',
         pattern: /R\s*[²2]|決定係数/i,
-        meaning: '標本内で、目的変数のばらつきをモデルがどの程度説明したかを示します。高くても因果関係や未知データでの予測精度は保証しません。'
+        meaning: '目的変数のばらつきを、回帰式でどの程度説明できたかを0から1で示します。1に近いほど当てはまりがよい値です。'
     },
     coefficient_b: {
         label: 'B（回帰係数）',
         pattern: /回帰係数|(?:^|[\s（(])B\s*[=＝]/,
-        meaning: '他の条件を一定としたとき、説明変数が1単位増えると目的変数がどれだけ変わるかを示します。単位に依存します。'
+        meaning: '説明変数が1増えたとき、目的変数がどれだけ変わるかを示します。正なら増え、負なら減る方向です。'
     },
     standardized_beta: {
         label: 'β（標準化係数）',
         pattern: /標準化係数|β\s*[=＝]/i,
-        meaning: '変数の単位をそろえた回帰係数です。同じモデル内で関連の向きや相対的な大きさを比べる目安になります。'
+        meaning: '単位の違いをそろえた回帰係数です。同じ回帰式の中で、どの変数との関係が強いかを比べる目安です。'
     },
     standard_error: {
         label: 'SE（標準誤差）',
         pattern: /標準誤差|(?:^|[\s（(])SE(?:[\s）),]|$)/i,
-        meaning: '平均や係数などの推定値が、標本の取り方によってどの程度ぶれうるかを示します。小さいほど推定が精密です。'
+        meaning: '平均値や回帰係数が、データの集め方によってどの程度ぶれそうかを示します。小さいほど安定しています。'
     },
     vif: {
         label: 'VIF',
         pattern: /\bVIF\b/i,
-        meaning: '説明変数どうしが似すぎて、回帰係数が不安定になっていないかを示します。大きい場合は変数の重なりを確認します。'
+        meaning: '説明変数どうしが似すぎていないかを示します。大きいと、回帰係数が不安定になることがあります。'
     },
     pseudo_r_squared: {
         label: '擬似R²',
         pattern: /Nagelkerke|擬似R/i,
-        meaning: 'ロジスティック回帰が切片だけのモデルからどの程度改善したかを示す指標です。線形回帰のR²と同じ割合としては読みません。'
+        meaning: 'ロジスティック回帰の当てはまりを比べる目安です。通常の回帰分析のR²とは計算も意味も異なります。'
     },
     accuracy: {
         label: '正解率',
         pattern: /正解率|accuracy/i,
-        meaning: '予測が当たった割合です。多数派だけを予測する基準値と比べ、同じデータで学習・評価した値なら過大評価に注意します。'
+        meaning: '予測が当たった割合です。もともと多い方だけを選んだ場合の正解率とも比べます。'
     },
     factor_loading: {
         label: '因子・主成分負荷量',
         pattern: /因子負荷|主成分負荷|負荷量/i,
-        meaning: '各項目が因子や主成分とどの程度強く結び付くかを示します。絶対値が大きい項目を手がかりに軸の意味を考えます。'
+        meaning: '各項目が因子や主成分とどの程度強く結び付くかを示します。絶対値が大きい項目から軸の意味を考えます。'
     },
     communality: {
         label: '共通性',
         pattern: /共通性/i,
-        meaning: 'その項目のばらつきのうち、抽出した因子で説明される割合です。低い項目は因子構造で捉えにくい可能性があります。'
+        meaning: 'その項目の特徴を、取り出した因子でどの程度説明できるかを示します。低い項目は因子で捉えにくい可能性があります。'
     },
     kmo: {
         label: 'KMO',
         pattern: /\bKMO\b/i,
-        meaning: '項目間の相関が因子分析に向いているかを0から1で示す目安です。一般に高いほど因子分析に適しています。'
+        meaning: 'このデータが因子分析に向いているかを0から1で示します。1に近いほど向いている目安です。'
     },
     eigenvalue: {
         label: '固有値',
         pattern: /固有値/i,
-        meaning: '各因子や主成分が受け持つ情報量です。因子数・主成分数を決める材料ですが、固有値だけで決めません。'
+        meaning: '各因子や主成分が受け持つ情報の大きさです。何個の因子・主成分を残すか考える材料にします。'
     },
     contribution_rate: {
         label: '寄与率・累積寄与率',
         pattern: /寄与率/i,
-        meaning: '各主成分が元データのばらつきを何%保っているかを示します。累積寄与率は採用した主成分までの合計です。'
+        meaning: '各主成分が元の情報を何%まとめられたかを示します。累積寄与率は、残した主成分までの合計です。'
     },
     acf: {
         label: 'ACF（自己相関）',
         pattern: /自己相関|\bACF\b|Lag\s*=/i,
-        meaning: '現在の値と、一定時点前の値との似かたを示します。特定の間隔で高い値が続くと、トレンドや周期性の手がかりになります。'
+        meaning: '現在の値と、少し前の値がどの程度似ているかを示します。繰り返しの周期を探す手がかりになります。'
     },
     tf: {
         label: 'TF（出現回数）',
         pattern: /TF[＝=]|出現回数/i,
-        meaning: '分析対象内でその語が何回使われたかです。同じ文書での繰り返しも数えるため、文書の広がりはDFで確認します。'
+        meaning: 'その語が何回使われたかです。同じ文書で何度も使われた場合も数えます。'
     },
     document_frequency: {
         label: 'DF（文書頻度）',
         pattern: /DF[＝=]|文書数|文書率/i,
-        meaning: 'その語を含む文書の数や割合です。少数の文書だけで繰り返された語か、多くの文書に広がる語かを区別できます。'
+        meaning: 'その語を含む文書の数です。多くの文書で広く使われた語かどうかが分かります。'
     },
     tfidf: {
         label: 'TF-IDF',
         pattern: /TF-?IDF/i,
-        meaning: 'その文書・カテゴリでは多い一方、どこにでも出る語は小さくする重みです。値が大きくても重要性を確定せず、原文で意味を確認します。'
+        meaning: 'ある文書やカテゴリで特に目立つ語を探す値です。どこにでも出る語は小さく評価します。'
     },
     jaccard: {
         label: 'Jaccard係数',
         pattern: /Jaccard|ジャカード/i,
-        meaning: '2語が同じ文書・文に一緒に現れる割合を0から1で示します。高いほど共起しやすい関係ですが、意味の近さや因果関係は示しません。'
+        meaning: '2つの語が同じ文や文書に一緒に出やすいかを0から1で示します。高いほど一緒に使われやすい語です。'
     },
     z_score: {
         label: 'z（特徴度）',
         pattern: /特徴度\s*z|標準化残差|\bz\s*[=＝]/i,
-        meaning: 'その語があるカテゴリで期待より多いか少ないかを標準化した値です。正は多い、負は少ない方向を示します。'
+        meaning: 'その語が、あるカテゴリで予想より多いか少ないかを示します。正なら多く、負なら少ない方向です。'
     },
     q_value: {
         label: 'q値',
         pattern: /q値|\bq\s*[=＜<]/i,
-        meaning: '多くの語を同時に比べた影響を補正したp値です。q < .05は、偽陽性の割合を抑えながら特徴語を選ぶ目安です。'
+        meaning: '多くの語を一度に比べたことで、偶然の当たりが増えないよう調整した値です。一般には .05 未満を目安にします。'
     },
     row_percentage: {
         label: '行%',
         pattern: /行%|行パーセント/i,
-        meaning: '各行を100%として、列カテゴリの内訳を比べる割合です。「行の中で何が多いか」を見るときに使います。'
+        meaning: '表の各行を100%として見た割合です。「この行の中では何が多いか」を比べます。'
     },
     column_percentage: {
         label: '列%',
         pattern: /列%|列パーセント/i,
-        meaning: '各列を100%として、行カテゴリの内訳を比べる割合です。「列の中で何が多いか」を見るときに使います。'
+        meaning: '表の各列を100%として見た割合です。「この列の中では何が多いか」を比べます。'
     },
     cronbach_alpha: {
         label: 'α（信頼性係数）',
         pattern: /Cronbach|信頼性係数|α\s*[=＝]/i,
-        meaning: '同じ尺度に入れた質問が、どの程度一貫して答えられているかの目安です。高ければ妥当な尺度だと自動的に決まるわけではありません。'
+        meaning: '同じ尺度にまとめた質問どうしの答えが、どの程度そろっているかを示します。高いだけで良い尺度とは決まりません。'
     },
     skewness: {
         label: '歪度',
         pattern: /歪度/i,
-        meaning: '分布の左右の偏りを示します。正なら右側、負なら左側に裾が長い傾向があります。'
+        meaning: '値の分布が左右どちらに偏っているかを示します。0に近いほど左右の偏りが小さい形です。'
     },
     kurtosis: {
         label: '尖度',
         pattern: /尖度/i,
-        meaning: '正規分布と比べた分布の尖りや裾の重さの目安です。外れ値候補や分布の形と一緒に確認します。'
+        meaning: '分布の山の尖り方や、極端な値の出やすさを見る目安です。ヒストグラムと一緒に確認します。'
     }
 };
 
@@ -704,7 +704,7 @@ const RESULT_METRICS_BY_ANALYSIS = {
     eda: ['sample_size', 'mean', 'median', 'sd', 'skewness', 'kurtosis', 'missing'],
     cross_tabulation: ['sample_size', 'count', 'row_percentage', 'column_percentage', 'missing'],
     correlation: ['sample_size', 'correlation_r', 'p_value', 'confidence_interval'],
-    ttest: ['mean', 'sd', 't_value', 'degrees_freedom', 'p_value', 'confidence_interval', 'cohens_d'],
+    ttest: ['mean', 'sd', 'p_value', 'cohens_d', 'confidence_interval', 't_value', 'degrees_freedom'],
     anova_one_way: ['mean', 'f_value', 'degrees_freedom', 'p_value', 'eta_squared', 'confidence_interval'],
     anova_two_way: ['mean', 'f_value', 'degrees_freedom', 'p_value', 'eta_squared', 'confidence_interval'],
     mann_whitney: ['median', 'u_value', 'p_value', 'rank_effect_r'],
@@ -2096,10 +2096,7 @@ function refreshResultExplanationExpander(container, analysisType) {
         resultRoot.prepend(details);
     }
 
-    const explanationItems = extractResultInterpretationItems(resultRoot);
-    const resultItems = explanationItems.length > 0
-        ? explanationItems
-        : buildFallbackResultItems(resultRoot, analysisType);
+    const resultItems = buildBeginnerResultItems(resultRoot, analysisType);
     const metrics = getVisibleResultMetrics(analysisType, sourceText);
     const caution = getBeginnerExplanation(analysisType).caution;
 
@@ -2111,19 +2108,15 @@ function refreshResultExplanationExpander(container, analysisType) {
             </span>
             <span class="result-beginner-label">
                 <strong>今回の結果を簡単に説明すると</strong>
-                <small>AIを使わず、画面の計算結果から自動説明</small>
+                <small>結果のポイント、数字の意味、注意点を確認</small>
             </span>
             <i class="fas fa-chevron-down result-beginner-chevron" aria-hidden="true"></i>
         </summary>
         <div class="result-beginner-body">
-            <p class="result-beginner-origin">
-                <i class="fas fa-calculator" aria-hidden="true"></i>
-                easyStat内の計算結果と固定ルールから作成しています。APIや外部の生成AIには送信していません。
-            </p>
             <div class="result-beginner-grid">
                 <section aria-labelledby="result-summary-${analysisType}">
                     <h4 id="result-summary-${analysisType}">
-                        <i class="fas fa-circle-check" aria-hidden="true"></i> 今回わかったこと
+                        <i class="fas fa-circle-check" aria-hidden="true"></i> 結果のポイント
                     </h4>
                     <ul class="result-beginner-summary-list">
                         ${resultItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
@@ -2149,16 +2142,236 @@ function refreshResultExplanationExpander(container, analysisType) {
             </div>
             <section class="result-beginner-caution" aria-labelledby="result-caution-${analysisType}">
                 <h4 id="result-caution-${analysisType}">
-                    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i> 読み違えに注意
+                    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i> 気をつけること
                 </h4>
                 <p>${escapeHtml(caution)}</p>
             </section>
             <p class="result-beginner-detail-note">
-                レポートでは、この要約だけでなく、結果表の数値、グラフ、標本数、前提条件も確認してください。
+                詳しい数値は、すぐ下の結果表やグラフで確認できます。
             </p>
         </div>
     `;
     details.open = wasOpen;
+}
+
+function buildBeginnerResultItems(resultRoot, analysisType) {
+    if (analysisType === 'ttest') {
+        const tTestItems = buildTTestBeginnerItems(resultRoot);
+        if (tTestItems.length > 0) return tTestItems;
+    }
+
+    const explanationItems = extractResultInterpretationItems(resultRoot)
+        .map(simplifyResultInterpretationText)
+        .filter(Boolean);
+    return explanationItems.length > 0
+        ? explanationItems
+        : buildFallbackResultItems(resultRoot, analysisType);
+}
+
+function buildTTestBeginnerItems(resultRoot) {
+    const table = resultRoot.querySelector('#test-results-table table.analysis-table')
+        || resultRoot.querySelector('#test-results-section table.analysis-table');
+    if (!table) return [];
+
+    const title = normalizeText(resultRoot.querySelector('#test-results-section h4')?.textContent || '');
+    const mode = title.includes('対応なし')
+        ? 'independent'
+        : title.includes('対応あり')
+            ? 'paired'
+            : title.includes('1サンプル')
+                ? 'one-sample'
+                : '';
+    if (!mode) return [];
+
+    const firstHeaderCells = Array.from(table.querySelectorAll('thead tr:first-child th'));
+    const stripSampleSize = text => normalizeText(text).replace(/\s*\([Nn]\s*=.*?\)\s*$/u, '').trim();
+    const commonGroups = mode === 'independent'
+        ? [stripSampleSize(firstHeaderCells[1]?.textContent || ''), stripSampleSize(firstHeaderCells[2]?.textContent || '')]
+        : [];
+
+    const rows = Array.from(table.querySelectorAll('tbody tr')).map(row => {
+        const cells = Array.from(row.querySelectorAll('td'));
+        if (mode === 'independent' && cells.length >= 10) {
+            return createTTestResultItem({
+                label: cells[0].textContent,
+                group1: commonGroups[0],
+                group2: commonGroups[1],
+                mean1: cells[1].textContent,
+                mean2: cells[3].textContent,
+                p: cells[7].textContent,
+                d: cells[8].textContent,
+                mode
+            });
+        }
+        if (mode === 'paired' && cells.length >= 10) {
+            const pairLabels = normalizeText(cells[0].textContent || '').split(/\s*→\s*/u);
+            return createTTestResultItem({
+                label: cells[0].textContent,
+                group1: pairLabels[0] || '条件1',
+                group2: pairLabels[1] || '条件2',
+                mean1: cells[1].textContent,
+                mean2: cells[3].textContent,
+                p: cells[7].textContent,
+                d: cells[8].textContent,
+                mode
+            });
+        }
+        if (mode === 'one-sample' && cells.length >= 9) {
+            return createTTestResultItem({
+                label: cells[0].textContent,
+                group1: cells[0].textContent,
+                group2: `基準値 ${normalizeText(cells[3].textContent || '')}`,
+                mean1: cells[1].textContent,
+                mean2: cells[3].textContent,
+                p: cells[6].textContent,
+                d: cells[7].textContent,
+                mode
+            });
+        }
+        return null;
+    }).filter(Boolean);
+    if (rows.length === 0) return [];
+
+    if (mode === 'independent') return buildIndependentTTestItems(rows, commonGroups);
+    return buildPairedOrOneSampleTTestItems(rows, mode);
+}
+
+function createTTestResultItem({ label, group1, group2, mean1, mean2, p, d, mode }) {
+    const parsedP = parseDisplayedPValue(p);
+    const parsedMean1 = Number.parseFloat(normalizeText(mean1).replace(/,/g, ''));
+    const parsedMean2 = Number.parseFloat(normalizeText(mean2).replace(/,/g, ''));
+    const parsedD = Number.parseFloat(normalizeText(d).replace(/,/g, ''));
+    if (!parsedP || !Number.isFinite(parsedMean1) || !Number.isFinite(parsedMean2)) return null;
+    return {
+        label: normalizeText(label),
+        group1: normalizeText(group1),
+        group2: normalizeText(group2),
+        mean1: parsedMean1,
+        mean2: parsedMean2,
+        p: parsedP.value,
+        pText: parsedP.text,
+        d: Number.isFinite(parsedD) ? Math.abs(parsedD) : null,
+        significant: parsedP.value < 0.05,
+        mode
+    };
+}
+
+function parseDisplayedPValue(text) {
+    const normalized = normalizeText(text);
+    const match = normalized.match(/^(<\s*)?(\.?\d+(?:\.\d+)?)/u);
+    if (!match) return null;
+    const numericText = match[2].startsWith('.') ? `0${match[2]}` : match[2];
+    const value = Number.parseFloat(numericText);
+    if (!Number.isFinite(value)) return null;
+    return {
+        value: match[1] ? value / 2 : value,
+        text: match[1] ? `p < ${match[2]}` : `p = ${match[2]}`
+    };
+}
+
+function buildIndependentTTestItems(rows, groups) {
+    const significantRows = rows.filter(row => row.significant);
+    const nonSignificantRows = rows.filter(row => !row.significant);
+    const items = [];
+
+    const significantByDirection = groupTTestRowsByHigherGroup(significantRows);
+    significantByDirection.forEach((directionRows, higherGroup) => {
+        const lowerGroup = higherGroup === groups[0] ? groups[1] : groups[0];
+        const pText = directionRows.length === 1 ? directionRows[0].pText : 'いずれも p < .05';
+        items.push(`${joinResultLabels(directionRows)}では、${higherGroup}の平均が${lowerGroup}より高く、人数とばらつきを考えても差がはっきりしていました（${pText}）。`);
+    });
+
+    if (nonSignificantRows.length > 0) {
+        const pText = nonSignificantRows.length === 1 ? nonSignificantRows[0].pText : 'いずれも p ≥ .05';
+        items.push(`${joinResultLabels(nonSignificantRows)}では、今回の人数とばらつきを考えると、${groups[0]}と${groups[1]}の平均差がはっきりしているとは言えませんでした（${pText}）。`);
+    }
+
+    const descriptiveItem = buildTTestDescriptiveItem(rows);
+    if (descriptiveItem) items.push(descriptiveItem);
+    return items.slice(0, 4);
+}
+
+function buildPairedOrOneSampleTTestItems(rows, mode) {
+    const items = rows.slice(0, 4).map(row => {
+        const effectSymbol = mode === 'paired' ? 'd_z' : 'd';
+        const effect = row.d === null ? '' : ` 差の大きさは「${classifyCohensD(row.d)}」です（${effectSymbol} = ${row.d.toFixed(2)}）。`;
+        if (mode === 'one-sample') {
+            const direction = row.mean1 === row.mean2
+                ? `${row.group2}と同じでした`
+                : `${row.group2}より${row.mean1 > row.mean2 ? '高い' : '低い'}結果でした`;
+            const conclusion = row.significant
+                ? '人数とばらつきを考えても、基準値との違いがはっきりしていました'
+                : '人数とばらつきを考えると、基準値との違いがはっきりしているとは言えませんでした';
+            return `${row.label}の平均は${direction}。${conclusion}（${row.pText}）。${effect}`.trim();
+        }
+
+        const direction = row.mean1 === row.mean2
+            ? `${row.group1}と${row.group2}の平均は同じでした`
+            : `${row.mean1 > row.mean2 ? row.group1 : row.group2}の平均が${row.mean1 > row.mean2 ? row.group2 : row.group1}より高い結果でした`;
+        const conclusion = row.significant
+            ? '人数とばらつきを考えても、平均の変化がはっきりしていました'
+            : '人数とばらつきを考えると、平均の変化がはっきりしているとは言えませんでした';
+        return `${row.label}では、${direction}。${conclusion}（${row.pText}）。${effect}`.trim();
+    });
+    if (rows.length > 4) items.push(`ほか${rows.length - 4}件の詳しい数値は結果表で確認できます。`);
+    return items;
+}
+
+function groupTTestRowsByHigherGroup(rows) {
+    const grouped = new Map();
+    rows.forEach(row => {
+        const higher = row.mean1 >= row.mean2 ? row.group1 : row.group2;
+        if (!grouped.has(higher)) grouped.set(higher, []);
+        grouped.get(higher).push(row);
+    });
+    return grouped;
+}
+
+function joinResultLabels(rows) {
+    return rows.map(row => row.label).join('・');
+}
+
+function buildTTestDescriptiveItem(rows) {
+    const directions = groupTTestRowsByHigherGroup(rows);
+    let directionText = '';
+    if (directions.size === 1) {
+        const higherGroup = directions.keys().next().value;
+        directionText = rows.length === 1
+            ? `平均値は${higherGroup}の方が高く`
+            : `平均値は${rows.length}項目すべてで${higherGroup}の方が高く`;
+    } else {
+        const parts = Array.from(directions, ([higherGroup, directionRows]) => `${joinResultLabels(directionRows)}は${higherGroup}`);
+        directionText = `平均値だけを見ると、${parts.join('、')}の方が高く`;
+    }
+
+    const effects = rows.map(row => row.d).filter(Number.isFinite);
+    if (effects.length === 0) return `${directionText.replace(/高く$/u, '高い結果でした')}。`;
+    const effectLabels = new Set(effects.map(classifyCohensD));
+    const minEffect = Math.min(...effects);
+    const maxEffect = Math.max(...effects);
+    const effectRange = minEffect === maxEffect
+        ? `d = ${minEffect.toFixed(2)}`
+        : `d = ${minEffect.toFixed(2)}〜${maxEffect.toFixed(2)}`;
+    const effectText = effectLabels.size === 1
+        ? `差の大きさは${effects.length > 1 ? 'すべて' : ''}「${[...effectLabels][0]}」でした（${effectRange}）`
+        : `差の大きさは${effectRange}でした`;
+    return `${directionText}、${effectText}。`;
+}
+
+function classifyCohensD(value) {
+    if (value < 0.2) return 'ごく小さい';
+    if (value < 0.5) return '小さい';
+    if (value < 0.8) return '中程度';
+    return '大きい';
+}
+
+function simplifyResultInterpretationText(text) {
+    return cleanResultExplanationText(text)
+        .replace(/5%水準で有意差を示す十分な証拠は得られませんでした/gu, '統計上はっきりした差は確認できませんでした')
+        .replace(/5%水準で有意な関連を示す十分な証拠は得られませんでした/gu, '統計上はっきりした関連は確認できませんでした')
+        .replace(/(?:2群|各群)の平均が等しいことを証明する結果ではありません。?/gu, 'ただし、「同じ」という意味ではありません。')
+        .replace(/差の実質的な大きさは、効果量や信頼区間とあわせて判断してください。?/gu, '差の大きさは、効果量とグラフも合わせて見ます。')
+        .trim();
 }
 
 function extractResultInterpretationItems(resultRoot) {

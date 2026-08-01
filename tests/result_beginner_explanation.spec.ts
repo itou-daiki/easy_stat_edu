@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import path from 'path';
 import { selectStandardOption, selectVariables } from './utils/test-helpers';
 
-test.describe('分析結果の非AIかんたん説明', () => {
+test.describe('分析結果のかんたん説明', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
         await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30_000 });
@@ -17,30 +17,49 @@ test.describe('分析結果の非AIかんたん説明', () => {
         });
 
         await page.locator('#main-data-file').setInputFiles(
-            path.join(__dirname, '../datasets/ttest_demo.xlsx')
+            path.join(__dirname, '../datasets/demo_all_analysis.csv')
         );
         await page.locator('.feature-card[data-analysis="ttest"]').click();
         await expect(page.locator('[data-result-beginner-explanation]')).toHaveCount(0);
 
-        await selectStandardOption(page, '#group-var', '組', 'label');
-        await selectVariables(page, ['数学']);
+        await selectStandardOption(page, '#group-var', '性別', 'label');
+        await selectVariables(page, ['数学', '英語', '理科', '学習時間']);
         await page.locator('#run-independent-btn').click();
 
         const details = page.locator('[data-result-beginner-explanation="ttest"]');
         await expect(details).toHaveCount(1);
         await expect(details.locator('summary')).toContainText('今回の結果を簡単に説明すると');
-        await expect(details.locator('summary')).toContainText('AIを使わず');
+        await expect(details.locator('summary')).toContainText('結果のポイント、数字の意味、注意点を確認');
         await expect(details).not.toHaveAttribute('open', '');
 
         await details.locator('summary').press('Enter');
         await expect(details).toHaveAttribute('open', '');
-        await expect(details).toContainText('今回わかったこと');
-        await expect(details).toContainText('数学');
+        await expect(details).toContainText('結果のポイント');
+        await expect(details).toContainText('数学・英語・理科・学習時間');
+        await expect(details).toContainText('今回の人数とばらつきを考えると、男性と女性の平均差がはっきりしているとは言えませんでした');
+        await expect(details).toContainText('いずれも p ≥ .05');
+        await expect(details).toContainText('平均値は4項目すべてで男性の方が高く');
+        await expect(details).toContainText('差の大きさはすべて「中程度」でした（d = 0.50〜0.56）');
         await expect(details).toContainText('この指標が何を示すか');
-        await expect(details.locator('dt')).toContainText(['平均値', 'SD（標準偏差）', 't値', 'df（自由度）', 'p値']);
-        await expect(details).toContainText('「結果が偶然だった確率」ではありません');
-        await expect(details).toContainText('差の向きは各群・各時点の平均値で確認します');
-        await expect(details).toContainText('APIや外部の生成AIには送信していません');
+        await expect(details.locator('dt')).toContainText([
+            '平均値', 'SD（標準偏差）', 'p値', 'd・dz（効果量）', '95%信頼区間', 't値', 'df（自由度）'
+        ]);
+        await expect(details).toContainText('今回と同じかそれ以上に差・関連が大きな結果が出る確率');
+        await expect(details).toContainText('目安は0.2で小、0.5で中、0.8で大');
+        await expect(details).toContainText('p ≥ .05でも効果量が中程度になることがあり、矛盾ではありません');
+        await expect(details).toContainText('「同じ」と証明した結果でもありません');
+        await expect(details).not.toContainText('固定ルール');
+        await expect(details).not.toContainText('API');
+        await expect(details).not.toContainText('生成AI');
+        await expect(page.locator('#ai-assist-toggle')).toHaveCSS('width', '48px');
+        await expect(page.locator('#ai-assist-toggle span')).toBeHidden();
+        const [detailsBox, aiButtonBox] = await Promise.all([
+            details.boundingBox(),
+            page.locator('#ai-assist-toggle').boundingBox()
+        ]);
+        expect(detailsBox).not.toBeNull();
+        expect(aiButtonBox).not.toBeNull();
+        expect(aiButtonBox!.x).toBeGreaterThanOrEqual(detailsBox!.x + detailsBox!.width);
         expect(geminiRequests).toEqual([]);
 
         await page.locator('#run-independent-btn').click();
@@ -71,7 +90,45 @@ test.describe('分析結果の非AIかんたん説明', () => {
             'TF-IDF',
             'Jaccard係数'
         ]);
-        await expect(details).toContainText('共起しやすい関係ですが、意味の近さや因果関係は示しません');
+        await expect(details).toContainText('高いほど一緒に使われやすい語です');
+    });
+
+    test('対応ありt検定でも変化の向きと差の大きさを短く説明する', async ({ page }) => {
+        await page.locator('#main-data-file').setInputFiles(
+            path.join(__dirname, '../datasets/ttest_demo.xlsx')
+        );
+        await page.locator('.feature-card[data-analysis="ttest"]').click();
+        await page.locator('input[name="test-type"][value="paired"]').click();
+        await selectStandardOption(page, '#paired-var-pre', '英語', 'label');
+        await selectStandardOption(page, '#paired-var-post', '数学', 'label');
+        await page.locator('#add-pair-btn').click();
+        await page.locator('#run-paired-btn').click();
+
+        const details = page.locator('[data-result-beginner-explanation="ttest"]');
+        await details.locator('summary').click();
+        await expect(details).toContainText('英語 → 数学');
+        await expect(details).toContainText('平均の変化');
+        await expect(details).toContainText('差の大きさは');
+        await expect(details).toContainText('d_z =');
+        await expect(details).not.toContainText('十分な証拠は得られませんでした');
+    });
+
+    test('1サンプルt検定でも平均と基準値を自然な文で比べる', async ({ page }) => {
+        await page.locator('#main-data-file').setInputFiles(
+            path.join(__dirname, '../datasets/ttest_demo.xlsx')
+        );
+        await page.locator('.feature-card[data-analysis="ttest"]').click();
+        await page.locator('input[name="test-type"][value="one-sample"]').click();
+        await selectStandardOption(page, '#one-sample-var', '数学', 'label');
+        await page.locator('#one-sample-mu').fill('50');
+        await page.locator('#run-one-sample-btn').click();
+
+        const details = page.locator('[data-result-beginner-explanation="ttest"]');
+        await details.locator('summary').click();
+        await expect(details).toContainText('数学の平均は基準値 50.00');
+        await expect(details).toContainText('基準値との違いがはっきりしているとは言えませんでした');
+        await expect(details).toContainText('差の大きさは');
+        await expect(details).not.toContainText('十分な証拠は得られませんでした');
     });
 
     test('カイ二乗結果では関連の結論とセルを読む指標を説明する', async ({ page }) => {
@@ -92,7 +149,7 @@ test.describe('分析結果の非AIかんたん説明', () => {
         await expect(details).toContainText('p値');
         await expect(details).toContainText('CramerのV');
         await expect(details).toContainText('調整済み残差 z');
-        await expect(details).toContainText('全体検定と多重比較補正を確認してから解釈します');
+        await expect(details).toContainText('正なら多く、負なら少なく、絶対値が大きいほどずれが目立ちます');
     });
 
     test('狭い画面でも結果説明と指標が横にはみ出さない', async ({ page }) => {

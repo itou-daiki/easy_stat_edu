@@ -41,7 +41,7 @@ test.describe('初学者向けの共通説明', () => {
         const quickStart = page.locator('#quick-start');
         await expect(quickStart).toContainText('2つの「簡単に説明すると」を必要なときだけ開く');
         await expect(quickStart).toContainText('今回の結果を簡単に説明すると');
-        await expect(quickStart).toContainText('AIやAPIキーは不要');
+        await expect(quickStart).toContainText('この説明を開くだけで外部通信は行いません');
         await expect(quickStart).toContainText('高校生向け（やさしく）');
         await expect(quickStart).toContainText('研究・論文向け（詳しく）');
     });

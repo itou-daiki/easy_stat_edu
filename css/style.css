@@ -684,10 +684,20 @@ body {
 
 .ai-assist-widget.collapsed {
     width: auto;
+    right: 0.5rem;
 }
 
 .ai-assist-widget.collapsed .ai-assist-toggle {
     display: inline-flex;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.ai-assist-widget.collapsed .ai-assist-toggle span {
+    display: none;
 }
 
 .ai-assist-widget.collapsed .ai-assist-panel {
@@ -1257,7 +1267,7 @@ body {
     font-size: 0.84rem;
 }
 
-/* 分析結果を固定ルールで説明する共通エクスパンダー */
+/* 分析結果のポイントを説明する共通エクスパンダー */
 .result-beginner-explanation {
     margin: 0 0 1.5rem;
     border: 1px solid #bae6fd;
@@ -1337,17 +1347,6 @@ body {
 .result-beginner-body {
     padding: 1rem 1.15rem 1.1rem;
     border-top: 1px solid #e0f2fe;
-}
-
-.result-beginner-origin {
-    margin: 0 0 1rem;
-    color: #0c4a6e;
-    font-size: 0.88rem;
-    line-height: 1.55;
-}
-
-.result-beginner-origin i {
-    width: 1.2rem;
 }
 
 .result-beginner-grid {
@@ -1539,18 +1538,7 @@ body {
 
     .ai-assist-widget.collapsed {
         width: auto;
-    }
-
-    .ai-assist-widget.collapsed .ai-assist-toggle {
-        width: 48px;
-        height: 48px;
-        padding: 0;
-        justify-content: center;
-        border-radius: 50%;
-    }
-
-    .ai-assist-widget.collapsed .ai-assist-toggle span {
-        display: none;
+        right: 1rem;
     }
 
     .ai-assist-actions {
