@@ -60,6 +60,23 @@ test.describe('初学者向けの共通説明', () => {
         expect(definedTypes.sort()).toEqual(analysisTypes.sort());
     });
 
+    test('全指標に「意味」と「見方」の説明がそろっている', async ({ page }) => {
+        const source = await page.evaluate(async () => (await fetch('/js/main.js')).text());
+        const metricBlock = source
+            .split('const RESULT_METRIC_DEFINITIONS = {')[1]
+            .split('\n};\n\nconst RESULT_METRICS_BY_ANALYSIS')[0];
+        const definitions = Array.from(
+            metricBlock.matchAll(/^    ([a-z0-9_]+): \{([\s\S]*?)^    \},?$/gm),
+            match => ({ key: match[1], body: match[2] })
+        );
+
+        expect(definitions).toHaveLength(48);
+        for (const definition of definitions) {
+            expect(definition.body, `${definition.key}の意味`).toMatch(/\n        meaning: '.+'/);
+            expect(definition.body, `${definition.key}の見方`).toMatch(/\n        reading: '.+'/);
+        }
+    });
+
     test('データ読込後に全23機能で説明を1つだけ描画できる', async ({ page }) => {
         test.setTimeout(120_000);
         await page.locator('#main-data-file').setInputFiles(

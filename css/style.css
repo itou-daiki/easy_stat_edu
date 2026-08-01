@@ -1406,8 +1406,22 @@ body {
 
 .result-metric-list dd {
     margin: 0;
-    color: #475569;
+    display: grid;
+    gap: 0.28rem;
     line-height: 1.55;
+}
+
+.result-metric-meaning {
+    color: #334155;
+}
+
+.result-metric-reading {
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.result-metric-reading strong {
+    color: #075985;
 }
 
 .result-metric-empty {

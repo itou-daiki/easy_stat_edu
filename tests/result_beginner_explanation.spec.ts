@@ -29,7 +29,7 @@ test.describe('分析結果のかんたん説明', () => {
         const details = page.locator('[data-result-beginner-explanation="ttest"]');
         await expect(details).toHaveCount(1);
         await expect(details.locator('summary')).toContainText('今回の結果を簡単に説明すると');
-        await expect(details.locator('summary')).toContainText('結果のポイント、数字の意味、注意点を確認');
+        await expect(details.locator('summary')).toContainText('結果のポイント、指標の意味と見方、注意点を確認');
         await expect(details).not.toHaveAttribute('open', '');
 
         await details.locator('summary').press('Enter');
@@ -42,10 +42,14 @@ test.describe('分析結果のかんたん説明', () => {
         await expect(details).toContainText('差の大きさはすべて「中程度」でした（d = 0.50〜0.56）');
         await expect(details).toContainText('この指標が何を示すか');
         await expect(details.locator('dt')).toContainText([
-            '平均値', 'SD（標準偏差）', 'p値', 'd・dz（効果量）', '95%信頼区間', 't値', 'df（自由度）'
+            '平均値', 'SD（標準偏差）', 'p値', 'd・d_z（効果量）', '95%信頼区間', 't値', 'df（自由度）'
         ]);
-        await expect(details).toContainText('今回と同じかそれ以上に差・関連が大きな結果が出る確率');
-        await expect(details).toContainText('目安は0.2で小、0.5で中、0.8で大');
+        await expect(details).toContainText('今回以上に極端な結果が出る確率');
+        await expect(details).toContainText('.05以上でも「同じ」とは言えません');
+        await expect(details).toContainText('絶対値は0.2で小、0.5で中、0.8で大');
+        await expect(details.locator('.result-metric-meaning')).toHaveCount(7);
+        await expect(details.locator('.result-metric-reading')).toHaveCount(7);
+        await expect(details.locator('.result-metric-reading strong')).toHaveText(Array(7).fill('見方:'));
         await expect(details).toContainText('p ≥ .05でも効果量が中程度になることがあり、矛盾ではありません');
         await expect(details).toContainText('「同じ」と証明した結果でもありません');
         await expect(details).not.toContainText('固定ルール');
@@ -90,7 +94,8 @@ test.describe('分析結果のかんたん説明', () => {
             'TF-IDF',
             'Jaccard係数'
         ]);
-        await expect(details).toContainText('高いほど一緒に使われやすい語です');
+        await expect(details).toContainText('1に近いほど一緒に使われやすい語です');
+        await expect(details).toContainText('意味の近さや因果関係を示す値ではありません');
     });
 
     test('対応ありt検定でも変化の向きと差の大きさを短く説明する', async ({ page }) => {
@@ -149,7 +154,8 @@ test.describe('分析結果のかんたん説明', () => {
         await expect(details).toContainText('p値');
         await expect(details).toContainText('CramerのV');
         await expect(details).toContainText('調整済み残差 z');
-        await expect(details).toContainText('正なら多く、負なら少なく、絶対値が大きいほどずれが目立ちます');
+        await expect(details).toContainText('＋は予想より多く、－は少ない方向です');
+        await expect(details).toContainText('±1.96は参考値');
     });
 
     test('狭い画面でも結果説明と指標が横にはみ出さない', async ({ page }) => {
