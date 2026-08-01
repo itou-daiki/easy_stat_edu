@@ -156,7 +156,7 @@ function runSimpleRegression(currentData) {
     ];
 
     // Using setTimeout to ensure DOM is updated? No, innerHTML is synchronous.
-    // Wait, check variable access. b0, b1, seB1, tStat, pValue, xVar are available in scope.
+    // このスコープで計算済みの回帰係数と検定統計量を使う。
     // R2, F, df also typically reported. APA table for regression often includes these in Note or separate lines.
     // Standard format: Table with Coeffs, and Note: R^2 = .xx, F(df1, df2) = xx, p = .xx.
 

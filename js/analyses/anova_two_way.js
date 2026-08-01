@@ -743,7 +743,7 @@ function displayTwoWayANOVAInterpretation(results, designType) {
     container.innerHTML = `
         <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
             <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-                <i class="fas fa-lightbulb"></i> 解釈の補助
+                <i class="fas fa-lightbulb"></i> 結果を読む
             </h4>
             <div id="interpretation-content" style="padding: 1rem; background: #fafbfc; border-radius: 8px;"></div>
         </div>`;
@@ -781,30 +781,35 @@ function displayTwoWayANOVAInterpretation(results, designType) {
             varName = res.depVar || '測定値';
         }
 
-        const getSigText = (p) => p < 0.05 ? '有意な差（効果）が見られました。' : '有意な差（効果）は見られませんでした。';
+        const getMainEffectText = (p) => p < 0.05
+            ? '他方の要因を平均すると、水準間の平均差は統計上はっきりしています。'
+            : '他方の要因を平均した水準間の平均差は、今回のデータでは統計上はっきりしません。';
+        const interactionText = pAxB < 0.05
+            ? '要因の組み合わせによる結果の変わり方は、統計上はっきりしています。'
+            : '要因の組み合わせによる結果の変わり方は、今回のデータでは統計上はっきりしません。';
         const getStars = (p) => p < 0.01 ? '**' : p < 0.05 ? '*' : p < 0.1 ? '†' : 'n.s.';
 
         html += `
             <div style="margin-bottom: 1.5rem; border-left: 4px solid #1e90ff; padding-left: 1rem;">
-                <h5 style="font-weight: bold; color: #2d3748; margin-bottom: 0.5rem;">${varName} の分析結果:</h5>
+                <h5 style="font-weight: bold; color: #2d3748; margin-bottom: 0.5rem;">${varName} の分析結果</h5>
                 
                 <p style="margin: 0.5rem 0;">
                     <strong>1. 交互作用 (${factorA} × ${factorB}):</strong> <br>
                     ${pAxB < 0.001 ? 'p &lt; .001' : 'p = ' + pAxB.toFixed(3)} (${getStars(pAxB)}), 偏η² = ${etaAxB.toFixed(2)}。<br>
-                    ${getSigText(pAxB)}
-                    ${pAxB < 0.05 ? '<br><span style="color: #d97706; font-size: 0.9em;"><i class="fas fa-exclamation-triangle"></i> 交互作用が有意であるため、主効果の解釈には注意が必要です（単純主効果の検定を推奨）。要因の組み合わせによって結果が異なる可能性があります。</span>' : '<br><span style="color: #059669; font-size: 0.9em;">交互作用は有意ではないため、それぞれの主効果（他方の要因を平均した水準差）を確認します。</span>'}
+                    ${interactionText}
+                    ${pAxB < 0.05 ? '<br><span style="color: #d97706; font-size: 0.9em;"><i class="fas fa-exclamation-triangle"></i> 主効果だけでまとめず、交互作用プロットと単純主効果を見ます。</span>' : '<br><span style="color: #059669; font-size: 0.9em;">続いて、他方の要因を平均した主効果を見ます。</span>'}
                 </p>
 
                 <p style="margin: 0.5rem 0;">
                     <strong>2. ${factorA} の主効果:</strong> <br>
                     ${pA < 0.001 ? 'p &lt; .001' : 'p = ' + pA.toFixed(3)} (${getStars(pA)}), 偏η² = ${etaA.toFixed(2)}。<br>
-                    ${getSigText(pA)}
+                    ${getMainEffectText(pA)}
                 </p>
 
                 <p style="margin: 0.5rem 0;">
                     <strong>3. ${factorB} の主効果:</strong> <br>
                     ${pB < 0.001 ? 'p &lt; .001' : 'p = ' + pB.toFixed(3)} (${getStars(pB)}), 偏η² = ${etaB.toFixed(2)}。<br>
-                    ${getSigText(pB)}
+                    ${getMainEffectText(pB)}
                 </p>
                 
                 <p style="margin-top: 0.5rem; font-size: 0.9em; color: #666;">
@@ -1379,16 +1384,11 @@ function renderTwoWayMixedResults(testResults) {
             });
             html += `</tbody></table></div>
                 <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">p&lt;0.01** p&lt;0.05* p&lt;0.1†</p>
-                <p style="font-size: 0.9rem; color: #666; text-align: right;">※ 被験者内要因では球面性の仮定が必要です。満たされない場合は Greenhouse–Geisser 補正の利用を検討してください。本画面では Mauchly の検定・GG補正は未実装です。</p>
+                <p style="font-size: 0.9rem; color: #666; text-align: right;">※ 被験者内要因では球面性を確認します。成り立たない場合は Greenhouse–Geisser 補正が必要です。easyStatのこの分析では、Mauchlyの検定とGG補正をまだ計算できません。</p>
              </div>`;
 
         } else {
-            // Existing Mixed/Independent output (Simplified for brevity as we are just appending/modifying logic)
-            // But wait, I am replacing the renderTwoWayMixedResults function? No, I am replacing from 900 to 1056.
-            // I need to preserve existing Mixed render logic or merge it.
-
-            // ... (This block is handling Mixed primarily in the original code, but 'renderTwoWayMixedResults' name implies Mixed only)
-            // I should make a generic render function or add 'repeated' case to 'renderTwoWayMixedResults' 
+            // 混合計画・独立計画の結果を表示する。
             // essentially renaming it to renderComplexDesignResults
 
             // For now, I'll follow the pattern and render based on design type in the loop.
@@ -1572,7 +1572,7 @@ function runTwoWayRepeatedANOVA(currentData, factors, mapping) {
     // Direct formula: SS_AxS = Sum( (Y_ij. - Y_i.. - Y_.j. + Y_...)^2 ) * b ?? No, we are averaging over B implies /b somewhere?
     // Actually simpler: 
     // SS_ErrorA = SS_WithinA - SS_A ?? Not exactly.
-    // Let's use the explicit interaction calculation approach for AxS.
+    // A x S の交互作用を明示的に計算する。
     // SS_AxS = Sum_i Sum_j b * (Mean_ij - Mean_i.. - Mean_.j. + Mean_...)^2
 
     let ssErrorA = 0;
@@ -1642,11 +1642,11 @@ function runTwoWayRepeatedANOVA(currentData, factors, mapping) {
     const sigPairs = [];
     const allComparisons = [];
 
-    // We treat Factor 1 as the primary grouping axis for the graph (X-axis=Factor2 usually in my code? Let's check render)
+    // 第1要因をグラフの主な群分けとして扱う。
     // In Independent: X-axis=Factor2, Legend=Factor1.
     // So we usually compare Levels of F1 at each Level of F2.
     // Or Compare Levels of F2 within F1.
-    // Let's support both or stick to standard: "Simple Main Effects of Legend Factor at X-axis Factor"
+    // 凡例側の要因について、X軸の各水準で単純主効果を計算する。
     // Here: Compare Groups (Factor 1) at each Condition (Factor 2).
 
     // xIndex corresponds to Factor 2 (X-axis).

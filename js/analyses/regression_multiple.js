@@ -75,7 +75,7 @@ function runMultipleRegression(currentData) {
                             <div class="stat-value">${fValue.toFixed(2)}</div>
                         </div>
                         <div class="data-stat-card">
-                            <div class="stat-label">有意確率 (p)</div>
+                            <div class="stat-label">p値</div>
                             <div class="stat-value">${pValueModel < 0.001 ? '< 0.001' : pValueModel.toFixed(3)}</div>
                         </div>
                     </div>

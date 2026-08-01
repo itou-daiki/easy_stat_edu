@@ -59,6 +59,9 @@ test.describe('Time Series Analysis Feature', () => {
         // Check Interpretation (Logic verification)
         await expect(page.locator('#ts-interpretation')).toBeVisible();
         await expect(page.locator('#ts-interpretation')).toContainText('移動平均線');
+        await expect(page.locator('#ts-interpretation')).toContainText('値の続きやすさ');
+        await expect(page.locator('#ts-interpretation')).toContainText('この値だけで上昇や下降のトレンドがあるとは決められません');
+        await expect(page.locator('#ts-interpretation')).not.toContainText('トレンド傾向が見られます');
 
         // Attempt to check Plots (Visualization verification)
         try {

@@ -677,13 +677,13 @@ function runOneWayIndependentANOVA(currentData) {
 
     mainResultsTable.forEach(res => {
         const levenesPStr = res.levenes.p < 0.001 ? '< .001' : res.levenes.p.toFixed(3);
-        const levenesSign = res.levenes.p < 0.05 ? '<i class="fas fa-exclamation-triangle" style="color: #d97706;" title="等分散性が棄却されました。平均値の差の検定には慎重な解釈が必要です（Welchの検定などを検討してください）。"></i>' : '<i class="fas fa-check" style="color: #10b981;" title="等分散性は棄却されませんでした。"></i>';
+        const levenesSign = res.levenes.p < 0.05 ? '<i class="fas fa-exclamation-triangle" style="color: #d97706;" title="群の分散は等しいとは言えません。通常のANOVAだけで結論を出さず、Welchの検定なども確認します。"></i>' : '<i class="fas fa-check" style="color: #10b981;" title="群の分散が異なるとは判断されませんでした。"></i>';
         const levenesCell = `<td style="background-color: ${res.levenes.p < 0.05 ? '#fff3cd' : 'transparent'}; font-size: 0.9rem;">${levenesPStr} ${levenesSign}</td>`;
 
         const pValueStr = res.pValue < 0.001 ? '< .001' : res.pValue.toFixed(3);
 
         const rowData = [res.depVar, res.overallMean, res.overallStd, ...res.groupMeans, ...res.groupStds];
-        // Note: We handle Levene's cell specially, then append the rest
+        // Levene検定のセルだけ警告色を個別に設定する。
         const statsData = [res.dfBetween, res.dfWithin, res.fValue];
 
         let rowHtml = '<tr>';
@@ -708,7 +708,7 @@ function runOneWayIndependentANOVA(currentData) {
     });
     tableHtml += `</tbody></table></div>
     <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem;">
-        <i class="fas fa-info-circle"></i> <strong>Levene p</strong>: 等分散性の検定。p < .05 の場合、この通常のANOVAの結果は信頼性が低い可能性があります（分散が異なるため）。
+        <i class="fas fa-info-circle"></i> <strong>Levene p</strong>: 群の分散が同じとみなせるかを調べます。p &lt; .05なら、通常のANOVAだけで結論を出さず、Welchの検定なども確認します。
         ${mainResultsTable.some(r => r.omegaSquaredNegative) ? '<br><strong>ω²</strong>: 算出値が負の場合は0にクリップし、表に※を表示しています。' : ''}
     </div>
     <p style="font-size: 0.9em; text-align: right; margin-top: 0.5rem;">sign: p&lt;0.01** p&lt;0.05* p&lt;0.1†</p></div>`;
@@ -972,7 +972,7 @@ function runOneWayRepeatedANOVA(currentData) {
                             </tr>
                         </tbody>
                     </table>
-                    <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;">※ 球面性が仮定できない場合（Mauchly's test p < .05 など）、このp値を参照することを推奨します。</p>
+                    <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;">※ 球面性が成り立たない場合（Mauchly's test p &lt; .05 など）は、この補正後p値を見ます。</p>
                 </div>
             `;
         }

@@ -104,7 +104,8 @@ test.describe('Chi-Square Test Verification', () => {
         await page.click('#run-chi-btn');
 
         await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('#analysis-results')).toContainText('5%水準で有意な関連は確認されませんでした');
+        await expect(page.locator('#analysis-results')).toContainText('関連は、今回のデータでは統計上はっきりしませんでした');
+        await expect(page.locator('#analysis-results')).toContainText('5%基準では「関連あり」と判断しません');
         await expect(page.locator('#analysis-results')).toContainText('有意な偏りとは断定しません');
         await expect(page.locator('#analysis-results')).not.toContainText('z > 1.96 (青) は有意に多い');
 
@@ -144,6 +145,7 @@ test.describe('Chi-Square Test Verification', () => {
         await expect(primaryCard.locator('.stat-value')).toHaveText('3.75');
         await expect(results.locator('.data-stat-card', { hasText: 'p値' }).locator('.stat-value')).toContainText('0.0528');
         await expect(results.locator('.data-stat-card', { hasText: 'Pearson χ²' })).toContainText('5.40');
-        await expect(results).toContainText('5%水準で有意な関連は確認されませんでした');
+        await expect(results).toContainText('関連は、今回のデータでは統計上はっきりしませんでした');
+        await expect(results).toContainText('この結果だけで「互いに無関係」とは決められません');
     });
 });

@@ -260,20 +260,22 @@ function renderACFPlot(acf, maxLag, n) {
 function renderInterpretation(acf, window, label) {
     const div = document.getElementById('ts-interpretation');
 
-    // Simple trend analysis based on ACF(1)
-    const r1 = acf[1];
-    let trendText = "";
-    if (r1 > 0.8) trendText = "非常に強い持続的なトレンドまたは慣性が見られます。";
-    else if (r1 > 0.5) trendText = "一定のトレンド傾向が見られます。";
-    else if (r1 < 0.2 && r1 > -0.2) trendText = "明確なトレンドは見られず、ランダムな変動に近い可能性があります。";
-    else trendText = "複雑な変動パターンを含んでいる可能性があります。";
+    // ACF(1) describes short-term persistence; it does not establish a trend by itself.
+    const r1 = Number.isFinite(acf[1]) ? acf[1] : 0;
+    let persistenceText = '';
+    if (r1 > 0.8) persistenceText = '直前と似た値が続く動きが、とても強い結果です。';
+    else if (r1 > 0.5) persistenceText = '直前と似た値が続くことが多い結果です。';
+    else if (r1 < -0.5) persistenceText = '高い値の次に低い値が来るなど、反対方向に動くことが多い結果です。';
+    else if (Math.abs(r1) < 0.2) persistenceText = '直前の値とのつながりは弱い結果です。';
+    else persistenceText = '直前の値とのつながりは弱めから中程度です。';
 
     div.innerHTML = `
-        <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-lightbulb"></i> 分析結果の解釈</h4>
-        <p><strong>トレンドの概要:</strong><br>
-        ${window}項移動平均線（青線）を確認することで、短期的な変動を除去した大局的な傾向を把握できます。<br>
-        自己相関係数 (Lag=1: ${r1.toFixed(2)}) からは、<strong>${trendText}</strong></p>
-        <p><strong>周期性について:</strong><br>
-        ACFグラフで特定のラグで高い値が周期的に現れる場合、季節性や周期性があることを示唆します。</p>
+        <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-lightbulb"></i> 結果を読む</h4>
+        <p><strong>長い流れ:</strong><br>
+        ${window}項移動平均線（青線）で、細かな上下をならした動きを見ます。上昇・下降・横ばいのどれに近いかは、この線と元の値を一緒に確認します。</p>
+        <p><strong>値の続きやすさ:</strong><br>
+        1時点前との自己相関は <strong>${r1.toFixed(2)}</strong> で、${persistenceText} ただし、この値だけで上昇や下降のトレンドがあるとは決められません。</p>
+        <p><strong>周期:</strong><br>
+        ACFグラフで同じ間隔ごとに大きな棒が現れると、繰り返す動きの手がかりになります。赤い破線を越える棒がどの間隔にあるかを見ます。</p>
     `;
 }

@@ -1160,7 +1160,7 @@ export function render(container, currentData, characteristics) {
             // Note: Multiple Numeric title handling was not explicitly requested or changed in previous steps?
             // Checking visualizeMultipleNumericVariables (lines 435-440 of Step 813 view):
             // It has `title: '全数値変数の箱ひげ図による比較'` (Standard title).
-            // I probably missed updating this one. I should update it too for consistency if I can.
+            // ほかの要約表と同じ表示規則を適用する。
             // But for now, just keep axis label toggle working.
         }
 

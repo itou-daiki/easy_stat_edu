@@ -178,7 +178,7 @@ function displayChiSquareResult(chi2, df, p, v, rowKeys, colKeys, observed, expe
             <div style="background-color: #fffbe6; border: 1px solid #fde68a; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; color: #92400e;">
                 <strong><i class="fas fa-exclamation-triangle"></i> カイ二乗近似の前提を確認してください。</strong><br>
                 ${assumptionDetails}。一般的な目安（期待度数1未満のセルなし、5未満のセルが20%以下）を満たしていません。<br>
-                サンプルサイズを増やすか、「フィッシャーの正確確率検定」の使用を検討してください。
+                2×2表なら「フィッシャーの正確確率検定」を使います。それ以外の表では、カテゴリのまとめ方やデータ数を見直します。
             </div>`;
     }
     if (excludedRows > 0) {
@@ -415,7 +415,7 @@ export function render(container, currentData, characteristics) {
                     </ul>
                     <h4>結果の読み方</h4>
                     <ul>
-                        <li><strong>p値 < 0.05:</strong> 2つのデータには「関連がある（独立ではない）」と言えます。</li>
+                        <li><strong>p値 < 0.05:</strong> 2つの変数には、統計上はっきりした関連があると判断します。</li>
                         <li><strong>残差分析:</strong> 全体検定で関連が見られた場合に、「思ったより多かった（または少なかった）」組み合わせを確認します。全体検定が非有意の場合は、参考情報として扱います。</li>
                     </ul>
                 </div>

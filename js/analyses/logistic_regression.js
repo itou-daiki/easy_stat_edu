@@ -441,35 +441,35 @@ function interpretLogistic(result, varNames, oddsRatios, cm, r2, modelP, label0,
 
     // Model fit
     if (modelP < 0.05) {
-        html += `<p><strong>切片のみのモデルと比べて適合度が有意に改善</strong>しました（${formatPValue(modelP, { html: true })}）。説明変数全体が「${label1}」との関連を示しています。</p>`;
+        html += `<p>説明変数を入れたこのモデルは、切片だけのモデルより<strong>データによく合っていました</strong>（${formatPValue(modelP, { html: true })}）。モデル全体として、「${label1}」になるかどうかとの関係が統計上はっきりしています。</p>`;
     } else {
-        html += `<p>切片のみのモデルと比べた適合度の改善について、5%水準で十分な証拠は得られませんでした（${formatPValue(modelP, { html: true })}）。予測性能がないことを証明する結果ではありません。</p>`;
+        html += `<p>このモデルが切片だけのモデルよりデータによく合うとは、今回の結果からは判断できませんでした（${formatPValue(modelP, { html: true })}）。ただし、この結果だけで「予測に使えない」とは決められません。</p>`;
     }
 
     html += `<p><strong>Nagelkerke R² = ${r2.toFixed(3)}</strong>: 切片のみのモデルからの改善を表す擬似R²です。線形回帰のR²と同じ割合としては解釈しません。</p>`;
 
     const accuracyLift = cm.accuracy - cm.baselineAccuracy;
-    html += `<p><strong>標本内正解率 ${(cm.accuracy * 100).toFixed(1)}%</strong>（多数派のみの基準 ${(cm.baselineAccuracy * 100).toFixed(1)}%、差 ${accuracyLift >= 0 ? '+' : ''}${(accuracyLift * 100).toFixed(1)}ポイント）。同じデータで学習・評価した見かけの値であり、汎化性能は検証用データや交差検証で確認してください。</p>`;
+    html += `<p><strong>このデータでの正解率は ${(cm.accuracy * 100).toFixed(1)}%</strong>です（多数派だけを選ぶ基準 ${(cm.baselineAccuracy * 100).toFixed(1)}%、差 ${accuracyLift >= 0 ? '+' : ''}${(accuracyLift * 100).toFixed(1)}ポイント）。学習に使ったデータでの値なので、別のデータや交差検証でも確かめます。</p>`;
 
     // Significant predictors
     const sigVars = varNames.slice(1).filter((_, i) => result.pValues[i + 1] < 0.05);
     if (sigVars.length > 0) {
-        html += '<p><strong>他の説明変数を一定としたときに有意な関連を示す変数：</strong></p><ul>';
+        html += '<p><strong>ほかの説明変数を同じ値にそろえたとき、関係が統計上はっきりした変数:</strong></p><ul>';
         sigVars.forEach(name => {
             const realIdx = varNames.indexOf(name);
             const or = oddsRatios[realIdx];
             html += `<li><strong>${name}</strong>: `;
             if (or > 1) {
-                html += `1単位高いとき、「${label1}」のオッズが<strong>${or.toFixed(3)}倍</strong>高い関連です（オッズ比 = ${or.toFixed(3)}）。`;
+                html += `1単位高い場合、「${label1}」のオッズは<strong>${or.toFixed(3)}倍</strong>です。`;
             } else {
-                html += `1単位高いとき、「${label1}」のオッズが<strong>${or.toFixed(3)}倍</strong>になる関連です（オッズ比 = ${or.toFixed(3)}）。`;
+                html += `1単位高い場合、「${label1}」のオッズは<strong>${or.toFixed(3)}倍</strong>です。`;
             }
             html += '</li>';
         });
         html += '</ul>';
     }
 
-    html += '<p>オッズ比は確率の倍率ではありません。また、回帰係数だけでは因果関係を判断できません。</p>';
+    html += '<p>オッズ比は確率そのものの倍率ではありません。また、この分析だけで原因と結果は決められません。</p>';
     return html;
 }
 

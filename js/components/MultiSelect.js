@@ -100,7 +100,7 @@ export class MultiSelect {
             e.stopPropagation();
 
             // Keep dropdown open for multiple selection or close? Streamlit usually keeps it or requires reopen.
-            // Let's keep it open for convenience but clear search if we implemented it.
+            // 連続して選べるよう、選択後もメニューを開いたままにする。
             // wrapper.classList.remove('active');
             // dropdown.style.display = 'none';
         });

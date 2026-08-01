@@ -441,13 +441,13 @@ function displayInterpretation(testResults) {
 
         let text = `<strong>${result.varName}</strong>: `;
         if (pEval.isSignificant) {
-            text += `群間に統計的に<strong>有意な差が認められました</strong> (H(${result.df}) = ${result.H.toFixed(2)}, ${pEval.text})。`;
+            text += `群の順位に、統計上はっきりした違いがありました (H(${result.df}) = ${result.H.toFixed(2)}, ${pEval.text})。`;
             text += `<br>平均順位が最も高いのは「<strong>${maxGroup}</strong>」、最も低いのは「<strong>${minGroup}</strong>」です。`;
-            text += `<br>効果量 ε² = ${result.epsilon2.toFixed(3)} [${eta2Text}]`;
-            text += `<br>どの群間に差があるかは、事後検定（Dunn検定）の結果を参照してください。`;
+            text += `<br>差の大きさ: ε² = ${result.epsilon2.toFixed(3)} [${eta2Text}]`;
+            text += `<br>どの組み合わせが違うかは、Dunn検定の表で見ます。`;
         } else {
-            text += `群間に統計的に有意な差は認められませんでした (H(${result.df}) = ${result.H.toFixed(2)}, <em>p</em> = ${result.pValue.toFixed(3)})。`;
-            text += `<br>効果量 ε² = ${result.epsilon2.toFixed(3)} [${eta2Text}]`;
+            text += `群の順位の違いは、今回のデータでは統計上はっきりしませんでした (H(${result.df}) = ${result.H.toFixed(2)}, <em>p</em> = ${result.pValue.toFixed(3)})。`;
+            text += `<br>差の大きさ: ε² = ${result.epsilon2.toFixed(3)} [${eta2Text}]。ただし、この結果だけで「すべての群が同じ」とは決められません。`;
         }
 
         interpretationHtml += `<li style="margin-bottom: 0.5rem;">${text}</li>`;

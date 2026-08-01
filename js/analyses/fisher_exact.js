@@ -612,29 +612,13 @@ function displayResults(fisherResult, is2x2, chiSquare, df, cramersV, rowKeys, c
 // ==========================================
 
 function generateInterpretation(pValue, cramersV, rowVar, colVar, is2x2, fisherResult) {
-    const pEval = InterpretationHelper.evaluatePValue(pValue);
-
-    let vText = '';
-    if (cramersV < 0.1) vText = 'ごくわずか';
-    else if (cramersV < 0.3) vText = '小';
-    else if (cramersV < 0.5) vText = '中程度';
-    else vText = '大';
-
-    let text = '';
-    if (pEval.isSignificant) {
-        text += `「<strong>${rowVar}</strong>」と「<strong>${colVar}</strong>」の間には<strong>有意な関連（連関）</strong>があります (${pEval.text}, <em>V</em> = ${cramersV.toFixed(2)} [${vText}])。<br>`;
-        text += `変数の組み合わせによって偏りがある（独立ではない）と言えます。<br>`;
-        text += `具体的な偏りについては、調整済み残差の表を確認してください。`;
-    } else {
-        text += `「<strong>${rowVar}</strong>」と「<strong>${colVar}</strong>」の関連について、5%水準で十分な証拠は得られませんでした (${formatPValue(pValue, { html: true })}, <em>V</em> = ${cramersV.toFixed(2)} [${vText}])。<br>`;
-        text += `独立であることや偏りがないことを証明する結果ではありません。`;
-    }
+    let text = InterpretationHelper.interpretChiSquare(pValue, cramersV, rowVar, colVar);
 
     if (is2x2 && isFinite(fisherResult.oddsRatio)) {
         const or = fisherResult.oddsRatio;
         text += `<br><br><strong>オッズ比 = ${or.toFixed(2)}</strong>: 表の第1行における第1列のオッズを、第2行と比較した標本推定値です。`;
         if (Math.abs(or - 1) < 0.01) {
-            text += ' 1に近い値ですが、同じオッズであると断定するものではありません。';
+            text += ' 1に近い値ですが、この結果だけで「同じオッズ」とは決められません。';
         } else if (or > 1) {
             text += ` 第1行のオッズは第2行の約${or.toFixed(2)}倍です。`;
         } else {
@@ -716,10 +700,9 @@ export function render(container, currentData, characteristics) {
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>
-                        <li><i class="fas fa-check"></i> <strong>小サンプル:</strong> データの総数が少ない（目安: N &lt; 20〜30程度）</li>
+                        <li><i class="fas fa-check"></i> <strong>小さいセルがある:</strong> 特定の組み合わせに人数が少なく、カイ二乗近似が不安定になる</li>
                         <li><i class="fas fa-check"></i> <strong>期待度数が小さい:</strong> クロス集計表の期待度数が5未満のセルが20%以上ある</li>
-                        <li><i class="fas fa-check"></i> <strong>2×2分割表:</strong> 特に2×2の場合は最も正確な結果が得られます</li>
-                        <li><i class="fas fa-check"></i> <strong>カイ二乗近似が不安定:</strong> 期待度数の条件を満たさない場合</li>
+                        <li><i class="fas fa-check"></i> <strong>2×2分割表:</strong> 近似を使わない正確なp値を求めたい</li>
                     </ul>
                     <h4>カイ二乗検定との違い</h4>
                     <ul>
@@ -728,9 +711,10 @@ export function render(container, currentData, characteristics) {
                     </ul>
                     <h4>結果の読み方</h4>
                     <ul>
-                        <li><strong>p値:</strong> 0.05より小さければ、2つの変数には「関連がある」と判断できます。</li>
+                        <li><strong>p値:</strong> 0.05より小さければ、2つの変数の関連は統計上はっきりしていると読みます。</li>
                         <li><strong>オッズ比 (2×2のみ):</strong> 1より大きければ正の関連、1より小さければ負の関連を示します。</li>
                         <li><strong>クラメールのV:</strong> 関連の強さを示す効果量（0〜1、大きいほど関連が強い）。</li>
+                        <li><strong>注意:</strong> 関連があっても、一方がもう一方の原因とは限りません。</li>
                     </ul>
                 </div>
             </div>

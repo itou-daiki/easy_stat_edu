@@ -617,33 +617,18 @@ function displayInterpretation(testResults) {
 
     testResults.forEach(tr => {
         const r = tr.result;
-        const pEval = InterpretationHelper.evaluatePValue(r.p_value);
-
-        // 効果量の判定
-        let effectText = '';
-        if (r.r < 0.1) effectText = 'ほとんどない';
-        else if (r.r < 0.3) effectText = '小さい';
-        else if (r.r < 0.5) effectText = '中程度';
-        else effectText = '大きい';
-
-        // 中央値の比較で方向性を判定
         const median1 = jStat.median(tr.values1);
         const median2 = jStat.median(tr.values2);
+        const text = InterpretationHelper.interpretWilcoxonSignedRank(
+            r.p_value,
+            r.r,
+            tr.var1,
+            tr.var2,
+            median1,
+            median2
+        );
 
-        let text = `<strong>${tr.var1} vs ${tr.var2}</strong>: `;
-        if (pEval.isSignificant) {
-            const higher = median1 > median2 ? tr.var1 : tr.var2;
-            const lower = median1 > median2 ? tr.var2 : tr.var1;
-            text += `統計的に<strong>有意な差が認められました</strong> (${pEval.text})。`;
-            text += `<br>中央値を比較すると、<strong>${higher}</strong>（${Math.max(median1, median2).toFixed(2)}）の方が<strong>${lower}</strong>（${Math.min(median1, median2).toFixed(2)}）よりも高い値を示しています。`;
-            text += `<br>効果量 r = ${r.r.toFixed(2)} [${effectText}]`;
-        } else {
-            text += `統計的に有意な差は認められませんでした (<em>p</em> = ${r.p_value.toFixed(3)})。`;
-            text += `<br>中央値: ${tr.var1} = ${median1.toFixed(2)}, ${tr.var2} = ${median2.toFixed(2)}`;
-            text += `<br>効果量 r = ${r.r.toFixed(2)} [${effectText}]`;
-        }
-
-        html += `<li style="margin-bottom: 0.5rem;">${text}</li>`;
+        html += `<li style="margin-bottom: 0.5rem;"><strong>${tr.var1} vs ${tr.var2}</strong>: ${text}</li>`;
     });
 
     html += '</ul>';

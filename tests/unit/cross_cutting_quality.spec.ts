@@ -184,26 +184,35 @@ test.describe('Cross-cutting quality contracts', () => {
         expect(result.threeByThree.flat().some(cell => cell.adjusted > cell.raw)).toBe(true);
     });
 
-    test('shared interpretation avoids causal and null-acceptance claims', async ({ page }) => {
+    test('shared interpretation is concise without causal or null-acceptance claims', async ({ page }) => {
         await page.goto('/');
         const interpretations = await page.evaluate(async () => {
             const { InterpretationHelper } = await import('/js/utils.js');
             return {
                 correlation: InterpretationHelper.interpretCorrelation(0.2, 0.20, 'X', 'Y'),
                 ttest: InterpretationHelper.interpretTTest(0.20, 10, 9, ['A', 'B'], 0.2),
+                anova: InterpretationHelper.interpretANOVA(0.20, 0.05, '群', '得点'),
+                chiSquare: InterpretationHelper.interpretChiSquare(0.20, 0.10, '学年', '回答'),
                 regression: InterpretationHelper.interpretRegression(
                     0.3,
                     0.01,
                     'Y',
                     [{ name: 'X', beta: 0.5, p: 0.01, stdBeta: 0.4 }]
-                )
+                ),
+                mannWhitney: InterpretationHelper.interpretMannWhitney(0.20, 12, 10, ['A', 'B'], 0.15),
+                wilcoxon: InterpretationHelper.interpretWilcoxonSignedRank(0.20, 0.15, '前', '後', 10, 11)
             };
         });
 
-        expect(interpretations.correlation).toContain('証明するものではありません');
-        expect(interpretations.ttest).toContain('平均が等しいことを証明する結果ではありません');
-        expect(interpretations.regression).toContain('因果効果とは解釈できません');
+        expect(interpretations.correlation).toContain('この結果だけで「無関係」とは決められません');
+        expect(interpretations.ttest).toContain('この結果だけで「2群の平均が同じ」とは決められません');
+        expect(interpretations.anova).toContain('この結果だけで「すべての平均が同じ」とは決められません');
+        expect(interpretations.chiSquare).toContain('この結果だけで「互いに無関係」とは決められません');
+        expect(interpretations.regression).toContain('この分析だけで原因と結果は決められません');
+        expect(interpretations.mannWhitney).toContain('この結果だけで「同じ分布」とは決められません');
+        expect(interpretations.wilcoxon).toContain('この結果だけで「変化がない」とは決められません');
         expect(interpretations.regression).not.toContain('増加させる');
+        expect(Object.values(interpretations).join(' ')).not.toMatch(/十分な証拠|認められました|判断してください|検討してください/u);
     });
 
     test('PCA rejects a zero-variance variable before standardization', async ({ page }) => {
@@ -286,7 +295,7 @@ test.describe('Cross-cutting quality contracts', () => {
         await page.click('#run-fisher-btn');
 
         const results = page.locator('#fisher-results');
-        await expect(results).toContainText('独立であることや偏りがないことを証明する結果ではありません');
+        await expect(results).toContainText('この結果だけで「互いに無関係」とは決められません');
         await expect(results).not.toContainText('互いに独立である');
         const coloredResiduals = await results.locator('table').locator('td').evaluateAll(cells => (
             cells.filter(cell => {

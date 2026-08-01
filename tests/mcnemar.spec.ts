@@ -49,5 +49,7 @@ test.describe('McNemar Test', () => {
 
         // 効果量が表示されること
         await expect(results).toContainText('効果量');
+        await expect(results).toContainText('統計上はっきりした変化');
+        await expect(results).not.toContainText('有意な変化が認められました');
     });
 });

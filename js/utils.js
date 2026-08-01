@@ -3918,16 +3918,16 @@ export const InterpretationHelper = {
         let direction = r > 0 ? "正" : "負";
         if (absR < 0.1) direction = ""; // ほぼ無相関なら方向言及しない
 
-        let text = `「<strong>${var1}</strong>」と「<strong>${var2}</strong>」の間には、`;
+        let text = `「<strong>${var1}</strong>」と「<strong>${var2}</strong>」`;
 
         if (pEval.isSignificant) {
-            text += `統計的に有意な<strong>${strength}${direction}の相関</strong>が見られました (<em>r</em> = ${r.toFixed(2)}, ${pEval.text})。`;
+            text += `には、統計上はっきりした<strong>${strength}${direction}の相関</strong>がありました (<em>r</em> = ${r.toFixed(2)}, ${pEval.text})。`;
             if (r > 0) text += `<br>つまり、<strong>${var1}が高いほど、${var2}も高い</strong>傾向があります。`;
             else text += `<br>つまり、<strong>${var1}が高いほど、${var2}は低い</strong>傾向があります。`;
-            text += '<br>相関だけでは因果関係は判断できません。';
+            text += '<br>ただし、相関だけでは原因と結果の関係は分かりません。';
         } else {
-            text += `5%水準で有意な相関を示す十分な証拠は得られませんでした (<em>r</em> = ${r.toFixed(2)}, ${formatPValue(p, { html: true })})。`;
-            text += '<br>これは、相関がないことや2変数が無関係であることを証明するものではありません。';
+            text += `の相関は、今回のデータでは統計上はっきりしませんでした (<em>r</em> = ${r.toFixed(2)}, ${formatPValue(p, { html: true })})。`;
+            text += '<br>ただし、この結果だけで「無関係」とは決められません。相関係数の大きさと散布図も見ます。';
         }
         return text;
     },
@@ -3940,13 +3940,17 @@ export const InterpretationHelper = {
      * @param {string[]} groupNames - [群1名, 群2名] Or 変数名ペア
      * @param {number} d - 効果量 (Cohen's d)
      * @param {string} varName - 従属変数名 (Optional)
+     * @param {object} options - 表示設定 { includeCaution: true, comparisonType: 'independent' }
      * @returns {string} 解釈文
      */
-    interpretTTest(p, mean1, mean2, groupNames, d, varName = "") {
+    interpretTTest(p, mean1, mean2, groupNames, d, varName = "", options = {}) {
         const pEval = this.evaluatePValue(p);
         const g1 = groupNames[0];
         const g2 = groupNames[1];
-        const varText = varName ? `「<strong>${varName}</strong>」について、` : "";
+        const variableLead = varName ? `「<strong>${varName}</strong>」では、` : "";
+        const isReferenceComparison = /^検定値/u.test(g2);
+        const includeCaution = options.includeCaution !== false;
+        const comparisonType = options.comparisonType || 'independent';
 
         let dText = "";
         if (d !== undefined && d !== null) {
@@ -3959,14 +3963,27 @@ export const InterpretationHelper = {
             dText = `, <em>d</em> = ${d.toFixed(2)} [${dSize}]`;
         }
 
+        if (isReferenceComparison) {
+            const direction = mean1 === mean2 ? '同じで' : `基準値より${mean1 > mean2 ? '高く' : '低く'}`;
+            const conclusion = pEval.isSignificant
+                ? '差は統計上はっきりしていました'
+                : '差は、今回のデータでは統計上はっきりしませんでした';
+            const caution = pEval.isSignificant
+                ? '差の大きさは、効果量、95%信頼区間、グラフで見ます。'
+                : 'ただし、この結果だけで「基準値と同じ」とは決められません。';
+            return `${variableLead}平均は${direction}、${conclusion} (${pEval.text}${dText})。` +
+                (includeCaution ? `<br>${caution}` : '');
+        }
+
         if (pEval.isSignificant) {
             const high = mean1 > mean2 ? g1 : g2;
             const low = mean1 > mean2 ? g2 : g1;
-            return `${varText}<strong>${high}は${low}よりも有意に高い</strong>値を示しました (${pEval.text}${dText})。<br>` +
-                '差の実質的な大きさは、効果量や信頼区間とあわせて判断してください。';
+            return `${variableLead}<strong>${high}</strong>の平均が<strong>${low}</strong>より高く、差は統計上はっきりしていました (${pEval.text}${dText})。` +
+                (includeCaution ? '<br>差の大きさは、効果量、95%信頼区間、グラフで見ます。' : '');
         } else {
-            return `${varText}「<strong>${g1}</strong>」と「<strong>${g2}</strong>」の平均差について、5%水準で有意差を示す十分な証拠は得られませんでした (${formatPValue(p, { html: true })}${dText})。<br>` +
-                '2群の平均が等しいことを証明する結果ではありません。';
+            const sameText = comparisonType === 'paired' ? '2回の測定に変化がない' : '2群の平均が同じ';
+            return `${variableLead}「<strong>${g1}</strong>」と「<strong>${g2}</strong>」の平均差は、今回のデータでは統計上はっきりしませんでした (${formatPValue(p, { html: true })}${dText})。` +
+                (includeCaution ? `<br>ただし、この結果だけで「${sameText}」とは決められません。` : '');
         }
     },
 
@@ -3981,7 +3998,7 @@ export const InterpretationHelper = {
      */
     interpretANOVA(p, eta2, factorName, varName = "", options = {}) {
         const pEval = this.evaluatePValue(p);
-        const varText = varName ? `「<strong>${varName}</strong>」に対して、` : "";
+        const variableLead = varName ? `「<strong>${varName}</strong>」では、` : "";
         const etaSymbol = options.isPartial ? 'η<sub>p</sub>²' : 'η²';
 
         let etaText = "";
@@ -3995,11 +4012,11 @@ export const InterpretationHelper = {
         }
 
         if (pEval.isSignificant) {
-            return `${varText}要因「<strong>${factorName}</strong>」による<strong>主効果は有意</strong>でした (${pEval.text}${etaText})。<br>` +
-                '少なくとも1群の平均が異なる可能性があります。どの群間に差があるかは多重比較で確認し、実質的な大きさは効果量とあわせて判断してください。';
+            return `${variableLead}要因「<strong>${factorName}</strong>」による平均の違いが、統計上はっきりしていました (${pEval.text}${etaText})。<br>` +
+                '少なくとも1つの平均がほかと違う結果です。どの組み合わせかは多重比較、差の大きさは効果量で見ます。';
         } else {
-            return `${varText}要因「<strong>${factorName}</strong>」による主効果について、5%水準で有意差を示す十分な証拠は得られませんでした (${formatPValue(p, { html: true })}${etaText})。<br>` +
-                '各群の平均が等しいことを証明する結果ではありません。';
+            return `${variableLead}要因「<strong>${factorName}</strong>」による平均の違いは、今回のデータでは統計上はっきりしませんでした (${formatPValue(p, { html: true })}${etaText})。<br>` +
+                'ただし、この結果だけで「すべての平均が同じ」とは決められません。';
         }
     },
 
@@ -4011,7 +4028,7 @@ export const InterpretationHelper = {
      */
     interpretChiSquare(p, cramerV, rowVar = "", colVar = "") {
         const pEval = this.evaluatePValue(p);
-        const varsText = (rowVar && colVar) ? `「<strong>${rowVar}</strong>」と「<strong>${colVar}</strong>」の間には` : "2つの変数の間には";
+        const varsText = (rowVar && colVar) ? `「<strong>${rowVar}</strong>」と「<strong>${colVar}</strong>」` : "2つの変数";
         const pNumber = Number(p);
         const exactPText = Number.isFinite(pNumber)
             ? (pNumber < 0.001 ? "<em>p</em> &lt; .001" : `<em>p</em> = ${pNumber.toFixed(3)}`)
@@ -4028,17 +4045,15 @@ export const InterpretationHelper = {
         }
 
         if (pEval.isSignificant) {
-            return `${varsText}<strong>有意な関連（連関）</strong>があります (${pEval.text}${vText})。<br>` +
-                `変数の組み合わせによって偏りがある（独立ではない）と言えます。<br>` +
-                `具体的な偏りについては、調整済み残差の表を確認してください。`;
+            return `${varsText}には、統計上はっきりした<strong>関連</strong>がありました (${pEval.text}${vText})。<br>` +
+                `どの組み合わせが予想より多いか、少ないかは、調整済み残差の表で見ます。`;
         } else {
             const trendText = pNumber < 0.1
-                ? `5%水準では有意とは言えませんが、10%水準では関連の傾向があります。<br>`
+                ? `p値は.05以上.10未満です。5%基準では「関連あり」と判断しません。<br>`
                 : "";
-            return `${varsText}5%水準で有意な関連は確認されませんでした (${exactPText}${vText})。<br>` +
+            return `${varsText}の関連は、今回のデータでは統計上はっきりしませんでした (${exactPText}${vText})。<br>` +
                 trendText +
-                `これは「独立であること」や「偏りがないこと」を証明するものではありません。<br>` +
-                `サンプルサイズや期待度数を確認し、必要に応じて残差分析や追加データで傾向を検討してください。`;
+                `ただし、この結果だけで「互いに無関係」とは決められません。期待度数と残差の表も見ます。`;
         }
     },
 
@@ -4055,26 +4070,26 @@ export const InterpretationHelper = {
         let text = "";
 
         if (pEval.isSignificant) {
-            text += `回帰モデルは<strong>統計的に有意</strong>であり (${pEval.text})、`;
-            text += `標本内では、説明変数が「<strong>${depVar}</strong>」の変動の約<strong>${(r2 * 100).toFixed(1)}%</strong>を説明しています (R²=${r2.toFixed(2)})。<br>`;
+            text += `この回帰モデルは、切片だけのモデルよりデータに合っていました (${pEval.text})。`;
+            text += `この標本では、説明変数全体で「<strong>${depVar}</strong>」のばらつきの約<strong>${(r2 * 100).toFixed(1)}%</strong>を説明しています (R² = ${r2.toFixed(2)})。<br>`;
 
             const sigCoeffs = coeffs.filter(c => c.p < 0.05);
             if (sigCoeffs.length > 0) {
-                text += `他の説明変数を一定としたとき、以下の変数が有意な関連を示しています：<ul style='margin-top:0.5rem; margin-bottom: 0;'>`;
+                text += `ほかの説明変数を同じ値にそろえて比べると、次の変数との関係が統計上はっきりしました。<ul style='margin-top:0.5rem; margin-bottom: 0;'>`;
                 sigCoeffs.forEach(c => {
-                    const dir = c.beta > 0 ? "正の関連" : "負の関連";
+                    const dir = c.beta > 0 ? "正の関係" : "負の関係";
                     const standardizedInfo = c.stdBeta !== undefined ? `標準化係数 β=${c.stdBeta.toFixed(2)}` : `係数 B=${c.beta.toFixed(2)}`;
                     text += `<li><strong>${c.name}</strong>：${dir} (${standardizedInfo})</li>`;
                 });
                 text += `</ul>`;
             } else {
-                text += `ただし、個々の説明変数で単独に有意な関連を示したものはありませんでした（多重共線性なども確認してください）。`;
+                text += `モデル全体には関係がありましたが、個々の説明変数では統計上はっきりした関係がありませんでした。変数どうしの重なりも確認します。`;
             }
         } else {
-            text += `回帰モデルについて、5%水準で有意な関連を示す十分な証拠は得られませんでした (${formatPValue(p, { html: true })})。<br>`;
-            text += `予測性能がないことを証明する結果ではありません。検証用データでの評価も必要です。`;
+            text += `この回帰モデルは、今回のデータでは切片だけのモデルよりよいとは判断できませんでした (${formatPValue(p, { html: true })})。<br>`;
+            text += `ただし、この結果だけで「予測に使えない」とは決められません。別のデータでも精度を確かめます。`;
         }
-        text += '<br>回帰係数は、研究計画や交絡の検討なしに因果効果とは解釈できません。';
+        text += '<br>回帰係数から関係の向きは読めますが、この分析だけで原因と結果は決められません。';
         return text;
     },
 
@@ -4093,7 +4108,7 @@ export const InterpretationHelper = {
 
         // 効果量の判定 (Cohen's criteria for r)
         let effectSizeText = "";
-        if (Math.abs(r) < 0.1) effectSizeText = "ほとんどない";
+        if (Math.abs(r) < 0.1) effectSizeText = "ごく小さい";
         else if (Math.abs(r) < 0.3) effectSizeText = "小さい";
         else if (Math.abs(r) < 0.5) effectSizeText = "中程度";
         else effectSizeText = "大きい";
@@ -4101,13 +4116,13 @@ export const InterpretationHelper = {
         const higherGroup = meanRank1 > meanRank2 ? groups[0] : groups[1];
 
         if (pEval.isSignificant) {
-            text += `2つのグループ間（${groups[0]} vs ${groups[1]}）には、統計的に<strong>有意な差が認められました</strong> (${pEval.text})。<br>`;
-            text += `平均順位を見ると、<strong>${higherGroup}</strong>の方が順位が高くなっており、値が大きい傾向にあります。<br>`;
-            text += `効果量 r = ${r.toFixed(2)} であり、グループ間の差は「<strong>${effectSizeText}</strong>」水準です。`;
+            text += `${groups[0]}と${groups[1]}では、順位の分布に統計上はっきりした違いがありました (${pEval.text})。<br>`;
+            text += `平均順位は<strong>${higherGroup}</strong>の方が高く、値も大きい傾向です。<br>`;
+            text += `差の大きさ: <em>r</em> = ${r.toFixed(2)} [${effectSizeText}]`;
         } else {
-            text += `2つのグループ間には、統計的に有意な差は認められませんでした (${pEval.text})。<br>`;
-            text += `平均順位は ${groups[0]}: ${meanRank1.toFixed(2)}, ${groups[1]}: ${meanRank2.toFixed(2)} です。<br>`;
-            text += `効果量 r = ${r.toFixed(2)} (${effectSizeText}) です。`;
+            text += `${groups[0]}と${groups[1]}の順位の違いは、今回のデータでは統計上はっきりしませんでした (${pEval.text})。<br>`;
+            text += `平均順位: ${groups[0]} = ${meanRank1.toFixed(2)}, ${groups[1]} = ${meanRank2.toFixed(2)}。<br>`;
+            text += `差の大きさ: <em>r</em> = ${r.toFixed(2)} [${effectSizeText}]。ただし、この結果だけで「同じ分布」とは決められません。`;
         }
         return text;
     },
@@ -4127,7 +4142,7 @@ export const InterpretationHelper = {
         let text = "";
 
         let effectSizeText = "";
-        if (Math.abs(r) < 0.1) effectSizeText = "ほとんどない";
+        if (Math.abs(r) < 0.1) effectSizeText = "ごく小さい";
         else if (Math.abs(r) < 0.3) effectSizeText = "小さい";
         else if (Math.abs(r) < 0.5) effectSizeText = "中程度";
         else effectSizeText = "大きい";
@@ -4135,13 +4150,13 @@ export const InterpretationHelper = {
         if (pEval.isSignificant) {
             const higher = median1 > median2 ? var1 : var2;
             const lower = median1 > median2 ? var2 : var1;
-            text += `「<strong>${var1}</strong>」と「<strong>${var2}</strong>」の間には、統計的に<strong>有意な差が認められました</strong> (${pEval.text})。<br>`;
-            text += `中央値を比較すると、<strong>${higher}</strong>の方が高い値を示しています。<br>`;
-            text += `効果量 r = ${r.toFixed(2)} であり、差の大きさは「<strong>${effectSizeText}</strong>」水準です。`;
+            text += `「<strong>${var1}</strong>」と「<strong>${var2}</strong>」には、統計上はっきりした変化がありました (${pEval.text})。<br>`;
+            text += `表示上の中央値は、<strong>${higher}</strong>の方が<strong>${lower}</strong>より高い結果です。<br>`;
+            text += `変化の大きさ: <em>r</em> = ${r.toFixed(2)} [${effectSizeText}]`;
         } else {
-            text += `「<strong>${var1}</strong>」と「<strong>${var2}</strong>」の間には、統計的に有意な差は認められませんでした (${pEval.text})。<br>`;
+            text += `「<strong>${var1}</strong>」と「<strong>${var2}</strong>」の変化は、今回のデータでは統計上はっきりしませんでした (${pEval.text})。<br>`;
             text += `中央値: ${var1} = ${median1.toFixed(2)}, ${var2} = ${median2.toFixed(2)}。<br>`;
-            text += `効果量 r = ${r.toFixed(2)} (${effectSizeText}) です。`;
+            text += `変化の大きさ: <em>r</em> = ${r.toFixed(2)} [${effectSizeText}]。ただし、この結果だけで「変化がない」とは決められません。`;
         }
         return text;
     }

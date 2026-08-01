@@ -64,5 +64,7 @@ test.describe('Logistic Regression', () => {
 
         // 正解率が表示されること
         await expect(page.locator('#logistic-results')).toContainText('正解率');
+        await expect(page.locator('#logistic-results')).toContainText('別のデータや交差検証でも確かめます');
+        await expect(page.locator('#logistic-results')).not.toContainText('十分な証拠は得られませんでした');
     });
 });

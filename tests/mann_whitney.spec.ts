@@ -62,8 +62,7 @@ test.describe('Mann-Whitney U Test Feature', () => {
 
         // 9. [新機能] 解釈文の検証
         const interpretation = page.locator('#interpretation-content');
-        await expect(interpretation).toContainText('効果量 r =');
-        // "小さい" "中程度" "大きい" "ほとんどない" のいずれかを含むはず
-        await expect(interpretation).toHaveText(/(小さい|中程度|大きい|ほとんどない)/);
+        await expect(interpretation).toContainText('差の大きさ: r =');
+        await expect(interpretation).toHaveText(/(ごく小さい|小さい|中程度|大きい)/);
     });
 });

@@ -195,7 +195,7 @@ function runIndependentTTest(currentData) {
 
         const levenes = calculateLeveneTest(group0Values, group1Values);
         const levenesPStr = levenes.p < 0.001 ? '< .001' : levenes.p.toFixed(3);
-        const levenesSign = levenes.p < 0.05 ? '<i class="fas fa-exclamation-triangle" style="color: #d97706;" title="等分散性が棄却されました。ウェルチのt検定の結果を採用することを推奨します（このアプリはデフォルトでウェルチです）。"></i>' : '<i class="fas fa-check" style="color: #10b981;" title="等分散性は棄却されませんでした。"></i>';
+        const levenesSign = levenes.p < 0.05 ? '<i class="fas fa-exclamation-triangle" style="color: #d97706;" title="2群の分散は等しいとは言えません。Welchのt検定の結果を使います（easyStatの標準設定です）。"></i>' : '<i class="fas fa-check" style="color: #10b981;" title="2群の分散が異なるとは判断されませんでした。"></i>';
 
         // P-value formatting
         const pValueStr = p_value < 0.001 ? '< .001' : p_value.toFixed(3);
@@ -565,7 +565,7 @@ function runOneSampleTTest(currentData) {
         ];
     });
 
-    // Wait, resultsContainer.innerHTML += ... might destroy existing event listeners if any were attached to elements inside summary-stats-section?
+    // 要約統計量のDOMを保ったまま、結果表を後ろに追加する。
     // Fortunately, most other sections are ID based and populated later or before.
     // Ideally, append childhood, but innerHTML += string is seemingly safe here as listeners are mostly on the controls which are outside results-section?
     // No, summary stats are inside.
@@ -577,7 +577,7 @@ function runOneSampleTTest(currentData) {
     // 'test-results-section' content is set via innerHTML = `...`.
     // So modifying it now is fine.
 
-    // But wait, I should set the content first then append to innerHTML?
+    // 表のHTMLを確定してから結果領域へ追加する。
     // No, I can just execute the logic.
 
     setTimeout(() => {
@@ -608,18 +608,27 @@ function displayInterpretation(testResults, groupVar, testType) {
     testResults.forEach(result => {
         let text = "";
         if (testType === 'independent') {
-            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d, result.varName);
+            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d, result.varName, { includeCaution: false });
         } else if (testType === 'paired') {
             // For paired, we use [Pre, Post] as groups
-            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d, result.varName);
+            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d, result.varName, { includeCaution: false, comparisonType: 'paired' });
         } else if (testType === 'one-sample') {
             // One sample: Compare Mean vs Mu
-            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mu, [result.varName, `検定値(μ=${result.mu})`], result.cohens_d, result.varName);
+            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mu, [result.varName, `検定値(μ=${result.mu})`], result.cohens_d, result.varName, { includeCaution: false });
         }
 
         interpretationHtml += `<li style="margin-bottom: 0.5rem;">${text}</li>`;
     });
     interpretationHtml += '</ul>';
+
+    const hasNonSignificantResult = testResults.some(result => result.p_value >= 0.05);
+    let caution = '差の大きさは、効果量、95%信頼区間、グラフで見ます。';
+    if (hasNonSignificantResult) {
+        if (testType === 'independent') caution += ' p値が0.05以上の項目も、「2群の平均が同じ」と決まったわけではありません。';
+        else if (testType === 'paired') caution += ' p値が0.05以上の項目も、「変化がない」と決まったわけではありません。';
+        else caution += ' p値が0.05以上の項目も、「基準値と同じ」と決まったわけではありません。';
+    }
+    interpretationHtml += `<p style="margin: 0.75rem 0 0; color: #475569;">${caution}</p>`;
 
     contentContainer.innerHTML = interpretationHtml;
 }
@@ -659,7 +668,7 @@ export function render(container, currentData, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> t検定 (t-Test) とは？</strong>
-                        <p>「A組とB組のテストの平均点に違いがあるか？」のように、2つのグループの平均値を比較して、その差が偶然かどうかを調べる統計手法です。</p>
+                        <p>「A組とB組のテストの平均点に違いがあるか？」のように、平均の違いがデータのばらつきに比べてどのくらい大きいかを調べる方法です。</p>
                         <img src="image/ttest.png" alt="t検定のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
@@ -670,7 +679,7 @@ export function render(container, currentData, characteristics) {
                     </ul>
                     <h4>結果の読み方</h4>
                     <ul>
-                        <li><strong>p値 (有意確率):</strong> 5%水準では、p &lt; 0.05を統計的に有意と判断します。差の重要性は効果量や信頼区間もあわせて確認します。</li>
+                        <li><strong>p値:</strong> 5%水準では、p &lt; 0.05を統計上はっきりした差の目安にします。差の大きさと不確かさは、効果量や信頼区間で確認します。</li>
                         <li><strong>効果量 (d):</strong> 差の「大きさ」を表します（データの数に関係ない指標）。0.2=小、0.5=中、0.8=大 が目安です。</li>
                     </ul>
                 </div>
@@ -685,7 +694,7 @@ export function render(container, currentData, characteristics) {
                 <div class="collapsible-content collapsed">
                     <div class="note" style="background: #f1f8ff; border-left: 5px solid #0366d6;">
                         <strong><i class="fas fa-check-circle"></i> 実装ロジックの検証</strong>
-                        <p>本ページでは、以下の標準的な統計ロジックに基づき計算を行っています（ソースコード準拠）。</p>
+                        <p>easyStatで使っている計算方法と効果量の定義です。</p>
                         <ul>
                             <li><strong>独立な2群:</strong> ウェルチのt検定 (Welch's t-test)
                                 <ul>

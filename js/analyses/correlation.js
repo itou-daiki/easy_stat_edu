@@ -282,7 +282,7 @@ function runCorrelationAnalysis(currentData) {
     }
     interpretationHtml += '</ul>';
     if (significantCount === 0) {
-        interpretationHtml = '<p>5%水準で有意な相関を示す十分な証拠は得られませんでした。相関がないことを証明する結果ではありません。</p>';
+        interpretationHtml = '<p>選んだ変数の組み合わせでは、統計上はっきりした相関は見つかりませんでした。これは「無関係」と決める結果ではありません。相関係数の大きさと散布図も見ます。</p>';
     }
 
     // Add Interpretation Area

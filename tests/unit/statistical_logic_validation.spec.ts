@@ -311,8 +311,8 @@ test.describe('Statistical Logic Validation', () => {
             });
 
             expect(interpretation).toContain('<em>p</em> = 0.052');
-            expect(interpretation).toContain('5%水準では有意とは言えません');
-            expect(interpretation).toContain('独立であること');
+            expect(interpretation).toContain('5%基準では「関連あり」と判断しません');
+            expect(interpretation).toContain('この結果だけで「互いに無関係」とは決められません');
             expect(interpretation).not.toContain('変数は互いに独立である（偏りがない）と考えられます');
             expect(interpretation).not.toContain('<em>p</em> = 0.05,');
         });

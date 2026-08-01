@@ -279,7 +279,7 @@ function interpretMcNemar(result, var1, var2, a, b, c, d, label0, label1, N) {
     const prop2 = (a + c) / N; // var2 = label1 proportion
 
     if (result.pMain < 0.05) {
-        html += `<p><strong>マクネマー検定の結果、有意な変化が認められました</strong>（`;
+        html += `<p>「${label1}」の比率に、<strong>統計上はっきりした変化がありました</strong>（`;
         if (result.p_exact !== null) {
             html += `正確二項検定 ${result.p_exact < 0.001 ? 'p &lt; .001' : 'p = ' + result.p_exact.toFixed(3)}`;
         } else {
@@ -293,14 +293,14 @@ function interpretMcNemar(result, var1, var2, a, b, c, d, label0, label1, N) {
             html += `<p>「${label1}」から「${label0}」へ変化した人（<strong>${b}人</strong>）が、逆方向の変化（<strong>${c}人</strong>）より多い結果です。</p>`;
         }
     } else {
-        html += `<p>マクネマー検定では、5%水準で比率の変化を示す十分な証拠は得られませんでした（${formatPValue(result.pMain, { html: true })}）。比率が同じであることを証明する結果ではありません。</p>`;
+        html += `<p>「${label1}」の比率の変化は、今回のデータでは<strong>統計上はっきりしませんでした</strong>（${formatPValue(result.pMain, { html: true })}）。ただし、この結果だけで「変化がない」とは決められません。</p>`;
     }
 
-    html += `<p><strong>効果量 φ = ${result.phi.toFixed(3)}</strong>: `;
-    if (result.phi >= 0.5) html += '大きな効果です。';
-    else if (result.phi >= 0.3) html += '中程度の効果です。';
-    else if (result.phi >= 0.1) html += '小さな効果です。';
-    else html += 'ほぼ効果なしです。';
+    html += `<p><strong>変化の大きさ（φ = ${result.phi.toFixed(3)}）</strong>: `;
+    if (result.phi >= 0.5) html += '大きい結果です。';
+    else if (result.phi >= 0.3) html += '中程度です。';
+    else if (result.phi >= 0.1) html += '小さい結果です。';
+    else html += 'ごく小さい結果です。';
     html += '</p>';
 
     html += `<p>${var1}で「${label1}」の比率: <strong>${(prop1 * 100).toFixed(1)}%</strong> → ${var2}で「${label1}」の比率: <strong>${(prop2 * 100).toFixed(1)}%</strong></p>`;
