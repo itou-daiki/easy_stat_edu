@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, createPairSelector, createMultiPairSelector, addSignificanceBrackets, getAcademicLayout, academicColors, createBoxPlotView, registerPlotlyViewOptions } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, createPairSelector, createMultiPairSelector, addSignificanceBrackets, getAcademicLayout, academicColors, createBoxPlotView, registerPlotlyViewOptions, bilingualHtml } from '../utils.js';
 import { calculateTukeyP, performHolmCorrection } from '../utils/stat_distributions.js';
 // import { jStat } from 'jstat'; // Use global jStat
 
@@ -635,8 +635,8 @@ function renderTwoWayANOVASummaryTable(results, designType) {
     });
 
     // 主効果・交互作用列
-    hRow1 += `<th rowspan="2" style="${thStyle} min-width: 75px; font-size: 0.85rem; background: #f0f7ff;">${factorA}の<br>主効果</th>`;
-    hRow1 += `<th rowspan="2" style="${thStyle} min-width: 75px; font-size: 0.85rem; background: #f0f7ff;">${factorB}の<br>主効果</th>`;
+    hRow1 += `<th rowspan="2" style="${thStyle} min-width: 75px; font-size: 0.85rem; background: #f0f7ff;">${bilingualHtml(`${factorA}の<br>主効果`, `Main effect of<br>${factorA}`)}</th>`;
+    hRow1 += `<th rowspan="2" style="${thStyle} min-width: 75px; font-size: 0.85rem; background: #f0f7ff;">${bilingualHtml(`${factorB}の<br>主効果`, `Main effect of<br>${factorB}`)}</th>`;
     hRow1 += `<th rowspan="2" style="${thStyle} min-width: 75px; font-size: 0.85rem; background: #f0f7ff;">交互作用</th>`;
 
     // === ボディ: 従属変数ごとにFactor2レベルをサブ行で展開 ===
@@ -784,12 +784,20 @@ function displayTwoWayANOVAInterpretation(results, designType) {
         const getMainEffectText = (p) => p < 0.05
             ? '他方の要因を平均すると、水準間の平均差は統計上はっきりしています。'
             : '他方の要因を平均した水準間の平均差は、今回のデータでは統計上はっきりしません。';
+        const getMainEffectTextEn = (p) => p < 0.05
+            ? 'Averaged across the other factor, the difference among levels was statistically significant.'
+            : 'Averaged across the other factor, the difference among levels was not statistically significant in this sample.';
         const interactionText = pAxB < 0.05
             ? '要因の組み合わせによる結果の変わり方は、統計上はっきりしています。'
             : '要因の組み合わせによる結果の変わり方は、今回のデータでは統計上はっきりしません。';
+        const interactionTextEn = pAxB < 0.05
+            ? 'The way the outcome changed across one factor depended significantly on the other factor.'
+            : 'The interaction between the two factors was not statistically significant in this sample.';
         const getStars = (p) => p < 0.01 ? '**' : p < 0.05 ? '*' : p < 0.1 ? '†' : 'n.s.';
+        const methodJa = res.method === 'tukey' ? 'Tukey-Kramer法' : res.method === 'holm' ? 'Holm法' : 'Bonferroni法';
+        const methodEn = res.method === 'tukey' ? 'Tukey-Kramer' : res.method === 'holm' ? 'Holm' : 'Bonferroni';
 
-        html += `
+        const japaneseHtml = `
             <div style="margin-bottom: 1.5rem; border-left: 4px solid #1e90ff; padding-left: 1rem;">
                 <h5 style="font-weight: bold; color: #2d3748; margin-bottom: 0.5rem;">${varName} の分析結果</h5>
                 
@@ -813,10 +821,33 @@ function displayTwoWayANOVAInterpretation(results, designType) {
                 </p>
                 
                 <p style="margin-top: 0.5rem; font-size: 0.9em; color: #666;">
-                   ※ 多重比較法: ${res.method === 'tukey' ? 'Tukey-Kramer法' : res.method === 'holm' ? 'Holm法' : 'Bonferroni法'}
+                   ※ 多重比較法: ${methodJa}
                 </p>
             </div>
         `;
+        const englishHtml = `
+            <div style="margin-bottom: 1.5rem; border-left: 4px solid #1e90ff; padding-left: 1rem;">
+                <h5 style="font-weight: bold; color: #2d3748; margin-bottom: 0.5rem;">Results for ${varName}</h5>
+                <p style="margin: 0.5rem 0;">
+                    <strong>1. Interaction (${factorA} × ${factorB}):</strong><br>
+                    ${pAxB < 0.001 ? 'p &lt; .001' : 'p = ' + pAxB.toFixed(3)} (${getStars(pAxB)}), partial η² = ${etaAxB.toFixed(2)}.<br>
+                    ${interactionTextEn}
+                    ${pAxB < 0.05 ? '<br><span style="color: #d97706; font-size: 0.9em;"><i class="fas fa-exclamation-triangle"></i> Interpret the interaction plot and simple main effects before summarizing the main effects.</span>' : '<br><span style="color: #059669; font-size: 0.9em;">Next, inspect each main effect averaged across the other factor.</span>'}
+                </p>
+                <p style="margin: 0.5rem 0;">
+                    <strong>2. Main effect of ${factorA}:</strong><br>
+                    ${pA < 0.001 ? 'p &lt; .001' : 'p = ' + pA.toFixed(3)} (${getStars(pA)}), partial η² = ${etaA.toFixed(2)}.<br>
+                    ${getMainEffectTextEn(pA)}
+                </p>
+                <p style="margin: 0.5rem 0;">
+                    <strong>3. Main effect of ${factorB}:</strong><br>
+                    ${pB < 0.001 ? 'p &lt; .001' : 'p = ' + pB.toFixed(3)} (${getStars(pB)}), partial η² = ${etaB.toFixed(2)}.<br>
+                    ${getMainEffectTextEn(pB)}
+                </p>
+                <p style="margin-top: 0.5rem; font-size: 0.9em; color: #666;">Multiple-comparison method: ${methodEn}</p>
+            </div>
+        `;
+        html += bilingualHtml(japaneseHtml, englishHtml);
     });
 
     contentContainer.innerHTML = html;

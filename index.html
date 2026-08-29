@@ -145,7 +145,12 @@
     <div id="main-app" style="display: none;">
         <!-- ヒーローセクション -->
         <div class="hero-section">
-            <div style="position: absolute; top: 1.5rem; right: 1.5rem; z-index: 10;">
+            <div class="hero-actions">
+                <div class="language-switcher" data-language-switcher role="group" aria-label="表示言語 / Display language">
+                    <i class="fas fa-language" aria-hidden="true"></i>
+                    <button type="button" data-locale="ja" aria-pressed="true">日本語</button>
+                    <button type="button" data-locale="en" aria-pressed="false" tabindex="-1">English</button>
+                </div>
                 <a href="manual.html" target="_blank" class="btn-demo" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.4); padding: 0.5rem 1rem;">
                     <i class="fas fa-book-open"></i> 使い方マニュアル
                 </a>
@@ -745,7 +750,7 @@
                     </h3>
                     <i class="fas fa-chevron-down toggle-icon"></i>
                 </div>
-                <div class="collapsible-content collapsed">
+                <div class="collapsible-content collapsed" data-home-content="about">
                     <h4>easyStat - ブラウザ統計分析アプリ</h4>
                     <p>
                         <strong>easyStat</strong>は、ブラウザ上で動作する無料の統計分析Webアプリケーションです。
@@ -877,7 +882,7 @@
                     </h3>
                     <i class="fas fa-chevron-down toggle-icon"></i>
                 </div>
-                <div class="collapsible-content collapsed">
+                <div class="collapsible-content collapsed" data-home-content="usage">
                     <h4>基本的な使い方</h4>
 
                     <div class="usage-step">
@@ -949,7 +954,7 @@
                     </h3>
                     <i class="fas fa-chevron-down toggle-icon"></i>
                 </div>
-                <div class="collapsible-content collapsed">
+                <div class="collapsible-content collapsed" data-home-content="releaseNotes">
                     <div class="changelog">
                         <div class="changelog-entry">
                             <div class="changelog-header">

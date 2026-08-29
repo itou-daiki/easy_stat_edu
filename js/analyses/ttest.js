@@ -3,7 +3,7 @@
  * 対応なしt検定、対応ありt検定、1サンプルt検定を実行
  * @module analyses/ttest
  */
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
+import { bilingualHtml, renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
 import { displayVisualization } from './ttest/visualization.js';
 
 
@@ -235,7 +235,7 @@ function runIndependentTTest(currentData) {
     }
 
     resultsTableHtml += `<div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem;">
-        <i class="fas fa-info-circle"></i> <strong>Levene p</strong>: 等分散性の検定（Levene検定）のp値です。p < .05 の場合、等分散ではない（分散が異なる）可能性が高いため、Welchのt検定（本分析のデフォルト）の結果がより信頼できます。
+        <i class="fas fa-info-circle"></i> <strong>Levene p</strong>: 等分散性の検定（Levene検定）のp値です。p &lt; .05 の場合、等分散ではない（分散が異なる）可能性が高いため、Welchのt検定（本分析のデフォルト）の結果がより信頼できます。
     </div>`;
 
     document.getElementById('test-results-table').innerHTML = resultsTableHtml;
@@ -628,7 +628,13 @@ function displayInterpretation(testResults, groupVar, testType) {
         else if (testType === 'paired') caution += ' p値が0.05以上の項目も、「変化がない」と決まったわけではありません。';
         else caution += ' p値が0.05以上の項目も、「基準値と同じ」と決まったわけではありません。';
     }
-    interpretationHtml += `<p style="margin: 0.75rem 0 0; color: #475569;">${caution}</p>`;
+    let cautionEn = 'Use the effect size, 95% confidence interval, and graph to judge the size of each difference.';
+    if (hasNonSignificantResult) {
+        if (testType === 'independent') cautionEn += ' A result with p ≥ .05 does not establish that the two group means are equal.';
+        else if (testType === 'paired') cautionEn += ' A result with p ≥ .05 does not establish that there was no change.';
+        else cautionEn += ' A result with p ≥ .05 does not establish that the mean equals the reference value.';
+    }
+    interpretationHtml += `<p style="margin: 0.75rem 0 0; color: #475569;">${bilingualHtml(caution, cautionEn)}</p>`;
 
     contentContainer.innerHTML = interpretationHtml;
 }

@@ -4,7 +4,7 @@
  * @description 時系列データの可視化と移動平均計算
  */
 
-import { createVariableSelector, createAnalysisButton, showError, createPlotlyConfig, createVisualizationControls, renderDataOverview, getAcademicLayout, academicColors } from '../utils.js';
+import { bilingualHtml, createVariableSelector, createAnalysisButton, showError, createPlotlyConfig, createVisualizationControls, renderDataOverview, getAcademicLayout, academicColors } from '../utils.js';
 
 /**
  * 時系列分析UIをレンダリング
@@ -269,7 +269,14 @@ function renderInterpretation(acf, window, label) {
     else if (Math.abs(r1) < 0.2) persistenceText = '直前の値とのつながりは弱い結果です。';
     else persistenceText = '直前の値とのつながりは弱めから中程度です。';
 
-    div.innerHTML = `
+    let persistenceTextEn = '';
+    if (r1 > 0.8) persistenceTextEn = 'Very strong short-term persistence is present.';
+    else if (r1 > 0.5) persistenceTextEn = 'Similar values often follow one another.';
+    else if (r1 < -0.5) persistenceTextEn = 'Values often alternate in direction, such as a high value followed by a low one.';
+    else if (Math.abs(r1) < 0.2) persistenceTextEn = 'The relationship with the immediately preceding value is weak.';
+    else persistenceTextEn = 'The relationship with the immediately preceding value is weak to moderate.';
+
+    const japanese = `
         <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-lightbulb"></i> 結果を読む</h4>
         <p><strong>長い流れ:</strong><br>
         ${window}項移動平均線（青線）で、細かな上下をならした動きを見ます。上昇・下降・横ばいのどれに近いかは、この線と元の値を一緒に確認します。</p>
@@ -278,4 +285,14 @@ function renderInterpretation(acf, window, label) {
         <p><strong>周期:</strong><br>
         ACFグラフで同じ間隔ごとに大きな棒が現れると、繰り返す動きの手がかりになります。赤い破線を越える棒がどの間隔にあるかを見ます。</p>
     `;
+    const english = `
+        <h4 style="color: #1e90ff; margin-bottom: 1rem;"><i class="fas fa-lightbulb"></i> Reading the results</h4>
+        <p><strong>Long-term movement:</strong><br>
+        The ${window}-point moving average (blue line) smooths short-term fluctuations. Compare it with the original values before describing the series as rising, falling, or level.</p>
+        <p><strong>Short-term persistence:</strong><br>
+        The lag-1 autocorrelation is <strong>${r1.toFixed(2)}</strong>. ${persistenceTextEn} This value alone does not establish an upward or downward trend.</p>
+        <p><strong>Recurring patterns:</strong><br>
+        Repeated large ACF bars at regular lags can suggest a cycle. Check which lags, if any, extend beyond the red dashed reference lines.</p>
+    `;
+    div.innerHTML = bilingualHtml(japanese, english);
 }

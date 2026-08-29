@@ -1,7 +1,7 @@
 // ==========================================
 // Logistic Regression Module
 // ==========================================
-import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, getAcademicLayout, academicColors, formatPValue } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, generateAPATableHtml, getAcademicLayout, academicColors, formatPValue, bilingualHtml } from '../utils.js';
 
 // ==========================================
 // Logistic Regression Core (IRLS)
@@ -438,23 +438,29 @@ function runLogisticRegression(currentData, characteristics) {
 
 function interpretLogistic(result, varNames, oddsRatios, cm, r2, modelP, label0, label1) {
     let html = '';
+    let htmlEn = '';
 
     // Model fit
     if (modelP < 0.05) {
         html += `<p>説明変数を入れたこのモデルは、切片だけのモデルより<strong>データによく合っていました</strong>（${formatPValue(modelP, { html: true })}）。モデル全体として、「${label1}」になるかどうかとの関係が統計上はっきりしています。</p>`;
+        htmlEn += `<p>The model with predictors fit the data <strong>significantly better than the intercept-only model</strong> (${formatPValue(modelP, { html: true })}). Taken together, the predictors were statistically associated with whether the outcome was ${label1}.</p>`;
     } else {
         html += `<p>このモデルが切片だけのモデルよりデータによく合うとは、今回の結果からは判断できませんでした（${formatPValue(modelP, { html: true })}）。ただし、この結果だけで「予測に使えない」とは決められません。</p>`;
+        htmlEn += `<p>The model was not significantly better than the intercept-only model in this sample (${formatPValue(modelP, { html: true })}). This result alone does not establish that the model has no predictive value.</p>`;
     }
 
     html += `<p><strong>Nagelkerke R² = ${r2.toFixed(3)}</strong>: 切片のみのモデルからの改善を表す擬似R²です。線形回帰のR²と同じ割合としては解釈しません。</p>`;
+    htmlEn += `<p><strong>Nagelkerke R² = ${r2.toFixed(3)}</strong>: this pseudo-R² describes improvement over the intercept-only model. Do not interpret it as the same proportion explained as R² in linear regression.</p>`;
 
     const accuracyLift = cm.accuracy - cm.baselineAccuracy;
     html += `<p><strong>このデータでの正解率は ${(cm.accuracy * 100).toFixed(1)}%</strong>です（多数派だけを選ぶ基準 ${(cm.baselineAccuracy * 100).toFixed(1)}%、差 ${accuracyLift >= 0 ? '+' : ''}${(accuracyLift * 100).toFixed(1)}ポイント）。学習に使ったデータでの値なので、別のデータや交差検証でも確かめます。</p>`;
+    htmlEn += `<p><strong>In-sample accuracy was ${(cm.accuracy * 100).toFixed(1)}%</strong> (majority-class baseline ${(cm.baselineAccuracy * 100).toFixed(1)}%; difference ${accuracyLift >= 0 ? '+' : ''}${(accuracyLift * 100).toFixed(1)} percentage points). Because this uses the training data, also evaluate performance with cross-validation or new data.</p>`;
 
     // Significant predictors
     const sigVars = varNames.slice(1).filter((_, i) => result.pValues[i + 1] < 0.05);
     if (sigVars.length > 0) {
         html += '<p><strong>ほかの説明変数を同じ値にそろえたとき、関係が統計上はっきりした変数:</strong></p><ul>';
+        htmlEn += '<p><strong>Predictors with a statistically significant adjusted association:</strong></p><ul>';
         sigVars.forEach(name => {
             const realIdx = varNames.indexOf(name);
             const or = oddsRatios[realIdx];
@@ -465,12 +471,15 @@ function interpretLogistic(result, varNames, oddsRatios, cm, r2, modelP, label0,
                 html += `1単位高い場合、「${label1}」のオッズは<strong>${or.toFixed(3)}倍</strong>です。`;
             }
             html += '</li>';
+            htmlEn += `<li><strong>${name}</strong>: for a one-unit increase, the odds of ${label1} were multiplied by <strong>${or.toFixed(3)}</strong>, holding the other predictors constant.</li>`;
         });
         html += '</ul>';
+        htmlEn += '</ul>';
     }
 
     html += '<p>オッズ比は確率そのものの倍率ではありません。また、この分析だけで原因と結果は決められません。</p>';
-    return html;
+    htmlEn += '<p>An odds ratio is not a multiplier of probability. This analysis alone also cannot establish cause and effect.</p>';
+    return bilingualHtml(html, htmlEn);
 }
 
 // ==========================================

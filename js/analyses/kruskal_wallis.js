@@ -4,7 +4,7 @@
  * @description 3群以上のノンパラメトリック検定（一元配置分散分析の順位版）
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets, bilingualHtml } from '../utils.js';
 
 // `displaySummaryStatistics` is no longer needed as we use an integrated table.
 
@@ -440,17 +440,24 @@ function displayInterpretation(testResults) {
         });
 
         let text = `<strong>${result.varName}</strong>: `;
+        let textEn = `<strong>${result.varName}</strong>: `;
         if (pEval.isSignificant) {
             text += `群の順位に、統計上はっきりした違いがありました (H(${result.df}) = ${result.H.toFixed(2)}, ${pEval.text})。`;
             text += `<br>平均順位が最も高いのは「<strong>${maxGroup}</strong>」、最も低いのは「<strong>${minGroup}</strong>」です。`;
             text += `<br>差の大きさ: ε² = ${result.epsilon2.toFixed(3)} [${eta2Text}]`;
             text += `<br>どの組み合わせが違うかは、Dunn検定の表で見ます。`;
+            textEn += `The group rank distributions differed significantly (H(${result.df}) = ${result.H.toFixed(2)}, ${pEval.text.replace('p', '<em>p</em>')}).`;
+            textEn += `<br>The highest mean rank was for <strong>${maxGroup}</strong>, and the lowest was for <strong>${minGroup}</strong>.`;
+            textEn += `<br>Effect size: ε² = ${result.epsilon2.toFixed(3)} [${eta2Text === '大' ? 'large' : eta2Text === '中程度' ? 'medium' : eta2Text === '小' ? 'small' : 'negligible'}].`;
+            textEn += '<br>Use the Dunn post-hoc table to identify which pairs differ.';
         } else {
             text += `群の順位の違いは、今回のデータでは統計上はっきりしませんでした (H(${result.df}) = ${result.H.toFixed(2)}, <em>p</em> = ${result.pValue.toFixed(3)})。`;
             text += `<br>差の大きさ: ε² = ${result.epsilon2.toFixed(3)} [${eta2Text}]。ただし、この結果だけで「すべての群が同じ」とは決められません。`;
+            textEn += `The difference among group rank distributions was not statistically significant in this sample (H(${result.df}) = ${result.H.toFixed(2)}, <em>p</em> = ${result.pValue.toFixed(3)}).`;
+            textEn += `<br>Effect size: ε² = ${result.epsilon2.toFixed(3)} [${eta2Text === '大' ? 'large' : eta2Text === '中程度' ? 'medium' : eta2Text === '小' ? 'small' : 'negligible'}]. This does not establish that all groups are the same.`;
         }
 
-        interpretationHtml += `<li style="margin-bottom: 0.5rem;">${text}</li>`;
+        interpretationHtml += `<li style="margin-bottom: 0.5rem;">${bilingualHtml(text, textEn)}</li>`;
     });
 
     interpretationHtml += '</ul>';

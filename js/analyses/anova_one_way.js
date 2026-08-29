@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createMultiSetSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets, getAcademicLayout, academicColors, createBoxPlotView, registerPlotlyViewOptions } from '../utils.js';
+import { renderDataOverview, createVariableSelector, createMultiSetSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets, getAcademicLayout, academicColors, createBoxPlotView, registerPlotlyViewOptions, bilingualHtml } from '../utils.js';
 import { calculateTukeyP, performHolmCorrection } from '../utils/stat_distributions.js';
 
 // Pairwise t-test helper for Between-Subjects (Independent)
@@ -1280,8 +1280,10 @@ export function render(container, currentData, characteristics) {
                         <option value="bonferroni">Bonferroni法 (Welch t検定ベース)</option>
                     </select>
                     <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #6b7280;">
-                        ※ <strong>Tukey</strong>はANOVAの前提（等分散）に基づき検出力が高い手法です。
-                        <strong>Holm</strong>や<strong>Bonferroni</strong>は、Welchの検定を使用し等分散性が疑われる場合に頑健です。
+                        ${bilingualHtml(
+                            '※ <strong>Tukey</strong>はANOVAの前提（等分散）に基づき検出力が高い手法です。 <strong>Holm</strong>や<strong>Bonferroni</strong>は、Welchの検定を使用し等分散性が疑われる場合に頑健です。',
+                            '<strong>Tukey</strong> has good power when the standard ANOVA equal-variance assumption holds. <strong>Holm</strong> and <strong>Bonferroni</strong> use Welch tests and are more robust when equal variances are doubtful.'
+                        )}
                     </p>
                 </div>
 

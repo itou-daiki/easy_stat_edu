@@ -4,8 +4,9 @@
 import { MultiSelect } from './components/MultiSelect.js';
 import { getSignificanceSymbol } from './analyses/constants.js';
 import { performHolmCorrection } from './utils/stat_distributions.js';
+import { bilingualHtml, getLocale, getSourceText, translateText } from './i18n.js';
 
-export { getSignificanceSymbol };
+export { bilingualHtml, getSignificanceSymbol };
 
 /**
  * Toggles the visibility of a collapsible section.
@@ -3296,9 +3297,15 @@ function enhanceCanvasFigure(target, root, installation) {
 
     const panel = target.closest('.tm-result-panel') || target.parentElement;
     const heading = panel?.querySelector('.tm-visual-heading h6, h5, h4');
-    const defaultTitle = heading?.textContent?.trim()
+    const renderedDefaultTitle = heading?.textContent?.trim()
         || findNearbyHeadingText(target, root)
         || '可視化';
+    const sourceDefaultTitle = getSourceText(heading) || renderedDefaultTitle;
+    const localizedDefaultTitles = {
+        ja: sourceDefaultTitle,
+        en: translateText(sourceDefaultTitle, 'en', { preserveUserTerms: true })
+    };
+    const defaultTitle = localizedDefaultTitles[getLocale()] || sourceDefaultTitle;
     const legend = target.id ? document.getElementById(`${target.id}-legend`) : null;
     const downloadButton = panel?.querySelector(`.download-btn[data-target="${target.id}"]`);
     const sizeDefaults = getVisualizationSizeDefaults(target, 420);
@@ -3324,13 +3331,24 @@ function enhanceCanvasFigure(target, root, installation) {
     });
     let lastDimensions = null;
 
-    const apply = () => {
+    const applyTitleMetadata = () => {
         if (heading) {
             heading.textContent = titleField.input.value;
             heading.hidden = !titleField.checkbox.checked;
         }
         const visibleTitle = titleField.checkbox.checked ? titleField.input.value : '';
         target.dataset.visualTitle = visibleTitle;
+        const canvas = target.tagName === 'CANVAS' ? target : target.querySelector('canvas');
+        if (canvas) canvas.dataset.visualTitle = visibleTitle;
+        if (downloadButton) {
+            downloadButton.setAttribute(
+                'aria-label',
+                `${titleField.input.value || '図'}をPNG画像で保存`
+            );
+        }
+    };
+    const apply = () => {
+        applyTitleMetadata();
         const dimensions = resolveVisualizationDimensions(target, sizeControls, sizeDefaults);
         const sizeChanged = !lastDimensions
             || lastDimensions.width !== dimensions.width
@@ -3342,7 +3360,6 @@ function enhanceCanvasFigure(target, root, installation) {
         applyVisualizationBox(target, dimensions);
         const canvas = target.tagName === 'CANVAS' ? target : target.querySelector('canvas');
         if (canvas) {
-            canvas.dataset.visualTitle = visibleTitle;
             canvas.dataset.visualLegendVisible = String(legendCheckbox?.checked ?? true);
             canvas.dataset.visualWidthPercent = String(dimensions.widthPercent);
             canvas.dataset.visualAspectRatio = dimensions.aspectRatio;
@@ -3350,19 +3367,13 @@ function enhanceCanvasFigure(target, root, installation) {
         }
         target.dataset.visualLegendVisible = String(legendCheckbox?.checked ?? true);
         if (legend && legendCheckbox) legend.hidden = !legendCheckbox.checked;
-        if (downloadButton) {
-            downloadButton.setAttribute(
-                'aria-label',
-                `${titleField.input.value || '図'}をPNG画像で保存`
-            );
-        }
     };
     titleField.checkbox.addEventListener('change', apply);
     titleField.input.addEventListener('input', apply);
     legendCheckbox?.addEventListener('change', apply);
     bindVisualizationSizeControls(sizeControls, apply);
     appendVisualizationResetButton(editor.body, () => {
-        titleField.input.value = defaultTitle;
+        titleField.input.value = localizedDefaultTitles[getLocale()] || sourceDefaultTitle;
         titleField.checkbox.checked = true;
         if (legendCheckbox) legendCheckbox.checked = true;
         sizeControls.widthInput.value = String(sizeDefaults.widthPercent);
@@ -3377,6 +3388,17 @@ function enhanceCanvasFigure(target, root, installation) {
         delete target.dataset.visualizationEditorAttached;
         return;
     }
+    const updateLocale = () => {
+        if (!target.isConnected) {
+            installation.localeCallbacks.delete(updateLocale);
+            return;
+        }
+        if (Object.values(localizedDefaultTitles).includes(titleField.input.value)) {
+            titleField.input.value = localizedDefaultTitles[getLocale()] || sourceDefaultTitle;
+            applyTitleMetadata();
+        }
+    };
+    installation.localeCallbacks.add(updateLocale);
     installation.sizeStates.add({
         target,
         applySize: apply,
@@ -3417,6 +3439,8 @@ export function installVisualizationEditors(root) {
         masterListener: null,
         bulkEditor: null,
         bulkControls: null,
+        localeCallbacks: new Set(),
+        localeListener: null,
         api: null
     };
 
@@ -3489,6 +3513,10 @@ export function installVisualizationEditors(root) {
         }, 100);
     };
     target.addEventListener('change', installation.masterListener, true);
+    installation.localeListener = () => {
+        installation.localeCallbacks.forEach(callback => callback());
+    };
+    document.addEventListener('easystat:localechange', installation.localeListener);
 
     const api = {
         refresh,
@@ -3497,6 +3525,8 @@ export function installVisualizationEditors(root) {
             installation.resizeObserver?.disconnect();
             window.clearTimeout(installation.resizeTimer);
             target.removeEventListener('change', installation.masterListener, true);
+            document.removeEventListener('easystat:localechange', installation.localeListener);
+            installation.localeCallbacks.clear();
             visualizationEditorInstallations.delete(target);
         }
     };
@@ -3910,26 +3940,34 @@ export const InterpretationHelper = {
         const pEval = this.evaluatePValue(p);
 
         let strength = "";
-        if (absR < 0.2) strength = "非常に弱い";
-        else if (absR < 0.4) strength = "弱い";
-        else if (absR < 0.7) strength = "中程度の";
-        else strength = "強い";
+        let strengthEn = "";
+        if (absR < 0.2) { strength = "非常に弱い"; strengthEn = "very weak"; }
+        else if (absR < 0.4) { strength = "弱い"; strengthEn = "weak"; }
+        else if (absR < 0.7) { strength = "中程度の"; strengthEn = "moderate"; }
+        else { strength = "強い"; strengthEn = "strong"; }
 
         let direction = r > 0 ? "正" : "負";
         if (absR < 0.1) direction = ""; // ほぼ無相関なら方向言及しない
 
         let text = `「<strong>${var1}</strong>」と「<strong>${var2}</strong>」`;
+        let english = '';
 
         if (pEval.isSignificant) {
             text += `には、統計上はっきりした<strong>${strength}${direction}の相関</strong>がありました (<em>r</em> = ${r.toFixed(2)}, ${pEval.text})。`;
             if (r > 0) text += `<br>つまり、<strong>${var1}が高いほど、${var2}も高い</strong>傾向があります。`;
             else text += `<br>つまり、<strong>${var1}が高いほど、${var2}は低い</strong>傾向があります。`;
             text += '<br>ただし、相関だけでは原因と結果の関係は分かりません。';
+            const directionEn = r > 0 ? 'positive' : 'negative';
+            const trendEn = r > 0
+                ? `Higher values of <strong>${var1}</strong> tended to occur with higher values of <strong>${var2}</strong>.`
+                : `Higher values of <strong>${var1}</strong> tended to occur with lower values of <strong>${var2}</strong>.`;
+            english = `<strong>${var1}</strong> and <strong>${var2}</strong> had a statistically clear <strong>${strengthEn} ${directionEn} correlation</strong> (<em>r</em> = ${r.toFixed(2)}, ${pEval.text}).<br>${trendEn}<br>Correlation alone does not establish cause and effect.`;
         } else {
             text += `の相関は、今回のデータでは統計上はっきりしませんでした (<em>r</em> = ${r.toFixed(2)}, ${formatPValue(p, { html: true })})。`;
             text += '<br>ただし、この結果だけで「無関係」とは決められません。相関係数の大きさと散布図も見ます。';
+            english = `The correlation between <strong>${var1}</strong> and <strong>${var2}</strong> was not statistically clear in this sample (<em>r</em> = ${r.toFixed(2)}, ${formatPValue(p, { html: true })}).<br>This does not establish that the variables are unrelated. Also inspect the size of <em>r</em> and the scatterplot.`;
         }
-        return text;
+        return bilingualHtml(text, english);
     },
 
     /**
@@ -3953,14 +3991,21 @@ export const InterpretationHelper = {
         const comparisonType = options.comparisonType || 'independent';
 
         let dText = "";
+        let dTextEn = "";
         if (d !== undefined && d !== null) {
             const absD = Math.abs(d);
             let dSize = "";
+            let dSizeEn = "";
             if (absD < 0.2) dSize = "ごくわずか";
             else if (absD < 0.5) dSize = "小";
             else if (absD < 0.8) dSize = "中程度";
             else dSize = "大";
+            if (absD < 0.2) dSizeEn = "negligible";
+            else if (absD < 0.5) dSizeEn = "small";
+            else if (absD < 0.8) dSizeEn = "medium";
+            else dSizeEn = "large";
             dText = `, <em>d</em> = ${d.toFixed(2)} [${dSize}]`;
+            dTextEn = `, <em>d</em> = ${d.toFixed(2)} [${dSizeEn}]`;
         }
 
         if (isReferenceComparison) {
@@ -3971,19 +4016,38 @@ export const InterpretationHelper = {
             const caution = pEval.isSignificant
                 ? '差の大きさは、効果量、95%信頼区間、グラフで見ます。'
                 : 'ただし、この結果だけで「基準値と同じ」とは決められません。';
-            return `${variableLead}平均は${direction}、${conclusion} (${pEval.text}${dText})。` +
+            const japanese = `${variableLead}平均は${direction}、${conclusion} (${pEval.text}${dText})。` +
                 (includeCaution ? `<br>${caution}` : '');
+            const directionEn = mean1 === mean2 ? 'equal to the reference value' : `${mean1 > mean2 ? 'higher' : 'lower'} than the reference value`;
+            const conclusionEn = pEval.isSignificant
+                ? 'the difference was statistically clear'
+                : 'the difference was not statistically clear in this sample';
+            const cautionEn = pEval.isSignificant
+                ? 'Use the effect size, 95% confidence interval, and graph to judge the size of the difference.'
+                : 'This result does not establish that the mean equals the reference value.';
+            const english = `${varName ? `For <strong>${varName}</strong>, ` : ''}the mean was ${directionEn}, and ${conclusionEn} (${pEval.text}${dTextEn}).` +
+                (includeCaution ? `<br>${cautionEn}` : '');
+            return bilingualHtml(japanese, english);
         }
 
         if (pEval.isSignificant) {
             const high = mean1 > mean2 ? g1 : g2;
             const low = mean1 > mean2 ? g2 : g1;
-            return `${variableLead}<strong>${high}</strong>の平均が<strong>${low}</strong>より高く、差は統計上はっきりしていました (${pEval.text}${dText})。` +
+            const japanese = `${variableLead}<strong>${high}</strong>の平均が<strong>${low}</strong>より高く、差は統計上はっきりしていました (${pEval.text}${dText})。` +
                 (includeCaution ? '<br>差の大きさは、効果量、95%信頼区間、グラフで見ます。' : '');
+            const english = `${varName ? `For <strong>${varName}</strong>, ` : ''}the mean was higher in <strong>${high}</strong> than in <strong>${low}</strong>, and the difference was statistically clear (${pEval.text}${dTextEn}).` +
+                (includeCaution ? '<br>Use the effect size, 95% confidence interval, and graph to judge the size of the difference.' : '');
+            return bilingualHtml(japanese, english);
         } else {
             const sameText = comparisonType === 'paired' ? '2回の測定に変化がない' : '2群の平均が同じ';
-            return `${variableLead}「<strong>${g1}</strong>」と「<strong>${g2}</strong>」の平均差は、今回のデータでは統計上はっきりしませんでした (${formatPValue(p, { html: true })}${dText})。` +
+            const japanese = `${variableLead}「<strong>${g1}</strong>」と「<strong>${g2}</strong>」の平均差は、今回のデータでは統計上はっきりしませんでした (${formatPValue(p, { html: true })}${dText})。` +
                 (includeCaution ? `<br>ただし、この結果だけで「${sameText}」とは決められません。` : '');
+            const cautionEn = comparisonType === 'paired'
+                ? 'This result does not establish that there was no change between measurements.'
+                : 'This result does not establish that the two group means are equal.';
+            const english = `${varName ? `For <strong>${varName}</strong>, ` : ''}the mean difference between <strong>${g1}</strong> and <strong>${g2}</strong> was not statistically clear in this sample (${formatPValue(p, { html: true })}${dTextEn}).` +
+                (includeCaution ? `<br>${cautionEn}` : '');
+            return bilingualHtml(japanese, english);
         }
     },
 
@@ -4002,21 +4066,32 @@ export const InterpretationHelper = {
         const etaSymbol = options.isPartial ? 'η<sub>p</sub>²' : 'η²';
 
         let etaText = "";
+        let etaTextEn = "";
         if (eta2 !== undefined && eta2 !== null) {
             let size = "";
+            let sizeEn = "";
             if (eta2 < 0.01) size = "ごくわずか";
             else if (eta2 < 0.06) size = "小";
             else if (eta2 < 0.14) size = "中程度";
             else size = "大";
+            if (eta2 < 0.01) sizeEn = "negligible";
+            else if (eta2 < 0.06) sizeEn = "small";
+            else if (eta2 < 0.14) sizeEn = "medium";
+            else sizeEn = "large";
             etaText = `, <em>${etaSymbol}</em> = ${eta2.toFixed(2)} [${size}]`;
+            etaTextEn = `, <em>${etaSymbol}</em> = ${eta2.toFixed(2)} [${sizeEn}]`;
         }
 
         if (pEval.isSignificant) {
-            return `${variableLead}要因「<strong>${factorName}</strong>」による平均の違いが、統計上はっきりしていました (${pEval.text}${etaText})。<br>` +
+            const japanese = `${variableLead}要因「<strong>${factorName}</strong>」による平均の違いが、統計上はっきりしていました (${pEval.text}${etaText})。<br>` +
                 '少なくとも1つの平均がほかと違う結果です。どの組み合わせかは多重比較、差の大きさは効果量で見ます。';
+            const english = `${varName ? `For <strong>${varName}</strong>, ` : ''}mean differences across levels of <strong>${factorName}</strong> were statistically clear (${pEval.text}${etaTextEn}).<br>At least one mean differed. Use post-hoc comparisons to locate the differences and the effect size to judge their magnitude.`;
+            return bilingualHtml(japanese, english);
         } else {
-            return `${variableLead}要因「<strong>${factorName}</strong>」による平均の違いは、今回のデータでは統計上はっきりしませんでした (${formatPValue(p, { html: true })}${etaText})。<br>` +
+            const japanese = `${variableLead}要因「<strong>${factorName}</strong>」による平均の違いは、今回のデータでは統計上はっきりしませんでした (${formatPValue(p, { html: true })}${etaText})。<br>` +
                 'ただし、この結果だけで「すべての平均が同じ」とは決められません。';
+            const english = `${varName ? `For <strong>${varName}</strong>, ` : ''}mean differences across levels of <strong>${factorName}</strong> were not statistically clear in this sample (${formatPValue(p, { html: true })}${etaTextEn}).<br>This result does not establish that all means are equal.`;
+            return bilingualHtml(japanese, english);
         }
     },
 
@@ -4035,25 +4110,39 @@ export const InterpretationHelper = {
             : "<em>p</em> = -";
 
         let vText = "";
+        let vTextEn = "";
         if (cramerV !== undefined && cramerV !== null) {
             let size = "";
+            let sizeEn = "";
             if (cramerV < 0.1) size = "ごくわずか";
             else if (cramerV < 0.3) size = "小";
             else if (cramerV < 0.5) size = "中程度";
             else size = "大";
+            if (cramerV < 0.1) sizeEn = "negligible";
+            else if (cramerV < 0.3) sizeEn = "small";
+            else if (cramerV < 0.5) sizeEn = "medium";
+            else sizeEn = "large";
             vText = `, <em>V</em> = ${cramerV.toFixed(2)} [${size}]`;
+            vTextEn = `, <em>V</em> = ${cramerV.toFixed(2)} [${sizeEn}]`;
         }
 
         if (pEval.isSignificant) {
-            return `${varsText}には、統計上はっきりした<strong>関連</strong>がありました (${pEval.text}${vText})。<br>` +
+            const japanese = `${varsText}には、統計上はっきりした<strong>関連</strong>がありました (${pEval.text}${vText})。<br>` +
                 `どの組み合わせが予想より多いか、少ないかは、調整済み残差の表で見ます。`;
+            const subjectEn = rowVar && colVar ? `<strong>${rowVar}</strong> and <strong>${colVar}</strong>` : 'The two variables';
+            const english = `${subjectEn} had a statistically clear <strong>association</strong> (${pEval.text}${vTextEn}).<br>Use adjusted residuals to identify combinations that occurred more or less often than expected.`;
+            return bilingualHtml(japanese, english);
         } else {
             const trendText = pNumber < 0.1
                 ? `p値は.05以上.10未満です。5%基準では「関連あり」と判断しません。<br>`
                 : "";
-            return `${varsText}の関連は、今回のデータでは統計上はっきりしませんでした (${exactPText}${vText})。<br>` +
+            const japanese = `${varsText}の関連は、今回のデータでは統計上はっきりしませんでした (${exactPText}${vText})。<br>` +
                 trendText +
                 `ただし、この結果だけで「互いに無関係」とは決められません。期待度数と残差の表も見ます。`;
+            const subjectEn = rowVar && colVar ? `<strong>${rowVar}</strong> and <strong>${colVar}</strong>` : 'The two variables';
+            const thresholdEn = pNumber < 0.1 ? 'The p value was between .05 and .10, which does not meet the 5% criterion.<br>' : '';
+            const english = `The association between ${subjectEn} was not statistically clear in this sample (${exactPText}${vTextEn}).<br>${thresholdEn}This result does not establish that the variables are unrelated. Also inspect expected counts and residuals.`;
+            return bilingualHtml(japanese, english);
         }
     },
 
@@ -4068,29 +4157,39 @@ export const InterpretationHelper = {
     interpretRegression(r2, p, depVar, coeffs) {
         const pEval = this.evaluatePValue(p);
         let text = "";
+        let english = "";
 
         if (pEval.isSignificant) {
             text += `この回帰モデルは、切片だけのモデルよりデータに合っていました (${pEval.text})。`;
             text += `この標本では、説明変数全体で「<strong>${depVar}</strong>」のばらつきの約<strong>${(r2 * 100).toFixed(1)}%</strong>を説明しています (R² = ${r2.toFixed(2)})。<br>`;
+            english += `The regression model fit the data better than an intercept-only model (${pEval.text}). In this sample, the explanatory variables accounted for about <strong>${(r2 * 100).toFixed(1)}%</strong> of the variability in <strong>${depVar}</strong> (R² = ${r2.toFixed(2)}).<br>`;
 
             const sigCoeffs = coeffs.filter(c => c.p < 0.05);
             if (sigCoeffs.length > 0) {
                 text += `ほかの説明変数を同じ値にそろえて比べると、次の変数との関係が統計上はっきりしました。<ul style='margin-top:0.5rem; margin-bottom: 0;'>`;
+                english += `Holding the other explanatory variables constant, these relationships were statistically clear:<ul style='margin-top:0.5rem; margin-bottom: 0;'>`;
                 sigCoeffs.forEach(c => {
                     const dir = c.beta > 0 ? "正の関係" : "負の関係";
                     const standardizedInfo = c.stdBeta !== undefined ? `標準化係数 β=${c.stdBeta.toFixed(2)}` : `係数 B=${c.beta.toFixed(2)}`;
                     text += `<li><strong>${c.name}</strong>：${dir} (${standardizedInfo})</li>`;
+                    const dirEn = c.beta > 0 ? 'positive relationship' : 'negative relationship';
+                    const coefficientEn = c.stdBeta !== undefined ? `standardized β = ${c.stdBeta.toFixed(2)}` : `B = ${c.beta.toFixed(2)}`;
+                    english += `<li><strong>${c.name}</strong>: ${dirEn} (${coefficientEn})</li>`;
                 });
                 text += `</ul>`;
+                english += `</ul>`;
             } else {
                 text += `モデル全体には関係がありましたが、個々の説明変数では統計上はっきりした関係がありませんでした。変数どうしの重なりも確認します。`;
+                english += 'The overall model was informative, but no individual explanatory variable had a statistically clear relationship. Check overlap among predictors.';
             }
         } else {
             text += `この回帰モデルは、今回のデータでは切片だけのモデルよりよいとは判断できませんでした (${formatPValue(p, { html: true })})。<br>`;
             text += `ただし、この結果だけで「予測に使えない」とは決められません。別のデータでも精度を確かめます。`;
+            english += `This regression model did not fit statistically better than an intercept-only model in this sample (${formatPValue(p, { html: true })}).<br>This result does not establish that the model has no predictive value. Evaluate it with new data.`;
         }
         text += '<br>回帰係数から関係の向きは読めますが、この分析だけで原因と結果は決められません。';
-        return text;
+        english += '<br>Regression coefficients describe conditional relationships; this analysis alone does not establish cause and effect.';
+        return bilingualHtml(text, english);
     },
 
     /**
@@ -4108,10 +4207,11 @@ export const InterpretationHelper = {
 
         // 効果量の判定 (Cohen's criteria for r)
         let effectSizeText = "";
-        if (Math.abs(r) < 0.1) effectSizeText = "ごく小さい";
-        else if (Math.abs(r) < 0.3) effectSizeText = "小さい";
-        else if (Math.abs(r) < 0.5) effectSizeText = "中程度";
-        else effectSizeText = "大きい";
+        let effectSizeTextEn = "";
+        if (Math.abs(r) < 0.1) { effectSizeText = "ごく小さい"; effectSizeTextEn = 'negligible'; }
+        else if (Math.abs(r) < 0.3) { effectSizeText = "小さい"; effectSizeTextEn = 'small'; }
+        else if (Math.abs(r) < 0.5) { effectSizeText = "中程度"; effectSizeTextEn = 'medium'; }
+        else { effectSizeText = "大きい"; effectSizeTextEn = 'large'; }
 
         const higherGroup = meanRank1 > meanRank2 ? groups[0] : groups[1];
 
@@ -4124,7 +4224,10 @@ export const InterpretationHelper = {
             text += `平均順位: ${groups[0]} = ${meanRank1.toFixed(2)}, ${groups[1]} = ${meanRank2.toFixed(2)}。<br>`;
             text += `差の大きさ: <em>r</em> = ${r.toFixed(2)} [${effectSizeText}]。ただし、この結果だけで「同じ分布」とは決められません。`;
         }
-        return text;
+        const english = pEval.isSignificant
+            ? `The rank distributions of <strong>${groups[0]}</strong> and <strong>${groups[1]}</strong> differed statistically (${pEval.text}).<br><strong>${higherGroup}</strong> had the higher mean rank and tended to have larger values.<br>Effect size: <em>r</em> = ${r.toFixed(2)} [${effectSizeTextEn}]`
+            : `The rank-distribution difference between <strong>${groups[0]}</strong> and <strong>${groups[1]}</strong> was not statistically clear in this sample (${pEval.text}).<br>Mean ranks: ${groups[0]} = ${meanRank1.toFixed(2)}, ${groups[1]} = ${meanRank2.toFixed(2)}.<br>Effect size: <em>r</em> = ${r.toFixed(2)} [${effectSizeTextEn}]. This result does not establish that the distributions are identical.`;
+        return bilingualHtml(text, english);
     },
 
     /**
@@ -4142,10 +4245,11 @@ export const InterpretationHelper = {
         let text = "";
 
         let effectSizeText = "";
-        if (Math.abs(r) < 0.1) effectSizeText = "ごく小さい";
-        else if (Math.abs(r) < 0.3) effectSizeText = "小さい";
-        else if (Math.abs(r) < 0.5) effectSizeText = "中程度";
-        else effectSizeText = "大きい";
+        let effectSizeTextEn = "";
+        if (Math.abs(r) < 0.1) { effectSizeText = "ごく小さい"; effectSizeTextEn = 'negligible'; }
+        else if (Math.abs(r) < 0.3) { effectSizeText = "小さい"; effectSizeTextEn = 'small'; }
+        else if (Math.abs(r) < 0.5) { effectSizeText = "中程度"; effectSizeTextEn = 'medium'; }
+        else { effectSizeText = "大きい"; effectSizeTextEn = 'large'; }
 
         if (pEval.isSignificant) {
             const higher = median1 > median2 ? var1 : var2;
@@ -4158,6 +4262,11 @@ export const InterpretationHelper = {
             text += `中央値: ${var1} = ${median1.toFixed(2)}, ${var2} = ${median2.toFixed(2)}。<br>`;
             text += `変化の大きさ: <em>r</em> = ${r.toFixed(2)} [${effectSizeText}]。ただし、この結果だけで「変化がない」とは決められません。`;
         }
-        return text;
+        const higherEn = median1 > median2 ? var1 : var2;
+        const lowerEn = median1 > median2 ? var2 : var1;
+        const english = pEval.isSignificant
+            ? `<strong>${var1}</strong> and <strong>${var2}</strong> showed a statistically clear change (${pEval.text}).<br>The displayed median was higher for <strong>${higherEn}</strong> than for <strong>${lowerEn}</strong>.<br>Effect size: <em>r</em> = ${r.toFixed(2)} [${effectSizeTextEn}]`
+            : `The change between <strong>${var1}</strong> and <strong>${var2}</strong> was not statistically clear in this sample (${pEval.text}).<br>Medians: ${var1} = ${median1.toFixed(2)}, ${var2} = ${median2.toFixed(2)}.<br>Effect size: <em>r</em> = ${r.toFixed(2)} [${effectSizeTextEn}]. This result does not establish that there was no change.`;
+        return bilingualHtml(text, english);
     }
 };

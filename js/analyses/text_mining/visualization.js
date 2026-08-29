@@ -4,6 +4,7 @@
  */
 
 import { buildCooccurrenceEdges, resolveCanvasExportFrame } from './helpers.js';
+import { bilingualHtml, getLocale, translateText } from '../../i18n.js';
 
 export const POS_STYLES = {
     noun: { label: '名詞', color: '#2563eb' },
@@ -117,10 +118,24 @@ export function displayWordCloud(canvasId, wordCounts, onClick, options = {}) {
     const scale = 2;
     const weightedWords = normalizeWordWeights(wordCounts, options.limit || 55);
     const metricLabel = options.metricLabel || '値が大きい語ほど大きく表示';
+    const trackRender = promise => {
+        const tracked = Promise.resolve(promise);
+        canvas.__easyStatRenderPromise = tracked;
+        return tracked;
+    };
     const renderAtSize = (dimensions = null) => {
-        const parentWidth = canvas.parentElement?.clientWidth
-            || canvas.parentElement?.getBoundingClientRect().width
-            || 720;
+        const parent = canvas.parentElement;
+        const parentStyle = parent ? window.getComputedStyle(parent) : null;
+        const parentPadding = parentStyle
+            ? (Number.parseFloat(parentStyle.paddingLeft) || 0)
+                + (Number.parseFloat(parentStyle.paddingRight) || 0)
+            : 0;
+        const parentWidth = parent
+            ? Math.max(
+                1,
+                (parent.clientWidth || parent.getBoundingClientRect().width) - parentPadding
+            )
+            : 720;
         const width = Math.max(280, Math.round(dimensions?.width || parentWidth));
         const defaultHeight = width < 520 ? 330 : 390;
         const height = Math.max(240, Math.round(dimensions?.height || defaultHeight));
@@ -138,10 +153,10 @@ export function displayWordCloud(canvasId, wordCounts, onClick, options = {}) {
 
         if (weightedWords.length === 0) {
             drawCanvasMessage(canvas, '表示できる単語がありません', scale, width, height);
-            return Promise.resolve();
+            return trackRender(Promise.resolve());
         }
 
-        return new Promise((resolve, reject) => {
+        return trackRender(new Promise((resolve, reject) => {
             let settled = false;
             const cleanup = () => {
                 window.clearTimeout(timeoutId);
@@ -183,11 +198,11 @@ export function displayWordCloud(canvasId, wordCounts, onClick, options = {}) {
                 cleanup();
                 reject(error);
             }
-        });
+        }));
     };
 
     canvas.__easyStatResizeFigure = dimensions => {
-        void renderAtSize(dimensions);
+        return renderAtSize(dimensions);
     };
     return renderAtSize();
 }
@@ -347,15 +362,21 @@ function renderNetworkLegend(containerId, groups, diagnostics) {
     if (!legend) return;
 
     if (groups.length === 0) {
-        legend.innerHTML = `
+        const japanese = `
             <div class="tm-visual-legend">
                 共起回数の条件を満たす語の組み合わせがありません。
             </div>
         `;
+        const english = `
+            <div class="tm-visual-legend">
+                No term pair meets the minimum co-occurrence setting.
+            </div>
+        `;
+        legend.innerHTML = bilingualHtml(japanese, english);
         return;
     }
 
-    legend.innerHTML = `
+    const japanese = `
         <div class="tm-visual-legend">
             <div>
                 <strong>色分けの意味:</strong>
@@ -375,6 +396,27 @@ function renderNetworkLegend(containerId, groups, diagnostics) {
             </div>
         </div>
     `;
+    const english = `
+        <div class="tm-visual-legend">
+            <div>
+                <strong>Meaning of the colors:</strong>
+                Terms with the same color belong to a community detected by modularity. Node size = term frequency; edge width = Jaccard coefficient.
+                The graph uses ${diagnostics.unitLabel === '文書' ? 'documents' : 'sentences'}, includes pairs occurring at least ${diagnostics.minCooccurrence} times, and shows the top ${diagnostics.edgeCount} edges.
+                ${diagnostics.omittedCommunityCount > 0
+                    ? `${diagnostics.omittedCommunityCount} low-frequency communities were omitted for readability.`
+                    : ''}
+            </div>
+            <div class="tm-community-list">
+                ${groups.map(group => `
+                    <div>
+                        <i style="background:${group.color};"></i>
+                        <span><strong>${translateText(group.label, 'en')}:</strong> ${group.words.slice(0, 10).join(', ')}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    legend.innerHTML = bilingualHtml(japanese, english);
 }
 
 function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
@@ -475,10 +517,17 @@ function downloadNetworkImage(containerId, groups, diagnostics) {
         ctx.textBaseline = 'top';
         ctx.fillStyle = '#334155';
         ctx.font = `bold ${18 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
-        ctx.fillText('共起ネットワークの読み方', padding, top + padding);
+        const english = getLocale() === 'en';
+        ctx.fillText(
+            english ? 'How to read the co-occurrence network' : '共起ネットワークの読み方',
+            padding,
+            top + padding
+        );
         ctx.fillStyle = '#475569';
         ctx.font = `${13 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
-        const description = `円の大きさ＝語の出現回数、線の太さ＝Jaccard係数、色＝モジュラリティ法で検出した語群。${diagnostics.unitLabel}単位・共起${diagnostics.minCooccurrence}回以上・上位${diagnostics.edgeCount}本。`;
+        const description = english
+            ? `Node size = term frequency; edge width = Jaccard coefficient; color = modularity community. ${diagnostics.unitLabel === '文書' ? 'Document' : 'Sentence'} units, at least ${diagnostics.minCooccurrence} co-occurrences, top ${diagnostics.edgeCount} edges.`
+            : `円の大きさ＝語の出現回数、線の太さ＝Jaccard係数、色＝モジュラリティ法で検出した語群。${diagnostics.unitLabel}単位・共起${diagnostics.minCooccurrence}回以上・上位${diagnostics.edgeCount}本。`;
         const cursorY = wrapCanvasText(
             ctx,
             description,
@@ -500,13 +549,14 @@ function downloadNetworkImage(containerId, groups, diagnostics) {
             ctx.fill();
             ctx.fillStyle = '#334155';
             ctx.font = `bold ${13 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
-            const label = `${group.label}:`;
+            const groupLabel = english ? translateText(group.label, 'en') : group.label;
+            const label = `${groupLabel}:`;
             const textX = itemX + 22 * scale;
             ctx.fillText(label, textX, itemY);
             const labelWidth = ctx.measureText(`${label} `).width;
             ctx.font = `${13 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
             ctx.fillStyle = '#475569';
-            const words = group.words.slice(0, 12).join('、');
+            const words = group.words.slice(0, 12).join(english ? ', ' : '、');
             ctx.fillText(
                 fitCanvasText(
                     ctx,

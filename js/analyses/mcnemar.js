@@ -2,6 +2,7 @@
 // マクネマー検定 (McNemar's Test)
 // ==========================================
 import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, generateAPATableHtml, getAcademicLayout, academicColors, isMissingCell, formatPValue } from '../utils.js';
+import { bilingualHtml, isEnglish } from '../i18n.js';
 
 // ==========================================
 // Core Calculation
@@ -20,10 +21,18 @@ function buildContingencyTable(data, var1, var2) {
     const vals2 = [...new Set(validRows.map(r => r[var2]))].sort();
 
     if (vals1.length !== 2 || vals2.length !== 2) {
-        return { error: `両変数とも2値である必要があります（${var1}: ${vals1.length}値, ${var2}: ${vals2.length}値）` };
+        return {
+            error: isEnglish()
+                ? `Both variables must have exactly two categories (${var1}: ${vals1.length}, ${var2}: ${vals2.length}).`
+                : `両変数とも2値である必要があります（${var1}: ${vals1.length}値, ${var2}: ${vals2.length}値）`
+        };
     }
     if (!vals1.every(value => vals2.includes(value))) {
-        return { error: `対応のある2変数では同じ2カテゴリを使用してください（${var1}: ${vals1.join(' / ')}, ${var2}: ${vals2.join(' / ')}）` };
+        return {
+            error: isEnglish()
+                ? `Paired variables must use the same two categories (${var1}: ${vals1.join(' / ')}, ${var2}: ${vals2.join(' / ')}).`
+                : `対応のある2変数では同じ2カテゴリを使用してください（${var1}: ${vals1.join(' / ')}, ${var2}: ${vals2.join(' / ')}）`
+        };
     }
 
     // Use consistent labeling: first sorted value = row/col 0, second = row/col 1
@@ -122,8 +131,14 @@ function runMcNemarTest(currentData) {
     const var1 = document.getElementById('mcnemar-var1').value;
     const var2 = document.getElementById('mcnemar-var2').value;
 
-    if (!var1 || !var2) { alert('2つの変数を選択してください'); return; }
-    if (var1 === var2) { alert('異なる変数を選択してください'); return; }
+    if (!var1 || !var2) {
+        alert(isEnglish() ? 'Select two variables.' : '2つの変数を選択してください');
+        return;
+    }
+    if (var1 === var2) {
+        alert(isEnglish() ? 'Select two different variables.' : '異なる変数を選択してください');
+        return;
+    }
 
     const table = buildContingencyTable(currentData, var1, var2);
     if (table.error) { alert(table.error); return; }
@@ -176,7 +191,10 @@ function runMcNemarTest(currentData) {
             </div>
             <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 1.5rem;">
                 <i class="fas fa-info-circle"></i>
-                黄色セル（<strong>b=${b}, c=${c}</strong>）が不一致ペア（検定に使用される値）です。
+                ${bilingualHtml(
+                    `黄色セル（<strong>b=${b}, c=${c}</strong>）が不一致ペア（検定に使用される値）です。`,
+                    `The yellow cells (<strong>b=${b}, c=${c}</strong>) are the discordant pairs used in the test.`
+                )}
             </p>
 
             <h5 style="color: #4b5563; margin-bottom: 0.5rem;"><i class="fas fa-chart-bar"></i> 検定結果</h5>
@@ -203,7 +221,10 @@ function runMcNemarTest(currentData) {
             <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
                 <p style="margin: 0; font-size: 0.9rem; color: #92400e;">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <strong>注意:</strong> 不一致ペア数(b+c=${result.bc})が25未満のため、正確二項検定の結果を報告しています（${result.p_exact < 0.001 ? 'p &lt; .001' : 'p=' + result.p_exact.toFixed(4)}）。
+                    ${bilingualHtml(
+                        `<strong>注意:</strong> 不一致ペア数(b+c=${result.bc})が25未満のため、正確二項検定の結果を報告しています（${result.p_exact < 0.001 ? 'p &lt; .001' : 'p=' + result.p_exact.toFixed(4)}）。`,
+                        `<strong>Note:</strong> Because there are fewer than 25 discordant pairs (b+c=${result.bc}), the exact binomial result is reported (${result.p_exact < 0.001 ? 'p &lt; .001' : 'p=' + result.p_exact.toFixed(4)}).`
+                    )}
                 </p>
             </div>
             ` : ''}
@@ -274,38 +295,58 @@ function runMcNemarTest(currentData) {
 
 function interpretMcNemar(result, var1, var2, a, b, c, d, label0, label1, N) {
     let html = '';
+    let htmlEn = '';
 
     const prop1 = (a + b) / N; // var1 = label1 proportion
     const prop2 = (a + c) / N; // var2 = label1 proportion
 
     if (result.pMain < 0.05) {
         html += `<p>「${label1}」の比率に、<strong>統計上はっきりした変化がありました</strong>（`;
+        htmlEn += `<p>The proportion in the “${label1}” category <strong>changed significantly</strong> (`;
         if (result.p_exact !== null) {
             html += `正確二項検定 ${result.p_exact < 0.001 ? 'p &lt; .001' : 'p = ' + result.p_exact.toFixed(3)}`;
+            htmlEn += `exact binomial test, ${result.p_exact < 0.001 ? 'p &lt; .001' : 'p = ' + result.p_exact.toFixed(3)}`;
         } else {
             html += `χ²(1) = ${result.chi2.toFixed(2)}, ${result.p_chi2 < 0.001 ? 'p &lt; .001' : 'p = ' + result.p_chi2.toFixed(3)}`;
+            htmlEn += `χ²(1) = ${result.chi2.toFixed(2)}, ${result.p_chi2 < 0.001 ? 'p &lt; .001' : 'p = ' + result.p_chi2.toFixed(3)}`;
         }
         html += `）。</p>`;
+        htmlEn += `).</p>`;
 
         if (c > b) {
             html += `<p>「${label0}」から「${label1}」へ変化した人（<strong>${c}人</strong>）が、逆方向の変化（<strong>${b}人</strong>）より多い結果です。</p>`;
+            htmlEn += `<p>More cases changed from “${label0}” to “${label1}” (<strong>${c}</strong>) than in the opposite direction (<strong>${b}</strong>).</p>`;
         } else {
             html += `<p>「${label1}」から「${label0}」へ変化した人（<strong>${b}人</strong>）が、逆方向の変化（<strong>${c}人</strong>）より多い結果です。</p>`;
+            htmlEn += `<p>More cases changed from “${label1}” to “${label0}” (<strong>${b}</strong>) than in the opposite direction (<strong>${c}</strong>).</p>`;
         }
     } else {
         html += `<p>「${label1}」の比率の変化は、今回のデータでは<strong>統計上はっきりしませんでした</strong>（${formatPValue(result.pMain, { html: true })}）。ただし、この結果だけで「変化がない」とは決められません。</p>`;
+        htmlEn += `<p>The change in the proportion of “${label1}” responses was <strong>not statistically clear in this sample</strong> (${formatPValue(result.pMain, { html: true })}). This result alone does not establish that there was no change.</p>`;
     }
 
     html += `<p><strong>変化の大きさ（φ = ${result.phi.toFixed(3)}）</strong>: `;
-    if (result.phi >= 0.5) html += '大きい結果です。';
-    else if (result.phi >= 0.3) html += '中程度です。';
-    else if (result.phi >= 0.1) html += '小さい結果です。';
-    else html += 'ごく小さい結果です。';
+    htmlEn += `<p><strong>Effect size (φ = ${result.phi.toFixed(3)})</strong>: `;
+    if (result.phi >= 0.5) {
+        html += '大きい結果です。';
+        htmlEn += 'large.';
+    } else if (result.phi >= 0.3) {
+        html += '中程度です。';
+        htmlEn += 'moderate.';
+    } else if (result.phi >= 0.1) {
+        html += '小さい結果です。';
+        htmlEn += 'small.';
+    } else {
+        html += 'ごく小さい結果です。';
+        htmlEn += 'negligible.';
+    }
     html += '</p>';
+    htmlEn += '</p>';
 
     html += `<p>${var1}で「${label1}」の比率: <strong>${(prop1 * 100).toFixed(1)}%</strong> → ${var2}で「${label1}」の比率: <strong>${(prop2 * 100).toFixed(1)}%</strong></p>`;
+    htmlEn += `<p>Proportion in “${label1}”: ${var1} <strong>${(prop1 * 100).toFixed(1)}%</strong> → ${var2} <strong>${(prop2 * 100).toFixed(1)}%</strong></p>`;
 
-    return html;
+    return bilingualHtml(html, htmlEn);
 }
 
 // ==========================================
@@ -347,7 +388,12 @@ function plotContingencyHeatmap(a, b, c, d, var1, var2, label0, label1) {
         annotations: annotations
     });
 
-    Plotly.newPlot('mcnemar-heatmap', [trace], layout, createPlotlyConfig('マクネマー検定', [var1, var2]));
+    Plotly.newPlot(
+        'mcnemar-heatmap',
+        [trace],
+        layout,
+        createPlotlyConfig(isEnglish() ? 'McNemar_test' : 'マクネマー検定', [var1, var2])
+    );
 }
 
 // ==========================================

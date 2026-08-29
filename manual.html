@@ -56,9 +56,19 @@
         .top-nav .title {
             font-size: 1.25rem;
             font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             margin-left: 1.5rem;
+            margin-top: 0;
+            margin-bottom: 0;
             padding-left: 1.5rem;
             border-left: 1px solid #334155;
+        }
+
+        .top-nav .language-switcher {
+            margin-left: auto;
+            flex: 0 0 auto;
         }
 
         /* Main layout container */
@@ -353,13 +363,13 @@
             .top-nav { padding: 0 1rem; }
             .top-nav a { flex: 0 0 auto; font-size: 0.9rem; }
             .top-nav .title {
-                min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
                 font-size: 1rem;
                 margin-left: 0.75rem;
                 padding-left: 0.75rem;
+                flex: 0 0 auto;
+            }
+            .top-nav .title .manual-title-text {
+                display: none;
             }
             .sidebar { display: none; }
             .content-area { margin-left: 0; width: 100%; padding: 1rem; }
@@ -373,7 +383,15 @@
 
     <header class="top-nav">
         <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> 分析トップへ戻る</a>
-        <div class="title"><i class="fas fa-book-open"></i> easyStat 失敗しないマニュアル</div>
+        <h1 class="title" aria-label="使い方マニュアル" title="使い方マニュアル">
+            <i class="fas fa-book-open" aria-hidden="true"></i>
+            <span class="manual-title-text">easyStat 失敗しないマニュアル</span>
+        </h1>
+        <div class="language-switcher" data-language-switcher role="group" aria-label="表示言語 / Display language">
+            <i class="fas fa-language" aria-hidden="true"></i>
+            <button type="button" data-locale="ja" aria-pressed="true">日本語</button>
+            <button type="button" data-locale="en" aria-pressed="false" tabindex="-1">English</button>
+        </div>
     </header>
 
     <div class="layout-container">
@@ -962,10 +980,11 @@
 
     <!-- スムーススクロール用JS -->
     <script>
-        document.querySelectorAll('.sidebar-link').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const targetId = this.getAttribute('href').substring(1);
+        document.addEventListener('click', event => {
+            const anchor = event.target.closest('.sidebar-link');
+            if (anchor) {
+                event.preventDefault();
+                const targetId = anchor.getAttribute('href').substring(1);
                 const targetElement = document.getElementById(targetId);
                 
                 if (targetElement) {
@@ -974,7 +993,7 @@
                         behavior: 'smooth'
                     });
                 }
-            });
+            }
         });
 
         // スクロール時に該当メニューをハイライト
@@ -1002,6 +1021,12 @@
                 }
             });
         });
+    </script>
+    <script type="module">
+        import { initializeI18n } from './js/i18n.js';
+        import { initializeManualI18n } from './js/manual_i18n.js';
+        initializeManualI18n();
+        initializeI18n(document);
     </script>
 </body>
 </html>

@@ -427,7 +427,7 @@ export function render(container, currentData, dataCharacteristics) {
                     <div style="background: #faf5ff; padding: 1rem; border-radius: 8px;">
                         <p style="margin-top: 0; color: #553c9a; font-size: 0.9rem;">
                             <i class="fas fa-sync-alt"></i> アンケートの逆転項目などを対象に、指定した最大値・最小値を使ってスコアを反転させます。（例：1〜5段階の場合、1→5, 2→4, 3→3 に変換）<br>
-                            計算式: <code>(最大値 + 最小値) - 現在の値</code>
+                            計算式: <code>(max + min) - x</code>
                         </p>
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label style="font-weight: bold;">反転させる変数を選択 (複数選択可/Multiple Selection):</label>

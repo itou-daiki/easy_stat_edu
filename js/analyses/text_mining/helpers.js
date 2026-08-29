@@ -4,6 +4,8 @@
  * @module text_mining/helpers
  */
 
+import { getLocale, translateText } from '../../i18n.js';
+
 // ======================================================================
 // ストップワードリスト
 // ======================================================================
@@ -739,7 +741,7 @@ export function resolveCanvasExportFrame(
  * Canvas要素を画像としてダウンロード
  * @param {string} targetId - ダウンロード対象のCanvas要素ID
  */
-export function downloadCanvasAsImage(targetId) {
+export async function downloadCanvasAsImage(targetId) {
     let canvas = document.getElementById(targetId);
 
     // vis-networkの場合、内部のcanvasを取得
@@ -756,6 +758,10 @@ export function downloadCanvasAsImage(targetId) {
     }
 
     try {
+        if (canvas.__easyStatRenderPromise) {
+            await canvas.__easyStatRenderPromise;
+        }
+        await new Promise(resolve => window.requestAnimationFrame(resolve));
         const displayWidth = canvas.getBoundingClientRect().width || canvas.width;
         const scale = Math.max(1, canvas.width / Math.max(displayWidth, 1));
         let legendItems = [];
@@ -764,12 +770,40 @@ export function downloadCanvasAsImage(targetId) {
         } catch {
             legendItems = [];
         }
-        const legendMetric = canvas.dataset.legendMetric || '';
+        const legendMetricSource = canvas.dataset.legendMetric || '';
+        const legendMetric = getLocale() === 'en'
+            ? translateText(legendMetricSource, 'en')
+            : legendMetricSource;
+        const english = getLocale() === 'en';
+        const localizedLegendItems = legendItems.map(item => ({
+            ...item,
+            localizedLabel: english
+                ? translateText(String(item.label || ''), 'en')
+                : String(item.label || '')
+        }));
         const visualTitle = canvas.dataset.visualTitle || '';
         const titleHeight = visualTitle ? Math.round(72 * scale) : 0;
         const showLegend = canvas.dataset.visualLegendVisible !== 'false';
-        const legendHeight = showLegend && (legendMetric || legendItems.length > 0)
-            ? Math.round((120 + Math.ceil(legendItems.length / 3) * 42) * scale)
+        const legendPadding = 24 * scale;
+        const measureContext = document.createElement('canvas').getContext('2d');
+        measureContext.font = `${13 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
+        const widestLegendItem = localizedLegendItems.reduce(
+            (width, item) => Math.max(width, measureContext.measureText(item.localizedLabel).width),
+            0
+        );
+        const minimumLegendColumnWidth = Math.max(160 * scale, widestLegendItem + 48 * scale);
+        const availableLegendWidth = Math.max(1, canvas.width - legendPadding * 2);
+        const legendColumns = Math.max(
+            1,
+            Math.min(
+                3,
+                Math.max(localizedLegendItems.length, 1),
+                Math.floor(availableLegendWidth / minimumLegendColumnWidth) || 1
+            )
+        );
+        const legendRows = Math.ceil(localizedLegendItems.length / legendColumns);
+        const legendHeight = showLegend && (legendMetric || localizedLegendItems.length > 0)
+            ? Math.round((120 + legendRows * 42) * scale)
             : 0;
         const exportFrame = resolveCanvasExportFrame(
             canvas.width,
@@ -815,7 +849,7 @@ export function downloadCanvasAsImage(targetId) {
 
         if (legendHeight > 0) {
             const top = exportFrame.legendY;
-            const padding = 24 * scale;
+            const padding = legendPadding;
             ctx.fillStyle = '#f8fafc';
             ctx.fillRect(0, top, tempCanvas.width, legendHeight);
             ctx.strokeStyle = '#e2e8f0';
@@ -828,15 +862,19 @@ export function downloadCanvasAsImage(targetId) {
             ctx.textBaseline = 'top';
             ctx.fillStyle = '#334155';
             ctx.font = `bold ${18 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
-            ctx.fillText('色と大きさの意味', padding, top + padding);
+            ctx.fillText(
+                getLocale() === 'en' ? 'Meaning of color and size' : '色と大きさの意味',
+                padding,
+                top + padding
+            );
             ctx.font = `${14 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
             ctx.fillStyle = '#475569';
             ctx.fillText(legendMetric, padding, top + padding + 30 * scale);
 
-            legendItems.forEach((item, index) => {
-                const column = index % 3;
-                const row = Math.floor(index / 3);
-                const itemX = padding + column * ((tempCanvas.width - padding * 2) / 3);
+            localizedLegendItems.forEach((item, index) => {
+                const column = index % legendColumns;
+                const row = Math.floor(index / legendColumns);
+                const itemX = padding + column * ((tempCanvas.width - padding * 2) / legendColumns);
                 const itemY = top + padding + (66 + row * 42) * scale;
                 ctx.fillStyle = item.color || '#64748b';
                 ctx.beginPath();
@@ -844,7 +882,7 @@ export function downloadCanvasAsImage(targetId) {
                 ctx.fill();
                 ctx.fillStyle = '#334155';
                 ctx.font = `${13 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
-                ctx.fillText(String(item.label || ''), itemX + 22 * scale, itemY);
+                ctx.fillText(item.localizedLabel, itemX + 22 * scale, itemY);
             });
         }
 
