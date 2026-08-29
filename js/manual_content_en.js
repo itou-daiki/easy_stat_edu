@@ -53,7 +53,7 @@ export const MANUAL_CONTENT_EN = `
         <i class="fas fa-info-circle"></i> <strong>New to statistics?</strong><br>
         easyStat is designed to help you get from a question to a defensible analysis without getting lost in software terminology.
         Before running an analysis, open <strong>In plain language</strong> to review its purpose and what to inspect.
-        Afterward, open the result explanation to see the main finding, the meaning of each displayed statistic, and common mistakes to avoid.
+        Afterward, open the result explanation to see the main finding, the meaning of each displayed statistic, common mistakes to avoid, and what to do next.
     </div>
 
     <section id="quick-start" class="content-section">
@@ -64,14 +64,23 @@ export const MANUAL_CONTENT_EN = `
             <div class="step-item"><strong>Check the data overview</strong><br>Confirm column names, inferred numeric or categorical types, row counts, and missing values.</div>
             <div class="step-item"><strong>Choose an analysis for your question</strong><br>Use the Analysis guide or the selection table below. Decide whether you are comparing groups, examining a relationship, or predicting an outcome.</div>
             <div class="step-item"><strong>Select variables and run</strong><br>Choose the outcome, predictors, grouping variables, or paired measures shown on the analysis screen.</div>
-            <div class="step-item"><strong>Read the result in order</strong><br>Check sample size and descriptive statistics, then the estimate and confidence interval, the p value, the effect size, and the graph.</div>
+            <div class="step-item"><strong>Read the result in order</strong><br>Use the four-step path shown in every explanation: Question, Data, Analysis, and Interpret. Check sample size and descriptive statistics, then the estimate and confidence interval, the p value, the effect size, and the graph.</div>
             <div class="step-item"><strong>State only what the design supports</strong><br>A nonsignificant result does not prove equality, and an association by itself does not establish causation.</div>
         </div>
         <div class="alert-box">
-            <strong>Optional Gemini assistance:</strong> Direct API use is for people aged 18 or older who have reviewed the Gemini API terms and data handling. Data is sent only when you configure a key and request an interpretation or ask a follow-up question. Raw rows and free-text examples are excluded by default, and the payload can be previewed. Automatic masking can miss sensitive content, and free-tier inputs and outputs may be used by Google for product improvement. Do not submit personal, student-record, or confidential data. For secondary-school classes, students should not enter API keys; use the copy prompt with a school-approved service instead. A static web app cannot securely conceal a key, so use a dedicated restricted key temporarily and delete it afterward. Always verify generated numbers against the on-screen results.
+            <strong>Use generative-AI support in three steps</strong>
+            <ol>
+                <li><strong>Read first:</strong> open the non-AI result explanation and identify the main result yourself.</li>
+                <li><strong>Preview what will be shared:</strong> choose For high school students, Standard, or Research and publication, then inspect the tables and summaries. Leave raw rows off unless they are genuinely needed and safe to share.</li>
+                <li><strong>Verify the answer:</strong> match every important value and evidence label such as T1 with the easyStat result table.</li>
+            </ol>
+            <p><strong>Useful for:</strong> restating difficult statistics, drafting a report, and organizing possible next checks.</p>
+            <p><strong>AI cannot decide by itself:</strong> whether a relationship is causal, whether the sample represents a population, or whether unreported data-collection choices were sound.</p>
+            <p>On the public site, Copy text for AI prepares the prompt in your browser; copying does not send anything externally. Screen-reader graph descriptions are left out of the prompt to avoid repeating the same results. Review it before pasting it into a service approved by your school or organization. Never submit personal information, student records, confidential material, or identifiable free text.</p>
+            <p>Direct Gemini access appears only for eligible users running easyStat locally. The key remains in page memory and disappears on reload or close. The Interactions API is used with API-side conversation storage disabled, but this does not change the data-use terms of the selected service plan.</p>
         </div>
         <div class="alert-box info">
-            <strong>Recommended AI review order:</strong> research question and variables, main result, effect size and confidence interval, assumptions, limits on interpretation, and next checks. Do not explain a nonsignificant result only by sample size, and do not collect more data merely to obtain significance.
+            <strong>AI answer order:</strong> Start with the answer, Values behind that answer, Checks before trusting the result, What this result cannot establish, How to write it in a report, and What to do next. Each next action names where to look and what observation completes the check. A nonsignificant result is not proof of equality and should not be blamed on sample size alone.
         </div>
     </section>
 

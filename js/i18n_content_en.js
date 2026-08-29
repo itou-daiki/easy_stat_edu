@@ -208,6 +208,32 @@ export const BEGINNER_EXPLANATIONS_EN = {
     }
 };
 
+export const BEGINNER_NEXT_STEPS_EN = {
+    analysis_support: ['Write the investigation question in one sentence.', 'Name the outcome and explanatory variables.', 'Run one suitable method and read its result before considering alternatives.'],
+    data_processing: ['Record every processing rule.', 'Compare row counts and distributions before and after processing.', 'Inspect the final data preview before analysis.'],
+    data_merge: ['Compare row counts before and after the merge.', 'Check duplicate keys and unmatched rows.', 'Inspect missing values created by the merge.'],
+    factor_score: ['Verify the item-to-scale map and reverse-scored items.', 'Check reliability for each scale.', 'Plot the score distribution and inspect missing values.'],
+    eda: ['Decide how to investigate possible outliers instead of deleting them automatically.', 'Choose a test or model that matches the question and distribution.', 'Record any transformation or exclusion rule before the main analysis.'],
+    cross_tabulation: ['State whether each percentage is row-based or column-based.', 'Inspect cells with very small counts.', 'Use chi-square or Fisher\'s exact test when the question concerns association.'],
+    correlation: ['Inspect the scatter plot for shape and influential points.', 'Read r with its confidence interval and p value.', 'Consider a regression model only when it matches the investigation question.'],
+    ttest: ['Read the mean-difference confidence interval and effect size together.', 'Inspect each group or paired-difference distribution and the analysis assumptions.', 'Write the direction, magnitude, uncertainty, and study limitation in the report.'],
+    anova_one_way: ['If the overall p value is below the chosen level, read the adjusted post-hoc comparisons.', 'Read the effect size and group distributions.', 'Report the overall test before describing individual group pairs.'],
+    anova_two_way: ['Read the interaction before the main effects.', 'If needed, inspect simple effects and adjusted comparisons.', 'Use the interaction plot to describe which combinations drive the pattern.'],
+    mann_whitney: ['Compare box plots, medians, and distribution shapes.', 'Report effect size r with U and the p value.', 'Check whether unequal shapes limit a simple median interpretation.'],
+    kruskal_wallis: ['If the overall test is significant, read adjusted post-hoc comparisons.', 'Compare box plots and group medians.', 'Report the overall test before naming group differences.'],
+    wilcoxon_signed_rank: ['Confirm the pairing and inspect the distribution of differences.', 'Report the direction and effect size with W and the p value.', 'Check zero and unusually large paired differences.'],
+    mcnemar: ['Inspect the two off-diagonal counts.', 'Describe which direction of change is more common.', 'Give priority to the exact result when discordant counts are small.'],
+    chi_square: ['Check expected counts before interpreting the test.', 'Interpret cell residuals only after the overall association is supported, and account for multiple cells.', 'Report counts and percentages with Cramer\'s V.'],
+    fisher_exact: ['Read the cell counts and percentages with the p value.', 'Report the odds ratio and its direction without treating it as a risk ratio.', 'State that the sample and cell counts are small.'],
+    regression_simple: ['Inspect the scatter plot and residual diagnostics.', 'Explain the slope using the variables\' original units.', 'State that observational association alone does not establish causation.'],
+    regression_multiple: ['Check VIF values and correlations among predictors.', 'Read each coefficient while holding the other included predictors constant.', 'Inspect residuals, influential cases, and model fit.'],
+    logistic_regression: ['Explain the odds ratio for a one-unit change and identify its reference category.', 'Inspect the confusion matrix and class balance, not accuracy alone.', 'Check whether the number of events is adequate for the model.'],
+    factor_analysis: ['Name each factor from the content of its high-loading items.', 'Inspect low loadings and cross-loadings.', 'Check reliability and seek evidence from another sample.'],
+    pca: ['Choose a component count using the scree plot and cumulative variance.', 'Interpret each component from its largest positive and negative loadings.', 'Use component scores only when they answer a later analysis question.'],
+    time_series: ['Verify chronological order, interval meaning, and missing periods.', 'Separate trend, seasonality, and unusual time points.', 'Avoid attributing a change to an event without an appropriate design.'],
+    text_mining: ['Open KWIC to read the original context of important terms.', 'Compare document counts and term-use rates across categories.', 'Record tokenization, excluded terms, and representative excerpts when reporting.']
+};
+
 export const HOME_SECTIONS_EN = {
     about: `
         <h4>easyStat - Browser-based statistical analysis</h4>
@@ -216,7 +242,7 @@ export const HOME_SECTIONS_EN = {
         <ul>
             <li><strong>No installation:</strong> use the application in a modern web browser.</li>
             <li><strong>Local analysis:</strong> ordinary statistical analysis and text mining do not send your input data to an analysis server.</li>
-            <li><strong>Optional AI support:</strong> only when you request it, selected summaries and results are sent to the Gemini API. Raw rows are excluded by default.</li>
+            <li><strong>Optional AI support:</strong> the public site prepares copyable AI-ready text without sending it. Eligible local users can connect directly to Gemini after reviewing the content. Raw rows are excluded by default.</li>
             <li><strong>Twenty-three tools:</strong> prepare data, explore distributions, test differences and associations, build predictive models, reduce variables, analyze time series, and mine text.</li>
             <li><strong>Japanese and English:</strong> the interface, results, figures, explanations, AI instructions, and guide follow the selected language.</li>
             <li><strong>Learning support:</strong> each analysis explains what to inspect, what the statistics mean, and what not to conclude.</li>

@@ -302,6 +302,12 @@ test.describe('JP / English 表示モード', () => {
         await page.locator('#ai-assist-toggle').click();
         await expect(page.locator('.ai-assist-panel')).toBeVisible();
         await page.locator('.ai-context-settings summary').click();
+        await expect(page.locator('#ai-assist-status'))
+            .toContainText('copy AI-ready text to paste into another generative AI service');
+        await page.locator('#ai-preview-context-btn').click();
+        await expect(page.locator('#ai-context-summary')).toContainText('Analysis: Correlation analysis');
+        await expect(page.locator('#ai-preview-context-btn')).toContainText('Close AI content preview');
+        await page.locator('#ai-preview-context-btn').click();
         await page.evaluate(() => {
             (window as any).__copiedText = '';
             Object.defineProperty(navigator, 'clipboard', {
@@ -319,10 +325,10 @@ test.describe('JP / English 表示モード', () => {
             const module = await import('/js/ai_support.js?english-language-test');
             return {
                 copied: (window as any).__copiedText,
-                instruction: module.createGeminiRequestBody('test', 500, {
+                instruction: module.createGeminiInteractionRequestBody('gemini-3.7-flash', 'test', 500, {
                     structured: true,
                     language: 'en'
-                }).system_instruction.parts[0].text
+                }).system_instruction
             };
         });
 
@@ -784,5 +790,28 @@ test.describe('JP / English 表示モード', () => {
             }, null, 2),
             contentType: 'application/json'
         });
+    });
+
+    test('英語表示でもテキストマイニングの抽出語を翻訳しない', async ({ page }) => {
+        await page.locator('[data-language-switcher] [data-locale="en"]').click();
+        await page.locator('.feature-card[data-analysis="text_mining"]').click();
+        await page.locator('#tm-input-direct').click();
+        await page.locator('#tm-direct-text').fill([
+            'データと結果を確認した',
+            'データから次の問いを考えた',
+            '結果をグラフと一緒に読んだ'
+        ].join('\n'));
+        await page.locator('#run-text-btn').click();
+        await expect(page.locator('.tm-summary-strip')).toBeVisible({ timeout: 30_000 });
+
+        const terms = (await page.locator('.tm-term-table tbody td:first-child').allTextContents())
+            .map(term => term.trim());
+        expect(terms).toEqual(expect.arrayContaining(['データ', '結果']));
+        expect(terms).not.toEqual(expect.arrayContaining(['Data', 'Output']));
+
+        const explanation = page.locator('[data-result-beginner-explanation="text_mining"]');
+        await explanation.locator('summary').click();
+        await expect(explanation.locator('.result-beginner-summary-list')).toContainText('データ');
+        await expect(explanation.locator('.result-beginner-summary-list')).toContainText('結果');
     });
 });

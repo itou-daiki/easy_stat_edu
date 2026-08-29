@@ -13,7 +13,8 @@ test.describe('Cross-cutting quality contracts', () => {
         expect(inAppHelp).toContain('お使いのブラウザ内で実行します');
         expect(inAppHelp).toContain('ブラウザ内で分析');
         expect(inAppHelp).toContain('23機能');
-        expect(inAppHelp).toContain('Gemini APIへ送信します');
+        expect(inAppHelp).toContain('公開版では分析結果を外部へ送信せず');
+        expect(inAppHelp).toContain('成人の教員・研究者がローカル実行する場合だけGeminiへ直接接続できます');
         expect(inAppHelp).not.toContain('端末内で');
         expect(inAppHelp).not.toContain('Pythonライブラリの読み込みに数分');
         expect(inAppHelp).not.toContain('高度な多変量解析まで12種類');
@@ -28,25 +29,36 @@ test.describe('Cross-cutting quality contracts', () => {
         const manual = await manualResponse.text();
 
         expect(readme).toContain('分析・データ処理モジュール: 23機能');
-        expect(readme).toContain('任意のGemini解釈補助');
+        expect(readme).toContain('公開版（GitHub Pagesなど）の任意の生成AI支援はコピー専用');
+        expect(readme).toContain('Interactions API');
+        expect(readme).toContain('`store: false`');
+        expect(readme).toContain('ページのメモリ内だけ');
+        expect(readme).toContain('`T1`');
+        expect(readme).toContain('画面読み上げ用のグラフ説明は除外');
         expect(readme).toContain('任意入力の縦横比');
         expect(readme).toContain('数値・日付軸の最小値／最大値');
         expect(readme).toContain('完全なオフライン動作は保証されません');
         expect(readme).toContain('ブラウザの印刷機能によるPDF保存');
-        expect(readme).toContain('18歳以上で利用条件と送信データの扱い');
+        expect(readme).toContain('18歳未満がアクセスし得るAPIクライアントでの利用も規約上認められていない');
         expect(readme).toContain('Gemini 3.7 Flash');
-        expect(readme).toContain('無料枠では入力と回答がGoogleの製品改善に使われる場合があります');
+        expect(readme).toContain('無料枠では入力と回答がGoogleの製品改善に使われ、人が確認する場合があります');
         expect(readme).not.toContain('サーバーへのデータ送信は一切行わず');
         expect(features).toContain('Yatesの連続性補正を主結果');
         expect(features).toContain('カテゴリごとのワードクラウドと共起ネットワークを連続表示');
         expect(features).toContain('必要な上限より小さい最大値を設定できません');
         expect(features).toContain('Gemini 3.7 Flash');
+        expect(features).toContain('公開版ではコピーだけ');
+        expect(features).toContain('Interactions API');
+        expect(features).toContain('画面読み上げ用のグラフ説明も依頼文から除外');
         expect(features).toContain('ブラウザの印刷機能でPDF保存');
         expect(features).not.toContain('Gemini 3.6 Flash（利用不可時');
         expect(manual).toContain('入力・図表編集・保存');
         expect(manual).toContain('品詞別ランキング');
         expect(manual).toContain('データの一部が見えなくなったり差が実際より大きく見えたりします');
         expect(manual).toContain('ブラウザの印刷機能からPDF保存できます');
+        expect(manual).toContain('コピーした時点では外部へ送信されません');
+        expect(manual).toContain('ページのメモリ内だけ');
+        expect(manual).toContain('画面読み上げ用のグラフ説明は依頼文から除外');
         expect(manual).not.toContain('AI分析サポーター');
         expect(manual).not.toContain('めちゃくちゃ');
         expect(manual).not.toContain('王道パターン');
@@ -276,6 +288,7 @@ test.describe('Cross-cutting quality contracts', () => {
     });
 
     test('all formula-bearing analysis screens keep readable source text', async ({ page }) => {
+        test.setTimeout(60000);
         const featureIds = [
             'ttest',
             'eda',

@@ -20,6 +20,10 @@ test.describe('初学者向けの共通説明', () => {
         await expect(explanation).toHaveAttribute('open', '');
         await expect(explanation).toContainText('まず見るところ');
         await expect(explanation).toContainText('読み違えに注意');
+        await expect(explanation).toContainText('探究の4ステップ');
+        await expect(explanation.locator('.inquiry-flow [aria-current="step"]')).toContainText('分析');
+        await expect(explanation).toContainText('結果が出たら');
+        await expect(explanation.locator('.beginner-next-actions li')).toHaveCount(3);
         await expect(explanation).toContainText('KWIC');
         await expect(explanation).toContainText('共起は因果関係を表しません');
 
@@ -34,6 +38,16 @@ test.describe('初学者向けの共通説明', () => {
         await expect(levelSelect.locator('option[value="simple"]')).toHaveText('高校生向け（やさしく）');
         await expect(levelSelect.locator('option[value="detailed"]')).toHaveText('研究・論文向け（詳しく）');
         await expect(page.locator('[data-ai-question*="高校生にもわかる言葉"]')).toContainText('高校生向け');
+
+        await page.locator('.feature-card[data-analysis="text_mining"]').click();
+        await page.locator('#ai-assist-toggle').click();
+        const guide = page.locator('.ai-beginner-guide');
+        await expect(guide.locator('summary')).toContainText('生成AI支援を初めて使う方へ');
+        await guide.locator('summary').press('Enter');
+        await expect(guide).toHaveAttribute('open', '');
+        await expect(guide).toContainText('AIに頼めること');
+        await expect(guide).toContainText('AIだけでは決められないこと');
+        await expect(guide.locator('li')).toHaveCount(3);
     });
 
     test('マニュアルにも初学者向け導線とAI説明レベルが記載されている', async ({ page }) => {

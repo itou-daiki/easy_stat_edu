@@ -14,12 +14,14 @@ const ENGLISH_TEXT = new Map([
     ['生成AIによる解釈支援', 'Generative AI interpretation support'],
     ['未設定', 'Not configured'],
     ['設定済み', 'Configured'],
-    ['Gemini APIキーを設定すると、分析結果の読み取りをAIが補助します。', 'Set a Gemini API key to get AI-assisted interpretation of your results.'],
+    ['結果表と注意点を整理したAI用テキストを作成します。ローカル実行では成人の教員・研究者がGeminiへ直接接続することもできます。', 'Create AI-ready text that organizes result tables and cautions. Adult educators and researchers can also connect directly to Gemini when running easyStat locally.'],
     ['Gemini APIキーの取得方法（18歳以上の教員・研究者向け）', 'Getting a Gemini API key (educators and researchers aged 18+)'],
     ['APIキーの安全な管理', 'Secure API key management'],
     ['利用条件とデータの扱い', 'Terms and data handling'],
     ['18歳以上で、APIの利用条件と送信データの扱いを確認しました', 'I am aged 18 or older and have reviewed the API terms and data handling'],
     ['利用条件を確認', 'Review terms'],
+    ['コピーのみ', 'Copy only'],
+    ['このページで使用中', 'Active on this page'],
     ['Gemini APIの規約では利用者は18歳以上である必要があります。高校生の授業では生徒にAPIキーを入力させず、「AI用テキストをコピー」して学校が承認したサービスを利用してください。', 'Gemini API users must be aged 18 or older. In secondary-school classes, students should not enter API keys; use Copy AI prompt with a school-approved service instead.'],
     ['無料枠では入力と回答がGoogleの製品改善に使われる場合があります。個人情報、成績原票、自由記述などの機密データは送信しないでください。', 'Free-tier inputs and outputs may be used by Google for product improvement. Do not submit personal information, student records, free text, or other confidential data.'],
     ['ファイル', 'File'],
@@ -630,19 +632,18 @@ const ENGLISH_TEXT = new Map([
     ,['Google AI StudioでAPIキーを取得', 'Get an API key in Google AI Studio']
     ,['設定', 'Save']
     ,['削除', 'Remove']
-    ,['APIキーをブラウザに保存する（次回も使う）', 'Save the API key in this browser for future sessions']
-    ,['オフ（推奨）：APIキーは一時保存され、このタブを閉じると削除されます。', 'Off (recommended): the key is stored only for this tab and removed when the tab closes.']
     ,['生成AIによる解釈の補助', 'Generative AI interpretation assistant']
-    ,['他の生成AIに貼り付ける用テキストをコピーしました。', 'Copied text that you can paste into another AI service.']
-    ,['送信内容と説明設定', 'Content and explanation settings']
+    ,['他の生成AIに貼り付けるためのテキストをコピーしました。', 'Copied text that you can paste into another AI service.']
+    ,['AIに渡す内容と説明設定', 'AI content and explanation settings']
     ,['説明レベル', 'Explanation level']
     ,['高校生向け（やさしく）', 'For high school students']
     ,['標準', 'Standard']
     ,['研究・論文向け（詳しく）', 'Research and publication']
     ,['機微情報候補を自動マスクした原データ先頭10件を含める', 'Include the first 10 raw rows after automatically masking likely sensitive information']
-    ,['原データを含めない場合も、分析対象列の要約統計量と画面の結果表は送信されます。この設定は分析を切り替えるとオフに戻ります。', 'Even without raw rows, summary statistics and the result table for the analyzed variables are sent. This option turns off when you change analyses.']
-    ,['送信内容を確認', 'Preview content']
-    ,['Geminiまたはコピー先へ渡す内容を確認します', 'Preview exactly what will be sent to Gemini or copied elsewhere']
+    ,['原データを含めなくても、AI用テキストには分析対象列の要約統計量と画面の結果表が入ります。Geminiへ直接接続する場合や、コピー後に外部サービスへ貼り付ける場合は、その内容が送信対象です。自動マスクには見落としがあるため、個人情報や機密情報を含むデータでは原データを含めないでください。この設定は分析を切り替えるとオフに戻ります。', 'Even without raw rows, the AI-ready text contains summary statistics and on-screen result tables for the analyzed variables. That content is transmitted only when you connect directly to Gemini or paste the copied text into an external service. Automatic masking can miss sensitive information, so never include raw rows from personal or confidential data. This setting turns off when you switch analyses.']
+    ,['AIに渡す内容を確認', 'Preview AI content']
+    ,['AIへ渡す内容', 'Content provided to AI']
+    ,['Geminiまたはコピー先のAIへ渡す内容を確認します', 'Preview exactly what will be provided to Gemini or another AI service']
     ,['高校生向け', 'Plain-language explanation']
     ,['200字で要約', 'Short report summary']
     ,['前提を確認', 'Check assumptions']
@@ -877,15 +878,22 @@ const ENGLISH_TEXT = new Map([
     ,['データの入力方法', 'Data input method']
     ,['照合して利用:', 'Verify before use:']
     ,['AIの説明は誤ることがあります。主要な数値・p値・効果量は画面の結果表で確認してください。', 'AI explanations can be wrong. Verify the main values, p values, and effect sizes against the result tables on this page.']
-    ,['Gemini APIの規約では利用者は18歳以上である必要があります。高校生の授業では生徒にAPIキーを入力させず、「AI用テキストをコピー」して学校が承認したサービスを利用してください。 無料枠では入力と回答がGoogleの製品改善に使われる場合があります。個人情報、成績原票、自由記述などの機密データは送信しないでください。', 'Gemini API users must be aged 18 or older. In secondary-school classes, students should not enter API keys; use Copy AI prompt with a school-approved service instead. Free-tier inputs and outputs may be used by Google for product improvement. Do not submit personal, student-record, free-text, or confidential data.']
-    ,['初期設定では、分析対象列の要約統計量・結果表・妥当性チェックだけを送信し、原データ行や自由記述例は送りません。 使用モデルはGemini 3.7 Flashで、利用できない場合は3.6 Flash、3.5 Flash-Liteの順に切り替えます。 この静的WebアプリではAPIキーを安全に隠せません。専用の制限済みキーを一時保存で使い、利用後は削除してください。', 'By default, easyStat sends only summary statistics, result tables, and validity checks for the analyzed variables; raw rows and free-text examples are excluded. It uses Gemini 3.7 Flash, then falls back to 3.6 Flash and 3.5 Flash-Lite. A static web app cannot securely conceal an API key. Use a dedicated restricted key temporarily and delete it afterward.']
-    ,['原データを含めない場合も、分析対象列の要約統計量と画面の結果表は送信されます。自動マスクには見落としがあるため、個人情報や機密情報を含むデータではオンにしないでください。この設定は分析を切り替えるとオフに戻ります。', 'Summary statistics and on-screen result tables are sent even when raw rows are excluded. Automatic masking can miss sensitive content, so do not enable this for data containing personal or confidential information. This setting turns off when you switch analyses.']
-    ,['AI用テキストをコピーしました。原データ行は含まれていません。貼り付ける前に送信先と内容を確認してください。', 'Copied the AI prompt without raw data rows. Check the destination and content before pasting it.']
+    ,['Geminiへ直接接続する場合、初期設定では分析対象列の要約統計量・結果表・妥当性チェックだけが送信対象となり、原データ行や自由記述例は含めません。 使用モデルはGemini 3.7 Flashで、利用できない場合は3.6 Flash、3.5 Flash-Liteの順に切り替えます。 Geminiへの直接接続にはInteractions APIを使用し、API側の会話保存を無効にします。ただし、無料枠に送った内容のデータ利用条件は別に適用されます。', 'By default, direct Gemini access sends summary statistics, result tables, and validity checks for the analyzed variables; raw rows and free-text examples are excluded. easyStat uses Gemini 3.7 Flash, then 3.6 Flash and 3.5 Flash-Lite as fallbacks. Direct access uses the Interactions API with API-side conversation storage disabled, but the free-tier data-use terms still apply.']
+    ,['Gemini APIは18歳未満が利用し得るAPIクライアントでは使用できません。また、公開WebページではAPIキーを安全に保管できません。このため公開版は「AI用テキストをコピー」だけを提供し、直接接続はローカル実行時の成人利用に限定しています。 無料枠では入力と回答がGoogleの製品改善に使われる場合があります。個人情報、成績原票、自由記述などの機密データは送信しないでください。', 'The Gemini API may not be used in an API client likely to be accessed by anyone under 18, and a public web page cannot securely store an API key. The public version therefore provides Copy text for AI only; direct access is limited to local use by adults. Free-tier inputs and outputs may be used by Google for product improvement. Do not submit personal information, student records, identifiable free text, or confidential data.']
     ,['AIとの会話を消去', 'Clear AI conversation']
     ,['会話を消去', 'Clear conversation']
     ,['閉じる', 'Close']
-    ,['分析結果が表示されると送信内容を確認できます', 'You can preview the content after analysis results are displayed']
     ,['よく使う質問', 'Suggested questions']
+    ,['任意の生成AI支援:', 'Optional generative-AI support:']
+    ,['公開版では分析結果を外部へ送信せず、確認してから外部AIへ貼り付けられるテキストを作成します。成人の教員・研究者がローカル実行する場合だけGeminiへ直接接続できます', 'On the public site, easyStat does not send results externally; it creates text that you can review before pasting into an external AI. Direct Gemini access is available only to adult educators and researchers running easyStat locally.']
+    ,['外部AIへ貼り付ける前に「AIに渡す内容を確認」を開き、個人情報・成績原票・自由記述が含まれていないか確認してください', 'Before pasting into an external AI, open Preview AI content and check that it contains no personal information, student records, or identifiable free text.']
+    ,['Gemini Interactions APIへ更新し、API側の会話保存を無効化', 'Updated to the Gemini Interactions API with API-side conversation storage disabled']
+    ,['結論・レポート例を含む全数値と、T1形式の結果表参照を画面の結果と自動照合', 'Automatically validates all generated numbers, including conclusions and report examples, plus T1-style result-table references']
+    ,['公開版はコピー専用、ローカル直接接続はキーをメモリだけに保持し、一時障害は上限付きで再試行', 'Public deployments are copy-only; local direct access keeps the key only in memory and retries transient failures within a fixed limit']
+    ,['APIキーは保存領域へ書き込まず、このページのメモリ内だけで使用します。再読み込みまたはページを閉じると削除されます。', 'The API key is not written to browser storage. It remains only in page memory and is removed when you reload or close the page.']
+    ,['この公開版からGeminiへ直接送信することはありません。分析後に「AI用テキストをコピー」を使い、学校や組織が承認したサービスで内容を確認してから利用してください。', 'This public version never sends results directly to Gemini. After running an analysis, use Copy text for AI, review the content, and paste it only into a service approved by your school or organization.']
+    ,['「AI用テキストをコピー」はAPIキーなしで使えます。成人の教員・研究者がローカル実行している場合は、キーを設定すると「解釈を生成」と追加質問も利用できます。', 'Copy text for AI works without an API key. Adult educators and researchers running easyStat locally can set a key to generate an interpretation and ask follow-up questions.']
+    ,['「AI用テキストをコピー」すると、結果表・見るべき数値・注意点をまとめた依頼文を作れます。内容を確認してから、学校や組織が承認したAIサービスへ貼り付けてください。', 'Copy text for AI creates a prompt containing the result tables, key values, and cautions. Review it before pasting it into a service approved by your school or organization.']
     ,['自己相関関数 (ACF)', 'Autocorrelation function (ACF)']
     ,['- 周期性の確認', '- check for recurring patterns']
 ]);
@@ -913,7 +921,6 @@ const ENGLISH_PATTERNS = [
     [/^第(\d+)因子（α\s*=\s*([\d.]+)）$/u, 'Factor $1 (α = $2)'],
     [/^<b>(.+)\s+の推移と傾向<\/b>$/u, '<b>$1 over time and its trend</b>'],
     [/^<b>自己相関関数 \(ACF\)<\/b>\s*-\s*周期性の確認$/u, '<b>Autocorrelation function (ACF)</b> - check for recurring patterns'],
-    [/^初期設定では、分析対象列の要約統計量・結果表・妥当性チェックだけを送信し、原データ行や自由記述例は送りません。\s*使用モデルはGemini 3\.7 Flashで、利用できない場合は3\.6 Flash、3\.5 Flash-Liteの順に切り替えます。\s*この静的WebアプリではAPIキーを安全に隠せません。専用の制限済みキーを一時保存で使い、利用後は削除してください。$/u, 'By default, easyStat sends only summary statistics, result tables, and validity checks for the analyzed variables; raw rows and free-text examples are excluded. It uses Gemini 3.7 Flash, then falls back to 3.6 Flash and 3.5 Flash-Lite. A static web app cannot securely conceal an API key. Use a dedicated restricted key temporarily and delete it afterward.'],
     [/^平均値の比較:\s*(.+)$/u, 'Mean comparison: $1'],
     [/^平均値の比較：\s*(.+)\s+by\s+グループ$/u, 'Mean comparison: $1 by group'],
     [/^平均値の棒グラフ:\s*(.+)$/u, 'Mean bar chart: $1'],
@@ -1020,6 +1027,10 @@ function isProtectedTerm(source) {
 
 export function setProtectedTerms(terms = []) {
     protectedTerms.clear();
+    addProtectedTerms(terms);
+}
+
+export function addProtectedTerms(terms = []) {
     for (const term of terms) {
         if (term === null || term === undefined) continue;
         const normalized = String(term).trim();

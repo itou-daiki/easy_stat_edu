@@ -35,6 +35,8 @@ test.describe('分析結果のかんたん説明', () => {
         await details.locator('summary').press('Enter');
         await expect(details).toHaveAttribute('open', '');
         await expect(details).toContainText('結果のポイント');
+        await expect(details).toContainText('探究の4ステップ');
+        await expect(details.locator('.inquiry-flow [aria-current="step"]')).toContainText('解釈');
         await expect(details).toContainText('数学・英語・理科・学習時間');
         await expect(details).toContainText('今回の人数とばらつきを考えると、男性と女性の平均差がはっきりしているとは言えませんでした');
         await expect(details).toContainText('いずれも p ≥ .05');
@@ -52,6 +54,9 @@ test.describe('分析結果のかんたん説明', () => {
         await expect(details.locator('.result-metric-reading strong')).toHaveText(Array(7).fill('見方:'));
         await expect(details).toContainText('p ≥ .05でも効果量が中程度になることがあり、矛盾ではありません');
         await expect(details).toContainText('「同じ」と証明した結果でもありません');
+        await expect(details).toContainText('次にすること');
+        await expect(details.locator('.result-next-actions li')).toHaveCount(3);
+        await expect(details).toContainText('理由:');
         await expect(details).not.toContainText('固定ルール');
         await expect(details).not.toContainText('API');
         await expect(details).not.toContainText('生成AI');

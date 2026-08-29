@@ -690,6 +690,9 @@ async function analyzeAndRender(items, container, prefix, context) {
         ${renderNetworkPanel(networkId, context.settings)}
     `);
 
+    // 表は先に操作できるため、重い可視化の描画を待たずKWICを開けるようにする。
+    bindTermLinks(container, items);
+
     const showKwic = word => openKwicPanel(word, items);
     context.updateStatus?.('頻度ワードクラウドを描画中...');
     await yieldToBrowser();
@@ -744,7 +747,6 @@ async function analyzeAndRender(items, container, prefix, context) {
         }
     );
 
-    bindTermLinks(container, items);
     await yieldToBrowser();
 }
 
@@ -855,6 +857,9 @@ async function runTextMining(currentData) {
         );
         const posByWord = buildPartOfSpeechLookup(items);
         const globalMetrics = computeTermMetrics(items.map(item => item.terms));
+        document.dispatchEvent(new CustomEvent('easystat:protect-user-terms', {
+            detail: { terms: Object.keys(globalMetrics.termFreq) }
+        }));
         const categorySpecificity = categoryVar
             ? computeCategorySpecificity(
                 items

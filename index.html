@@ -25,17 +25,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20260829-quality-v1">
+    <link rel="stylesheet" href="css/style.css?v=20260830-beginner-v5">
 
     <script type="importmap">
         {
             "imports": {
-                "./js/utils.js": "./js/utils.js?v=20260829-quality-v1",
-                "./js/ai_support.js": "./js/ai_support.js?v=20260829-quality-v1"
+                "./js/utils.js": "./js/utils.js?v=20260830-beginner-v5",
+                "./js/ai_support.js": "./js/ai_support.js?v=20260830-beginner-v5",
+                "./js/i18n.js": "./js/i18n.js?v=20260830-beginner-v5",
+                "./js/i18n_content_en.js": "./js/i18n_content_en.js?v=20260830-beginner-v5"
             }
         }
     </script>
-    <script type="module" src="js/main.js?v=20260829-quality-v1"></script>
+    <script type="module" src="js/main.js?v=20260830-beginner-v5"></script>
 </head>
 
 <body>
@@ -205,13 +207,13 @@
                             <h3>生成AIによる解釈支援</h3>
                             <span id="ai-status-badge" class="ai-status-badge inactive">未設定</span>
                         </div>
-                        <p>Gemini APIキーを設定すると、分析結果の読み取りをAIが補助します。</p>
+                        <p>結果表と注意点を整理したAI用テキストを作成します。ローカル実行では成人の教員・研究者がGeminiへ直接接続することもできます。</p>
                     </div>
                 </div>
                 <i class="fas fa-chevron-down ai-config-chevron" aria-hidden="true"></i>
             </button>
             <div class="ai-config-content" id="ai-config-content">
-                <div class="ai-config-help">
+                <div class="ai-config-help" id="ai-direct-help">
                     <h4>Gemini APIキーの取得方法（18歳以上の教員・研究者向け）</h4>
                     <ol>
                         <li>Google AI StudioのAPIキー管理ページを開きます。</li>
@@ -222,12 +224,12 @@
                         <i class="fas fa-up-right-from-square"></i> Google AI StudioでAPIキーを取得
                     </a>
                     <p class="ai-config-note">
-                        初期設定では、分析対象列の要約統計量・結果表・妥当性チェックだけを送信し、原データ行や自由記述例は送りません。
+                        Geminiへ直接接続する場合、初期設定では分析対象列の要約統計量・結果表・妥当性チェックだけが送信対象となり、原データ行や自由記述例は含めません。
                         使用モデルはGemini 3.7 Flashで、利用できない場合は3.6 Flash、3.5 Flash-Liteの順に切り替えます。
-                        この静的WebアプリではAPIキーを安全に隠せません。専用の制限済みキーを一時保存で使い、利用後は削除してください。
+                        Geminiへの直接接続にはInteractions APIを使用し、API側の会話保存を無効にします。ただし、無料枠に送った内容のデータ利用条件は別に適用されます。
                     </p>
                     <p class="ai-config-note ai-config-warning">
-                        Gemini APIの規約では利用者は18歳以上である必要があります。高校生の授業では生徒にAPIキーを入力させず、「AI用テキストをコピー」して学校が承認したサービスを利用してください。
+                        Gemini APIは18歳未満が利用し得るAPIクライアントでは使用できません。また、公開WebページではAPIキーを安全に保管できません。このため公開版は「AI用テキストをコピー」だけを提供し、直接接続はローカル実行時の成人利用に限定しています。
                         無料枠では入力と回答がGoogleの製品改善に使われる場合があります。個人情報、成績原票、自由記述などの機密データは送信しないでください。
                     </p>
                     <p class="ai-config-policy-links">
@@ -236,7 +238,10 @@
                         <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">利用条件とデータの扱い</a>
                     </p>
                 </div>
-                <div class="ai-config-controls">
+                <p id="ai-public-copy-note" class="ai-config-note" hidden>
+                    この公開版からGeminiへ直接送信することはありません。分析後に「AI用テキストをコピー」を使い、学校や組織が承認したサービスで内容を確認してから利用してください。
+                </p>
+                <div class="ai-config-controls" id="ai-direct-controls">
                     <label class="ai-setting-toggle ai-eligibility-confirm" for="gemini-eligibility-confirm">
                         <input type="checkbox" id="gemini-eligibility-confirm" data-ai-control>
                         <span>18歳以上で、APIの利用条件と送信データの扱いを確認しました</span>
@@ -250,14 +255,7 @@
                     <button type="button" id="clear-gemini-key-btn" class="btn-ai-secondary">
                         <i class="fas fa-trash-alt"></i> 削除
                     </button>
-                    <div class="ai-key-storage">
-                        <label class="ai-setting-toggle" for="persist-gemini-key-input">
-                            <input type="checkbox" id="persist-gemini-key-input"
-                                data-visualization-control data-ai-control>
-                            <span>APIキーをブラウザに保存する（次回も使う）</span>
-                        </label>
-                        <span>オフ（推奨）：APIキーは一時保存され、このタブを閉じると削除されます。</span>
-                    </div>
+                    <p class="ai-key-storage">APIキーは保存領域へ書き込まず、このページのメモリ内だけで使用します。再読み込みまたはページを閉じると削除されます。</p>
                 </div>
             </div>
         </div>
@@ -714,8 +712,9 @@
                     <strong>照合して利用:</strong>
                     AIの説明は誤ることがあります。主要な数値・p値・効果量は画面の結果表で確認してください。
                 </div>
+                <div id="ai-beginner-guide"></div>
                 <details class="ai-context-settings">
-                    <summary><i class="fas fa-sliders" aria-hidden="true"></i> 送信内容と説明設定</summary>
+                    <summary><i class="fas fa-sliders" aria-hidden="true"></i> AIに渡す内容と説明設定</summary>
                     <div class="ai-context-settings-body">
                         <label class="ai-context-field" for="ai-explanation-level">
                             <span>説明レベル</span>
@@ -731,13 +730,13 @@
                                 data-visualization-control data-ai-control>
                             <span>機微情報候補を自動マスクした原データ先頭10件を含める</span>
                         </label>
-                        <p id="ai-raw-data-warning">原データを含めない場合も、分析対象列の要約統計量と画面の結果表は送信されます。自動マスクには見落としがあるため、個人情報や機密情報を含むデータではオンにしないでください。この設定は分析を切り替えるとオフに戻ります。</p>
+                        <p id="ai-raw-data-warning">原データを含めなくても、AI用テキストには分析対象列の要約統計量と画面の結果表が入ります。Geminiへ直接接続する場合や、コピー後に外部サービスへ貼り付ける場合は、その内容が送信対象です。自動マスクには見落としがあるため、個人情報や機密情報を含むデータでは原データを含めないでください。この設定は分析を切り替えるとオフに戻ります。</p>
                         <button type="button" id="ai-preview-context-btn" class="btn-ai-secondary"
                             aria-expanded="false" aria-controls="ai-context-preview" disabled>
-                            <i class="fas fa-eye"></i> 送信内容を確認
+                            <i class="fas fa-eye"></i> AIに渡す内容を確認
                         </button>
                         <div id="ai-context-preview" class="ai-context-preview" role="region"
-                            aria-label="生成AIへ渡す内容" hidden>
+                            aria-label="AIへ渡す内容" hidden>
                             <p id="ai-context-summary" class="ai-context-summary"></p>
                             <pre id="ai-context-preview-json"></pre>
                         </div>
@@ -746,7 +745,7 @@
                 <div id="ai-assist-output" class="ai-assist-output" role="log"
                     aria-live="polite" aria-busy="false">
                     <div class="ai-chat-message assistant">
-                        APIキーがある場合は「解釈を生成」や追加質問ができます。APIキーがない場合は「AI用テキストをコピー」して、ChatGPT、Gemini、Claudeなどに貼り付けて使えます。
+                        「AI用テキストをコピー」すると、結果表・見るべき数値・注意点をまとめた依頼文を作れます。内容を確認してから、学校や組織が承認したAIサービスへ貼り付けてください。
                     </div>
                 </div>
                 <div class="ai-quick-actions" aria-label="よく使う質問">
@@ -764,7 +763,7 @@
                     </button>
                 </div>
                 <div class="ai-chat-input-area">
-                    <textarea id="ai-chat-input" class="ai-chat-input" rows="2" placeholder="例: この結果をレポート用に短く書くと？ / 有意でない結果はどう説明する？"></textarea>
+                    <textarea id="ai-chat-input" class="ai-chat-input" rows="2" maxlength="1200" placeholder="例: この結果をレポート用に短く書くと？ / 有意でない結果はどう説明する？"></textarea>
                     <button type="button" id="ai-chat-send-btn" class="btn-ai-primary">
                         <i class="fas fa-paper-plane"></i> 質問
                     </button>
@@ -808,7 +807,7 @@
                     <ul>
                         <li><strong>完全ブラウザベース:</strong> インストール不要、Webブラウザだけで利用可能</li>
                         <li><strong>ブラウザ内で分析:</strong> 通常の統計分析・テキストマイニングでは、入力データを分析用サーバーへ送信しません</li>
-                        <li><strong>任意の生成AI支援:</strong> 実行時だけ分析対象列の要約と結果をGemini APIへ送信します。原データ行は初期設定では送信しません</li>
+                        <li><strong>任意の生成AI支援:</strong> 公開版では分析結果を外部へ送信せず、確認してから外部AIへ貼り付けられるテキストを作成します。成人の教員・研究者がローカル実行する場合だけGeminiへ直接接続できます</li>
                         <li><strong>豊富な分析機能:</strong> データ整形から多変量解析、テキストマイニングまで23機能</li>
                         <li><strong>日本語対応:</strong> UIと分析結果の解釈がすべて日本語</li>
                         <li><strong>学びながら使える:</strong> 分析の選び方、結果を見る順番、指標の意味を確認できます</li>
@@ -982,7 +981,7 @@
 
                     <h4>Tips</h4>
                     <ul>
-                        <li><i class="fas fa-lightbulb"></i> 機密データでは生成AI支援を有効にせず、所属組織のデータ取扱規定も確認してください</li>
+                        <li><i class="fas fa-lightbulb"></i> 外部AIへ貼り付ける前に「AIに渡す内容を確認」を開き、個人情報・成績原票・自由記述が含まれていないか確認してください</li>
                         <li><i class="fas fa-lightbulb"></i> 初回表示にはCDNからライブラリやフォントを読み込むため、インターネット接続が必要です</li>
                         <li><i class="fas fa-lightbulb"></i> データ概要セクションは折りたたんでスペースを節約できます</li>
                         <li><i class="fas fa-lightbulb"></i> 実行前は「この分析を簡単に説明すると」、実行後は「今回の結果を簡単に説明すると」で、結果のポイント・指標の意味と見方・注意点を確認できます</li>
@@ -1017,6 +1016,9 @@
                                     <li>分析手法別の確認順序を追加し、有意でない理由や効果量の過剰解釈を抑制</li>
                                     <li>追加質問を軽量化し、入力・回答・推論トークンの内訳表示に対応</li>
                                     <li>Gemini 3.7 Flash、3.6 Flash、3.5 Flash-Liteに対応</li>
+                                    <li>Gemini Interactions APIへ更新し、API側の会話保存を無効化</li>
+                                    <li>結論・レポート例を含む全数値と、T1形式の結果表参照を画面の結果と自動照合</li>
+                                    <li>公開版はコピー専用、ローカル直接接続はキーをメモリだけに保持し、一時障害は上限付きで再試行</li>
                                     <li>全23機能に高校生向けの分析説明を追加し、実行後は結果のポイント・指標の意味と見方・注意点を共通表示</li>
                                     <li>結果の説明を、結論・読み違えやすい点・次に見る値が短く伝わる文面へ統一</li>
                                     <li>生データを利用できる平均値棒グラフで、箱ひげ図への切替に対応</li>
