@@ -1132,7 +1132,20 @@ export function getAcademicLayout(overrides = {}) {
         },
         margin: { t: 50, b: 80, l: 70, r: 30 }
     };
-    return deepMergeLayout(base, overrides);
+    const layout = deepMergeLayout(base, overrides);
+    const titleText = typeof layout.title === 'string'
+        ? layout.title
+        : layout.title?.text;
+    if (titleText) {
+        const titleOptions = typeof layout.title === 'object' ? layout.title : {};
+        layout.title = {
+            automargin: true,
+            yref: 'paper',
+            ...titleOptions,
+            text: titleText
+        };
+    }
+    return layout;
 }
 
 function deepMergeLayout(base, overrides) {
@@ -1165,6 +1178,85 @@ export const academicColors = {
     heatmapScale: [[0, '#f7fbff'], [0.25, '#c6dbef'], [0.5, '#6baed6'], [0.75, '#2171b5'], [1, '#08306b']],
     divergingScale: [[0, '#b2182b'], [0.25, '#ef8a62'], [0.5, '#f7f7f7'], [0.75, '#67a9cf'], [1, '#2166ac']]
 };
+
+const ACCESSIBLE_BAR_PATTERNS = ['', '/', '\\', 'x', '.', '-', '|', '+'];
+const ACCESSIBLE_MARKER_SYMBOLS = [
+    'circle', 'square', 'diamond', 'cross', 'triangle-up', 'triangle-down', 'x', 'star'
+];
+const ACCESSIBLE_LINE_DASHES = ['solid', 'dash', 'dot', 'dashdot', 'longdash', 'longdashdot'];
+
+/**
+ * 系列の区別を色だけに依存させないPlotlyスタイルを補う。
+ * 呼び出し側で明示された模様・線種・記号は上書きしない。
+ */
+export function ensureAccessiblePlotlyStyles(data) {
+    if (!Array.isArray(data)) return data;
+    const visibleTraces = data.filter(trace => trace && trace.visible !== false && trace.visible !== 'legendonly');
+    const barTraces = visibleTraces.filter(trace => trace.type === 'bar');
+    const namedSeries = visibleTraces.filter(trace => (
+        typeof trace.name === 'string'
+        && trace.name.trim()
+        && trace.showlegend !== false
+    ));
+
+    return data.map((trace, traceIndex) => {
+        if (!trace || typeof trace !== 'object') return trace;
+        const next = { ...trace };
+
+        if (trace.type === 'bar') {
+            const marker = { ...(trace.marker || {}) };
+            const existingPattern = { ...(marker.pattern || {}) };
+            const colorCount = Array.isArray(marker.color) ? marker.color.length : 0;
+            if (existingPattern.shape === undefined) {
+                if (barTraces.length > 1) {
+                    const barIndex = barTraces.indexOf(trace);
+                    existingPattern.shape = ACCESSIBLE_BAR_PATTERNS[
+                        Math.max(0, barIndex) % ACCESSIBLE_BAR_PATTERNS.length
+                    ];
+                } else if (colorCount > 1) {
+                    existingPattern.shape = marker.color.map((_, index) => (
+                        ACCESSIBLE_BAR_PATTERNS[index % ACCESSIBLE_BAR_PATTERNS.length]
+                    ));
+                }
+            }
+            if (existingPattern.shape !== undefined) {
+                marker.pattern = {
+                    fillmode: 'overlay',
+                    fgopacity: 0.75,
+                    solidity: 0.22,
+                    ...existingPattern
+                };
+            }
+            marker.line = {
+                color: '#334155',
+                ...(marker.line || {}),
+                width: Math.max(1, Number(marker.line?.width) || 0)
+            };
+            next.marker = marker;
+        }
+
+        if (namedSeries.length > 1 && namedSeries.includes(trace)) {
+            const seriesIndex = namedSeries.indexOf(trace);
+            const mode = String(trace.mode || '');
+            if ((trace.type === 'scatter' || !trace.type) && mode.includes('lines')) {
+                next.line = {
+                    ...(trace.line || {}),
+                    dash: trace.line?.dash
+                        ?? ACCESSIBLE_LINE_DASHES[seriesIndex % ACCESSIBLE_LINE_DASHES.length]
+                };
+            }
+            if ((trace.type === 'scatter' || !trace.type) && mode.includes('markers')) {
+                next.marker = {
+                    ...(next.marker || trace.marker || {}),
+                    symbol: trace.marker?.symbol
+                        ?? ACCESSIBLE_MARKER_SYMBOLS[seriesIndex % ACCESSIBLE_MARKER_SYMBOLS.length]
+                };
+            }
+        }
+
+        return next;
+    });
+}
 
 function withAlpha(color, alpha) {
     const value = String(color || '').trim();
@@ -1478,11 +1570,13 @@ function installPlotlySpecCapture() {
         const target = typeof graphDiv === 'string'
             ? document.getElementById(graphDiv)
             : graphDiv;
-        const normalizedLayout = ensurePlotlyAnnotationSpace(layout || {}, data);
-        const spec = { data, layout: normalizedLayout, config };
+        const normalizedData = ensureAccessiblePlotlyStyles(data);
+        const normalizedLayout = ensurePlotlyAnnotationSpace(layout || {}, normalizedData);
+        const spec = { data: normalizedData, layout: normalizedLayout, config };
         const existingState = target ? plotEditorStates.get(target) : null;
         const reapplyEditorState = Boolean(existingState && !existingState.isEditorRedraw);
         const args = Array.from(arguments);
+        args[1] = normalizedData;
         args[2] = normalizedLayout;
         const result = originalNewPlot.apply(this, args);
         if (target) {
@@ -2749,7 +2843,8 @@ function wrapVisualizationTitle(text, figureWidth) {
         .split('\n');
     if (figureWidth >= 520) return sourceLines.join('<br>');
 
-    const maximumCharacters = Math.max(8, Math.floor((figureWidth - 32) / 16));
+    const reservedWidth = figureWidth < 360 ? 112 : 32;
+    const maximumCharacters = Math.max(8, Math.floor((figureWidth - reservedWidth) / 16));
     return sourceLines
         .flatMap(line => {
             const characters = Array.from(line);
@@ -2781,6 +2876,102 @@ function positionBottomTitleAnnotations(annotations, dimensions, layout) {
             }
             : annotation
     ));
+}
+
+function formatAccessibleNumber(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return String(value ?? '');
+    return new Intl.NumberFormat(getLocale() === 'en' ? 'en-US' : 'ja-JP', {
+        maximumFractionDigits: 3
+    }).format(numeric);
+}
+
+function describePlotTrace(trace, index) {
+    const english = getLocale() === 'en';
+    const name = toEditableLabel(trace?.name)
+        || (english ? `Series ${index + 1}` : `系列${index + 1}`);
+    const xValues = Array.isArray(trace?.x) ? trace.x : [];
+    const yValues = Array.isArray(trace?.y) ? trace.y : [];
+    const zValues = Array.isArray(trace?.z) ? trace.z.flat(Infinity) : [];
+    const numericValues = [...yValues, ...zValues, ...(yValues.length === 0 ? xValues : [])]
+        .map(Number)
+        .filter(Number.isFinite);
+    const parts = [name];
+
+    if (numericValues.length > 0) {
+        const minimum = Math.min(...numericValues);
+        const maximum = Math.max(...numericValues);
+        parts.push(english
+            ? `${numericValues.length} values, range ${formatAccessibleNumber(minimum)} to ${formatAccessibleNumber(maximum)}`
+            : `${numericValues.length}個の値、範囲は${formatAccessibleNumber(minimum)}から${formatAccessibleNumber(maximum)}`);
+    }
+
+    if (trace?.type === 'bar' && xValues.length === yValues.length && xValues.length <= 12) {
+        const pairs = xValues.map((x, valueIndex) => (
+            `${toEditableLabel(x)}: ${formatAccessibleNumber(yValues[valueIndex])}`
+        ));
+        parts.push(pairs.join(english ? ', ' : '、'));
+    }
+    return parts.join(english ? '; ' : '。');
+}
+
+function getPlotTypeLabel(data) {
+    const english = getLocale() === 'en';
+    const labels = {
+        bar: english ? 'bar chart' : '棒グラフ',
+        box: english ? 'box plot' : '箱ひげ図',
+        heatmap: english ? 'heatmap' : 'ヒートマップ',
+        histogram: english ? 'histogram' : 'ヒストグラム',
+        scatter: english ? 'scatter or line chart' : '散布図または折れ線グラフ',
+        pie: english ? 'pie chart' : '円グラフ'
+    };
+    const types = [...new Set((data || []).map(trace => labels[trace?.type || 'scatter']).filter(Boolean))];
+    return types.join(english ? ' and ' : '・') || (english ? 'chart' : 'グラフ');
+}
+
+function updatePlotAccessibility(state) {
+    const plot = state?.target;
+    const accessibleTitle = state?.accessibilityTitle;
+    const description = state?.accessibilityDescription;
+    if (!plot || !accessibleTitle || !description) return;
+    const english = getLocale() === 'en';
+    const data = Array.isArray(plot.data) ? plot.data : (state.plotSpec?.data || []);
+    const title = state.titleInput.value.trim() || (english ? 'Chart' : 'グラフ');
+    const typeLabel = getPlotTypeLabel(data);
+    const axisParts = [];
+    if (state.xInput.value.trim()) {
+        axisParts.push(english ? `X-axis: ${state.xInput.value.trim()}` : `X軸: ${state.xInput.value.trim()}`);
+    }
+    if (state.yInput.value.trim()) {
+        axisParts.push(english ? `Y-axis: ${state.yInput.value.trim()}` : `Y軸: ${state.yInput.value.trim()}`);
+    }
+    const traceDescriptions = data.slice(0, 12).map(describePlotTrace);
+    if (data.length > 12) {
+        traceDescriptions.push(english
+            ? `${data.length - 12} additional series are omitted from this short description.`
+            : `残り${data.length - 12}系列は短い説明では省略しています。`);
+    }
+
+    accessibleTitle.textContent = english
+        ? `${title}, interactive ${typeLabel}`
+        : `${title}（操作可能な${typeLabel}）`;
+    description.textContent = [
+        english ? `${title}. ${typeLabel}.` : `${title}。${typeLabel}。`,
+        axisParts.join(english ? '. ' : '。'),
+        traceDescriptions.join(english ? '. ' : '。')
+    ].filter(Boolean).join(' ');
+    plot.setAttribute('role', 'figure');
+    plot.removeAttribute('aria-label');
+    plot.setAttribute('aria-labelledby', accessibleTitle.id);
+    plot.setAttribute('aria-describedby', description.id);
+    const svg = plot.querySelector('.main-svg');
+    if (svg) {
+        svg.removeAttribute('aria-hidden');
+        svg.setAttribute('role', 'img');
+        svg.removeAttribute('aria-label');
+        svg.setAttribute('aria-labelledby', accessibleTitle.id);
+        svg.setAttribute('aria-describedby', description.id);
+    }
 }
 
 function applyPlotEditorState(state) {
@@ -2856,6 +3047,7 @@ function applyPlotEditorState(state) {
     if (state.legendCheckbox) {
         update.showlegend = state.legendCheckbox.checked;
     }
+    updatePlotAccessibility(state);
     appendPlotlyAxisRangeUpdates(update, state.axisRangeControls);
     if (annotationsChanged) update.annotations = annotations;
 
@@ -3226,6 +3418,16 @@ function enhancePlotlyFigure(plot, root, installation) {
         delete plot.dataset.visualizationEditorAttached;
         return false;
     }
+    const accessibilityId = Math.random().toString(36).slice(2, 11);
+    const accessibilityTitle = document.createElement('span');
+    accessibilityTitle.id = `plot-title-${accessibilityId}`;
+    accessibilityTitle.className = 'sr-only plot-accessible-title';
+    const accessibilityDescription = document.createElement('p');
+    accessibilityDescription.id = `plot-description-${accessibilityId}`;
+    accessibilityDescription.className = 'sr-only plot-accessible-description';
+    plot.after(accessibilityTitle, accessibilityDescription);
+    state.accessibilityTitle = accessibilityTitle;
+    state.accessibilityDescription = accessibilityDescription;
     installation.plotStates.add(state);
     installation.sizeStates.add({
         target: plot,
@@ -3238,6 +3440,14 @@ function enhancePlotlyFigure(plot, root, installation) {
     plotEditorStates.set(plot, state);
     const viewRegistration = plotViewRegistrations.get(plot);
     if (viewRegistration) attachPlotlyViewControls(state, viewRegistration);
+    const updateAccessibilityLocale = () => {
+        if (!plot.isConnected) {
+            installation.localeCallbacks.delete(updateAccessibilityLocale);
+            return;
+        }
+        updatePlotAccessibility(state);
+    };
+    installation.localeCallbacks.add(updateAccessibilityLocale);
     apply();
     return true;
 }
@@ -3261,6 +3471,15 @@ function enhanceHtmlTable(table, root) {
         || findNearbyHeadingText(table, root)
         || '分析結果表'
     );
+    table.querySelectorAll('thead th').forEach(header => {
+        header.scope = Number(header.colSpan) > 1 ? 'colgroup' : 'col';
+    });
+    table.querySelectorAll('tbody tr').forEach(row => {
+        const firstCell = row.cells[0];
+        if (!firstCell) return;
+        if (firstCell.tagName === 'TH') firstCell.scope = 'row';
+        else if (!firstCell.hasAttribute('role')) firstCell.setAttribute('role', 'rowheader');
+    });
     const editor = createVisualizationEditorShell('table', '表タイトル');
     const titleField = appendVisualizationTextField(editor.fields, {
         key: 'table-title',
@@ -3272,7 +3491,8 @@ function enhanceHtmlTable(table, root) {
 
     const apply = () => {
         caption.textContent = titleField.input.value;
-        caption.hidden = !titleField.checkbox.checked;
+        caption.hidden = false;
+        caption.classList.toggle('sr-only', !titleField.checkbox.checked);
         table.dataset.tableTitle = titleField.input.value;
     };
     titleField.checkbox.addEventListener('change', apply);

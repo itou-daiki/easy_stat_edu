@@ -43,10 +43,10 @@ test.describe('T-test & ANOVA Table Validation', () => {
                 src.indexOf('function runOneSampleTTest')
             );
 
-            // The main results table p-value should use < .001 format
-            // Count raw p_value.toFixed(3) in <td> tags (these are bugs)
-            // After fix: should use ternary for < .001
-            expect(pairedSection).toMatch(/p_value\s*<\s*0\.001\s*\?\s*'<\s*\.001'/);
+            // Paired tests share one HTML-safe formatter for raw and Holm-adjusted p values.
+            expect(src).toMatch(/function formatTablePValue\(p\)[\s\S]*?p\s*<\s*0\.001\s*\?\s*'&lt;\s*\.001'/);
+            expect(pairedSection).toContain('formatTablePValue(result.p_value)');
+            expect(pairedSection).toContain('formatTablePValue(result.p_adjusted)');
         });
 
         test('one-sample t-test main table should format p < .001', async ({ page }) => {

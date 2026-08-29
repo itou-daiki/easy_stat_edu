@@ -37,25 +37,28 @@ function setupErrorTracking(page) {
   return errors;
 }
 
+async function selectFirstMultiSelectOptions(page, containerSelector: string, requestedCount: number) {
+  const container = page.locator(containerSelector);
+  const trigger = container.locator('.multiselect-trigger');
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+
+  const options = container.locator('.multiselect-option');
+  const optionCount = await options.count();
+  for (let i = 0; i < Math.min(requestedCount, optionCount); i++) {
+    await options.nth(i).click();
+  }
+
+  await page.keyboard.press('Escape');
+}
+
 test.describe('Correlation Analysis - Full Options', () => {
   test('Pearson and Spearman switching', async ({ page }) => {
     const errors = setupErrorTracking(page);
     await loadDemo(page, 'multiple_regression_demo.csv');
     await goToAnalysis(page, 'correlation');
 
-    // Select variables
-    const varSelect = page.locator('#correlation-vars, [id*="correlation"] select, .variable-select');
-    await page.waitForTimeout(500);
-
-    // Try to select multiple variables via multiselect
-    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]:not([data-visualization-control])');
-    const checkboxCount = await checkboxes.count();
-    if (checkboxCount > 0) {
-      // Click first 4 numeric variable checkboxes
-      for (let i = 0; i < Math.min(4, checkboxCount); i++) {
-        await checkboxes.nth(i).click();
-      }
-    }
+    await selectFirstMultiSelectOptions(page, '#correlation-vars-container', 4);
 
     // Run analysis
     const runBtn = page.locator('button:has-text("分析"), button:has-text("実行"), #run-correlation');
@@ -119,12 +122,7 @@ test.describe('Logistic Regression - Full Options', () => {
       }
     }
 
-    // Select predictor checkboxes
-    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]:not([data-visualization-control])');
-    const cbCount = await checkboxes.count();
-    for (let i = 0; i < Math.min(3, cbCount); i++) {
-      await checkboxes.nth(i).click();
-    }
+    await selectFirstMultiSelectOptions(page, '#logistic-indep-container', 3);
 
     // Run
     const runBtn = page.locator('button:has-text("分析"), button:has-text("実行"), button:has-text("予測")');
@@ -159,12 +157,7 @@ test.describe('ANOVA Options - Tukey/Holm, Multiple DVs', () => {
     }
     await page.waitForTimeout(300);
 
-    // Select dependent variable
-    const depCheckboxes = page.locator('.variable-checkbox, input[type="checkbox"]:not([data-visualization-control])');
-    const depCount = await depCheckboxes.count();
-    if (depCount > 0) {
-      await depCheckboxes.first().click();
-    }
+    await selectFirstMultiSelectOptions(page, '#dependent-var-container', 1);
 
     // Run analysis
     const runBtn = page.locator('button:has-text("分析"), button:has-text("実行")');
@@ -238,12 +231,7 @@ test.describe('Factor Analysis - Rotation Methods', () => {
     await goToAnalysis(page, 'factor_analysis');
     await page.waitForTimeout(1000);
 
-    // Select variables (Q1-Q15)
-    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]:not([data-visualization-control])');
-    const cbCount = await checkboxes.count();
-    for (let i = 0; i < Math.min(15, cbCount); i++) {
-      await checkboxes.nth(i).click();
-    }
+    await selectFirstMultiSelectOptions(page, '#factor-vars-container', 15);
 
     // Set factor count to 3
     const factorInput = page.locator('#num-factors, input[type="number"]');
@@ -310,12 +298,7 @@ test.describe('PCA - Options', () => {
     await goToAnalysis(page, 'pca');
     await page.waitForTimeout(1000);
 
-    // Select variables
-    const checkboxes = page.locator('.variable-checkbox, input[type="checkbox"]:not([data-visualization-control])');
-    const cbCount = await checkboxes.count();
-    for (let i = 0; i < Math.min(15, cbCount); i++) {
-      await checkboxes.nth(i).click();
-    }
+    await selectFirstMultiSelectOptions(page, '#pca-vars-container', 15);
 
     // Run analysis
     const runBtn = page.locator('button:has-text("分析"), button:has-text("実行")');

@@ -10,8 +10,11 @@ test.describe('Cross-cutting quality contracts', () => {
             hasText: 'このアプリケーションについて'
         }).textContent();
         expect(inAppHelp).toContain('JavaScriptでデータの読込');
+        expect(inAppHelp).toContain('お使いのブラウザ内で実行します');
+        expect(inAppHelp).toContain('ブラウザ内で分析');
         expect(inAppHelp).toContain('23機能');
         expect(inAppHelp).toContain('Gemini APIへ送信します');
+        expect(inAppHelp).not.toContain('端末内で');
         expect(inAppHelp).not.toContain('Pythonライブラリの読み込みに数分');
         expect(inAppHelp).not.toContain('高度な多変量解析まで12種類');
 
@@ -29,13 +32,21 @@ test.describe('Cross-cutting quality contracts', () => {
         expect(readme).toContain('任意入力の縦横比');
         expect(readme).toContain('数値・日付軸の最小値／最大値');
         expect(readme).toContain('完全なオフライン動作は保証されません');
+        expect(readme).toContain('ブラウザの印刷機能によるPDF保存');
+        expect(readme).toContain('18歳以上で利用条件と送信データの扱い');
+        expect(readme).toContain('Gemini 3.7 Flash');
+        expect(readme).toContain('無料枠では入力と回答がGoogleの製品改善に使われる場合があります');
         expect(readme).not.toContain('サーバーへのデータ送信は一切行わず');
         expect(features).toContain('Yatesの連続性補正を主結果');
         expect(features).toContain('カテゴリごとのワードクラウドと共起ネットワークを連続表示');
         expect(features).toContain('必要な上限より小さい最大値を設定できません');
+        expect(features).toContain('Gemini 3.7 Flash');
+        expect(features).toContain('ブラウザの印刷機能でPDF保存');
+        expect(features).not.toContain('Gemini 3.6 Flash（利用不可時');
         expect(manual).toContain('入力・図表編集・保存');
         expect(manual).toContain('品詞別ランキング');
         expect(manual).toContain('データの一部が見えなくなったり差が実際より大きく見えたりします');
+        expect(manual).toContain('ブラウザの印刷機能からPDF保存できます');
         expect(manual).not.toContain('AI分析サポーター');
         expect(manual).not.toContain('めちゃくちゃ');
         expect(manual).not.toContain('王道パターン');
@@ -182,6 +193,23 @@ test.describe('Cross-cutting quality contracts', () => {
         expect(result.threeByThree[0][0].method).toBe('holm');
         expect(result.threeByThree.flat().every(cell => cell.adjusted >= cell.raw)).toBe(true);
         expect(result.threeByThree.flat().some(cell => cell.adjusted > cell.raw)).toBe(true);
+    });
+
+    test('t-test batches retain raw p values and use monotone Holm-adjusted values for inference', async ({ page }) => {
+        await page.goto('/');
+        const result = await page.evaluate(async () => {
+            const { applyHolmToTTestResults } = await import('/js/analyses/ttest.js');
+            return applyHolmToTTestResults([
+                { label: 'A', p_value: 0.01 },
+                { label: 'B', p_value: 0.03 },
+                { label: 'C', p_value: 0.04 }
+            ]);
+        });
+
+        expect(result.map(item => item.p_value)).toEqual([0.01, 0.03, 0.04]);
+        expect(result.map(item => item.p_adjusted)).toEqual([0.03, 0.06, 0.06]);
+        expect(result.map(item => item.inference_p)).toEqual([0.03, 0.06, 0.06]);
+        expect(result.map(item => item.significance)).toEqual(['*', '†', '†']);
     });
 
     test('shared interpretation is concise without causal or null-acceptance claims', async ({ page }) => {

@@ -12,7 +12,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=20260829-quality-v1">
 
     <style>
         :root {
@@ -387,10 +387,10 @@
             <i class="fas fa-book-open" aria-hidden="true"></i>
             <span class="manual-title-text">easyStat 失敗しないマニュアル</span>
         </h1>
-        <div class="language-switcher" data-language-switcher role="group" aria-label="表示言語 / Display language">
+        <div class="language-switcher" data-language-switcher role="radiogroup" aria-label="表示言語">
             <i class="fas fa-language" aria-hidden="true"></i>
-            <button type="button" data-locale="ja" aria-pressed="true">日本語</button>
-            <button type="button" data-locale="en" aria-pressed="false" tabindex="-1">English</button>
+            <button type="button" data-locale="ja" role="radio" aria-checked="true" aria-label="日本語" lang="ja">JP</button>
+            <button type="button" data-locale="en" role="radio" aria-checked="false" lang="en" tabindex="-1">English</button>
         </div>
     </header>
 
@@ -476,7 +476,7 @@
                     <div class="step-item"><strong>p値・効果量・グラフを一緒に見る</strong><br>p値だけで判断せず、平均差、相関係数、オッズ比、効果量、グラフの形も確認します。</div>
                 </div>
                 <div class="alert-box">
-                    <strong>任意のGemini解釈補助：</strong> APIキーを設定して「解釈を生成」または追加質問を実行した場合だけ、分析対象列の要約統計量、分析手法、結果表、妥当性チェックをGoogle Gemini APIへ送信します。原データ行と自由記述例は初期設定では送りません。「送信内容と説明設定」では、説明レベルを「高校生向け（やさしく）」「標準」「研究・論文向け（詳しく）」から選び、機微情報候補を自動マスクした原データ先頭10件の任意追加、実際に渡す内容の事前確認ができます。回答欄の「高校生向け」ボタンから、結論、用語、見る順番、注意点をやさしい言葉で質問することもできます。自動判定は完全ではありません。原データ追加は分析を切り替えるとオフに戻ります。APIキーは初期設定では「一時保存」となり、タブを閉じると削除されます。「APIキーをブラウザに保存する（次回も使う）」を選ぶと、同じブラウザで次回開いたときも利用できます。AI生成文の主要な数値は必ず画面の結果表と照合してください。
+                    <strong>任意のGemini解釈補助：</strong> 直接APIを使えるのは、18歳以上でGemini APIの利用条件とデータの扱いを確認した利用者です。APIキーを設定して「解釈を生成」または追加質問を実行した場合だけ、分析対象列の要約統計量、分析手法、結果表、妥当性チェックをGoogle Gemini APIへ送信します。原データ行と自由記述例は初期設定では送りません。「送信内容と説明設定」では、説明レベルを「高校生向け（やさしく）」「標準」「研究・論文向け（詳しく）」から選び、実際に渡す内容を事前確認できます。自動マスクには見落としがあるため、個人情報・成績原票・機密情報は送信しないでください。無料枠では入力と回答がGoogleの製品改善に使われる場合があります。高校生の授業では生徒にAPIキーを入力させず、「AI用テキストをコピー」して学校が承認したサービスを利用します。APIキーは一時保存が初期設定です。この静的Webアプリからキーを安全に隠すことはできないため、専用の制限済みキーを使い、利用後は削除してください。AI生成文の主要な数値は必ず画面の結果表と照合してください。
                 </div>
                 <div class="alert-box info">
                     <strong>AI解釈の確認順序：</strong> 分析目的と変数、主要な結果、効果量・信頼区間、前提条件、言える範囲、次の確認の順に点検します。分析手法ごとの注意点も送信内容に含めます。有意でない結果は「差がない」ことや「標本数が小さいことが原因」を意味しません。将来のデータ収集は、有意差を得る目的ではなく、研究上の最小重要差と事前の検出力設計にもとづいて計画してください。回答欄では、APIトークンを入力・回答・推論・合計に分けて確認できます。
@@ -501,6 +501,7 @@
                     <li>生の観測値がある平均値比較では、「図の表示設定」の表示形式から棒グラフ（平均と標準誤差）と箱ひげ図（中央値、四分位範囲、観測値）を切り替えられます。度数、固有値、自己相関など、箱ひげ図にできない棒グラフには切替を表示しません。</li>
                     <li>軸範囲を狭めると、データの一部が見えなくなったり差が実際より大きく見えたりします。分析時は「自動」を基本とし、手動で変更した場合は保存画像や報告文に範囲を明記してください。</li>
                     <li>画像保存前に、タイトル・凡例・色分けの説明と文字の重なりを確認してください。</li>
+                    <li>結果全体を残すときは、ブラウザの印刷機能からPDF保存できます。操作ボタンや入力欄は印刷から除かれ、結果表・解釈・図を中心に配置します。保存前に印刷プレビューで改ページや文字切れを確認してください。</li>
                 </ul>
             </section>
 
@@ -596,7 +597,7 @@
                 </div>
 
                 <div class="alert-box info">
-                    <strong>注意：</strong> p &lt; .05 は「偶然だけでは説明しにくい」という意味です。「必ず効果がある」「原因が証明された」という意味ではありません。
+                    <strong>注意：</strong> p &lt; .05 は、帰無仮説と分析の前提のもとでは今回ほど極端なデータが得られにくいことを示します。「必ず効果がある」「原因が証明された」という意味ではありません。
                 </div>
             </section>
 
@@ -830,6 +831,7 @@
                     <li><strong>対応なし t検定：</strong> 別々の対象からなる2群（男女など）の平均を比べます。<span class="data-badge numeric">点数の列</span> と <span class="data-badge category">群の列</span> を選びます。</li>
                     <li><strong>対応あり t検定：</strong> 同じ人たちの「事前テストと事後テスト」を比べるパターン。<span class="data-badge numeric">事前点数</span> と <span class="data-badge numeric">事後点数</span> を選びます。</li>
                     <li><strong>t検定の95%信頼区間：</strong> easyStatの結果表では「平均差」の区間です。Cohenのdやd<sub>z</sub>の信頼区間ではありません。0をまたぐかどうかと区間の幅を、p値・効果量と一緒に確認します。</li>
+                    <li><strong>複数項目・複数ペアを一度に検定する場合：</strong> easyStatは未補正p値とHolm補正後のp値を併記し、判定・解釈・グラフの記号には補正後p値を使います。どの検定を同じ検定群に含めたかも報告します。</li>
                     <li><strong>マン・ホイットニーのU検定（ノンパラメトリック）：</strong> 独立2群を順位に置き換えて分布の位置を比較します。分布形状が大きく異なる場合は、単純な中央値差として解釈しません。</li>
                     <li><strong>ウィルコクソン符号順位検定：</strong> 同じ人の事前・事後を比べたいが、差の分布が偏っている時に使います。</li>
                 </ul>
@@ -917,7 +919,7 @@
                 <ul>
                     <li>頻度ワードクラウドの大きさは出現回数、TF-IDFワードクラウドの大きさは文書を特徴づける度合いです。</li>
                     <li>語の色は品詞を表します。画像下の凡例で、名詞・動詞・形容詞などを確認します。</li>
-                    <li>共起ネットワークは、同じ文に現れた語のJaccard係数を表示します。線があるだけで意味的・因果的な関係があるとは限りません。</li>
+                    <li>共起ネットワークは、同じ文または文書に現れた語のJaccard係数を表示します。「強い順」か「係数の下限」で線を絞れます。線があるだけで意味的・因果的な関係があるとは限りません。</li>
                     <li>カテゴリ列を指定すると、カテゴリごとのワードクラウドと共起ネットワークが連続表示されます。各群の文書数が大きく異なる場合は、頻度だけでなくTF-IDFと原文も確認します。</li>
                     <li>ノードや語を選び、KWICで前後文脈を読んでから解釈します。</li>
                 </ul>
@@ -1024,7 +1026,7 @@
     </script>
     <script type="module">
         import { initializeI18n } from './js/i18n.js';
-        import { initializeManualI18n } from './js/manual_i18n.js';
+        import { initializeManualI18n } from './js/manual_i18n.js?v=20260829-quality-v1';
         initializeManualI18n();
         initializeI18n(document);
     </script>

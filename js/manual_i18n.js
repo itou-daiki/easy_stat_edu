@@ -1,5 +1,5 @@
 import { getLocale } from './i18n.js';
-import { MANUAL_CONTENT_EN, MANUAL_SIDEBAR_EN } from './manual_content_en.js';
+import { MANUAL_CONTENT_EN, MANUAL_SIDEBAR_EN } from './manual_content_en.js?v=20260829-quality-v1';
 
 let japaneseSidebarHtml = '';
 let japaneseContentHtml = '';

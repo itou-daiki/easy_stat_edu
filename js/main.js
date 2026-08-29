@@ -17,6 +17,7 @@ import {
     createGeminiRequestBody,
     createSafeDataPreview,
     detectSensitiveColumns,
+    findUnsupportedKeyNumbers,
     fingerprintAIContext,
     formatStructuredInterpretation,
     getFriendlyGeminiError,
@@ -136,7 +137,7 @@ const ANALYSIS_GUIDANCE = {
     cross_tabulation: {
         purpose: '2つのカテゴリ変数の組み合わせの分布を確認する。',
         focus: ['度数・行パーセント・列パーセント', '偏りが大きいセル', 'サンプルサイズの小さいセル'],
-        cannotConclude: ['クロス集計だけでは偶然を超えた関連かは判断しきれない。'],
+        cannotConclude: ['クロス集計だけでは、標本変動を考慮した関連の判断はできない。'],
         nextSteps: ['必要ならカイ二乗検定やFisher正確検定へ進む', '小さいセルを確認する', '割合の母数を明記する']
     },
     correlation: {
@@ -146,7 +147,7 @@ const ANALYSIS_GUIDANCE = {
         nextSteps: ['散布図で形を確認する', '必要なら回帰分析へ進む', '第三の変数の影響を考える']
     },
     ttest: {
-        purpose: '2群または1標本の平均差が偶然で説明できるかを検討する。',
+        purpose: '2群または1標本の平均差を、データのばらつきと標本数に照らして検討する。',
         focus: ['平均差の方向と平均差の95%信頼区間', 't値・自由度・p値', '効果量とその不確実性', '群ごとの人数・分布・外れ値'],
         cannotConclude: [
             '有意差があっても、研究デザインなしに原因は断定できない。',
@@ -379,7 +380,7 @@ const BEGINNER_EXPLANATIONS = {
         caution: '前後とも同じ回答だった人数ではなく、回答が変わった人数が検定の中心です。対応のないデータには使えません。'
     },
     chi_square: {
-        summary: '2つのカテゴリの組み合わせに、偶然だけでは説明しにくい偏りがあるかを調べます。',
+        summary: '2つのカテゴリの組み合わせに、標本変動を考慮してもはっきりした偏りがあるかを調べます。',
         steps: [
             'クロス表の人数と割合を確認します。',
             '期待度数とp値を見て、検定を使う条件が満たされているか確認します。',
@@ -466,7 +467,7 @@ const RESULT_METRIC_DEFINITIONS = {
         label: 'N・件数',
         pattern: /(?:\bN\s*[=＝]|有効N|サンプルサイズ|標本数|\d+\s*行)/i,
         meaning: '実際に分析へ使えた人・行・文書などの数です。',
-        reading: '少ないほど結果が偶然に左右されやすいため、グループごとの数や除外数も確認します。'
+        reading: '少ないと推定の幅が広くなりやすいため、グループごとの数、欠損・除外、信頼区間も確認します。'
     },
     missing: {
         label: '欠損・除外',
@@ -813,6 +814,7 @@ const storedSessionGeminiKey = sessionStorage.getItem(GEMINI_API_KEY_SESSION_STO
 let aiState = {
     apiKey: storedDeviceGeminiKey || storedSessionGeminiKey,
     keyStorageMode: storedDeviceGeminiKey ? 'device' : (storedSessionGeminiKey ? 'session' : 'none'),
+    eligibilityConfirmed: false,
     includeRawPreview: false,
     explanationLevel: localStorage.getItem(AI_EXPLANATION_LEVEL_STORAGE) || 'standard',
     lastOutput: '',
@@ -829,6 +831,7 @@ let aiState = {
 const aiConfigSection = document.getElementById('ai-config-section');
 const aiConfigToggle = document.getElementById('ai-config-toggle');
 const geminiApiKeyInput = document.getElementById('gemini-api-key-input');
+const geminiEligibilityConfirm = document.getElementById('gemini-eligibility-confirm');
 const persistGeminiKeyInput = document.getElementById('persist-gemini-key-input');
 const saveGeminiKeyBtn = document.getElementById('save-gemini-key-btn');
 const clearGeminiKeyBtn = document.getElementById('clear-gemini-key-btn');
@@ -2333,9 +2336,10 @@ function buildTTestBeginnerItems(resultRoot) {
                 group2: commonGroups[1],
                 mean1: cells[1].textContent,
                 mean2: cells[3].textContent,
-                p: cells[7].textContent,
+                p: cells[7].dataset.inferenceP || cells[7].textContent,
                 d: cells[8].textContent,
-                mode
+                mode,
+                adjustment: cells[7].dataset.pAdjustment
             });
         }
         if (mode === 'paired' && cells.length >= 10) {
@@ -2346,9 +2350,10 @@ function buildTTestBeginnerItems(resultRoot) {
                 group2: pairLabels[1] || (getLocale() === 'en' ? 'Condition 2' : '条件2'),
                 mean1: cells[1].textContent,
                 mean2: cells[3].textContent,
-                p: cells[7].textContent,
+                p: cells[7].dataset.inferenceP || cells[7].textContent,
                 d: cells[8].textContent,
-                mode
+                mode,
+                adjustment: cells[7].dataset.pAdjustment
             });
         }
         if (mode === 'one-sample' && cells.length >= 9) {
@@ -2367,11 +2372,18 @@ function buildTTestBeginnerItems(resultRoot) {
     }).filter(Boolean);
     if (rows.length === 0) return [];
 
-    if (mode === 'independent') return buildIndependentTTestItems(rows, commonGroups);
-    return buildPairedOrOneSampleTTestItems(rows, mode);
+    const items = mode === 'independent'
+        ? buildIndependentTTestItems(rows, commonGroups)
+        : buildPairedOrOneSampleTTestItems(rows, mode);
+    if (rows.some(row => row.adjustment === 'holm')) {
+        items.unshift(getLocale() === 'en'
+            ? 'Because several tests were run together, the p values and decisions in this summary use the Holm adjustment shown in the table.'
+            : '複数の検定を同時に行ったため、ここでのp値と判定には結果表のHolm補正値を使っています。');
+    }
+    return items.slice(0, 4);
 }
 
-function createTTestResultItem({ label, group1, group2, mean1, mean2, p, d, mode }) {
+function createTTestResultItem({ label, group1, group2, mean1, mean2, p, d, mode, adjustment = 'none' }) {
     const parsedP = parseDisplayedPValue(p);
     const parsedMean1 = Number.parseFloat(normalizeText(mean1).replace(/,/g, ''));
     const parsedMean2 = Number.parseFloat(normalizeText(mean2).replace(/,/g, ''));
@@ -2387,7 +2399,8 @@ function createTTestResultItem({ label, group1, group2, mean1, mean2, p, d, mode
         pText: parsedP.text,
         d: Number.isFinite(parsedD) ? Math.abs(parsedD) : null,
         significant: parsedP.value < 0.05,
-        mode
+        mode,
+        adjustment
     };
 }
 
@@ -2785,7 +2798,18 @@ function setupAISupport() {
     updateAIConfigStatus();
     updateAIAssistVisibility();
 
+    geminiEligibilityConfirm?.addEventListener('change', () => {
+        aiState.eligibilityConfirmed = geminiEligibilityConfirm.checked;
+        if (!aiState.eligibilityConfirmed) cancelActiveAIRequest('eligibility-unchecked', false);
+        updateAIConfigStatus();
+        updateAIAssistStatus();
+    });
+
     saveGeminiKeyBtn?.addEventListener('click', () => {
+        if (!aiState.eligibilityConfirmed) {
+            showError('18歳以上であることと、APIの利用条件・送信データの扱いを確認してから設定してください。');
+            return;
+        }
         const key = geminiApiKeyInput.value.trim();
         if (!key) {
             showError('Gemini APIキーを入力してください。');
@@ -2940,11 +2964,17 @@ function setupAISupport() {
 function updateAIConfigStatus() {
     if (!aiStatusBadge) return;
     const active = Boolean(aiState.apiKey);
+    const directUseReady = active && aiState.eligibilityConfirmed;
     aiStatusBadge.textContent = !active
         ? '未設定'
-        : (aiState.keyStorageMode === 'device' ? 'ブラウザ保存中' : '一時保存中');
-    aiStatusBadge.classList.toggle('active', active);
-    aiStatusBadge.classList.toggle('inactive', !active);
+        : (!aiState.eligibilityConfirmed
+            ? '利用条件を確認'
+            : (aiState.keyStorageMode === 'device' ? 'ブラウザ保存中' : '一時保存中'));
+    aiStatusBadge.classList.toggle('active', directUseReady);
+    aiStatusBadge.classList.toggle('inactive', !directUseReady);
+    if (geminiApiKeyInput) geminiApiKeyInput.disabled = !aiState.eligibilityConfirmed;
+    if (saveGeminiKeyBtn) saveGeminiKeyBtn.disabled = !aiState.eligibilityConfirmed;
+    if (persistGeminiKeyInput) persistGeminiKeyInput.disabled = !aiState.eligibilityConfirmed;
 }
 
 function updateAIAssistVisibility() {
@@ -2963,7 +2993,10 @@ function updateAIAssistStatus() {
     const contextMessage = aiState.resultsStale
         ? '分析設定が変更されています。分析を再実行するとAI支援を使えます。'
         : waitingMessage;
-    if (aiState.apiKey) {
+    const directUseReady = Boolean(aiState.apiKey && aiState.eligibilityConfirmed);
+    if (aiState.apiKey && !aiState.eligibilityConfirmed) {
+        aiAssistStatus.textContent = 'Geminiを直接使うには、API設定で利用条件とデータの扱いを確認してください。AI用テキストのコピーは利用できます。';
+    } else if (directUseReady) {
         aiAssistStatus.textContent = canUseContext
             ? `${currentAnalysisTitle || '分析結果'}をもとに、解釈の生成や追加質問ができます。`
             : contextMessage;
@@ -2972,15 +3005,15 @@ function updateAIAssistStatus() {
             ? `${currentAnalysisTitle || '分析結果'}をもとに、他の生成AIへ貼り付ける用テキストをコピーできます。`
             : contextMessage;
     }
-    aiGenerateBtn.disabled = aiState.isGenerating || !aiState.apiKey || !canUseContext;
+    aiGenerateBtn.disabled = aiState.isGenerating || !directUseReady || !canUseContext;
     if (aiCopyContextBtn) {
         aiCopyContextBtn.disabled = aiState.isGenerating || !canUseContext;
         aiCopyContextBtn.title = canUseContext
             ? '分析結果を他の生成AIへ貼り付けるためのテキストとしてコピーします'
             : '変数を選択して分析結果が表示されるとコピーできます';
     }
-    if (aiChatSendBtn) aiChatSendBtn.disabled = aiState.isGenerating || !aiState.apiKey || !canUseContext;
-    if (aiChatInput) aiChatInput.disabled = aiState.isGenerating || !aiState.apiKey || !canUseContext;
+    if (aiChatSendBtn) aiChatSendBtn.disabled = aiState.isGenerating || !directUseReady || !canUseContext;
+    if (aiChatInput) aiChatInput.disabled = aiState.isGenerating || !directUseReady || !canUseContext;
     if (aiCancelBtn) aiCancelBtn.hidden = !aiState.isGenerating;
     if (aiIncludeRawPreviewInput) aiIncludeRawPreviewInput.disabled = aiState.isGenerating;
     if (aiExplanationLevelSelect) aiExplanationLevelSelect.disabled = aiState.isGenerating;
@@ -2994,7 +3027,7 @@ function updateAIAssistStatus() {
         aiClearConversationBtn.disabled = aiState.isGenerating || (aiState.chatHistory.length === 0 && !aiState.lastOutput);
     }
     document.querySelectorAll('[data-ai-question]').forEach(button => {
-        button.disabled = aiState.isGenerating || !aiState.apiKey || !canUseContext;
+        button.disabled = aiState.isGenerating || !directUseReady || !canUseContext;
     });
 }
 
@@ -3158,8 +3191,8 @@ function hideAIContextPreview() {
 }
 
 async function generateAIInterpretation() {
-    if (!aiState.apiKey) {
-        showError('Gemini APIキーを保存してから利用してください。');
+    if (!aiState.apiKey || !aiState.eligibilityConfirmed) {
+        showError('API設定で利用条件を確認し、Gemini APIキーを設定してから利用してください。');
         return;
     }
     if (!hasAIContextReady()) {
@@ -3192,6 +3225,7 @@ async function generateAIInterpretation() {
         const response = await requestGemini(prompt, AI_INTERPRETATION_MAX_OUTPUT_TOKENS, {
             structured: true,
             thinkingLevel: 'medium',
+            evidenceSource: context,
             signal: request.controller.signal
         });
         if (!isCurrentAIRequest(request.id)) return;
@@ -3257,8 +3291,8 @@ async function copyAIContextPrompt() {
 }
 
 async function sendAIChatMessage() {
-    if (!aiState.apiKey) {
-        showError('Gemini APIキーを保存してから利用してください。');
+    if (!aiState.apiKey || !aiState.eligibilityConfirmed) {
+        showError('API設定で利用条件を確認し、Gemini APIキーを設定してから利用してください。');
         return;
     }
     if (!hasAIContextReady()) {
@@ -3324,7 +3358,7 @@ async function sendAIChatMessage() {
 async function requestGemini(
     prompt,
     maxOutputTokens,
-    { structured = false, thinkingLevel = 'medium', signal } = {}
+    { structured = false, thinkingLevel = 'medium', evidenceSource = null, signal } = {}
 ) {
     const errors = [];
     for (const model of GEMINI_MODEL_CHAIN) {
@@ -3355,10 +3389,20 @@ async function requestGemini(
             } catch {
                 throw new Error('Gemini APIの応答形式を読み取れませんでした。時間を置いて再試行してください。');
             }
-            return {
-                ...parseGeminiResponse(result, { structured }),
-                model
-            };
+            const parsed = parseGeminiResponse(result, { structured });
+            if (structured && evidenceSource) {
+                const unsupported = findUnsupportedKeyNumbers(parsed.structuredData, evidenceSource);
+                if (unsupported.length > 0) {
+                    errors.push({
+                        model,
+                        status: 422,
+                        text: `unsupported numerical claims: ${unsupported.map(item => item.value).join(', ')}`
+                    });
+                    if (model !== GEMINI_MODEL_CHAIN.at(-1)) continue;
+                    throw new Error('AI回答に結果表で確認できない数値が含まれていたため、表示しませんでした。送信内容を確認して再試行してください。');
+                }
+            }
+            return { ...parsed, model };
         }
 
         const errorText = await response.text();

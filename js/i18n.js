@@ -8,11 +8,20 @@ const ENGLISH_TEXT = new Map([
     ['分析エンジンの初期化をしています', 'Initializing the analysis engine'],
     ['数秒で起動します', 'This should take only a few seconds'],
     ['使い方マニュアル', 'User Guide'],
+    ['表示言語', 'Display language'],
+    ['可視化ライブラリを読み込み中...', 'Loading visualization libraries...'],
     ['ブラウザ上で簡単かつ高速に統計分析　-データ駆動型探究を促進-', 'Fast, browser-based statistical analysis for data-driven inquiry'],
     ['生成AIによる解釈支援', 'Generative AI interpretation support'],
     ['未設定', 'Not configured'],
     ['設定済み', 'Configured'],
     ['Gemini APIキーを設定すると、分析結果の読み取りをAIが補助します。', 'Set a Gemini API key to get AI-assisted interpretation of your results.'],
+    ['Gemini APIキーの取得方法（18歳以上の教員・研究者向け）', 'Getting a Gemini API key (educators and researchers aged 18+)'],
+    ['APIキーの安全な管理', 'Secure API key management'],
+    ['利用条件とデータの扱い', 'Terms and data handling'],
+    ['18歳以上で、APIの利用条件と送信データの扱いを確認しました', 'I am aged 18 or older and have reviewed the API terms and data handling'],
+    ['利用条件を確認', 'Review terms'],
+    ['Gemini APIの規約では利用者は18歳以上である必要があります。高校生の授業では生徒にAPIキーを入力させず、「AI用テキストをコピー」して学校が承認したサービスを利用してください。', 'Gemini API users must be aged 18 or older. In secondary-school classes, students should not enter API keys; use Copy AI prompt with a school-approved service instead.'],
+    ['無料枠では入力と回答がGoogleの製品改善に使われる場合があります。個人情報、成績原票、自由記述などの機密データは送信しないでください。', 'Free-tier inputs and outputs may be used by Google for product improvement. Do not submit personal information, student records, free text, or other confidential data.'],
     ['ファイル', 'File'],
     ['表を入力', 'Paste table'],
     ['ここにファイルをドラッグ＆ドロップ', 'Drag and drop a file here'],
@@ -350,6 +359,9 @@ const ENGLISH_TEXT = new Map([
     ,['全体M', 'Overall M']
     ,['全体S.D', 'Overall SD']
     ,['Levene p(等分散性)', 'Levene p (equal variances)']
+    ,['複数項目の検定:', 'Multiple-outcome testing:']
+    ,['複数ペアの検定:', 'Multiple-pair testing:']
+    ,['（記号と解釈はHolm補正後のp値）', ' (symbols and interpretations use Holm-adjusted p values)']
     ,['群間自由度', 'Between-groups df']
     ,['群内自由度', 'Within-groups df']
     ,['変動要因', 'Source']
@@ -616,7 +628,6 @@ const ENGLISH_TEXT = new Map([
     ,['「APIキーを作成」または「Create API key」を選びます。', 'Choose Create API key.']
     ,['表示されたキーをコピーして、下の入力欄に貼り付けます。', 'Copy the key and paste it into the field below.']
     ,['Google AI StudioでAPIキーを取得', 'Get an API key in Google AI Studio']
-    ,['初期設定では、分析対象列の要約統計量・結果表・妥当性チェックだけを送信し、原データ行や自由記述例は送りません。 使用モデルはGemini 3.6 Flashで、利用できない場合はGemini 3.5 Flash-Liteへ切り替えます。 この静的WebアプリではAPIキーを完全には隠せないため、Gemini API専用の制限付きキーを使用してください。', 'By default, easyStat sends only summary statistics, result tables, and validity checks for the analyzed variables. Raw rows and free-text examples are excluded. It uses Gemini 3.6 Flash and falls back to Gemini 3.5 Flash-Lite when needed. A static web app cannot fully conceal an API key, so use a restricted key dedicated to the Gemini API.']
     ,['設定', 'Save']
     ,['削除', 'Remove']
     ,['APIキーをブラウザに保存する（次回も使う）', 'Save the API key in this browser for future sessions']
@@ -764,7 +775,12 @@ const ENGLISH_TEXT = new Map([
     ,['文書（1行）', 'Document (one line)']
     ,['ネットワークの語数', 'Terms in network']
     ,['表示する線の上限', 'Maximum edges']
+    ,['線の絞り込み', 'Edge filter']
+    ,['Jaccard係数が強い順', 'Strongest Jaccard coefficients']
+    ,['Jaccard係数の下限を指定', 'Set a minimum Jaccard coefficient']
+    ,['最小Jaccard係数', 'Minimum Jaccard coefficient']
     ,['最小共起回数', 'Minimum co-occurrence count']
+    ,['共起ネットワークは、同じ文または文書に現れた語のJaccard係数を表示します。「強い順」か「係数の下限」で線を絞れます。線があるだけで意味的・因果的な関係があるとは限りません。', 'The co-occurrence network uses Jaccard coefficients for terms appearing in the same sentence or document. Filter edges by strongest coefficients or by a minimum coefficient. An edge alone does not establish a semantic or causal relationship.']
     ,['除外語（改行・読点区切り）', 'Excluded terms (separate with line breaks or commas)']
     ,['強制抽出語（改行・読点区切り）', 'Forced terms (separate with line breaks or commas)']
     ,[': 等分散性の検定（Levene検定）のp値です。p < .05 の場合、等分散ではない（分散が異なる）可能性が高いため、Welchのt検定（本分析のデフォルト）の結果がより信頼できます。', ': p value from Levene\'s test of equal variances. When p < .05, the variances may differ, so the Welch t-test result used by default here is more reliable.']
@@ -861,6 +877,9 @@ const ENGLISH_TEXT = new Map([
     ,['データの入力方法', 'Data input method']
     ,['照合して利用:', 'Verify before use:']
     ,['AIの説明は誤ることがあります。主要な数値・p値・効果量は画面の結果表で確認してください。', 'AI explanations can be wrong. Verify the main values, p values, and effect sizes against the result tables on this page.']
+    ,['Gemini APIの規約では利用者は18歳以上である必要があります。高校生の授業では生徒にAPIキーを入力させず、「AI用テキストをコピー」して学校が承認したサービスを利用してください。 無料枠では入力と回答がGoogleの製品改善に使われる場合があります。個人情報、成績原票、自由記述などの機密データは送信しないでください。', 'Gemini API users must be aged 18 or older. In secondary-school classes, students should not enter API keys; use Copy AI prompt with a school-approved service instead. Free-tier inputs and outputs may be used by Google for product improvement. Do not submit personal, student-record, free-text, or confidential data.']
+    ,['初期設定では、分析対象列の要約統計量・結果表・妥当性チェックだけを送信し、原データ行や自由記述例は送りません。 使用モデルはGemini 3.7 Flashで、利用できない場合は3.6 Flash、3.5 Flash-Liteの順に切り替えます。 この静的WebアプリではAPIキーを安全に隠せません。専用の制限済みキーを一時保存で使い、利用後は削除してください。', 'By default, easyStat sends only summary statistics, result tables, and validity checks for the analyzed variables; raw rows and free-text examples are excluded. It uses Gemini 3.7 Flash, then falls back to 3.6 Flash and 3.5 Flash-Lite. A static web app cannot securely conceal an API key. Use a dedicated restricted key temporarily and delete it afterward.']
+    ,['原データを含めない場合も、分析対象列の要約統計量と画面の結果表は送信されます。自動マスクには見落としがあるため、個人情報や機密情報を含むデータではオンにしないでください。この設定は分析を切り替えるとオフに戻ります。', 'Summary statistics and on-screen result tables are sent even when raw rows are excluded. Automatic masking can miss sensitive content, so do not enable this for data containing personal or confidential information. This setting turns off when you switch analyses.']
     ,['AI用テキストをコピーしました。原データ行は含まれていません。貼り付ける前に送信先と内容を確認してください。', 'Copied the AI prompt without raw data rows. Check the destination and content before pasting it.']
     ,['AIとの会話を消去', 'Clear AI conversation']
     ,['会話を消去', 'Clear conversation']
@@ -880,6 +899,8 @@ const ENGLISH_PATTERNS = [
     [/^【(.+)】の度数分布（名前順）$/u, 'Frequency distribution of $1 (sorted by label)'],
     [/^【(.+)】のヒストグラム$/u, 'Histogram of $1'],
     [/^全数値変数の箱ひげ図による比較$/u, 'Box-plot comparison of all numeric variables'],
+    [/^未補正p値と、同時に選んだ(\d+)項目に対するHolm補正p値を表示しています。判定・記号・グラフは補正後p値にそろえています。$/u, 'Raw p values and Holm-adjusted p values across the $1 outcomes selected together are shown. Decisions, symbols, and graphs use the adjusted values.'],
+    [/^未補正p値と、同時に選んだ(\d+)ペアに対するHolm補正p値を表示しています。判定・記号・グラフは補正後p値にそろえています。$/u, 'Raw p values and Holm-adjusted p values across the $1 pairs selected together are shown. Decisions, symbols, and graphs use the adjusted values.'],
     [/^Table 1\. ピアソン Correlation Matrix$/u, 'Table 1. Pearson Correlation Matrix'],
     [/^Table 1\. スピアマン Correlation Matrix$/u, 'Table 1. Spearman Correlation Matrix'],
     [/^期待度数5未満のセルが([\d.]+)%あります。一般的な目安（期待度数1未満のセルなし、5未満のセルが20%以下）を満たしていません。$/u, '$1% of cells have expected counts below 5. This does not meet the common guideline of no expected count below 1 and no more than 20% below 5.'],
@@ -892,7 +913,7 @@ const ENGLISH_PATTERNS = [
     [/^第(\d+)因子（α\s*=\s*([\d.]+)）$/u, 'Factor $1 (α = $2)'],
     [/^<b>(.+)\s+の推移と傾向<\/b>$/u, '<b>$1 over time and its trend</b>'],
     [/^<b>自己相関関数 \(ACF\)<\/b>\s*-\s*周期性の確認$/u, '<b>Autocorrelation function (ACF)</b> - check for recurring patterns'],
-    [/^初期設定では、分析対象列の要約統計量・結果表・妥当性チェックだけを送信し、原データ行や自由記述例は送りません。\s*使用モデルはGemini 3\.6 Flashで、利用できない場合はGemini 3\.5 Flash-Liteへ切り替えます。\s*この静的WebアプリではAPIキーを完全には隠せないため、Gemini API専用の制限付きキーを使用してください。$/u, 'By default, easyStat sends only summary statistics, result tables, and validity checks for the analyzed variables. Raw rows and free-text examples are excluded. It uses Gemini 3.6 Flash and falls back to Gemini 3.5 Flash-Lite when needed. A static web app cannot fully conceal an API key, so use a restricted key dedicated to the Gemini API.'],
+    [/^初期設定では、分析対象列の要約統計量・結果表・妥当性チェックだけを送信し、原データ行や自由記述例は送りません。\s*使用モデルはGemini 3\.7 Flashで、利用できない場合は3\.6 Flash、3\.5 Flash-Liteの順に切り替えます。\s*この静的WebアプリではAPIキーを安全に隠せません。専用の制限済みキーを一時保存で使い、利用後は削除してください。$/u, 'By default, easyStat sends only summary statistics, result tables, and validity checks for the analyzed variables; raw rows and free-text examples are excluded. It uses Gemini 3.7 Flash, then falls back to 3.6 Flash and 3.5 Flash-Lite. A static web app cannot securely conceal an API key. Use a dedicated restricted key temporarily and delete it afterward.'],
     [/^平均値の比較:\s*(.+)$/u, 'Mean comparison: $1'],
     [/^平均値の比較：\s*(.+)\s+by\s+グループ$/u, 'Mean comparison: $1 by group'],
     [/^平均値の棒グラフ:\s*(.+)$/u, 'Mean bar chart: $1'],
@@ -1029,14 +1050,15 @@ export function translateText(source, targetLocale = locale, options = {}) {
     if (targetLocale !== 'en' || typeof source !== 'string' || !source.trim()) return source;
 
     const trimmed = source.trim();
+    const normalized = trimmed.replace(/\s+/gu, ' ');
     if (options.preserveUserTerms && isProtectedTerm(trimmed)) return source;
-    const exact = ENGLISH_TEXT.get(trimmed);
+    const exact = ENGLISH_TEXT.get(trimmed) || ENGLISH_TEXT.get(normalized);
     if (exact) return preserveOuterWhitespace(source, exact);
 
     for (const [pattern, replacement] of ENGLISH_PATTERNS) {
-        if (pattern.test(trimmed)) {
+        if (pattern.test(normalized)) {
             pattern.lastIndex = 0;
-            const translated = trimmed.replace(pattern, replacement);
+            const translated = normalized.replace(pattern, replacement);
             return preserveOuterWhitespace(source, ENGLISH_TEXT.get(translated) || translated);
         }
     }
@@ -1287,7 +1309,7 @@ function updateLanguageSwitchers(root = document) {
         switcher.querySelectorAll('[data-locale]').forEach(button => {
             const active = button.dataset.locale === locale;
             button.classList.toggle('active', active);
-            button.setAttribute('aria-pressed', String(active));
+            button.setAttribute('aria-checked', String(active));
             button.setAttribute('tabindex', active ? '0' : '-1');
         });
     });
@@ -1375,10 +1397,14 @@ function bindLanguageSwitchers(root = document) {
             if (button) setLocale(button.dataset.locale);
         });
         switcher.addEventListener('keydown', event => {
-            if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+            if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
             event.preventDefault();
-            setLocale(locale === 'ja' ? 'en' : 'ja');
-            switcher.querySelector(`[data-locale="${locale}"]`)?.focus();
+            const buttons = Array.from(switcher.querySelectorAll('[data-locale]'));
+            const currentIndex = Math.max(0, buttons.indexOf(event.target.closest('[data-locale]')));
+            const direction = ['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1;
+            const nextButton = buttons[(currentIndex + direction + buttons.length) % buttons.length];
+            setLocale(nextButton.dataset.locale);
+            nextButton.focus();
         });
     });
 }

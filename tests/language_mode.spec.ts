@@ -47,7 +47,7 @@ async function collectVisibleJapaneseUi(
     });
 }
 
-test.describe('日本語 / English 表示モード', () => {
+test.describe('JP / English 表示モード', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
         await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30_000 });
@@ -56,11 +56,18 @@ test.describe('日本語 / English 表示モード', () => {
     test('英語モードを保存し、ホーム画面とマニュアルへ反映する', async ({ page }) => {
         const switcher = page.locator('[data-language-switcher]');
         await expect(switcher).toBeVisible();
+        await expect(switcher).toHaveAttribute('role', 'radiogroup');
+        await expect(switcher).toHaveAttribute('aria-label', '表示言語');
+        await expect(switcher.locator('[data-locale="ja"]')).toHaveText('JP');
+        await expect(switcher.locator('[data-locale="ja"]')).toHaveAttribute('aria-label', '日本語');
+        await expect(switcher.locator('[data-locale="ja"]')).toHaveAttribute('aria-checked', 'true');
         await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
 
         await switcher.locator('[data-locale="en"]').click();
 
         await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+        await expect(switcher).toHaveAttribute('aria-label', 'Display language');
+        await expect(switcher.locator('[data-locale="en"]')).toHaveAttribute('aria-checked', 'true');
         await expect(page.locator('.hero-subtitle')).toContainText('Fast, browser-based statistical analysis');
         await expect(page.locator('a[href^="manual.html"]')).toContainText('User Guide');
         await expect(page.locator('#data-source-file-tab')).toContainText('File');
@@ -78,6 +85,32 @@ test.describe('日本語 / English 表示モード', () => {
         await expect(manualPage.locator('html')).toHaveAttribute('lang', 'en');
         await expect(manualPage.locator('h1')).toContainText('User Guide');
         await expect(manualPage.locator('[data-language-switcher]')).toBeVisible();
+        await expect(manualPage.locator('[data-language-switcher] [data-locale="ja"]')).toHaveText('JP');
+    });
+
+    test('言語切替を一つのTab位置と上下左右キーで操作できる', async ({ page }) => {
+        const switcher = page.locator('[data-language-switcher]');
+        const japanese = switcher.locator('[data-locale="ja"]');
+        const english = switcher.locator('[data-locale="en"]');
+
+        await japanese.focus();
+        await page.keyboard.press('ArrowRight');
+        await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+        await expect(english).toBeFocused();
+        await expect(english).toHaveAttribute('tabindex', '0');
+        await expect(japanese).toHaveAttribute('tabindex', '-1');
+
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+        await expect(japanese).toBeFocused();
+
+        await page.keyboard.press('ArrowLeft');
+        await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+        await expect(english).toBeFocused();
+
+        await page.keyboard.press('ArrowUp');
+        await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+        await expect(japanese).toBeFocused();
     });
 
     test('分析設定・結果・図表を英語化し、利用者の列名を保持して日本語へ戻せる', async ({ page }) => {

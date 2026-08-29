@@ -1,6 +1,10 @@
-export const GEMINI_PRIMARY_MODEL = 'gemini-3.6-flash';
-export const GEMINI_FALLBACK_MODEL = 'gemini-3.5-flash-lite';
-export const GEMINI_MODEL_CHAIN = [GEMINI_PRIMARY_MODEL, GEMINI_FALLBACK_MODEL];
+export const GEMINI_PRIMARY_MODEL = 'gemini-3.7-flash';
+export const GEMINI_FALLBACK_MODEL = 'gemini-3.6-flash';
+export const GEMINI_MODEL_CHAIN = [
+    GEMINI_PRIMARY_MODEL,
+    GEMINI_FALLBACK_MODEL,
+    'gemini-3.5-flash-lite'
+];
 export const AI_REQUEST_TIMEOUT_MS = 60_000;
 
 export const AI_INTERPRETATION_SCHEMA = {
@@ -389,6 +393,32 @@ export function normalizeInterpretationPayload(value) {
     };
 }
 
+/**
+ * Find numerical claims in structured key values that are absent from the supplied results.
+ * This is a narrow guardrail: it catches invented numbers without trying to judge prose.
+ * @param {object} payload
+ * @param {object|string} sourceContext
+ * @returns {Array<{label:string,value:string,unsupportedNumbers:number[]}>}
+ */
+export function findUnsupportedKeyNumbers(payload, sourceContext) {
+    const sourceNumbers = extractNumericLiterals(
+        typeof sourceContext === 'string' ? sourceContext : JSON.stringify(sourceContext || {})
+    );
+    return (payload?.keyNumbers || []).flatMap(item => {
+        const claimedNumbers = extractNumericLiterals(item?.value || '');
+        const unsupportedNumbers = claimedNumbers.filter(claimed => (
+            !sourceNumbers.some(source => numbersMatch(source, claimed))
+        ));
+        return unsupportedNumbers.length > 0
+            ? [{
+                label: toCleanString(item?.label),
+                value: toCleanString(item?.value),
+                unsupportedNumbers
+            }]
+            : [];
+    });
+}
+
 export function detectSensitiveColumns(data, columns) {
     return (columns || []).map(column => {
         const normalized = normalizeIdentifier(column);
@@ -508,10 +538,23 @@ export function getFriendlyGeminiError(status, responseText = '') {
 
 export function getGeminiModelLabel(model) {
     const labels = {
+        'gemini-3.7-flash': 'Gemini 3.7 Flash',
         'gemini-3.6-flash': 'Gemini 3.6 Flash',
         'gemini-3.5-flash-lite': 'Gemini 3.5 Flash-Lite'
     };
     return labels[model] || model;
+}
+
+function extractNumericLiterals(value) {
+    const matches = String(value || '').match(/[-+]?(?:\d{1,3}(?:,\d{3})+|\d+|\.\d+)(?:\.\d+)?(?:e[-+]?\d+)?/gi) || [];
+    return matches
+        .map(token => Number(token.replaceAll(',', '')))
+        .filter(Number.isFinite);
+}
+
+function numbersMatch(left, right) {
+    const tolerance = Math.max(1e-10, Math.abs(right) * 1e-9);
+    return Math.abs(left - right) <= tolerance;
 }
 
 function normalizeObjectArray(value, requiredKeys, maxItems) {

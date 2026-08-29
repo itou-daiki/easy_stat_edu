@@ -36,6 +36,8 @@ test.describe('Text mining logic', () => {
         expect(isContentToken('やすいけど')).toBe(false);
         expect(isContentToken('難しかっ')).toBe(false);
         expect(isContentToken('使っ')).toBe(false);
+        expect(isContentToken('質')).toBe(true);
+        expect(isContentToken('学')).toBe(true);
     });
 
     test('computes document-length adjusted TF-IDF and supports global IDF reuse', () => {
@@ -126,6 +128,12 @@ test.describe('Text mining logic', () => {
         expect(mathHard?.weight).toBeCloseTo(1 / 2, 6);
     });
 
+    test('uses locale-aware sentence boundaries without splitting decimal numbers', () => {
+        const sentences = splitTextIntoSentences('平均は3.14点だった。次を確認する！');
+        expect(sentences).toHaveLength(2);
+        expect(sentences[0]).toContain('3.14');
+    });
+
     test('filters one-off co-occurrences and keeps the strongest Jaccard edges', () => {
         const edges = buildCooccurrenceEdges([
             ['数学', '理解', '授業'],
@@ -144,6 +152,24 @@ test.describe('Text mining logic', () => {
             intersection: 2,
             weight: 1
         });
+    });
+
+    test('filters co-occurrence edges by an explicit Jaccard threshold', () => {
+        const edges = buildCooccurrenceEdges([
+            ['数学', '理解'],
+            ['数学', '理解'],
+            ['数学', '授業'],
+            ['英語', '授業']
+        ], ['数学', '理解', '授業', '英語'], {
+            minCooccurrence: 1,
+            threshold: 0.6,
+            filterMode: 'threshold',
+            maxEdges: 20
+        });
+
+        expect(edges).toEqual([
+            expect.objectContaining({ from: '数学', to: '理解', weight: 2 / 3 })
+        ]);
     });
 
     test('computes category characteristic words with adjusted residuals and FDR', () => {

@@ -4,7 +4,35 @@
  * @module analyses/ttest
  */
 import { bilingualHtml, renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, calculateLeveneTest, addSignificanceBrackets } from '../utils.js';
+import { performHolmCorrection } from '../utils/stat_distributions.js';
 import { displayVisualization } from './ttest/visualization.js';
+
+function getSignificanceMarker(p) {
+    return p < 0.01 ? '**' : p < 0.05 ? '*' : p < 0.1 ? '†' : 'n.s.';
+}
+
+function formatTablePValue(p) {
+    return p < 0.001 ? '&lt; .001' : p.toFixed(3);
+}
+
+/**
+ * Treat the outcomes selected in one run as one family and attach Holm-adjusted p values.
+ * Raw p values remain available for transparent reporting.
+ * @param {Array<{p_value:number}>} results
+ * @returns {Array<object>}
+ */
+export function applyHolmToTTestResults(results) {
+    const adjusted = results.length > 1
+        ? performHolmCorrection(results.map((result, index) => ({ p: result.p_value, index })))
+        : results.map((result, index) => ({ p: result.p_value, p_holm: result.p_value, index }));
+
+    results.forEach((result, index) => {
+        result.p_adjusted = adjusted[index].p_holm;
+        result.inference_p = result.p_adjusted;
+        result.significance = getSignificanceMarker(result.inference_p);
+    });
+    return results;
+}
 
 
 
@@ -142,7 +170,7 @@ function runIndependentTTest(currentData) {
                         <th>SD</th>
                         <th>t</th>
                         <th>df</th>
-                        <th>p<br><small>(Levene p)</small></th>
+                        <th>p<br><small id="ttest-p-column-note">(Levene p)</small></th>
                         <th>効果量(d)</th>
                         <th>平均差の<br>95% CI</th>
                     </tr>
@@ -154,7 +182,6 @@ function runIndependentTTest(currentData) {
     const skippedVars = [];
 
     selectedVars.forEach(varName => {
-        const allValues = currentData.map(row => row[varName]).filter(v => v != null && !isNaN(v));
         const group0Values = group0Data.map(row => row[varName]).filter(v => v != null && !isNaN(v));
         const group1Values = group1Data.map(row => row[varName]).filter(v => v != null && !isNaN(v));
 
@@ -184,49 +211,57 @@ function runIndependentTTest(currentData) {
         const df_welch = df_numerator / df_denominator;
         const p_value = jStat.studentt.cdf(-Math.abs(t_stat), df_welch) * 2;
         const cohens_d = Math.abs((mean1 - mean2) / pooled_std);
-        let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.1 ? '†' : 'n.s.';
 
         const t_crit = jStat.studentt.inv(0.975, df_welch);
         const meanDiff = mean1 - mean2;
         const margin = t_crit * se_welch;
         const ci_95_low = meanDiff - margin;
         const ci_95_high = meanDiff + margin;
-        const ci95Str = `[${ci_95_low.toFixed(2)}, ${ci_95_high.toFixed(2)}]`;
-
         const levenes = calculateLeveneTest(group0Values, group1Values);
-        const levenesPStr = levenes.p < 0.001 ? '< .001' : levenes.p.toFixed(3);
-        const levenesSign = levenes.p < 0.05 ? '<i class="fas fa-exclamation-triangle" style="color: #d97706;" title="2群の分散は等しいとは言えません。Welchのt検定の結果を使います（easyStatの標準設定です）。"></i>' : '<i class="fas fa-check" style="color: #10b981;" title="2群の分散が異なるとは判断されませんでした。"></i>';
-
-        // P-value formatting
-        const pValueStr = p_value < 0.001 ? '< .001' : p_value.toFixed(3);
-
-        resultsTableHtml += `
-            <tr>
-                <td style="font-weight: bold; color: #1e90ff;">${varName}</td>
-                <td>${mean1.toFixed(2)}</td>
-                <td>${std1.toFixed(2)}</td>
-                <td>${mean2.toFixed(2)}</td>
-                <td>${std2.toFixed(2)}</td>
-                <td>${Math.abs(t_stat).toFixed(2)}</td>
-                <td>${df_welch.toFixed(2)}</td>
-                <td style="background-color: ${levenes.p < 0.05 ? '#fff3cd' : 'transparent'};">
-                    ${pValueStr} <strong>${significance}</strong><br>
-                    <small>(${levenesPStr} ${levenesSign})</small>
-                </td>
-                <td>${cohens_d.toFixed(2)}</td>
-                <td>${ci95Str}</td>
-            </tr>
-        `;
 
         testResults.push({
             varName, groups, mean1, mean2, std1, std2, n1, n2,
-            t_stat, p_value, cohens_d, significance, df: df_welch,
+            t_stat, p_value, cohens_d, df: df_welch, levenes,
             ci_95_low, ci_95_high,
             group0Values, group1Values, groupVar
         });
     });
 
-    resultsTableHtml += `</tbody></table></div><p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;"><strong>sign</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†</p>`;
+    applyHolmToTTestResults(testResults);
+    const hasMultipleTests = testResults.length > 1;
+    testResults.forEach(result => {
+        const levenesPStr = formatTablePValue(result.levenes.p);
+        const levenesSign = result.levenes.p < 0.05
+            ? '<i class="fas fa-exclamation-triangle" style="color: #d97706;" title="2群の分散は等しいとは言えません。Welchのt検定の結果を使います（easyStatの標準設定です）。"></i>'
+            : '<i class="fas fa-check" style="color: #10b981;" title="2群の分散が異なるとは判断されませんでした。"></i>';
+        const inferenceHtml = hasMultipleTests
+            ? `${formatTablePValue(result.p_value)}<br><small><strong>Holm ${formatTablePValue(result.p_adjusted)} ${result.significance}</strong></small>`
+            : `${formatTablePValue(result.p_value)} <strong>${result.significance}</strong>`;
+        resultsTableHtml += `
+            <tr>
+                <td style="font-weight: bold; color: #1e90ff;">${result.varName}</td>
+                <td>${result.mean1.toFixed(2)}</td>
+                <td>${result.std1.toFixed(2)}</td>
+                <td>${result.mean2.toFixed(2)}</td>
+                <td>${result.std2.toFixed(2)}</td>
+                <td>${Math.abs(result.t_stat).toFixed(2)}</td>
+                <td>${result.df.toFixed(2)}</td>
+                <td data-inference-p="${result.inference_p}" data-p-adjustment="${hasMultipleTests ? 'holm' : 'none'}" style="background-color: ${result.levenes.p < 0.05 ? '#fff3cd' : 'transparent'};">
+                    ${inferenceHtml}<br>
+                    <small>(Levene ${levenesPStr} ${levenesSign})</small>
+                </td>
+                <td>${result.cohens_d.toFixed(2)}</td>
+                <td>[${result.ci_95_low.toFixed(2)}, ${result.ci_95_high.toFixed(2)}]</td>
+            </tr>
+        `;
+    });
+
+    resultsTableHtml += `</tbody></table></div><p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;"><strong>sign</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†${hasMultipleTests ? '（記号と解釈はHolm補正後のp値）' : ''}</p>`;
+    if (hasMultipleTests) {
+        resultsTableHtml += `<div class="info-message" style="margin-top: 0.75rem;">
+            <strong>複数項目の検定:</strong> 未補正p値と、同時に選んだ${testResults.length}項目に対するHolm補正p値を表示しています。判定・記号・グラフは補正後p値にそろえています。
+        </div>`;
+    }
 
     if (skippedVars.length > 0) {
         resultsTableHtml += `<div class="warning-message" style="margin-top: 1rem; padding: 1rem; background-color: #fffbe6; border: 1px solid #fde68a; border-radius: 4px; color: #92400e;">
@@ -255,23 +290,33 @@ function runIndependentTTest(currentData) {
 
     // Generate APA Table
     // Generate APA Table
-    const headers = ["Measure", `${groups[0]} (n=${testResults[0].n1}) M (SD)`, `${groups[1]} (n=${testResults[0].n2}) M (SD)`, "<em>t</em>", "<em>df</em>", "<em>p</em>", "Cohen's <em>d</em>"];
+    const headers = ["Measure", `${groups[0]} (n=${testResults[0].n1}) M (SD)`, `${groups[1]} (n=${testResults[0].n2}) M (SD)`, "<em>t</em>", "<em>df</em>", "<em>p</em>"];
+    if (hasMultipleTests) headers.push("<em>p</em><sub>Holm</sub>");
+    headers.push("Cohen's <em>d</em>");
     const rows = testResults.map(res => {
-        let pText = res.p_value.toFixed(3);
-        if (res.p_value < 0.001) pText = '< .001';
-        return [
+        const row = [
             res.varName,
             `${res.mean1.toFixed(2)} (${res.std1.toFixed(2)})`,
             `${res.mean2.toFixed(2)} (${res.std2.toFixed(2)})`,
             Math.abs(res.t_stat).toFixed(2),
             res.df.toFixed(2),
-            pText,
-            res.cohens_d.toFixed(2)
+            formatTablePValue(res.p_value).replace('&lt;', '<')
         ];
+        if (hasMultipleTests) row.push(formatTablePValue(res.p_adjusted).replace('&lt;', '<'));
+        row.push(res.cohens_d.toFixed(2));
+        return row;
     });
 
     document.getElementById('reporting-table-container-indep').innerHTML =
-        generateAPATableHtml('ttest-indep-apa', 'Table 1. Results of Independent Samples t-test', headers, rows, 'Values are Mean (Standard Deviation).');
+        generateAPATableHtml(
+            'ttest-indep-apa',
+            'Table 1. Results of Independent Samples t-test',
+            headers,
+            rows,
+            hasMultipleTests
+                ? `Values are Mean (Standard Deviation). Two-sided p values; Holm adjustment across ${testResults.length} outcomes.`
+                : 'Values are Mean (Standard Deviation). Two-sided p values.'
+        );
 
     document.getElementById('results-section').style.display = 'block';
 }
@@ -371,40 +416,49 @@ function runPairedTTest(currentData, pairs) {
         const df = n - 1;
         const p_value = jStat.studentt.cdf(-Math.abs(t_stat), df) * 2;
         const cohens_d = Math.abs(diffMean / diffStd);
-        let significance = p_value < 0.01 ? '**' : p_value < 0.05 ? '*' : p_value < 0.1 ? '†' : 'n.s.';
-
         const t_crit = jStat.studentt.inv(0.975, df);
         const margin = t_crit * se;
         const ci_95_low = diffMean - margin;
         const ci_95_high = diffMean + margin;
-        const ci95Str = `[${ci_95_low.toFixed(2)}, ${ci_95_high.toFixed(2)}]`;
-
-        resultsTableHtml += `
-            <tr>
-                <td style="font-weight: bold; color: #1e90ff;">${preVar} → ${postVar}</td>
-                <td>${mean1.toFixed(2)}</td>
-                <td>${std1.toFixed(2)}</td>
-                <td>${mean2.toFixed(2)}</td>
-                <td>${std2.toFixed(2)}</td>
-                <td>${Math.abs(t_stat).toFixed(2)}</td>
-                <td>${df}</td>
-                <td>${p_value < 0.001 ? '< .001' : p_value.toFixed(3)} <strong>${significance}</strong></td>
-                <td>${cohens_d.toFixed(2)}</td>
-                <td>${ci95Str}</td>
-            </tr>
-        `;
 
         testResults.push({
             varName: pairName,
             groups: [pair.pre, pair.post],
-            mean1, mean2, std1, std2, n1: n, n2: n, t_stat, p_value, cohens_d, significance, df,
+            mean1, mean2, std1, std2, n1: n, n2: n, t_stat, p_value, cohens_d, df,
             ci_95_low, ci_95_high,
             group0Values: preValues,
             group1Values: postValues
         });
     });
 
-    resultsTableHtml += `</tbody></table></div><p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;"><strong>sign</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†</p>`;
+    applyHolmToTTestResults(testResults);
+    const hasMultipleTests = testResults.length > 1;
+    testResults.forEach(result => {
+        const inferenceHtml = hasMultipleTests
+            ? `${formatTablePValue(result.p_value)}<br><small><strong>Holm ${formatTablePValue(result.p_adjusted)} ${result.significance}</strong></small>`
+            : `${formatTablePValue(result.p_value)} <strong>${result.significance}</strong>`;
+        resultsTableHtml += `
+            <tr>
+                <td style="font-weight: bold; color: #1e90ff;">${result.varName}</td>
+                <td>${result.mean1.toFixed(2)}</td>
+                <td>${result.std1.toFixed(2)}</td>
+                <td>${result.mean2.toFixed(2)}</td>
+                <td>${result.std2.toFixed(2)}</td>
+                <td>${Math.abs(result.t_stat).toFixed(2)}</td>
+                <td>${result.df}</td>
+                <td data-inference-p="${result.inference_p}" data-p-adjustment="${hasMultipleTests ? 'holm' : 'none'}">${inferenceHtml}</td>
+                <td>${result.cohens_d.toFixed(2)}</td>
+                <td>[${result.ci_95_low.toFixed(2)}, ${result.ci_95_high.toFixed(2)}]</td>
+            </tr>
+        `;
+    });
+
+    resultsTableHtml += `</tbody></table></div><p style="color: #6b7280; margin-top: 0.5rem; font-size: 0.9rem;"><strong>sign</strong>: p&lt;0.01** p&lt;0.05* p&lt;0.1†${hasMultipleTests ? '（記号と解釈はHolm補正後のp値）' : ''}</p>`;
+    if (hasMultipleTests) {
+        resultsTableHtml += `<div class="info-message" style="margin-top: 0.75rem;">
+            <strong>複数ペアの検定:</strong> 未補正p値と、同時に選んだ${testResults.length}ペアに対するHolm補正p値を表示しています。判定・記号・グラフは補正後p値にそろえています。
+        </div>`;
+    }
 
     if (skippedPairs.length > 0) {
         resultsTableHtml += `<div class="warning-message" style="margin-top: 1rem; padding: 1rem; background-color: #fffbe6; border: 1px solid #fde68a; border-radius: 4px; color: #92400e;">
@@ -425,23 +479,33 @@ function runPairedTTest(currentData, pairs) {
     displayVisualization(testResults, 'paired');
 
     // Generate APA Table for Paired
-    const headersPaired = ["Pair", "Pre M (SD)", "Post M (SD)", "<em>t</em>", "<em>df</em>", "<em>p</em>", "<em>d<sub>z</sub></em>"];
+    const headersPaired = ["Pair", "Pre M (SD)", "Post M (SD)", "<em>t</em>", "<em>df</em>", "<em>p</em>"];
+    if (hasMultipleTests) headersPaired.push("<em>p</em><sub>Holm</sub>");
+    headersPaired.push("<em>d<sub>z</sub></em>");
     const rowsPaired = testResults.map(res => {
-        let pText = res.p_value.toFixed(3);
-        if (res.p_value < 0.001) pText = '< .001';
-        return [
+        const row = [
             res.varName,
             `${res.mean1.toFixed(2)} (${res.std1.toFixed(2)})`,
             `${res.mean2.toFixed(2)} (${res.std2.toFixed(2)})`,
             Math.abs(res.t_stat).toFixed(2),
             res.df.toFixed(0),
-            pText,
-            res.cohens_d.toFixed(2)
+            formatTablePValue(res.p_value).replace('&lt;', '<')
         ];
+        if (hasMultipleTests) row.push(formatTablePValue(res.p_adjusted).replace('&lt;', '<'));
+        row.push(res.cohens_d.toFixed(2));
+        return row;
     });
 
     document.getElementById('reporting-table-container-paired').innerHTML =
-        generateAPATableHtml('ttest-paired-apa', 'Table 2. Results of Paired Samples t-test', headersPaired, rowsPaired, 'Values are Mean (Standard Deviation).');
+        generateAPATableHtml(
+            'ttest-paired-apa',
+            'Table 2. Results of Paired Samples t-test',
+            headersPaired,
+            rowsPaired,
+            hasMultipleTests
+                ? `Values are Mean (Standard Deviation). Two-sided p values; Holm adjustment across ${testResults.length} pairs.`
+                : 'Values are Mean (Standard Deviation). Two-sided p values.'
+        );
 
     document.getElementById('results-section').style.display = 'block';
 }
@@ -607,21 +671,30 @@ function displayInterpretation(testResults, groupVar, testType) {
 
     testResults.forEach(result => {
         let text = "";
+        const inferenceP = result.inference_p ?? result.p_value;
         if (testType === 'independent') {
-            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d, result.varName, { includeCaution: false });
+            text = InterpretationHelper.interpretTTest(inferenceP, result.mean1, result.mean2, result.groups, result.cohens_d, result.varName, { includeCaution: false });
         } else if (testType === 'paired') {
             // For paired, we use [Pre, Post] as groups
-            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mean2, result.groups, result.cohens_d, result.varName, { includeCaution: false, comparisonType: 'paired' });
+            text = InterpretationHelper.interpretTTest(inferenceP, result.mean1, result.mean2, result.groups, result.cohens_d, result.varName, { includeCaution: false, comparisonType: 'paired' });
         } else if (testType === 'one-sample') {
             // One sample: Compare Mean vs Mu
-            text = InterpretationHelper.interpretTTest(result.p_value, result.mean1, result.mu, [result.varName, `検定値(μ=${result.mu})`], result.cohens_d, result.varName, { includeCaution: false });
+            text = InterpretationHelper.interpretTTest(inferenceP, result.mean1, result.mu, [result.varName, `検定値(μ=${result.mu})`], result.cohens_d, result.varName, { includeCaution: false });
         }
 
         interpretationHtml += `<li style="margin-bottom: 0.5rem;">${text}</li>`;
     });
     interpretationHtml += '</ul>';
 
-    const hasNonSignificantResult = testResults.some(result => result.p_value >= 0.05);
+    const hasMultipleTests = testResults.length > 1 && testType !== 'one-sample';
+    if (hasMultipleTests) {
+        interpretationHtml += `<p style="margin: 0.75rem 0; color: #334155;"><strong>${bilingualHtml(
+            'この解釈は、同時に選んだ検定全体にHolm補正を行ったp値に基づきます。未補正p値は結果表で確認できます。',
+            'These interpretations use Holm-adjusted p values across the tests selected in this run. Raw p values remain in the results table.'
+        )}</strong></p>`;
+    }
+
+    const hasNonSignificantResult = testResults.some(result => (result.inference_p ?? result.p_value) >= 0.05);
     let caution = '差の大きさは、効果量、95%信頼区間、グラフで見ます。';
     if (hasNonSignificantResult) {
         if (testType === 'independent') caution += ' p値が0.05以上の項目も、「2群の平均が同じ」と決まったわけではありません。';
@@ -729,7 +802,7 @@ export function render(container, currentData, characteristics) {
 
             <div id="ttest-data-overview" class="info-sections" style="margin-bottom: 2rem;"></div>
 
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <div class="analysis-setup-panel" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
                 
                 <div style="margin-bottom: 1.5rem;">
                     <h5 style="color: #2d3748; margin-bottom: 1rem;">検定タイプを選択:</h5>

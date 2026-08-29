@@ -68,7 +68,7 @@ export const MANUAL_CONTENT_EN = `
             <div class="step-item"><strong>State only what the design supports</strong><br>A nonsignificant result does not prove equality, and an association by itself does not establish causation.</div>
         </div>
         <div class="alert-box">
-            <strong>Optional Gemini assistance:</strong> Data is sent to the Google Gemini API only when you configure a key and request an interpretation or ask a follow-up question. By default, easyStat sends the analysis method, summary statistics, result tables, and validity checks, but not raw rows or free-text examples. You can preview the payload and optionally include ten masked rows. Always verify AI-generated numbers against the on-screen results.
+            <strong>Optional Gemini assistance:</strong> Direct API use is for people aged 18 or older who have reviewed the Gemini API terms and data handling. Data is sent only when you configure a key and request an interpretation or ask a follow-up question. Raw rows and free-text examples are excluded by default, and the payload can be previewed. Automatic masking can miss sensitive content, and free-tier inputs and outputs may be used by Google for product improvement. Do not submit personal, student-record, or confidential data. For secondary-school classes, students should not enter API keys; use the copy prompt with a school-approved service instead. A static web app cannot securely conceal a key, so use a dedicated restricted key temporarily and delete it afterward. Always verify generated numbers against the on-screen results.
         </div>
         <div class="alert-box info">
             <strong>Recommended AI review order:</strong> research question and variables, main result, effect size and confidence interval, assumptions, limits on interpretation, and next checks. Do not explain a nonsignificant result only by sample size, and do not collect more data merely to obtain significance.
@@ -92,6 +92,7 @@ export const MANUAL_CONTENT_EN = `
             <li>Mean comparisons with raw observations can switch between a bar chart with mean and standard error and a box plot with quartiles and observed values.</li>
             <li>Narrow manual axis ranges can hide data or exaggerate differences. Prefer automatic limits for analysis, and disclose manual limits in exported figures.</li>
             <li>Before saving, check titles, labels, legends, color keys, clipping, and overlapping text.</li>
+            <li>To keep the full result, use the browser's print command and save as PDF. Input fields and action buttons are omitted so that result tables, interpretations, and figures remain. Check page breaks and clipped text in print preview before saving.</li>
         </ul>
     </section>
 
@@ -192,6 +193,7 @@ export const MANUAL_CONTENT_EN = `
             <li><strong>Wilcoxon signed-rank:</strong> compare paired differences using signed ranks; its symmetry assumption and zero differences still matter.</li>
         </ul>
         <p>The t-test confidence interval shown by easyStat is for the mean difference, not for Cohen's d or d<sub>z</sub>. Check whether it crosses zero and how wide it is.</p>
+        <p>When several outcomes or pairs are tested in one run, easyStat reports both raw and Holm-adjusted p values. Decisions, interpretations, and graph symbols use the adjusted values; report which tests formed the family.</p>
     </section>
 
     <section id="goal-compare-3" class="content-section">

@@ -1,7 +1,8 @@
 import {
     renderDataOverview,
     createVariableSelector,
-    createAnalysisButton
+    createAnalysisButton,
+    bilingualHtml
 } from '../utils.js';
 import {
     initTokenizer,
@@ -19,6 +20,31 @@ import {
     plotCooccurrenceNetwork,
     POS_STYLES
 } from './text_mining/visualization.js?v=tm-fast-20260729b';
+import { loadScriptOnce, loadStylesheetOnce } from '../resource_loader.js';
+
+const WORD_CLOUD_URL = 'https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js';
+const VIS_NETWORK_STYLE_URL = 'https://unpkg.com/vis-network@9.1.9/styles/vis-network.min.css';
+const VIS_NETWORK_SCRIPT_URL = new URL('../lib/vis-network.min.js', import.meta.url).href;
+const TINY_SEGMENTER_SCRIPT_URL = new URL('../lib/tiny-segmenter.js', import.meta.url).href;
+
+async function ensureTextMiningLibraries(updateStatus) {
+    updateStatus?.('可視化ライブラリを読み込み中...');
+    const resources = [
+        loadScriptOnce(WORD_CLOUD_URL, { isReady: () => typeof window.WordCloud === 'function' }),
+        loadScriptOnce(VIS_NETWORK_SCRIPT_URL, { isReady: () => Boolean(window.vis?.Network) }),
+        loadStylesheetOnce(VIS_NETWORK_STYLE_URL)
+    ];
+    if (typeof globalThis.Intl?.Segmenter !== 'function') {
+        resources.push(loadScriptOnce(TINY_SEGMENTER_SCRIPT_URL, {
+            isReady: () => typeof window.TinySegmenter === 'function'
+        }));
+    }
+    try {
+        await Promise.all(resources);
+    } catch (error) {
+        throw new Error(`テキストマイニングの描画機能を準備できませんでした。通信状態を確認して再実行してください。 (${error.message})`);
+    }
+}
 
 const POS_ORDER = [
     'noun',
@@ -62,12 +88,22 @@ function clampInteger(value, fallback, min, max) {
     return Math.min(max, Math.max(min, parsed));
 }
 
+function clampNumber(value, fallback, min, max) {
+    const parsed = Number.parseFloat(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.min(max, Math.max(min, parsed));
+}
+
 function readAnalysisSettings() {
     return {
         minFrequency: clampInteger(document.getElementById('tm-min-frequency')?.value, 2, 1, 1000),
         networkTermLimit: clampInteger(document.getElementById('tm-network-term-limit')?.value, 35, 10, 80),
         networkEdgeLimit: clampInteger(document.getElementById('tm-network-edge-limit')?.value, 50, 10, 200),
         minCooccurrence: clampInteger(document.getElementById('tm-min-cooccurrence')?.value, 2, 1, 100),
+        networkFilterMode: document.getElementById('tm-network-filter-mode')?.value === 'threshold'
+            ? 'threshold'
+            : 'top',
+        minJaccard: clampNumber(document.getElementById('tm-min-jaccard')?.value, 0.2, 0, 1),
         cooccurrenceUnit: document.getElementById('tm-cooccurrence-unit')?.value === 'document'
             ? 'document'
             : 'sentence',
@@ -572,12 +608,22 @@ function renderWordCloudPanel(id, title, subtitle) {
 
 function renderNetworkPanel(id, settings) {
     const unitLabel = settings.cooccurrenceUnit === 'document' ? '文書' : '文';
+    const unitLabelEn = settings.cooccurrenceUnit === 'document' ? 'document' : 'sentence';
+    const filterTextJa = settings.networkFilterMode === 'threshold'
+        ? `Jaccard係数${settings.minJaccard.toFixed(2)}以上の関係`
+        : 'Jaccard係数が強い関係';
+    const filterTextEn = settings.networkFilterMode === 'threshold'
+        ? `relationships with Jaccard coefficient ≥ ${settings.minJaccard.toFixed(2)}`
+        : 'relationships with strong Jaccard coefficients';
     return `
         <section class="tm-result-panel tm-network-panel">
             <div class="tm-panel-heading tm-visual-heading">
                 <div>
                     <h6>共起ネットワーク</h6>
-                    <p>${unitLabel}単位のJaccard係数が強い関係を表示します。ノードを押すとKWICを表示します。</p>
+                    ${bilingualHtml(
+                        `<p>${unitLabel}単位で${filterTextJa}を表示します。ノードを押すとKWICを表示します。</p>`,
+                        `<p>Shows ${filterTextEn} using ${unitLabelEn} units. Select a node to open KWIC.</p>`
+                    )}
                 </div>
                 <button type="button" class="download-btn" data-target="${id}" title="PNG画像を保存" aria-label="共起ネットワークをPNG画像で保存">
                     <i class="fas fa-download"></i><span>画像保存</span>
@@ -692,6 +738,8 @@ async function analyzeAndRender(items, container, prefix, context) {
         {
             maxEdges: context.settings.networkEdgeLimit,
             minCooccurrence: context.settings.minCooccurrence,
+            filterMode: context.settings.networkFilterMode,
+            threshold: context.settings.minJaccard,
             unitLabel: context.settings.cooccurrenceUnit === 'document' ? '文書' : '文'
         }
     );
@@ -775,6 +823,7 @@ async function runTextMining(currentData) {
     });
 
     try {
+        await ensureTextMiningLibraries(updateStatus);
         updateStatus('日本語テキスト解析を準備中...');
         if (!getTokenizer()) await initTokenizer(updateStatus);
         const tokenizer = getTokenizer();
@@ -1022,6 +1071,17 @@ export function render(container, currentData, characteristics) {
                             <input type="number" id="tm-network-edge-limit" value="50" min="10" max="200">
                         </label>
                         <label>
+                            <span>線の絞り込み</span>
+                            <select id="tm-network-filter-mode">
+                                <option value="top" selected>Jaccard係数が強い順</option>
+                                <option value="threshold">Jaccard係数の下限を指定</option>
+                            </select>
+                        </label>
+                        <label id="tm-jaccard-threshold-setting" hidden>
+                            <span>最小Jaccard係数</span>
+                            <input type="number" id="tm-min-jaccard" value="0.20" min="0" max="1" step="0.05">
+                        </label>
+                        <label>
                             <span>最小共起回数</span>
                             <input type="number" id="tm-min-cooccurrence" value="2" min="1" max="100">
                         </label>
@@ -1101,6 +1161,13 @@ export function render(container, currentData, characteristics) {
         button.addEventListener('click', () => setInputMode(button.dataset.tmInputMode));
     });
     directInput?.addEventListener('input', updateDirectStatus);
+    const networkFilterMode = document.getElementById('tm-network-filter-mode');
+    const jaccardThresholdSetting = document.getElementById('tm-jaccard-threshold-setting');
+    const updateNetworkFilterSettings = () => {
+        jaccardThresholdSetting.hidden = networkFilterMode.value !== 'threshold';
+    };
+    networkFilterMode?.addEventListener('change', updateNetworkFilterSettings);
+    updateNetworkFilterSettings();
     updateDirectStatus();
     setInputMode(initialInputMode);
 }

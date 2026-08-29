@@ -372,11 +372,18 @@ test.describe('Editable visualization and table labels', () => {
                     && annotation.top >= plotArea.top
                     && annotation.bottom <= figure.bottom
                 ),
+                titleAutoMargin: (element as any).layout.title.automargin,
+                titleYReference: (element as any).layout.title.yref,
                 overflow: (element as HTMLElement).scrollWidth
                     - (element as HTMLElement).clientWidth
             };
         });
-        expect(boxPlacement).toEqual({ annotationInside: true, overflow: 0 });
+        expect(boxPlacement).toEqual({
+            annotationInside: true,
+            titleAutoMargin: true,
+            titleYReference: 'paper',
+            overflow: 0
+        });
 
         const artifactDir = path.join(process.cwd(), 'output/playwright/visualization-editors');
         await fs.mkdir(artifactDir, { recursive: true });
@@ -552,7 +559,7 @@ test.describe('Editable visualization and table labels', () => {
         await tableEditor.locator('[data-visualization-input="table-title"]').fill('抽出語ランキング');
         await expect(termTable.locator('caption')).toHaveText('抽出語ランキング');
         await tableEditor.locator('[data-visualization-control="table-title"]').uncheck();
-        await expect(termTable.locator('caption')).toBeHidden();
+        await expect(termTable.locator('caption')).toHaveClass(/sr-only/);
 
         const wordCloudEditor = canvasEditors.first();
         await wordCloudEditor.locator('summary').click();

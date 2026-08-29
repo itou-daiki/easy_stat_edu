@@ -43,6 +43,8 @@ export const STOP_WORDS = new Set([
 
 /** @type {Object|null} 正規化済みトークナイザー */
 let tokenizer = null;
+let sentenceSegmenter = null;
+let sentenceSegmenterInitialized = false;
 
 let tokenizerInfo = {
     engine: 'none',
@@ -171,7 +173,8 @@ export function normalizeToken(token) {
  * @returns {boolean}
  */
 export function isContentToken(token) {
-    if (!token || token.length <= 1) return false;
+    if (!token) return false;
+    if (token.length === 1 && !/^[\u3400-\u9fff々〆ヶ]$/u.test(token)) return false;
     if (STOP_WORDS.has(token)) return false;
     if (/^[ぁ-ん]+$/.test(token) && token.length <= 2) return false;
     if (/[っッ]$/.test(token)) return false;
@@ -344,6 +347,22 @@ export function tokenizeDocument(text, tokenizer, options = {}) {
  */
 export function splitTextIntoSentences(text) {
     if (!text || typeof text !== 'string') return [];
+    if (!sentenceSegmenterInitialized) {
+        sentenceSegmenterInitialized = true;
+        try {
+            sentenceSegmenter = typeof globalThis.Intl?.Segmenter === 'function'
+                ? new Intl.Segmenter('ja', { granularity: 'sentence' })
+                : null;
+        } catch (error) {
+            console.warn('Sentence segmentation failed. Using punctuation fallback.', error);
+            sentenceSegmenter = null;
+        }
+    }
+    if (sentenceSegmenter) {
+        return [...sentenceSegmenter.segment(text)]
+            .map(part => part.segment.trim().replace(/[。！？!?．.]+$/u, '').trim())
+            .filter(Boolean);
+    }
     return text
         .split(/[。！？!?．.\n\r]+/)
         .map(s => s.trim())
@@ -375,9 +394,7 @@ export function computeTermMetrics(documents, options = {}) {
 
     const termFreq = {};
     const docFreq = {};
-    const tfPerDoc = docs.map(() => ({}));
-
-    docs.forEach((tokens, dIdx) => {
+    docs.forEach(tokens => {
         const counts = {};
         (Array.isArray(tokens) ? tokens : []).forEach(t => {
             counts[t] = (counts[t] || 0) + 1;
@@ -386,7 +403,6 @@ export function computeTermMetrics(documents, options = {}) {
 
         Object.entries(counts).forEach(([t, count]) => {
             docFreq[t] = (docFreq[t] || 0) + 1;
-            tfPerDoc[dIdx][t] = count / Math.max(tokens.length, 1);
         });
     });
 
@@ -398,9 +414,14 @@ export function computeTermMetrics(documents, options = {}) {
     });
 
     const tfIdfByTerm = {};
-    tfPerDoc.forEach(docTf => {
-        Object.entries(docTf).forEach(([t, tf]) => {
-            tfIdfByTerm[t] = (tfIdfByTerm[t] || 0) + tf * termIdf[t];
+    docs.forEach(tokens => {
+        const counts = {};
+        (Array.isArray(tokens) ? tokens : []).forEach(term => {
+            counts[term] = (counts[term] || 0) + 1;
+        });
+        Object.entries(counts).forEach(([term, count]) => {
+            const tf = count / Math.max(tokens.length, 1);
+            tfIdfByTerm[term] = (tfIdfByTerm[term] || 0) + tf * termIdf[term];
         });
     });
 
@@ -456,23 +477,22 @@ export function computeCategorySpecificity(records, options = {}) {
     if (totalDocuments === 0) return {};
 
     const categories = [...new Set(validRecords.map(record => String(record.category)))];
-    const documentTerms = validRecords.map(record => new Set(record.tokens));
     const globalDf = {};
-    documentTerms.forEach(terms => {
+    const categorySizes = Object.fromEntries(categories.map(category => [category, 0]));
+    const categoryDf = Object.fromEntries(categories.map(category => [category, {}]));
+    validRecords.forEach(record => {
+        const category = String(record.category);
+        const terms = new Set(record.tokens);
+        categorySizes[category]++;
         terms.forEach(term => {
             globalDf[term] = (globalDf[term] || 0) + 1;
+            categoryDf[category][term] = (categoryDf[category][term] || 0) + 1;
         });
     });
 
     const result = {};
     categories.forEach(category => {
-        const categoryIndexes = [];
-        validRecords.forEach((record, index) => {
-            if (String(record.category) === category) categoryIndexes.push(index);
-        });
-
-        const categorySet = new Set(categoryIndexes);
-        const categoryDocuments = categoryIndexes.length;
+        const categoryDocuments = categorySizes[category];
         const outsideDocuments = totalDocuments - categoryDocuments;
         if (categoryDocuments === 0 || outsideDocuments === 0) {
             result[category] = [];
@@ -483,10 +503,7 @@ export function computeCategorySpecificity(records, options = {}) {
         Object.entries(globalDf).forEach(([term, totalWithTerm]) => {
             if (totalWithTerm < minDf || totalWithTerm >= totalDocuments) return;
 
-            let inCategory = 0;
-            categorySet.forEach(index => {
-                if (documentTerms[index].has(term)) inCategory++;
-            });
+            const inCategory = categoryDf[category][term] || 0;
             const outsideCategory = totalWithTerm - inCategory;
             const expected = categoryDocuments * totalWithTerm / totalDocuments;
             const rowShare = categoryDocuments / totalDocuments;
@@ -495,7 +512,7 @@ export function computeCategorySpecificity(records, options = {}) {
             if (!(denominator > 0)) return;
 
             const z = (inCategory - expected) / denominator;
-            const p = Math.min(1, 2 * (1 - standardNormalCdf(Math.abs(z))));
+            const p = Math.max(0, Math.min(1, 2 * (1 - standardNormalCdf(Math.abs(z)))));
             const b = categoryDocuments - inCategory;
             const d = outsideDocuments - outsideCategory;
             const logOdds = Math.log((inCategory + 0.5) / (b + 0.5))

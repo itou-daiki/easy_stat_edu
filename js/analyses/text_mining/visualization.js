@@ -376,12 +376,18 @@ function renderNetworkLegend(containerId, groups, diagnostics) {
         return;
     }
 
+    const japaneseFilter = diagnostics.filterMode === 'threshold'
+        ? `Jaccard係数${diagnostics.threshold.toFixed(2)}以上（最大${diagnostics.maxEdges}本）`
+        : `Jaccard係数が強い上位${diagnostics.edgeCount}本`;
+    const englishFilter = diagnostics.filterMode === 'threshold'
+        ? `Jaccard coefficient ≥ ${diagnostics.threshold.toFixed(2)} (up to ${diagnostics.maxEdges} edges)`
+        : `the top ${diagnostics.edgeCount} edges by Jaccard coefficient`;
     const japanese = `
         <div class="tm-visual-legend">
             <div>
                 <strong>色分けの意味:</strong>
                 同じ色はモジュラリティ法で検出した語群です。円の大きさ＝語の出現回数、線の太さ＝Jaccard係数。
-                ${diagnostics.unitLabel}単位で、共起${diagnostics.minCooccurrence}回以上の上位${diagnostics.edgeCount}本を表示しています。
+                ${diagnostics.unitLabel}単位で、共起${diagnostics.minCooccurrence}回以上、${japaneseFilter}を表示しています。
                 ${diagnostics.omittedCommunityCount > 0
                     ? `可読性のため、出現回数の少ない${diagnostics.omittedCommunityCount}コミュニティは省略しました。`
                     : ''}
@@ -401,7 +407,7 @@ function renderNetworkLegend(containerId, groups, diagnostics) {
             <div>
                 <strong>Meaning of the colors:</strong>
                 Terms with the same color belong to a community detected by modularity. Node size = term frequency; edge width = Jaccard coefficient.
-                The graph uses ${diagnostics.unitLabel === '文書' ? 'documents' : 'sentences'}, includes pairs occurring at least ${diagnostics.minCooccurrence} times, and shows the top ${diagnostics.edgeCount} edges.
+                The graph uses ${diagnostics.unitLabel === '文書' ? 'documents' : 'sentences'}, includes pairs occurring at least ${diagnostics.minCooccurrence} times, and shows ${englishFilter}.
                 ${diagnostics.omittedCommunityCount > 0
                     ? `${diagnostics.omittedCommunityCount} low-frequency communities were omitted for readability.`
                     : ''}
@@ -525,9 +531,16 @@ function downloadNetworkImage(containerId, groups, diagnostics) {
         );
         ctx.fillStyle = '#475569';
         ctx.font = `${13 * scale}px "Helvetica Neue", "Yu Gothic", sans-serif`;
+        const filterDescription = diagnostics.filterMode === 'threshold'
+            ? (english
+                ? `Jaccard coefficient at least ${diagnostics.threshold.toFixed(2)}, up to ${diagnostics.maxEdges} edges`
+                : `Jaccard係数${diagnostics.threshold.toFixed(2)}以上、最大${diagnostics.maxEdges}本`)
+            : (english
+                ? `top ${diagnostics.edgeCount} edges by Jaccard coefficient`
+                : `Jaccard係数が強い上位${diagnostics.edgeCount}本`);
         const description = english
-            ? `Node size = term frequency; edge width = Jaccard coefficient; color = modularity community. ${diagnostics.unitLabel === '文書' ? 'Document' : 'Sentence'} units, at least ${diagnostics.minCooccurrence} co-occurrences, top ${diagnostics.edgeCount} edges.`
-            : `円の大きさ＝語の出現回数、線の太さ＝Jaccard係数、色＝モジュラリティ法で検出した語群。${diagnostics.unitLabel}単位・共起${diagnostics.minCooccurrence}回以上・上位${diagnostics.edgeCount}本。`;
+            ? `Node size = term frequency; edge width = Jaccard coefficient; color = modularity community. ${diagnostics.unitLabel === '文書' ? 'Document' : 'Sentence'} units, at least ${diagnostics.minCooccurrence} co-occurrences, ${filterDescription}.`
+            : `円の大きさ＝語の出現回数、線の太さ＝Jaccard係数、色＝モジュラリティ法で検出した語群。${diagnostics.unitLabel}単位・共起${diagnostics.minCooccurrence}回以上・${filterDescription}。`;
         const cursorY = wrapCanvasText(
             ctx,
             description,
@@ -616,7 +629,7 @@ function renderEmptyNetworkCanvas(containerId, unitLabel, minCooccurrence) {
  * @param {string[]} topWords
  * @param {Object<string, number>} termFreq
  * @param {Function} onClick
- * @param {{maxEdges?: number, minCooccurrence?: number, unitLabel?: string}} [settings]
+ * @param {{maxEdges?: number, minCooccurrence?: number, unitLabel?: string, filterMode?: 'top'|'threshold', threshold?: number}} [settings]
  */
 export function plotCooccurrenceNetwork(
     containerId,
@@ -628,9 +641,12 @@ export function plotCooccurrenceNetwork(
 ) {
     const maxEdges = Math.max(10, Number(settings.maxEdges) || 60);
     const minCooccurrence = Math.max(1, Number(settings.minCooccurrence) || 1);
+    const filterMode = settings.filterMode === 'threshold' ? 'threshold' : 'top';
+    const threshold = Math.max(0, Math.min(1, Number(settings.threshold) || 0));
     const unitLabel = settings.unitLabel || '文';
     const edges = buildCooccurrenceEdges(units, topWords, {
-        filterMode: 'top',
+        filterMode,
+        threshold,
         maxEdges,
         minCooccurrence
     });
@@ -773,6 +789,9 @@ export function plotCooccurrenceNetwork(
     const diagnostics = {
         unitLabel,
         minCooccurrence,
+        filterMode,
+        threshold,
+        maxEdges,
         edgeCount: displayedEdges.length,
         omittedCommunityCount: Math.max(0, allGroups.length - groups.length)
     };

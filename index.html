@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>easyStat - ブラウザ統計分析アプリ</title>
 
+    <link rel="preconnect" href="https://cdn.plot.ly" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
@@ -19,10 +25,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20260730-visualization-v5">
+    <link rel="stylesheet" href="css/style.css?v=20260829-quality-v1">
 
-    <!-- vis.js for network graphs -->
-    <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
+    <script type="importmap">
+        {
+            "imports": {
+                "./js/utils.js": "./js/utils.js?v=20260829-quality-v1",
+                "./js/ai_support.js": "./js/ai_support.js?v=20260829-quality-v1"
+            }
+        }
+    </script>
+    <script type="module" src="js/main.js?v=20260829-quality-v1"></script>
 </head>
 
 <body>
@@ -35,7 +48,7 @@
             <p style="font-size: 0.875rem; color: #64748b; margin-top: 0.5rem;">
                 数秒で起動します
             </p>
-            <div id="loading-error" style="color: red; margin-top: 1rem; display: none;"></div>
+            <div id="loading-error" role="alert" style="color: #b91c1c; margin-top: 1rem; display: none;"></div>
             <div class="loading-spinner"></div>
         </div>
     </div>
@@ -128,17 +141,37 @@
         </div>
     </div>
     <script>
-        window.addEventListener('error', function (event) {
+        const showStartupError = function (message, allowRetry = true) {
             const loadingScreen = document.getElementById('loading-screen');
             if (loadingScreen && loadingScreen.style.display !== 'none') {
                 const errorDiv = document.getElementById('loading-error');
                 if (errorDiv) {
                     errorDiv.style.display = 'block';
-                    errorDiv.innerHTML = `<strong>起動エラー:</strong><br>${event.message}`;
-                    console.error('Startup Error:', event.error);
+                    errorDiv.replaceChildren();
+                    const text = document.createElement('p');
+                    text.textContent = message;
+                    errorDiv.appendChild(text);
+                    if (allowRetry) {
+                        const retry = document.createElement('button');
+                        retry.type = 'button';
+                        retry.className = 'startup-retry-button';
+                        retry.textContent = '再読み込み';
+                        retry.addEventListener('click', () => window.location.reload());
+                        errorDiv.appendChild(retry);
+                    }
                 }
             }
-        });
+        };
+        window.addEventListener('error', function (event) {
+            showStartupError(`起動に必要なファイルを読み込めませんでした。通信状態を確認してください。${event.message ? ` (${event.message})` : ''}`);
+            console.error('Startup Error:', event.error || event.target);
+        }, true);
+        window.setTimeout(() => {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
+                showStartupError('読み込みに時間がかかっています。通信状態を確認して、再読み込みしてください。');
+            }
+        }, 15000);
     </script>
 
     <!-- メインコンテナ -->
@@ -146,10 +179,10 @@
         <!-- ヒーローセクション -->
         <div class="hero-section">
             <div class="hero-actions">
-                <div class="language-switcher" data-language-switcher role="group" aria-label="表示言語 / Display language">
+                <div class="language-switcher" data-language-switcher role="radiogroup" aria-label="表示言語">
                     <i class="fas fa-language" aria-hidden="true"></i>
-                    <button type="button" data-locale="ja" aria-pressed="true">日本語</button>
-                    <button type="button" data-locale="en" aria-pressed="false" tabindex="-1">English</button>
+                    <button type="button" data-locale="ja" role="radio" aria-checked="true" aria-label="日本語" lang="ja">JP</button>
+                    <button type="button" data-locale="en" role="radio" aria-checked="false" lang="en" tabindex="-1">English</button>
                 </div>
                 <a href="manual.html" target="_blank" class="btn-demo" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.4); padding: 0.5rem 1rem;">
                     <i class="fas fa-book-open"></i> 使い方マニュアル
@@ -179,7 +212,7 @@
             </button>
             <div class="ai-config-content" id="ai-config-content">
                 <div class="ai-config-help">
-                    <h4>Gemini APIキーの取得方法</h4>
+                    <h4>Gemini APIキーの取得方法（18歳以上の教員・研究者向け）</h4>
                     <ol>
                         <li>Google AI StudioのAPIキー管理ページを開きます。</li>
                         <li>「APIキーを作成」または「Create API key」を選びます。</li>
@@ -190,11 +223,24 @@
                     </a>
                     <p class="ai-config-note">
                         初期設定では、分析対象列の要約統計量・結果表・妥当性チェックだけを送信し、原データ行や自由記述例は送りません。
-                        使用モデルはGemini 3.6 Flashで、利用できない場合はGemini 3.5 Flash-Liteへ切り替えます。
-                        この静的WebアプリではAPIキーを完全には隠せないため、Gemini API専用の制限付きキーを使用してください。
+                        使用モデルはGemini 3.7 Flashで、利用できない場合は3.6 Flash、3.5 Flash-Liteの順に切り替えます。
+                        この静的WebアプリではAPIキーを安全に隠せません。専用の制限済みキーを一時保存で使い、利用後は削除してください。
+                    </p>
+                    <p class="ai-config-note ai-config-warning">
+                        Gemini APIの規約では利用者は18歳以上である必要があります。高校生の授業では生徒にAPIキーを入力させず、「AI用テキストをコピー」して学校が承認したサービスを利用してください。
+                        無料枠では入力と回答がGoogleの製品改善に使われる場合があります。個人情報、成績原票、自由記述などの機密データは送信しないでください。
+                    </p>
+                    <p class="ai-config-policy-links">
+                        <a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer">APIキーの安全な管理</a>
+                        <span aria-hidden="true"> / </span>
+                        <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">利用条件とデータの扱い</a>
                     </p>
                 </div>
                 <div class="ai-config-controls">
+                    <label class="ai-setting-toggle ai-eligibility-confirm" for="gemini-eligibility-confirm">
+                        <input type="checkbox" id="gemini-eligibility-confirm" data-ai-control>
+                        <span>18歳以上で、APIの利用条件と送信データの扱いを確認しました</span>
+                    </label>
                     <input type="password" id="gemini-api-key-input" class="ai-key-input"
                         placeholder="Gemini APIキーを入力" autocomplete="off" spellcheck="false"
                         aria-label="Gemini APIキー">
@@ -681,10 +727,11 @@
                         </label>
                         <label class="ai-setting-toggle ai-raw-data-toggle" for="ai-include-raw-preview">
                             <input type="checkbox" id="ai-include-raw-preview"
+                                aria-describedby="ai-raw-data-warning"
                                 data-visualization-control data-ai-control>
                             <span>機微情報候補を自動マスクした原データ先頭10件を含める</span>
                         </label>
-                        <p>原データを含めない場合も、分析対象列の要約統計量と画面の結果表は送信されます。この設定は分析を切り替えるとオフに戻ります。</p>
+                        <p id="ai-raw-data-warning">原データを含めない場合も、分析対象列の要約統計量と画面の結果表は送信されます。自動マスクには見落としがあるため、個人情報や機密情報を含むデータではオンにしないでください。この設定は分析を切り替えるとオフに戻ります。</p>
                         <button type="button" id="ai-preview-context-btn" class="btn-ai-secondary"
                             aria-expanded="false" aria-controls="ai-context-preview" disabled>
                             <i class="fas fa-eye"></i> 送信内容を確認
@@ -754,13 +801,13 @@
                     <h4>easyStat - ブラウザ統計分析アプリ</h4>
                     <p>
                         <strong>easyStat</strong>は、ブラウザ上で動作する無料の統計分析Webアプリケーションです。
-                        JavaScriptでデータの読込・集計・統計分析・テキストマイニング・可視化を端末内で実行します。
+                        JavaScriptでデータの読込・集計・統計分析・テキストマイニング・可視化を、お使いのブラウザ内で実行します。
                     </p>
 
                     <h4>主な特徴</h4>
                     <ul>
                         <li><strong>完全ブラウザベース:</strong> インストール不要、Webブラウザだけで利用可能</li>
-                        <li><strong>端末内で分析:</strong> 通常の統計分析・テキストマイニングでは、入力データを分析用サーバーへ送信しません</li>
+                        <li><strong>ブラウザ内で分析:</strong> 通常の統計分析・テキストマイニングでは、入力データを分析用サーバーへ送信しません</li>
                         <li><strong>任意の生成AI支援:</strong> 実行時だけ分析対象列の要約と結果をGemini APIへ送信します。原データ行は初期設定では送信しません</li>
                         <li><strong>豊富な分析機能:</strong> データ整形から多変量解析、テキストマイニングまで23機能</li>
                         <li><strong>日本語対応:</strong> UIと分析結果の解釈がすべて日本語</li>
@@ -969,7 +1016,7 @@
                                     <li>説明レベル、定型質問、生成中止、会話消去、結果更新時の再分析案内を追加</li>
                                     <li>分析手法別の確認順序を追加し、有意でない理由や効果量の過剰解釈を抑制</li>
                                     <li>追加質問を軽量化し、入力・回答・推論トークンの内訳表示に対応</li>
-                                    <li>Gemini 3.6 FlashとGemini 3.5 Flash-Liteに対応</li>
+                                    <li>Gemini 3.7 Flash、3.6 Flash、3.5 Flash-Liteに対応</li>
                                     <li>全23機能に高校生向けの分析説明を追加し、実行後は結果のポイント・指標の意味と見方・注意点を共通表示</li>
                                     <li>結果の説明を、結論・読み違えやすい点・次に見る値が短く伝わる文面へ統一</li>
                                     <li>生データを利用できる平均値棒グラフで、箱ひげ図への切替に対応</li>
@@ -1171,23 +1218,8 @@
     <!-- JavaScript Libraries -->
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"></script>
-    <script src="js/lib/tiny-segmenter.js"></script>
-    <!-- WordCloud2.js Production Build -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
-    <script src="js/lib/vis-network.min.js"></script>
-
-    <!-- Custom JavaScript -->
-    <script type="importmap">
-        {
-            "imports": {
-                "./js/utils.js": "./js/utils.js?v=20260730-visualization-v5",
-                "./js/ai_support.js": "./js/ai_support.js?v=20260730-visualization-v5"
-            }
-        }
-    </script>
-    <script type="module" src="js/main.js?v=20260730-visualization-v5"></script>
 </body>
 
 </html>

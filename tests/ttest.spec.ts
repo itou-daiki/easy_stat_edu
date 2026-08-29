@@ -100,4 +100,26 @@ test.describe('T-Test Feature', () => {
         expect(textContent).toContain('効果量(dz)');
         expect(textContent).toContain('95% CI');
     });
+
+    test('multiple outcomes show raw and Holm-adjusted p values consistently', async ({ page }) => {
+        await page.locator('#main-data-file').setInputFiles(
+            path.join(__dirname, '../datasets/demo_all_analysis.csv')
+        );
+        await page.locator('.feature-card[data-analysis="ttest"]').click();
+        await selectStandardOption(page, '#group-var', '性別', 'label');
+        await selectVariables(page, ['数学', '英語', '理科', '学習時間']);
+        await page.locator('#run-independent-btn').click();
+
+        const pCells = page.locator('#test-results-table tbody td:nth-child(8)');
+        await expect(pCells).toHaveCount(4);
+        await expect(pCells.first()).toContainText('Holm');
+        await expect(pCells.first()).toHaveAttribute('data-p-adjustment', 'holm');
+        await expect(page.locator('#test-results-table')).toContainText('判定・記号・グラフは補正後p値');
+        await expect(page.locator('#reporting-table-container-indep th')).toContainText(['pHolm']);
+        await expect(page.locator('#interpretation-section')).toContainText('Holm補正を行ったp値');
+
+        const details = page.locator('[data-result-beginner-explanation="ttest"]');
+        await details.locator('summary').click();
+        await expect(details).toContainText('ここでのp値と判定には結果表のHolm補正値');
+    });
 });

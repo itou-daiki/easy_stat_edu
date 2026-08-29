@@ -51,7 +51,7 @@ export const BEGINNER_EXPLANATIONS_EN = {
             'Identify whether percentages are based on rows or columns.',
             'Look for combinations with notably high or low counts and percentages.'
         ],
-        caution: 'Percentages alone do not show whether an association is beyond chance. Also inspect small cell counts and use an appropriate test when needed.'
+        caution: 'Percentages alone do not account for sampling variation. Also inspect small cell counts and use an appropriate test when needed.'
     },
     correlation: {
         summary: 'Correlation measures whether two numeric variables tend to increase together or move in opposite directions.',
@@ -462,7 +462,7 @@ export const RESULT_METRIC_DEFINITIONS_EN = {
     sample_size: {
         label: 'N / count',
         meaning: 'The number of people, rows, documents, or other cases actually used in the analysis.',
-        reading: 'Smaller samples are more sensitive to chance variation. Check group sizes and the number of excluded cases.'
+        reading: 'Smaller samples often produce wider estimates. Check group sizes, missing or excluded cases, and confidence intervals.'
     },
     missing: {
         label: 'Missing / excluded',

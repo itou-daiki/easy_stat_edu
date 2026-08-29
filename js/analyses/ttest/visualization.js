@@ -74,7 +74,7 @@ export function displayVisualization(testResults, testType) {
                 g1: groupNames[0],
                 g2: groupNames[1],
                 significance: result.significance,
-                p: result.p_value
+                p: result.inference_p ?? result.p_value
             }];
 
             const yMax = Math.max(...meanValues.map((m, i) => m + errorValues[i]));

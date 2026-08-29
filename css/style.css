@@ -594,6 +594,21 @@ html[lang="en"] [data-asset-locale="ja"] {
     border: 1px solid #e2e8f0;
 }
 
+.ai-config-warning {
+    background: #fff7ed;
+    border-color: #fdba74;
+    color: #7c2d12;
+}
+
+.ai-config-policy-links {
+    margin: 0.65rem 0 0;
+}
+
+.ai-config-policy-links a {
+    color: #1d4ed8;
+    font-weight: 700;
+}
+
 .ai-status-badge {
     display: inline-flex;
     align-items: center;
@@ -617,6 +632,15 @@ html[lang="en"] [data-asset-locale="ja"] {
     grid-template-columns: 1fr auto auto;
     gap: 0.5rem;
     align-items: center;
+}
+
+.ai-eligibility-confirm {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
 }
 
 .ai-key-storage {
@@ -2674,6 +2698,11 @@ table tr:hover {
     transition: all 0.3s ease;
 }
 
+.multiselect-input:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.18);
+}
+
 .multiselect-wrapper.active .multiselect-input {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.1);
@@ -2691,35 +2720,55 @@ table tr:hover {
     color: var(--primary-dark);
     border: 1px solid #bae6fd;
     border-radius: 4px;
-    padding: 2px 8px;
+    padding: 2px 4px 2px 8px;
     font-size: 0.9rem;
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.multiselect-tag i {
+.multiselect-remove {
+    width: 24px;
+    height: 24px;
+    display: inline-grid;
+    place-items: center;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: currentColor;
     cursor: pointer;
-    font-size: 0.8rem;
-    opacity: 0.6;
-    transition: opacity 0.2s;
 }
 
-.multiselect-tag i:hover {
-    opacity: 1;
-    color: #ef4444;
+.multiselect-remove:hover,
+.multiselect-remove:focus-visible {
+    background: #bae6fd;
+    color: #b91c1c;
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
 }
 
-.multiselect-search {
-    border: none !important;
-    outline: none !important;
-    padding: 4px !important;
+.multiselect-trigger {
+    min-width: 120px;
+    min-height: 32px;
+    flex: 1 1 140px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 0;
+    padding: 4px;
     font-size: 0.95rem;
     color: var(--text-primary);
-    flex-grow: 1;
-    min-width: 60px;
     background: transparent;
     cursor: pointer;
+    text-align: left;
+}
+
+.multiselect-trigger:focus-visible {
+    outline: none;
+}
+
+.multiselect-placeholder {
+    overflow-wrap: anywhere;
 }
 
 .multiselect-chevron {
@@ -2751,14 +2800,32 @@ table tr:hover {
 }
 
 .multiselect-options li {
-    padding: 8px 12px;
+    min-height: 40px;
+    padding: 8px 12px 8px 36px;
     cursor: pointer;
     transition: background 0.2s;
     font-size: 0.95rem;
+    position: relative;
 }
 
-.multiselect-options li:hover {
+.multiselect-options li:hover,
+.multiselect-options li:focus-visible {
     background: #f1f5f9;
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+}
+
+.multiselect-option[aria-selected="true"] {
+    background: #e0f2fe;
+    font-weight: 600;
+}
+
+.multiselect-option[aria-selected="true"]::before {
+    content: "\2713";
+    position: absolute;
+    left: 14px;
+    color: #075985;
+    font-weight: 700;
 }
 
 .multiselect-options .no-options {
@@ -3874,6 +3941,12 @@ table tr:hover {
     }
 }
 
+@media (max-width: 520px) {
+    .js-plotly-plot .modebar-btn:not([data-title="Download plot as a png"]):not([data-title="Reset axes"]) {
+        display: none !important;
+    }
+}
+
 .tm-community-list {
     display: grid;
     gap: 0.4rem;
@@ -4468,5 +4541,125 @@ table tr:hover {
     .merge-action .btn-analysis,
     #merge-download-btn {
         width: 100%;
+    }
+}
+
+/* =========================================
+   Print / PDF output
+   ========================================= */
+@page {
+    margin: 12mm;
+}
+
+@media print {
+    html,
+    body {
+        background: #fff !important;
+        color: #000 !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    .hero-section,
+    #ai-config-section,
+    #upload-section-main,
+    #data-preview-section,
+    #navigation-section,
+    #analysis-header,
+    #ai-assist-widget,
+    #main-app > .info-sections,
+    .footer,
+    .modal,
+    .analysis-setup-panel,
+    .beginner-explanation,
+    .result-beginner-explanation,
+    .visualization-item-editor,
+    .visualization-controls,
+    .modebar-container,
+    .download-btn,
+    .copy-table-btn,
+    .btn-copy,
+    .btn-analysis,
+    .btn-back {
+        display: none !important;
+    }
+
+    #analysis-content button,
+    #analysis-content input,
+    #analysis-content select,
+    #analysis-content textarea,
+    .apa-table-wrapper > button {
+        display: none !important;
+    }
+
+    .ttest-container > .info-sections,
+    #ttest-data-overview {
+        display: none !important;
+    }
+
+    #main-app,
+    #analysis-area,
+    #analysis-content {
+        background: #fff !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        max-width: none !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    .table-container,
+    .apa-table-wrapper {
+        max-height: none !important;
+        overflow: visible !important;
+        width: 100% !important;
+    }
+
+    table {
+        border-collapse: collapse;
+        font-size: 8.5pt;
+        width: 100% !important;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+
+    tfoot {
+        display: table-footer-group;
+    }
+
+    tr,
+    img,
+    canvas,
+    .js-plotly-plot,
+    .plot-container,
+    .tm-wordcloud-card,
+    .tm-network-card {
+        break-inside: avoid-page;
+        page-break-inside: avoid;
+    }
+
+    img,
+    canvas,
+    svg {
+        height: auto !important;
+        max-width: 100% !important;
+    }
+
+    .js-plotly-plot,
+    .plot-container {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    .js-plotly-plot .svg-container {
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    a {
+        color: inherit !important;
+        text-decoration: none !important;
     }
 }
