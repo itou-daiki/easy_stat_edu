@@ -5,7 +5,7 @@
  *              3群以上の場合はペアワイズWilcoxon検定（Holm補正）による事後検定を実施
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { toNumericCell, renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 import { performHolmCorrection } from '../utils/stat_distributions.js';
 
 // ==========================================
@@ -234,7 +234,7 @@ function runTwoSampleTest(selectedVars, currentData, resultsContainer) {
     const var2 = selectedVars[1];
 
     const pairs = currentData
-        .map(row => ({ v1: Number(row[var1]), v2: Number(row[var2]) }))
+        .map(row => ({ v1: toNumericCell(row[var1]), v2: toNumericCell(row[var2]) }))
         .filter(p => !isNaN(p.v1) && !isNaN(p.v2));
 
     const values1 = pairs.map(p => p.v1);
@@ -362,7 +362,7 @@ function runMultipleSampleTest(selectedVars, currentData, resultsContainer) {
             const var2 = selectedVars[j];
 
             const pairs = currentData
-                .map(row => ({ v1: Number(row[var1]), v2: Number(row[var2]) }))
+                .map(row => ({ v1: toNumericCell(row[var1]), v2: toNumericCell(row[var2]) }))
                 .filter(p => !isNaN(p.v1) && !isNaN(p.v2));
 
             const values1 = pairs.map(p => p.v1);
@@ -466,7 +466,7 @@ function runMultipleSampleTest(selectedVars, currentData, resultsContainer) {
     const groupColors = ['#11b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#f97316'];
     renderSampleSizeInfo(resultsContainer, currentData.length,
         selectedVars.map((v, i) => {
-            const count = currentData.map(row => Number(row[v])).filter(val => !isNaN(val)).length;
+            const count = currentData.map(row => toNumericCell(row[v])).filter(val => !isNaN(val)).length;
             return { label: v, count, color: groupColors[i % groupColors.length] };
         })
     );
@@ -821,7 +821,6 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> ウィルコクソンの符号付順位検定とは？</strong>
                         <p>同じ対象に対して2回測定した結果（事前・事後など）に差があるかを調べる方法です。対応ありt検定のノンパラメトリック版であり、データの正規性を仮定しません。差の「大きさ」と「方向」の両方を考慮して順位に基づいて検定します。</p>
-                        <img src="image/wilcoxon.png" alt="ウィルコクソンの符号付順位検定の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

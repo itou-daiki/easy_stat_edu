@@ -57,6 +57,14 @@ export function isMissingCell(value) {
     return value == null || (typeof value === 'string' && value.trim() === '');
 }
 
+/**
+ * セルの値を数値に変換する。欠損（null・空文字）は 0 ではなく NaN にする。
+ * （Number(null) が 0 になり、欠損が0点として計算されるのを防ぐ）
+ */
+export function toNumericCell(value) {
+    return isMissingCell(value) ? NaN : Number(value);
+}
+
 function compareCategoryValues(a, b) {
     return String(a).localeCompare(String(b), 'ja', {
         numeric: true,
@@ -637,16 +645,19 @@ export function createVariableSelector(container, columns, id, options = {}) {
     select.style.borderRadius = '8px';
     select.style.fontSize = '1rem';
 
+    // 列名に引用符や < が含まれても壊れないよう、option は DOM で作る
+    const addOption = (value, text) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = text;
+        select.appendChild(option);
+    };
     if (disabled || !columns || columns.length === 0) {
         select.disabled = true;
-        select.innerHTML = `<option value="">${placeholder}</option>`;
+        addOption('', placeholder);
     } else {
-        let html = '';
-        if (!multiple) {
-            html += `<option value="">${placeholder}</option>`;
-        }
-        html += columns.map(col => `<option value="${col}">${col}</option>`).join('');
-        select.innerHTML = html;
+        if (!multiple) addOption('', placeholder);
+        columns.forEach(col => addOption(col, col));
     }
 
     if (targetContainer) {
@@ -698,8 +709,45 @@ function createCustomMultiSelect(container, options, id, placeholder, disabled) 
             hiddenSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
     });
+    hiddenSelect.multiSelectInstance = ms;
 
     return hiddenSelect;
+}
+
+/**
+ * createVariableSelector で作った選択欄に、プログラムから値を設定する。
+ * 単一選択・複数選択のどちらにも対応し、change イベントを発火させる。
+ * @param {HTMLSelectElement|string} selectOrId - select 要素またはその ID
+ * @param {string|string[]} values - 設定する値
+ * @returns {boolean} 設定できた場合 true
+ */
+export function setVariableSelectorValue(selectOrId, values) {
+    const select = typeof selectOrId === 'string' ? document.getElementById(selectOrId) : selectOrId;
+    if (!select) return false;
+    const list = (Array.isArray(values) ? values : [values]).map(String);
+
+    if (select.multiple) {
+        if (select.multiSelectInstance) {
+            select.multiSelectInstance.setValue(list);
+        } else {
+            Array.from(select.options).forEach(option => {
+                option.selected = list.includes(option.value);
+            });
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        // 分析モジュールは selectedOptions の順に変数を読むため、指定した順に option を並べ替える
+        [...list].reverse().forEach(value => {
+            const option = Array.from(select.options).find(item => item.value === value);
+            if (option) select.insertBefore(option, select.firstChild);
+        });
+        return list.every(value => Array.from(select.selectedOptions).some(option => option.value === value));
+    }
+
+    const value = list[0] ?? '';
+    if (!Array.from(select.options).some(option => option.value === value)) return false;
+    select.value = value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
 }
 
 /**
@@ -1013,38 +1061,22 @@ export function renderSampleSizeInfo(container, totalN, groups = []) {
     const target = typeof container === 'string' ? document.getElementById(container) : container;
     if (!target) return;
 
-    // グループカードの生成
-    const groupCards = groups.map(g => {
-        const color = g.color || '#64748b'; // default grey
-        const icon = g.icon || 'fas fa-user-tag';
-        return `
-        <div style="flex: 1; min-width: 150px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid ${color}; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
-                <i class="${icon}" style="margin-right: 0.5rem; color: ${color};"></i>${g.label}
-            </div>
-            <div style="font-weight: bold; color: #1e293b; font-size: 1.5rem;">
-               ${g.count}
-            </div>
-        </div>
-    `;
-    }).join('');
+    // グループ別の人数（色やアイコンでは区別せず、ラベルと数値で示す）
+    const groupCards = groups.map(g => `
+            <div>
+                <dt>${g.label}</dt>
+                <dd>${g.count}</dd>
+            </div>`).join('');
 
     const html = `
-    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
-        <h4 style="color: #1e90ff; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold;">
-            <i class="fas fa-users"></i> サンプルサイズ
-        </h4>
-        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-            <div style="flex: 1; min-width: 150px; background: white; padding: 1rem; border-radius: 8px; border-left: 5px solid #1e90ff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.25rem;">
-                    <i class="fas fa-globe" style="margin-right: 0.5rem; color: #1e90ff;"></i>全体
-                </div>
-                <div style="font-weight: bold; color: #1e293b; font-size: 1.5rem;">
-                   N = ${totalN}
-                </div>
-            </div>
-            ${groupCards}
-        </div>
+    <div class="sample-size-block">
+        <h4><i class="fas fa-users" aria-hidden="true"></i> サンプルサイズ</h4>
+        <dl class="sample-size-list">
+            <div>
+                <dt>全体</dt>
+                <dd>N = ${totalN}</dd>
+            </div>${groupCards}
+        </dl>
     </div>
 `;
 

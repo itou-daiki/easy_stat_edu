@@ -711,8 +711,7 @@ function supportStyles() {
         .as-hero, .as-panel {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+            border-radius: 6px;
         }
         .as-hero {
             display: grid;
@@ -720,10 +719,10 @@ function supportStyles() {
             gap: 1.25rem;
             padding: 1.5rem;
             align-items: center;
-            border-top: 4px solid #2563eb;
+            border-top: 2px solid #17202c;
         }
         .as-eyebrow {
-            color: #2563eb;
+            color: #1d4ed8;
             font-weight: 700;
             margin: 0 0 0.35rem 0;
             font-size: 0.85rem;
@@ -740,7 +739,7 @@ function supportStyles() {
         .as-score-card {
             border: 1px solid #bfdbfe;
             background: #eff6ff;
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 1rem;
             text-align: center;
         }
@@ -786,11 +785,11 @@ function supportStyles() {
         .as-metric {
             border: 1px solid #e2e8f0;
             background: #f8fafc;
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 0.8rem;
         }
         .as-metric i {
-            color: #2563eb;
+            color: #1d4ed8;
             margin-right: 0.35rem;
         }
         .as-metric strong {
@@ -830,7 +829,7 @@ function supportStyles() {
             background: #ffffff;
             color: #334155;
             padding: 0.75rem 0.85rem;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -839,7 +838,7 @@ function supportStyles() {
             font-weight: 700;
         }
         .as-purpose:hover, .as-purpose.selected {
-            border-color: #2563eb;
+            border-color: #1d4ed8;
             background: #eff6ff;
             color: #1d4ed8;
         }
@@ -850,7 +849,7 @@ function supportStyles() {
             min-height: 46px;
             padding: 0.75rem 0.85rem;
             border: 1px solid #cbd5e1;
-            border-radius: 8px;
+            border-radius: 6px;
             background: #ffffff;
             cursor: pointer;
             display: flex;
@@ -867,7 +866,7 @@ function supportStyles() {
             right: 0;
             background: #ffffff;
             border: 1px solid #cbd5e1;
-            border-radius: 8px;
+            border-radius: 6px;
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
             overflow: hidden;
         }
@@ -964,25 +963,21 @@ function supportStyles() {
             grid-template-columns: 46px minmax(0, 1fr);
             gap: 0.85rem;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            border-radius: 6px;
             background: #ffffff;
             padding: 1rem;
             cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+            transition: border-color 0.15s ease;
         }
         .rec-item:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-            border-color: #93c5fd;
+            border-color: #1d4ed8;
         }
         .as-rec-icon {
             width: 46px;
             height: 46px;
-            border-radius: 999px;
             display: grid;
             place-items: center;
-            background: #eff6ff;
-            color: #2563eb;
+            color: #556070;
         }
         .as-rec-head {
             display: flex;
@@ -1014,7 +1009,7 @@ function supportStyles() {
             margin: 0.65rem 0;
             color: #1d4ed8;
             background: #eff6ff;
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 0.5rem 0.65rem;
             font-size: 0.9rem;
         }
@@ -1027,7 +1022,7 @@ function supportStyles() {
         .as-rec-details div {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 0.65rem;
         }
         .as-rec-details dt {
@@ -1043,10 +1038,10 @@ function supportStyles() {
         }
         .as-run-button {
             margin-top: 0.75rem;
-            border: 1px solid #2563eb;
-            background: #2563eb;
+            border: 1px solid #1d4ed8;
+            background: #1d4ed8;
             color: #ffffff;
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 0.55rem 0.85rem;
             cursor: pointer;
             font-weight: 700;
@@ -1057,7 +1052,7 @@ function supportStyles() {
             align-items: flex-start;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 1rem;
             color: #475569;
         }

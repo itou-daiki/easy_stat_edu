@@ -21,6 +21,7 @@ anova_log.txt
 !favicon-16x16.png
 !favicon-32x32.png
 !apple-touch-icon.png
+!image/illustrations/*.png
 
 # Cursor IDE (machine-specific MCP paths, local settings)
 .cursor/mcp.json
@@ -32,3 +33,4 @@ anova_log.txt
 .agent/scripts/
 .agent/package-manager.json
 .git_backup/
+__pycache__/

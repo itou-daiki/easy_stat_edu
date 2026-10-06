@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>時系列データ分析：図書室の利用者数はどう変わったか</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">2年間で、図書室の利用者数はどう変わった？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">月ごとの利用者数の例</text>
+<rect x="40.0" y="160.0" width="740.0" height="470.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="66.0" y="208.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">月ごとの人数（そのまま）</text>
+<line x1="130.0" y1="550.0" x2="130.0" y2="255.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="121.0" y1="550.0" x2="130.0" y2="550.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="114.0" y="558.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">100</text>
+<line x1="121.0" y1="476.2" x2="130.0" y2="476.2" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="114.0" y="484.2" font-size="22" font-weight="400" fill="#556070" text-anchor="end">150</text>
+<line x1="121.0" y1="402.5" x2="130.0" y2="402.5" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="114.0" y="410.5" font-size="22" font-weight="400" fill="#556070" text-anchor="end">200</text>
+<line x1="121.0" y1="328.8" x2="130.0" y2="328.8" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="114.0" y="336.8" font-size="22" font-weight="400" fill="#556070" text-anchor="end">250</text>
+<line x1="121.0" y1="255.0" x2="130.0" y2="255.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="114.0" y="263.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">300</text>
+<text x="142.0" y="263.0" font-size="22" font-weight="700" fill="#556070" text-anchor="start">利用者数（人）</text>
+<line x1="140.0" y1="550.0" x2="750.0" y2="550.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="140.0" y1="550.0" x2="140.0" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="140.0" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">1年目4月</text>
+<line x1="246.1" y1="550.0" x2="246.1" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="246.1" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">1年目8月</text>
+<line x1="352.2" y1="550.0" x2="352.2" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="352.2" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">1年目12月</text>
+<line x1="458.3" y1="550.0" x2="458.3" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="458.3" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">2年目4月</text>
+<line x1="564.3" y1="550.0" x2="564.3" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="564.3" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">2年目8月</text>
+<line x1="670.4" y1="550.0" x2="670.4" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="670.4" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">2年目12月</text>
+<polyline points="140.0,423.1 166.5,418.0 193.0,426.1 219.6,465.2 246.1,511.6 272.6,425.4 299.1,408.4 325.7,379.6 352.2,404.0 378.7,350.1 405.2,345.0 431.7,413.6 458.3,378.9 484.8,373.7 511.3,381.9 537.8,420.9 564.3,467.4 590.9,381.1 617.4,364.1 643.9,335.4 670.4,359.7 697.0,305.9 723.5,300.7 750.0,369.3" fill="none" stroke="#1e90ff" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="410.0" y="684.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="middle">上がり下がりが多く、傾向が見えにくい</text>
+<rect x="820.0" y="160.0" width="740.0" height="470.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="846.0" y="208.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">3か月ごとにならした線（移動平均）</text>
+<line x1="910.0" y1="550.0" x2="910.0" y2="255.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="901.0" y1="550.0" x2="910.0" y2="550.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="894.0" y="558.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">100</text>
+<line x1="901.0" y1="476.2" x2="910.0" y2="476.2" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="894.0" y="484.2" font-size="22" font-weight="400" fill="#556070" text-anchor="end">150</text>
+<line x1="901.0" y1="402.5" x2="910.0" y2="402.5" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="894.0" y="410.5" font-size="22" font-weight="400" fill="#556070" text-anchor="end">200</text>
+<line x1="901.0" y1="328.8" x2="910.0" y2="328.8" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="894.0" y="336.8" font-size="22" font-weight="400" fill="#556070" text-anchor="end">250</text>
+<line x1="901.0" y1="255.0" x2="910.0" y2="255.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="894.0" y="263.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">300</text>
+<text x="922.0" y="263.0" font-size="22" font-weight="700" fill="#556070" text-anchor="start">利用者数（人）</text>
+<line x1="920.0" y1="550.0" x2="1530.0" y2="550.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="920.0" y1="550.0" x2="920.0" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="920.0" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">1年目4月</text>
+<line x1="1026.1" y1="550.0" x2="1026.1" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1026.1" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">1年目8月</text>
+<line x1="1132.2" y1="550.0" x2="1132.2" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1132.2" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">1年目12月</text>
+<line x1="1238.3" y1="550.0" x2="1238.3" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1238.3" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">2年目4月</text>
+<line x1="1344.3" y1="550.0" x2="1344.3" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1344.3" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">2年目8月</text>
+<line x1="1450.4" y1="550.0" x2="1450.4" y2="559.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1450.4" y="588.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">2年目12月</text>
+<polyline points="920.0,423.1 946.5,418.0 973.0,426.1 999.6,465.2 1026.1,511.6 1052.6,425.4 1079.1,408.4 1105.7,379.6 1132.2,404.0 1158.7,350.1 1185.2,345.0 1211.7,413.6 1238.3,378.9 1264.8,373.7 1291.3,381.9 1317.8,420.9 1344.3,467.4 1370.9,381.1 1397.4,364.1 1423.9,335.4 1450.4,359.7 1477.0,305.9 1503.5,300.7 1530.0,369.3" fill="none" stroke="#9fc9f3" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="946.5,422.4 973.0,436.4 999.6,467.6 1026.1,467.4 1052.6,448.5 1079.1,404.5 1105.7,397.3 1132.2,377.9 1158.7,366.4 1185.2,369.6 1211.7,379.1 1238.3,388.7 1264.8,378.2 1291.3,392.2 1317.8,423.4 1344.3,423.1 1370.9,404.2 1397.4,360.2 1423.9,353.1 1450.4,333.7 1477.0,322.1 1503.5,325.3" fill="none" stroke="#1670c9" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="1344.3" y="501.4" font-size="22" font-weight="700" fill="#556070" text-anchor="middle">夏休みは毎年少ない</text>
+<text x="1190.0" y="684.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="middle">ならすと、少しずつ増えている傾向が見える</text>
+<text x="800.0" y="860.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">時系列データ分析は、時間とともに変わるデータから、長い目で見た傾向や季節ごとのくり返しを読み取ります</text>
+</svg>

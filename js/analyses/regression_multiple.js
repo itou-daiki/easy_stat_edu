@@ -261,7 +261,6 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 重回帰分析 (Multiple Regression Analysis) とは？</strong>
                         <p>複数の説明変数と1つの目的変数の関連を同時に扱い、他の説明変数を一定とした係数と予測式を求める分析です。</p>
-                        <img src="image/regression_multiple.png" alt="重回帰分析の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                         <p><strong>パス図について:</strong> 標準化偏回帰係数の絶対値を矢印の太さで図示します。有意でない係数や交絡を含め、因果関係を示す図ではありません。</p>
                     </div>
                 </div>

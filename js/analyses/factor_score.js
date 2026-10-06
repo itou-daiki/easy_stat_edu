@@ -1,3 +1,5 @@
+import { isMissingCell, toNumericCell } from '../utils.js';
+
 // ==========================================
 // Factor Score Calculator Module
 // ==========================================
@@ -103,7 +105,7 @@ function calculateFactorScores(scaleInfo, data, nScale) {
         if (Number(info['反転']) === 1) {
             const qName = info['設問名'];
             result.forEach(row => {
-                if (row[qName] !== undefined && row[qName] !== null) {
+                if (!isMissingCell(row[qName])) {
                     row[qName] = nScale + 1 - Number(row[qName]);
                 }
             });
@@ -121,7 +123,7 @@ function calculateFactorScores(scaleInfo, data, nScale) {
 
         result.forEach(row => {
             const values = relevantQuestions
-                .map(q => Number(row[q]))
+                .map(q => toNumericCell(row[q]))
                 .filter(v => !isNaN(v));
 
             if (values.length > 0) {

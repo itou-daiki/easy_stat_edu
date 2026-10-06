@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>ロジスティック回帰分析：勉強時間が長いと合格する確率は上がるか</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">勉強時間が長いほど、合格する確率は上がる？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">●＝1人　40人の例　上の列：合格　下の列：不合格</text>
+<rect x="40.0" y="160.0" width="960.0" height="600.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<line x1="170.0" y1="680.0" x2="170.0" y2="220.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="161.0" y1="680.0" x2="170.0" y2="680.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="154.0" y="688.0" font-size="24" font-weight="400" fill="#556070" text-anchor="end">0%</text>
+<line x1="161.0" y1="565.0" x2="170.0" y2="565.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="154.0" y="573.0" font-size="24" font-weight="400" fill="#556070" text-anchor="end">25%</text>
+<line x1="161.0" y1="450.0" x2="170.0" y2="450.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="154.0" y="458.0" font-size="24" font-weight="400" fill="#556070" text-anchor="end">50%</text>
+<line x1="161.0" y1="335.0" x2="170.0" y2="335.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="154.0" y="343.0" font-size="24" font-weight="400" fill="#556070" text-anchor="end">75%</text>
+<line x1="161.0" y1="220.0" x2="170.0" y2="220.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="154.0" y="228.0" font-size="24" font-weight="400" fill="#556070" text-anchor="end">100%</text>
+<text x="170.0" y="194.0" font-size="24" font-weight="700" fill="#556070" text-anchor="middle">合格する確率</text>
+<line x1="170.0" y1="680.0" x2="960.0" y2="680.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="170.0" y1="680.0" x2="170.0" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="170.0" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">0</text>
+<line x1="301.7" y1="680.0" x2="301.7" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="301.7" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">1</text>
+<line x1="433.3" y1="680.0" x2="433.3" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="433.3" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">2</text>
+<line x1="565.0" y1="680.0" x2="565.0" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="565.0" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">3</text>
+<line x1="696.7" y1="680.0" x2="696.7" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="696.7" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">4</text>
+<line x1="828.3" y1="680.0" x2="828.3" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="828.3" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">5</text>
+<line x1="960.0" y1="680.0" x2="960.0" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="960.0" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">6</text>
+<text x="960.0" y="752.0" font-size="24" font-weight="700" fill="#556070" text-anchor="end">1日の勉強時間（時間）</text>
+<circle cx="196.3" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="215.2" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="234.1" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="253.1" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="272.0" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="290.9" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="309.8" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="328.7" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="347.6" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="366.5" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="385.4" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="404.3" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="423.2" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="442.1" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="461.0" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="479.9" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="498.8" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="517.7" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="536.6" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="555.5" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="574.5" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="593.4" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="612.3" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="631.2" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="650.1" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="669.0" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="687.9" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="706.8" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="725.7" cy="664.0" r="8.0" fill="#e8710a"/>
+<circle cx="744.6" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="763.5" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="782.4" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="801.3" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="820.2" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="839.1" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="858.0" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="876.9" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="895.9" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="914.8" cy="236.0" r="8.0" fill="#1e90ff"/>
+<circle cx="933.7" cy="236.0" r="8.0" fill="#1e90ff"/>
+<polyline points="170.0,676.2 176.6,675.8 183.2,675.4 189.8,674.9 196.3,674.4 202.9,673.9 209.5,673.3 216.1,672.7 222.7,672.0 229.2,671.2 235.8,670.4 242.4,669.5 249.0,668.5 255.6,667.4 262.2,666.2 268.8,664.9 275.3,663.4 281.9,661.9 288.5,660.2 295.1,658.3 301.7,656.3 308.2,654.2 314.8,651.8 321.4,649.2 328.0,646.4 334.6,643.4 341.2,640.2 347.8,636.6 354.3,632.8 360.9,628.8 367.5,624.4 374.1,619.6 380.7,614.6 387.2,609.2 393.8,603.4 400.4,597.3 407.0,590.8 413.6,583.9 420.2,576.6 426.8,569.0 433.3,560.9 439.9,552.5 446.5,543.8 453.1,534.7 459.7,525.2 466.2,515.5 472.8,505.6 479.4,495.4 486.0,485.0 492.6,474.5 499.2,463.8 505.8,453.1 512.3,442.4 518.9,431.8 525.5,421.2 532.1,410.7 538.7,400.4 545.2,390.3 551.8,380.4 558.4,370.8 565.0,361.5 571.6,352.6 578.2,344.0 584.8,335.7 591.3,327.8 597.9,320.3 604.5,313.2 611.1,306.5 617.7,300.1 624.2,294.2 630.8,288.5 637.4,283.3 644.0,278.4 650.6,273.8 657.2,269.5 663.8,265.6 670.3,261.9 676.9,258.5 683.5,255.3 690.1,252.4 696.7,249.7 703.2,247.2 709.8,244.9 716.4,242.8 723.0,240.9 729.6,239.1 736.2,237.5 742.8,236.0 749.3,234.6 755.9,233.3 762.5,232.2 769.1,231.1 775.7,230.2 782.2,229.3 788.8,228.5 795.4,227.7 802.0,227.0 808.6,226.4 815.2,225.9 821.8,225.3 828.3,224.9 834.9,224.4 841.5,224.1 848.1,223.7 854.7,223.4 861.2,223.1 867.8,222.8 874.4,222.6 881.0,222.3 887.6,222.1 894.2,221.9 900.8,221.8 907.3,221.6 913.9,221.5 920.5,221.3 927.1,221.2 933.7,221.1 940.2,221.0 946.8,220.9 953.4,220.8 960.0,220.8" fill="none" stroke="#17202c" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="507.7" y1="680.0" x2="507.7" y2="450.0" stroke="#556070" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6"/>
+<line x1="170.0" y1="450.0" x2="507.7" y2="450.0" stroke="#556070" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6"/>
+<text x="519.7" y="484.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="start">約2.6時間で50%</text>
+<text x="1050.0" y="250.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">結果が「合格・不合格」のように</text>
+<text x="1050.0" y="292.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">2つに分かれるときに使う</text>
+<text x="1050.0" y="390.0" font-size="28" font-weight="400" fill="#17202c" text-anchor="start">S字のカーブで、勉強時間ごとの</text>
+<text x="1050.0" y="428.0" font-size="28" font-weight="400" fill="#17202c" text-anchor="start">「合格する確率」を表す</text>
+<text x="1070.0" y="500.0" font-size="28" font-weight="700" fill="#1670c9" text-anchor="start">1時間 → 約5%</text>
+<text x="1070.0" y="560.0" font-size="28" font-weight="700" fill="#1670c9" text-anchor="start">3時間 → 約69%</text>
+<text x="1070.0" y="620.0" font-size="28" font-weight="700" fill="#1670c9" text-anchor="start">5時間 → 約99%</text>
+<text x="800.0" y="860.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">ロジスティック回帰分析は、2つに分かれる結果（合格・不合格など）が起こる確率を予測する方法です</text>
+</svg>

@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>主成分分析：たくさんの点数を少ない指標にまとめる</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">たくさんの教科の点数を、少ない数の指標にまとめられる？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">●＝1人　50人の例（わかりやすく2教科で説明します）</text>
+<rect x="40.0" y="160.0" width="960.0" height="600.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<line x1="150.0" y1="680.0" x2="150.0" y2="210.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="141.0" y1="680.0" x2="150.0" y2="680.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="134.0" y="688.0" font-size="24" font-weight="400" fill="#556070" text-anchor="end">20</text>
+<line x1="141.0" y1="562.5" x2="150.0" y2="562.5" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="134.0" y="570.5" font-size="24" font-weight="400" fill="#556070" text-anchor="end">40</text>
+<line x1="141.0" y1="445.0" x2="150.0" y2="445.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="134.0" y="453.0" font-size="24" font-weight="400" fill="#556070" text-anchor="end">60</text>
+<line x1="141.0" y1="327.5" x2="150.0" y2="327.5" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="134.0" y="335.5" font-size="24" font-weight="400" fill="#556070" text-anchor="end">80</text>
+<line x1="141.0" y1="210.0" x2="150.0" y2="210.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="134.0" y="218.0" font-size="24" font-weight="400" fill="#556070" text-anchor="end">100</text>
+<text x="162.0" y="218.0" font-size="24" font-weight="700" fill="#556070" text-anchor="start">英語（点）</text>
+<line x1="150.0" y1="680.0" x2="960.0" y2="680.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="150.0" y1="680.0" x2="150.0" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="150.0" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">20</text>
+<line x1="352.5" y1="680.0" x2="352.5" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="352.5" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">40</text>
+<line x1="555.0" y1="680.0" x2="555.0" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="555.0" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">60</text>
+<line x1="757.5" y1="680.0" x2="757.5" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="757.5" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">80</text>
+<line x1="960.0" y1="680.0" x2="960.0" y2="689.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="960.0" y="718.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">100</text>
+<text x="960.0" y="752.0" font-size="24" font-weight="700" fill="#556070" text-anchor="end">国語（点）</text>
+<circle cx="291.9" cy="597.6" r="7.0" fill="#9fc9f3"/>
+<circle cx="346.1" cy="454.6" r="7.0" fill="#9fc9f3"/>
+<circle cx="374.9" cy="538.4" r="7.0" fill="#9fc9f3"/>
+<circle cx="395.5" cy="583.6" r="7.0" fill="#9fc9f3"/>
+<circle cx="411.9" cy="600.1" r="7.0" fill="#9fc9f3"/>
+<circle cx="425.8" cy="505.1" r="7.0" fill="#9fc9f3"/>
+<circle cx="438.0" cy="432.9" r="7.0" fill="#9fc9f3"/>
+<circle cx="449.0" cy="518.3" r="7.0" fill="#9fc9f3"/>
+<circle cx="459.0" cy="466.1" r="7.0" fill="#9fc9f3"/>
+<circle cx="468.3" cy="518.9" r="7.0" fill="#9fc9f3"/>
+<circle cx="477.0" cy="558.7" r="7.0" fill="#9fc9f3"/>
+<circle cx="485.2" cy="441.4" r="7.0" fill="#9fc9f3"/>
+<circle cx="493.1" cy="581.5" r="7.0" fill="#9fc9f3"/>
+<circle cx="500.6" cy="553.1" r="7.0" fill="#9fc9f3"/>
+<circle cx="507.8" cy="528.4" r="7.0" fill="#9fc9f3"/>
+<circle cx="514.8" cy="502.4" r="7.0" fill="#9fc9f3"/>
+<circle cx="521.7" cy="529.3" r="7.0" fill="#9fc9f3"/>
+<circle cx="528.3" cy="477.2" r="7.0" fill="#9fc9f3"/>
+<circle cx="534.8" cy="509.5" r="7.0" fill="#9fc9f3"/>
+<circle cx="541.2" cy="473.6" r="7.0" fill="#9fc9f3"/>
+<circle cx="547.5" cy="421.6" r="7.0" fill="#9fc9f3"/>
+<circle cx="553.8" cy="574.2" r="7.0" fill="#9fc9f3"/>
+<circle cx="559.9" cy="411.7" r="7.0" fill="#9fc9f3"/>
+<circle cx="566.1" cy="445.6" r="7.0" fill="#9fc9f3"/>
+<circle cx="572.2" cy="534.2" r="7.0" fill="#9fc9f3"/>
+<circle cx="578.3" cy="418.1" r="7.0" fill="#9fc9f3"/>
+<circle cx="584.4" cy="489.8" r="7.0" fill="#9fc9f3"/>
+<circle cx="590.6" cy="455.5" r="7.0" fill="#9fc9f3"/>
+<circle cx="596.7" cy="478.1" r="7.0" fill="#9fc9f3"/>
+<circle cx="603.0" cy="382.0" r="7.0" fill="#9fc9f3"/>
+<circle cx="609.3" cy="409.9" r="7.0" fill="#9fc9f3"/>
+<circle cx="615.7" cy="425.2" r="7.0" fill="#9fc9f3"/>
+<circle cx="622.2" cy="463.5" r="7.0" fill="#9fc9f3"/>
+<circle cx="628.8" cy="452.4" r="7.0" fill="#9fc9f3"/>
+<circle cx="635.7" cy="451.9" r="7.0" fill="#9fc9f3"/>
+<circle cx="642.7" cy="477.8" r="7.0" fill="#9fc9f3"/>
+<circle cx="649.9" cy="396.8" r="7.0" fill="#9fc9f3"/>
+<circle cx="657.4" cy="390.6" r="7.0" fill="#9fc9f3"/>
+<circle cx="665.3" cy="409.5" r="7.0" fill="#9fc9f3"/>
+<circle cx="673.5" cy="437.1" r="7.0" fill="#9fc9f3"/>
+<circle cx="682.2" cy="389.7" r="7.0" fill="#9fc9f3"/>
+<circle cx="691.5" cy="380.4" r="7.0" fill="#9fc9f3"/>
+<circle cx="701.5" cy="358.1" r="7.0" fill="#9fc9f3"/>
+<circle cx="712.5" cy="390.1" r="7.0" fill="#9fc9f3"/>
+<circle cx="724.7" cy="312.0" r="7.0" fill="#9fc9f3"/>
+<circle cx="738.6" cy="373.5" r="7.0" fill="#9fc9f3"/>
+<circle cx="755.0" cy="339.9" r="7.0" fill="#9fc9f3"/>
+<circle cx="775.6" cy="296.3" r="7.0" fill="#9fc9f3"/>
+<circle cx="804.4" cy="359.5" r="7.0" fill="#9fc9f3"/>
+<circle cx="858.6" cy="341.7" r="7.0" fill="#9fc9f3"/>
+<line x1="278.7" y1="646.9" x2="871.8" y2="266.6" stroke="#1e90ff" stroke-width="6" stroke-linecap="round"/>
+<path d="M871.8,266.6 L861.4,283.6 L852.0,269.0 Z" fill="#1e90ff"/>
+<line x1="684.1" y1="513.9" x2="466.4" y2="399.6" stroke="#e8710a" stroke-width="6" stroke-linecap="round"/>
+<path d="M466.4,399.6 L486.4,400.3 L478.3,415.7 Z" fill="#e8710a"/>
+<text x="861.8" y="246.6" font-size="28" font-weight="700" fill="#1670c9" text-anchor="end">第1主成分</text>
+<text x="480.4" y="409.6" font-size="26" font-weight="700" fill="#c25e05" text-anchor="start">第2主成分</text>
+<text x="1050.0" y="240.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="start">点がいちばん広がっている向きに</text>
+<text x="1050.0" y="280.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="start">新しい軸（第1主成分）を引く</text>
+<text x="1070.0" y="360.0" font-size="28" font-weight="700" fill="#1670c9" text-anchor="start">第1主成分：全体の90%を説明</text>
+<text x="1090.0" y="400.0" font-size="26" font-weight="400" fill="#1670c9" text-anchor="start">→「ことばの総合力」のような指標</text>
+<text x="1070.0" y="470.0" font-size="28" font-weight="700" fill="#c25e05" text-anchor="start">第2主成分：全体の10%</text>
+<text x="1050.0" y="570.0" font-size="26" font-weight="400" fill="#556070" text-anchor="start">2つの点数を、1つの指標で</text>
+<text x="1050.0" y="606.0" font-size="26" font-weight="400" fill="#556070" text-anchor="start">ほとんど表せることがわかる</text>
+<text x="800.0" y="860.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">主成分分析は、データの広がりが大きい向きを見つけて、多くの変数を少ない指標にまとめる方法です</text>
+</svg>

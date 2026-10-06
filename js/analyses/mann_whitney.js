@@ -4,7 +4,7 @@
  * @description 2群間のノンパラメトリック検定（順序尺度・非正規分布用）
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getAcademicLayout, academicColors, InterpretationHelper, showError, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { toNumericCell, renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getAcademicLayout, academicColors, InterpretationHelper, showError, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 
 /**
  * 要約統計量の計算と表示
@@ -119,8 +119,8 @@ function runMannWhitneyTest(currentData) {
 
     selectedVars.forEach(varName => {
         // データ抽出
-        const group0Values = group0Data.map(row => Number(row[varName])).filter(v => !isNaN(v));
-        const group1Values = group1Data.map(row => Number(row[varName])).filter(v => !isNaN(v));
+        const group0Values = group0Data.map(row => toNumericCell(row[varName])).filter(v => !isNaN(v));
+        const group1Values = group1Data.map(row => toNumericCell(row[varName])).filter(v => !isNaN(v));
 
         if (group0Values.length < 2 || group1Values.length < 2) {
             skippedVars.push(varName);
@@ -485,7 +485,6 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> マン・ホイットニーのU検定とは？</strong>
                         <p>2つのグループの間に差があるかを調べる方法ですが、t検定と違って「平均値」ではなく「順位（ランキング）」を使って比較します。データが極端な値を含んでいたり、人数が少ない場合に適しています。</p>
-                        <img src="image/mann_whitney.png" alt="U検定のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

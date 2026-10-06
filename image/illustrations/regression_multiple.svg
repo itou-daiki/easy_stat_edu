@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>重回帰分析：テストの点数に関係しているのはどの要因か</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">テストの点数に関係しているのは、どの要因？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">120人の例　β（ベータ）＝ほかの要因をそろえたときの関係の強さ</text>
+<rect x="1080.0" y="410.0" width="300.0" height="120.0" rx="6" fill="#eaf4ff" stroke="#1e90ff" stroke-width="3"/>
+<text x="1230.0" y="482.0" font-size="34" font-weight="700" fill="#17202c" text-anchor="middle">テストの点数</text>
+<rect x="220.0" y="195.0" width="300.0" height="110.0" rx="6" fill="#ffffff" stroke="#17202c" stroke-width="3"/>
+<text x="370.0" y="262.0" font-size="34" font-weight="700" fill="#17202c" text-anchor="middle">勉強時間</text>
+<line x1="520.0" y1="250.0" x2="1075.0" y2="440.0" stroke="#1e90ff" stroke-width="19.769192188182664" stroke-linecap="round"/>
+<path d="M1075.0,440.0 L1053.2,442.6 L1059.4,424.5 Z" fill="#1e90ff"/>
+<text x="560.0" y="226.0" font-size="28" font-weight="700" fill="#1670c9" text-anchor="start">β ＝ +0.53　＋の関係</text>
+<rect x="220.0" y="415.0" width="300.0" height="110.0" rx="6" fill="#ffffff" stroke="#17202c" stroke-width="3"/>
+<text x="370.0" y="482.0" font-size="34" font-weight="700" fill="#17202c" text-anchor="middle">睡眠時間</text>
+<line x1="520.0" y1="470.0" x2="1075.0" y2="470.0" stroke="#1e90ff" stroke-width="10.600830471754815" stroke-linecap="round"/>
+<path d="M1075.0,470.0 L1055.2,479.6 L1055.2,460.4 Z" fill="#1e90ff"/>
+<text x="560.0" y="446.0" font-size="28" font-weight="700" fill="#1670c9" text-anchor="start">β ＝ +0.22　＋の関係</text>
+<rect x="220.0" y="635.0" width="300.0" height="110.0" rx="6" fill="#ffffff" stroke="#17202c" stroke-width="3"/>
+<text x="370.0" y="702.0" font-size="34" font-weight="700" fill="#17202c" text-anchor="middle">スマホ時間</text>
+<line x1="520.0" y1="690.0" x2="1075.0" y2="500.0" stroke="#e8710a" stroke-width="14.168136417608753" stroke-linecap="round"/>
+<path d="M1075.0,500.0 L1059.4,515.5 L1053.2,497.4 Z" fill="#e8710a"/>
+<text x="560.0" y="740.0" font-size="28" font-weight="700" fill="#c25e05" text-anchor="start">β ＝ -0.34　－の関係</text>
+<text x="1230.0" y="600.0" font-size="26" font-weight="400" fill="#556070" text-anchor="middle">矢印が太いほど関係が強い</text>
+<text x="1230.0" y="640.0" font-size="26" font-weight="700" fill="#1670c9" text-anchor="middle">青：増えると点数も上がる</text>
+<text x="1230.0" y="680.0" font-size="26" font-weight="700" fill="#c25e05" text-anchor="middle">オレンジ：増えると点数が下がる</text>
+<text x="800.0" y="860.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">重回帰分析は、ほかの要因をそろえたうえで、各要因と結果の関係の強さを調べます。関係＝原因とは限りません</text>
+</svg>

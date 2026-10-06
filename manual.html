@@ -12,7 +12,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=20260830-beginner-v5">
+    <link rel="stylesheet" href="css/style.css?v=20261006-dodgerblue-v1">
 
     <style>
         :root {
@@ -21,7 +21,7 @@
         }
 
         body {
-            background-color: #f8fafc;
+            background-color: var(--canvas);
             margin: 0;
             display: flex;
             flex-direction: column;
@@ -35,17 +35,17 @@
             left: 0;
             right: 0;
             height: var(--top-nav-height);
-            background: #1e293b;
-            color: white;
+            background: var(--paper);
+            color: var(--ink);
+            border-bottom: 1px solid var(--rule);
             display: flex;
             align-items: center;
             padding: 0 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             z-index: 100;
         }
 
         .top-nav a {
-            color: white;
+            color: var(--accent);
             text-decoration: none;
             font-weight: 500;
             display: flex;
@@ -63,7 +63,7 @@
             margin-top: 0;
             margin-bottom: 0;
             padding-left: 1.5rem;
-            border-left: 1px solid #334155;
+            border-left: 1px solid var(--rule);
         }
 
         .top-nav .language-switcher {
@@ -116,8 +116,8 @@
 
         .sidebar-link:hover {
             background: #f1f5f9;
-            color: #3b82f6;
-            border-left-color: #3b82f6;
+            color: var(--accent);
+            border-left-color: var(--accent);
         }
 
         .sidebar-link i {
@@ -136,11 +136,10 @@
 
         .content-section {
             background: white;
-            border-radius: 12px;
+            border-radius: var(--radius);
             padding: 2.5rem;
-            margin-bottom: 3rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+            border: 1px solid var(--rule);
             scroll-margin-top: calc(var(--top-nav-height) + 2rem);
             overflow-x: auto;
         }
@@ -148,7 +147,7 @@
         .content-section h2 {
             font-size: 1.6rem;
             color: #0f172a;
-            border-bottom: 3px solid #3b82f6;
+            border-bottom: 2px solid var(--ink);
             padding-bottom: 0.5rem;
             margin-top: 0;
             margin-bottom: 1.5rem;
@@ -176,9 +175,9 @@
         }
 
         .alert-box.info {
-            background: #eff6ff;
-            border-color: #3b82f6;
-            color: #1e40af;
+            background: var(--tint);
+            border-color: var(--ink);
+            color: var(--ink);
         }
 
         .alert-box.danger {
@@ -213,9 +212,10 @@
         .step-item {
             position: relative;
             padding: 1rem 1rem 1rem 3.25rem;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            background: var(--paper);
+            border: 0;
+            border-bottom: 1px solid var(--rule);
+            border-radius: 0;
         }
 
         .step-item::before {
@@ -226,12 +226,11 @@
             top: 1rem;
             width: 1.5rem;
             height: 1.5rem;
-            border-radius: 999px;
-            background: #2563eb;
-            color: white;
+            color: var(--accent-strong);
+            font-family: var(--font-serif);
             display: grid;
             place-items: center;
-            font-size: 0.85rem;
+            font-size: 1.15rem;
             font-weight: 700;
         }
 
@@ -353,7 +352,7 @@
             display: flex;
             gap: 0.5rem;
         }
-        .faq-q i { color: #3b82f6; }
+        .faq-q i { color: var(--muted); }
         .faq-a {
             color: #475569;
             padding-left: 1.75rem;

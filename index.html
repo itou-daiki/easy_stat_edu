@@ -25,7 +25,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20260830-beginner-v5">
+    <link rel="stylesheet" href="css/style.css?v=20261006-dodgerblue-v1">
 
     <script type="importmap">
         {
@@ -37,7 +37,7 @@
             }
         }
     </script>
-    <script type="module" src="js/main.js?v=20260830-beginner-v5"></script>
+    <script type="module" src="js/main.js?v=20261006-guided-v1"></script>
 </head>
 
 <body>
@@ -178,30 +178,29 @@
 
     <!-- メインコンテナ -->
     <div id="main-app" style="display: none;">
-        <!-- ヒーローセクション -->
-        <div class="hero-section">
+        <!-- アプリバー -->
+        <header class="hero-section">
+            <div class="app-brand">
+                <h1 class="hero-title">easyStat</h1>
+                <p class="hero-subtitle">ブラウザ上で簡単かつ高速に統計分析　-データ駆動型探究を促進-</p>
+                <p class="hero-caption">Created by Dit-Lab.（Daiki ITO）</p>
+            </div>
             <div class="hero-actions">
                 <div class="language-switcher" data-language-switcher role="radiogroup" aria-label="表示言語">
                     <i class="fas fa-language" aria-hidden="true"></i>
                     <button type="button" data-locale="ja" role="radio" aria-checked="true" aria-label="日本語" lang="ja">JP</button>
                     <button type="button" data-locale="en" role="radio" aria-checked="false" lang="en" tabindex="-1">English</button>
                 </div>
-                <a href="manual.html" target="_blank" class="btn-demo" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.4); padding: 0.5rem 1rem;">
-                    <i class="fas fa-book-open"></i> 使い方マニュアル
+                <a href="manual.html" target="_blank" class="app-bar-link">
+                    <i class="fas fa-book-open" aria-hidden="true"></i> 使い方マニュアル
                 </a>
             </div>
-            <h1 class="hero-title">easyStat</h1>
-            <p class="hero-caption">Created by Dit-Lab.（Daiki ITO）</p>
-            <p class="hero-subtitle">ブラウザ上で簡単かつ高速に統計分析　-データ駆動型探究を促進-</p>
-        </div>
+        </header>
 
         <!-- 生成AI支援設定 -->
         <div class="ai-config-section collapsed" id="ai-config-section">
             <button type="button" class="ai-config-header" id="ai-config-toggle" aria-expanded="false" aria-controls="ai-config-content">
                 <div class="ai-config-main">
-                    <div class="ai-config-icon">
-                        <i class="fas fa-wand-magic-sparkles"></i>
-                    </div>
                     <div>
                         <div class="ai-config-title-row">
                             <h3>生成AIによる解釈支援</h3>
@@ -352,7 +351,7 @@
 
             <!-- Data Preview Section -->
             <div id="data-preview-section" class="info-sections"
-                style="display: none; margin-top: -1rem; margin-bottom: 2rem;">
+                style="display: none;">
                 <div class="collapsible-section">
                     <div class="collapsible-header collapsed">
                         <h3><i class="fas fa-table"></i> データプレビュー</h3>
@@ -687,14 +686,14 @@
         <div id="ai-assist-widget" class="ai-assist-widget collapsed" style="display: none;">
             <button type="button" id="ai-assist-toggle" class="ai-assist-toggle"
                 aria-expanded="false" aria-label="AI解釈補助を開く" title="AI解釈補助を開く">
-                <i class="fas fa-wand-magic-sparkles"></i>
+                <i class="fas fa-comment-dots" aria-hidden="true"></i>
                 <span>AI解釈補助</span>
             </button>
             <div class="ai-assist-panel" role="dialog" aria-modal="false"
                 aria-label="生成AIによる解釈の補助">
                 <div class="ai-assist-header">
                     <div>
-                        <h4><i class="fas fa-wand-magic-sparkles"></i> 生成AIによる解釈の補助</h4>
+                        <h4>生成AIによる解釈の補助</h4>
                         <p id="ai-assist-status" aria-live="polite">分析を実行後、結果の読み取りを生成できます。</p>
                     </div>
                     <div class="ai-header-actions">

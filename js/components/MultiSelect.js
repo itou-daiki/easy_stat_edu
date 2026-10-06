@@ -256,4 +256,13 @@ export class MultiSelect {
     getValue() {
         return [...this.selectedValues];
     }
+
+    // プログラムから選択値をまとめて設定する（初学者モードの自動実行で使用）
+    setValue(values) {
+        const available = new Set(this.options.map(option => option.value));
+        this.selectedValues = (values || []).map(String).filter(value => available.has(value));
+        this.updateTags();
+        this.updateOptions();
+        this.onChange([...this.selectedValues]);
+    }
 }

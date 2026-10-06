@@ -1,0 +1,256 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>二要因分散分析：学年と部活の有無を組み合わせると、勉強時間はどう変わるか</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">学年と部活の有無を組み合わせると、勉強時間はどう変わる？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">左右は別の例です。各グループ15人。小さい点が1人、大きい点と線がグループの平均</text>
+<text x="800.0" y="156.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">青：部活あり　オレンジ：部活なし</text>
+<rect x="40.0" y="180.0" width="740.0" height="450.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="66.0" y="228.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">2本の線が平行</text>
+<line x1="160.0" y1="560.0" x2="160.0" y2="260.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="151.0" y1="560.0" x2="160.0" y2="560.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="144.0" y="568.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">0</text>
+<line x1="151.0" y1="517.1" x2="160.0" y2="517.1" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="144.0" y="525.1" font-size="22" font-weight="400" fill="#556070" text-anchor="end">20</text>
+<line x1="151.0" y1="474.3" x2="160.0" y2="474.3" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="144.0" y="482.3" font-size="22" font-weight="400" fill="#556070" text-anchor="end">40</text>
+<line x1="151.0" y1="431.4" x2="160.0" y2="431.4" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="144.0" y="439.4" font-size="22" font-weight="400" fill="#556070" text-anchor="end">60</text>
+<line x1="151.0" y1="388.6" x2="160.0" y2="388.6" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="144.0" y="396.6" font-size="22" font-weight="400" fill="#556070" text-anchor="end">80</text>
+<line x1="151.0" y1="345.7" x2="160.0" y2="345.7" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="144.0" y="353.7" font-size="22" font-weight="400" fill="#556070" text-anchor="end">100</text>
+<line x1="151.0" y1="302.9" x2="160.0" y2="302.9" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="144.0" y="310.9" font-size="22" font-weight="400" fill="#556070" text-anchor="end">120</text>
+<line x1="151.0" y1="260.0" x2="160.0" y2="260.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="144.0" y="268.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">140</text>
+<text x="172.0" y="268.0" font-size="22" font-weight="700" fill="#556070" text-anchor="start">勉強時間（分）</text>
+<text x="270.0" y="602.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">1年</text>
+<text x="480.0" y="602.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">2年</text>
+<text x="690.0" y="602.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">3年</text>
+<circle cx="244.0" cy="534.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="259.0" cy="515.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="249.0" cy="506.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="264.0" cy="497.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="254.0" cy="491.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="244.0" cy="485.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="259.0" cy="480.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="249.0" cy="474.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="264.0" cy="467.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="254.0" cy="463.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="244.0" cy="457.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="259.0" cy="450.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="249.0" cy="442.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="264.0" cy="433.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="254.0" cy="414.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="454.0" cy="502.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="469.0" cy="482.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="459.0" cy="474.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="474.0" cy="465.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="464.0" cy="459.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="454.0" cy="452.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="469.0" cy="448.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="459.0" cy="442.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="474.0" cy="435.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="464.0" cy="431.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="454.0" cy="425.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="469.0" cy="418.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="459.0" cy="410.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="474.0" cy="401.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="464.0" cy="382.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="664.0" cy="470.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="679.0" cy="450.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="669.0" cy="442.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="684.0" cy="433.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="674.0" cy="427.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="664.0" cy="420.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="679.0" cy="416.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="669.0" cy="410.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="684.0" cy="403.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="674.0" cy="399.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="664.0" cy="392.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="679.0" cy="386.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="669.0" cy="377.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="684.0" cy="369.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="674.0" cy="350.0" r="3.5" fill="#a7d1fb"/>
+<polyline points="254.0,474.3 464.0,442.1 674.0,410.0" fill="none" stroke="#1e90ff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="254.0" cy="474.3" r="10.0" fill="#1e90ff" stroke="#ffffff" stroke-width="3"/>
+<circle cx="464.0" cy="442.1" r="10.0" fill="#1e90ff" stroke="#ffffff" stroke-width="3"/>
+<circle cx="674.0" cy="410.0" r="10.0" fill="#1e90ff" stroke="#ffffff" stroke-width="3"/>
+<circle cx="276.0" cy="491.4" r="3.5" fill="#f6c08e"/>
+<circle cx="291.0" cy="472.1" r="3.5" fill="#f6c08e"/>
+<circle cx="281.0" cy="463.6" r="3.5" fill="#f6c08e"/>
+<circle cx="296.0" cy="455.0" r="3.5" fill="#f6c08e"/>
+<circle cx="286.0" cy="448.6" r="3.5" fill="#f6c08e"/>
+<circle cx="276.0" cy="442.1" r="3.5" fill="#f6c08e"/>
+<circle cx="291.0" cy="437.9" r="3.5" fill="#f6c08e"/>
+<circle cx="281.0" cy="431.4" r="3.5" fill="#f6c08e"/>
+<circle cx="296.0" cy="425.0" r="3.5" fill="#f6c08e"/>
+<circle cx="286.0" cy="420.7" r="3.5" fill="#f6c08e"/>
+<circle cx="276.0" cy="414.3" r="3.5" fill="#f6c08e"/>
+<circle cx="291.0" cy="407.9" r="3.5" fill="#f6c08e"/>
+<circle cx="281.0" cy="399.3" r="3.5" fill="#f6c08e"/>
+<circle cx="296.0" cy="390.7" r="3.5" fill="#f6c08e"/>
+<circle cx="286.0" cy="371.4" r="3.5" fill="#f6c08e"/>
+<circle cx="486.0" cy="459.3" r="3.5" fill="#f6c08e"/>
+<circle cx="501.0" cy="440.0" r="3.5" fill="#f6c08e"/>
+<circle cx="491.0" cy="431.4" r="3.5" fill="#f6c08e"/>
+<circle cx="506.0" cy="422.9" r="3.5" fill="#f6c08e"/>
+<circle cx="496.0" cy="416.4" r="3.5" fill="#f6c08e"/>
+<circle cx="486.0" cy="410.0" r="3.5" fill="#f6c08e"/>
+<circle cx="501.0" cy="405.7" r="3.5" fill="#f6c08e"/>
+<circle cx="491.0" cy="399.3" r="3.5" fill="#f6c08e"/>
+<circle cx="506.0" cy="392.9" r="3.5" fill="#f6c08e"/>
+<circle cx="496.0" cy="388.6" r="3.5" fill="#f6c08e"/>
+<circle cx="486.0" cy="382.1" r="3.5" fill="#f6c08e"/>
+<circle cx="501.0" cy="375.7" r="3.5" fill="#f6c08e"/>
+<circle cx="491.0" cy="367.1" r="3.5" fill="#f6c08e"/>
+<circle cx="506.0" cy="358.6" r="3.5" fill="#f6c08e"/>
+<circle cx="496.0" cy="339.3" r="3.5" fill="#f6c08e"/>
+<circle cx="696.0" cy="427.1" r="3.5" fill="#f6c08e"/>
+<circle cx="711.0" cy="407.9" r="3.5" fill="#f6c08e"/>
+<circle cx="701.0" cy="399.3" r="3.5" fill="#f6c08e"/>
+<circle cx="716.0" cy="390.7" r="3.5" fill="#f6c08e"/>
+<circle cx="706.0" cy="384.3" r="3.5" fill="#f6c08e"/>
+<circle cx="696.0" cy="377.9" r="3.5" fill="#f6c08e"/>
+<circle cx="711.0" cy="373.6" r="3.5" fill="#f6c08e"/>
+<circle cx="701.0" cy="367.1" r="3.5" fill="#f6c08e"/>
+<circle cx="716.0" cy="360.7" r="3.5" fill="#f6c08e"/>
+<circle cx="706.0" cy="356.4" r="3.5" fill="#f6c08e"/>
+<circle cx="696.0" cy="350.0" r="3.5" fill="#f6c08e"/>
+<circle cx="711.0" cy="343.6" r="3.5" fill="#f6c08e"/>
+<circle cx="701.0" cy="335.0" r="3.5" fill="#f6c08e"/>
+<circle cx="716.0" cy="326.4" r="3.5" fill="#f6c08e"/>
+<circle cx="706.0" cy="307.1" r="3.5" fill="#f6c08e"/>
+<polyline points="286.0,431.4 496.0,399.3 706.0,367.1" fill="none" stroke="#e8710a" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="286.0" cy="431.4" r="10.0" fill="#e8710a" stroke="#ffffff" stroke-width="3"/>
+<circle cx="496.0" cy="399.3" r="10.0" fill="#e8710a" stroke="#ffffff" stroke-width="3"/>
+<circle cx="706.0" cy="367.1" r="10.0" fill="#e8710a" stroke="#ffffff" stroke-width="3"/>
+<text x="410.0" y="670.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">二要因分散分析で計算すると…</text>
+<text x="410.0" y="712.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">組み合わせの効果（交互作用）があるとまではいえない</text>
+<text x="410.0" y="748.0" font-size="24" font-weight="400" fill="#17202c" text-anchor="middle">（部活の有無による差は、どの学年でも同じくらい）</text>
+<rect x="820.0" y="180.0" width="740.0" height="450.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="846.0" y="228.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">3年生だけ線が近づく（交差する）</text>
+<line x1="940.0" y1="560.0" x2="940.0" y2="260.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="931.0" y1="560.0" x2="940.0" y2="560.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="924.0" y="568.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">0</text>
+<line x1="931.0" y1="517.1" x2="940.0" y2="517.1" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="924.0" y="525.1" font-size="22" font-weight="400" fill="#556070" text-anchor="end">20</text>
+<line x1="931.0" y1="474.3" x2="940.0" y2="474.3" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="924.0" y="482.3" font-size="22" font-weight="400" fill="#556070" text-anchor="end">40</text>
+<line x1="931.0" y1="431.4" x2="940.0" y2="431.4" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="924.0" y="439.4" font-size="22" font-weight="400" fill="#556070" text-anchor="end">60</text>
+<line x1="931.0" y1="388.6" x2="940.0" y2="388.6" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="924.0" y="396.6" font-size="22" font-weight="400" fill="#556070" text-anchor="end">80</text>
+<line x1="931.0" y1="345.7" x2="940.0" y2="345.7" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="924.0" y="353.7" font-size="22" font-weight="400" fill="#556070" text-anchor="end">100</text>
+<line x1="931.0" y1="302.9" x2="940.0" y2="302.9" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="924.0" y="310.9" font-size="22" font-weight="400" fill="#556070" text-anchor="end">120</text>
+<line x1="931.0" y1="260.0" x2="940.0" y2="260.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="924.0" y="268.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">140</text>
+<text x="952.0" y="268.0" font-size="22" font-weight="700" fill="#556070" text-anchor="start">勉強時間（分）</text>
+<text x="1050.0" y="602.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">1年</text>
+<text x="1260.0" y="602.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">2年</text>
+<text x="1470.0" y="602.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">3年</text>
+<circle cx="1024.0" cy="534.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="1039.0" cy="515.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="1029.0" cy="506.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="1044.0" cy="497.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="1034.0" cy="491.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="1024.0" cy="485.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="1039.0" cy="480.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="1029.0" cy="474.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="1044.0" cy="467.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="1034.0" cy="463.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="1024.0" cy="457.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="1039.0" cy="450.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="1029.0" cy="442.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="1044.0" cy="433.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="1034.0" cy="414.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="1234.0" cy="502.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="1249.0" cy="482.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="1239.0" cy="474.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="1254.0" cy="465.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="1244.0" cy="459.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="1234.0" cy="452.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="1249.0" cy="448.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="1239.0" cy="442.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="1254.0" cy="435.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="1244.0" cy="431.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="1234.0" cy="425.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="1249.0" cy="418.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="1239.0" cy="410.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="1254.0" cy="401.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="1244.0" cy="382.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="1444.0" cy="416.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="1459.0" cy="397.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="1449.0" cy="388.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="1464.0" cy="380.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="1454.0" cy="373.6" r="3.5" fill="#a7d1fb"/>
+<circle cx="1444.0" cy="367.1" r="3.5" fill="#a7d1fb"/>
+<circle cx="1459.0" cy="362.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="1449.0" cy="356.4" r="3.5" fill="#a7d1fb"/>
+<circle cx="1464.0" cy="350.0" r="3.5" fill="#a7d1fb"/>
+<circle cx="1454.0" cy="345.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="1444.0" cy="339.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="1459.0" cy="332.9" r="3.5" fill="#a7d1fb"/>
+<circle cx="1449.0" cy="324.3" r="3.5" fill="#a7d1fb"/>
+<circle cx="1464.0" cy="315.7" r="3.5" fill="#a7d1fb"/>
+<circle cx="1454.0" cy="296.4" r="3.5" fill="#a7d1fb"/>
+<polyline points="1034.0,474.3 1244.0,442.1 1454.0,356.4" fill="none" stroke="#1e90ff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="1034.0" cy="474.3" r="10.0" fill="#1e90ff" stroke="#ffffff" stroke-width="3"/>
+<circle cx="1244.0" cy="442.1" r="10.0" fill="#1e90ff" stroke="#ffffff" stroke-width="3"/>
+<circle cx="1454.0" cy="356.4" r="10.0" fill="#1e90ff" stroke="#ffffff" stroke-width="3"/>
+<circle cx="1056.0" cy="491.4" r="3.5" fill="#f6c08e"/>
+<circle cx="1071.0" cy="472.1" r="3.5" fill="#f6c08e"/>
+<circle cx="1061.0" cy="463.6" r="3.5" fill="#f6c08e"/>
+<circle cx="1076.0" cy="455.0" r="3.5" fill="#f6c08e"/>
+<circle cx="1066.0" cy="448.6" r="3.5" fill="#f6c08e"/>
+<circle cx="1056.0" cy="442.1" r="3.5" fill="#f6c08e"/>
+<circle cx="1071.0" cy="437.9" r="3.5" fill="#f6c08e"/>
+<circle cx="1061.0" cy="431.4" r="3.5" fill="#f6c08e"/>
+<circle cx="1076.0" cy="425.0" r="3.5" fill="#f6c08e"/>
+<circle cx="1066.0" cy="420.7" r="3.5" fill="#f6c08e"/>
+<circle cx="1056.0" cy="414.3" r="3.5" fill="#f6c08e"/>
+<circle cx="1071.0" cy="407.9" r="3.5" fill="#f6c08e"/>
+<circle cx="1061.0" cy="399.3" r="3.5" fill="#f6c08e"/>
+<circle cx="1076.0" cy="390.7" r="3.5" fill="#f6c08e"/>
+<circle cx="1066.0" cy="371.4" r="3.5" fill="#f6c08e"/>
+<circle cx="1266.0" cy="459.3" r="3.5" fill="#f6c08e"/>
+<circle cx="1281.0" cy="440.0" r="3.5" fill="#f6c08e"/>
+<circle cx="1271.0" cy="431.4" r="3.5" fill="#f6c08e"/>
+<circle cx="1286.0" cy="422.9" r="3.5" fill="#f6c08e"/>
+<circle cx="1276.0" cy="416.4" r="3.5" fill="#f6c08e"/>
+<circle cx="1266.0" cy="410.0" r="3.5" fill="#f6c08e"/>
+<circle cx="1281.0" cy="405.7" r="3.5" fill="#f6c08e"/>
+<circle cx="1271.0" cy="399.3" r="3.5" fill="#f6c08e"/>
+<circle cx="1286.0" cy="392.9" r="3.5" fill="#f6c08e"/>
+<circle cx="1276.0" cy="388.6" r="3.5" fill="#f6c08e"/>
+<circle cx="1266.0" cy="382.1" r="3.5" fill="#f6c08e"/>
+<circle cx="1281.0" cy="375.7" r="3.5" fill="#f6c08e"/>
+<circle cx="1271.0" cy="367.1" r="3.5" fill="#f6c08e"/>
+<circle cx="1286.0" cy="358.6" r="3.5" fill="#f6c08e"/>
+<circle cx="1276.0" cy="339.3" r="3.5" fill="#f6c08e"/>
+<circle cx="1476.0" cy="427.1" r="3.5" fill="#f6c08e"/>
+<circle cx="1491.0" cy="407.9" r="3.5" fill="#f6c08e"/>
+<circle cx="1481.0" cy="399.3" r="3.5" fill="#f6c08e"/>
+<circle cx="1496.0" cy="390.7" r="3.5" fill="#f6c08e"/>
+<circle cx="1486.0" cy="384.3" r="3.5" fill="#f6c08e"/>
+<circle cx="1476.0" cy="377.9" r="3.5" fill="#f6c08e"/>
+<circle cx="1491.0" cy="373.6" r="3.5" fill="#f6c08e"/>
+<circle cx="1481.0" cy="367.1" r="3.5" fill="#f6c08e"/>
+<circle cx="1496.0" cy="360.7" r="3.5" fill="#f6c08e"/>
+<circle cx="1486.0" cy="356.4" r="3.5" fill="#f6c08e"/>
+<circle cx="1476.0" cy="350.0" r="3.5" fill="#f6c08e"/>
+<circle cx="1491.0" cy="343.6" r="3.5" fill="#f6c08e"/>
+<circle cx="1481.0" cy="335.0" r="3.5" fill="#f6c08e"/>
+<circle cx="1496.0" cy="326.4" r="3.5" fill="#f6c08e"/>
+<circle cx="1486.0" cy="307.1" r="3.5" fill="#f6c08e"/>
+<polyline points="1066.0,431.4 1276.0,399.3 1486.0,367.1" fill="none" stroke="#e8710a" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="1066.0" cy="431.4" r="10.0" fill="#e8710a" stroke="#ffffff" stroke-width="3"/>
+<circle cx="1276.0" cy="399.3" r="10.0" fill="#e8710a" stroke="#ffffff" stroke-width="3"/>
+<circle cx="1486.0" cy="367.1" r="10.0" fill="#e8710a" stroke="#ffffff" stroke-width="3"/>
+<text x="1190.0" y="670.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">二要因分散分析で計算すると…</text>
+<text x="1190.0" y="712.0" font-size="32" font-weight="700" fill="#17202c" text-anchor="middle">組み合わせの効果（交互作用）があるといえる</text>
+<text x="1190.0" y="748.0" font-size="24" font-weight="400" fill="#17202c" text-anchor="middle">（部活の有無による差が、学年によってちがう）</text>
+<text x="800.0" y="850.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">二要因分散分析は、2つの要因それぞれの効果と、「組み合わせたときの効果（交互作用）」を調べる方法です</text>
+</svg>

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>分析サポーター：どの分析を使えばいいかを選ぶ</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">どの分析を使えばいいか、わからない…</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">まず「何を調べたいか」を決めると、使う分析が決まってきます</text>
+<rect x="40.0" y="170.0" width="1520.0" height="560.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<rect x="80.0" y="400.0" width="260.0" height="100.0" rx="6" fill="#eaf4ff" stroke="#1e90ff" stroke-width="3"/>
+<text x="210.0" y="462.0" font-size="32" font-weight="700" fill="#17202c" text-anchor="middle">何を調べたい？</text>
+<line x1="340.0" y1="450.0" x2="480.0" y2="250.0" stroke="#8b94a1" stroke-width="3" stroke-linecap="round"/>
+<rect x="480.0" y="204.0" width="380.0" height="92.0" rx="6" fill="#ffffff" stroke="#17202c" stroke-width="2"/>
+<text x="670.0" y="246.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">平均を比べたい</text>
+<text x="670.0" y="280.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">例：1組と2組の平均点</text>
+<line x1="866.0" y1="250.0" x2="1010.0" y2="250.0" stroke="#8b94a1" stroke-width="3" stroke-linecap="round"/>
+<path d="M1010.0,250.0 L999.2,255.2 L999.2,244.8 Z" fill="#8b94a1"/>
+<rect x="1015.0" y="210.0" width="470.0" height="80.0" rx="6" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="1250.0" y="260.0" font-size="28" font-weight="700" fill="#1670c9" text-anchor="middle">t検定・分散分析など</text>
+<line x1="340.0" y1="450.0" x2="480.0" y2="382.0" stroke="#8b94a1" stroke-width="3" stroke-linecap="round"/>
+<rect x="480.0" y="336.0" width="380.0" height="92.0" rx="6" fill="#ffffff" stroke="#17202c" stroke-width="2"/>
+<text x="670.0" y="378.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">関係を見たい</text>
+<text x="670.0" y="412.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">例：勉強時間と点数</text>
+<line x1="866.0" y1="382.0" x2="1010.0" y2="382.0" stroke="#8b94a1" stroke-width="3" stroke-linecap="round"/>
+<path d="M1010.0,382.0 L999.2,387.2 L999.2,376.8 Z" fill="#8b94a1"/>
+<rect x="1015.0" y="342.0" width="470.0" height="80.0" rx="6" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="1250.0" y="392.0" font-size="28" font-weight="700" fill="#1670c9" text-anchor="middle">相関分析・回帰分析など</text>
+<line x1="340.0" y1="450.0" x2="480.0" y2="514.0" stroke="#8b94a1" stroke-width="3" stroke-linecap="round"/>
+<rect x="480.0" y="468.0" width="380.0" height="92.0" rx="6" fill="#ffffff" stroke="#17202c" stroke-width="2"/>
+<text x="670.0" y="510.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">人数の割合を比べたい</text>
+<text x="670.0" y="544.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">例：男女と部活の種類</text>
+<line x1="866.0" y1="514.0" x2="1010.0" y2="514.0" stroke="#8b94a1" stroke-width="3" stroke-linecap="round"/>
+<path d="M1010.0,514.0 L999.2,519.2 L999.2,508.8 Z" fill="#8b94a1"/>
+<rect x="1015.0" y="474.0" width="470.0" height="80.0" rx="6" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="1250.0" y="524.0" font-size="28" font-weight="700" fill="#1670c9" text-anchor="middle">カイ二乗検定など</text>
+<line x1="340.0" y1="450.0" x2="480.0" y2="646.0" stroke="#8b94a1" stroke-width="3" stroke-linecap="round"/>
+<rect x="480.0" y="600.0" width="380.0" height="92.0" rx="6" fill="#ffffff" stroke="#17202c" stroke-width="2"/>
+<text x="670.0" y="642.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">全体の様子を見たい</text>
+<text x="670.0" y="676.0" font-size="20" font-weight="400" fill="#556070" text-anchor="middle">例：点数の散らばり</text>
+<line x1="866.0" y1="646.0" x2="1010.0" y2="646.0" stroke="#8b94a1" stroke-width="3" stroke-linecap="round"/>
+<path d="M1010.0,646.0 L999.2,651.2 L999.2,640.8 Z" fill="#8b94a1"/>
+<rect x="1015.0" y="606.0" width="470.0" height="80.0" rx="6" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="1250.0" y="656.0" font-size="28" font-weight="700" fill="#1670c9" text-anchor="middle">探索的データ分析など</text>
+<text x="800.0" y="800.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">初学者モードでは、質問に答えるだけで、データの前提（正規分布かなど）も確かめて分析を選びます</text>
+</svg>
