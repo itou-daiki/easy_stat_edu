@@ -1170,9 +1170,14 @@ export function getAcademicLayout(overrides = {}) {
         : layout.title?.text;
     if (titleText) {
         const titleOptions = typeof layout.title === 'object' ? layout.title : {};
+        // タイトルはグラフ領域の枠のすぐ上（下端を枠の上端にそろえ、少しすき間をあける）に置く。
+        // automargin で上の余白が自動で広がるので、枠線や有意差の記号と重ならない。
         layout.title = {
             automargin: true,
             yref: 'paper',
+            y: 1,
+            yanchor: 'bottom',
+            pad: { b: 14 },
             ...titleOptions,
             text: titleText
         };
@@ -2598,7 +2603,9 @@ function rangeValueToDisplay(value, type) {
     if (type === 'date') return String(value ?? '');
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return '';
-    return formatPlotlyRangeNumber(type === 'log' ? 10 ** numeric : numeric);
+    const shown = type === 'log' ? 10 ** numeric : numeric;
+    // 自動で決まった範囲は「114.9292091」のような長い数字になりやすいので、有効数字4桁で見せる
+    return formatPlotlyRangeNumber(Number.isFinite(shown) && shown !== 0 ? Number(shown.toPrecision(4)) : shown);
 }
 
 function resolvePlotlyAxisRangeDescriptor(plot, capturedLayout, orientation) {
@@ -4020,7 +4027,8 @@ export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange, optio
     // Update layout yaxis range to accommodate brackets and annotation text.
     // Plotly auto-range includes shapes (data coords) but NOT annotations.
     // We must explicitly set the range to ensure bracket text is visible.
-    const recommendedMaxY = maxOccupiedY + (scaleRange * 0.12);
+    // 有意差の記号（**・†）が枠の上端に近づきすぎないよう、少し余裕を持たせる
+    const recommendedMaxY = maxOccupiedY + (scaleRange * 0.18);
     const paddedMinimum = options.baselineZero !== false
         ? (
             lowerDataBound < 0
