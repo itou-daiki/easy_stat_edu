@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
+import { CHART_FONT_FAMILY, renderDataOverview, createVariableSelector, createAnalysisButton, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getBottomTitleAnnotation, InterpretationHelper, generateAPATableHtml, getAcademicLayout, academicColors } from '../utils.js';
 
 
 
@@ -492,7 +492,7 @@ function plotHeatmap(variables, matrix, methodLabel) {
                 y: variables[i],
                 text: isNaN(value) ? '-' : value.toFixed(2),
                 font: {
-                    family: 'Arial',
+                    family: CHART_FONT_FAMILY,
                     size: fontSize,
                     color: textColor,
                     weight: absValue >= 0.7 ? 'bold' : 'normal'
