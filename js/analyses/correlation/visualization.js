@@ -4,7 +4,7 @@
  * @module correlation/visualization
  */
 
-import { createPlotlyConfig, getBottomTitleAnnotation, getAcademicLayout, academicColors } from '../../utils.js';
+import { createPlotlyConfig, getBottomTitleAnnotation, getAcademicLayout, academicColors, CHART_FONT_FAMILY } from '../../utils.js';
 
 // ======================================================================
 // ヒートマップ
@@ -40,7 +40,7 @@ export function plotHeatmap(variables, matrix) {
     const calculatedSize = Math.max(minSize, Math.min(maxSize, n * baseCellSize + 200));
     const fontSize = Math.max(10, Math.min(16, 18 - n));
 
-    const academicFont = "'Times New Roman', 'Noto Serif JP', 'Yu Mincho', '游明朝', serif";
+    const academicFont = CHART_FONT_FAMILY;
     const layout = getAcademicLayout({
         title: '',
         height: calculatedSize,

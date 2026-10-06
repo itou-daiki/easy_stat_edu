@@ -235,6 +235,13 @@ export function getMethodCopy(methodKey) {
                 '1つの数値からもう1つの数値を予測する式を作るので、「単回帰分析」を使います。',
                 'One number is used to predict another, so simple linear regression is used.'
             )
+        },
+        regression_multiple: {
+            name: pick('重回帰分析', 'Multiple regression'),
+            reason: pick(
+                '2つ以上の数値から1つの数値を予測するので、「重回帰分析」を使います。ほかの列の影響をそろえたうえで、それぞれの列と結果の関係の強さがわかります。',
+                'Two or more numbers are used to predict one, so multiple regression is used. It shows how each predictor relates to the outcome while holding the others constant.'
+            )
         }
     };
     return copy[methodKey];
@@ -270,6 +277,7 @@ export const METHOD_ANALYSIS_TYPE = {
     chi_square: 'chi_square',
     fisher: 'fisher_exact',
     regression: 'regression_simple',
+    regression_multiple: 'regression_multiple',
     eda: 'eda'
 };
 
@@ -284,6 +292,7 @@ export function getErrorMessage(code) {
         need_two_vars: pick('異なる2つの列を選んでください。', 'Choose two different columns.'),
         too_few_categories: pick('それぞれの列に2種類以上の値が必要です。', 'Each column needs at least two different values.'),
         constant_x: pick('予測に使う列の値がすべて同じです。', 'The predictor column has the same value in every row.'),
+        collinear: pick('予測に使う列どうしがほとんど同じ動きをしているため、式を求められません。列を減らしてください。', 'The predictors move together almost perfectly, so the equation cannot be estimated. Remove a predictor.'),
         constant_var: pick('値がすべて同じ列があるため、関係を調べられません。', 'One column has the same value in every row, so the relationship cannot be examined.')
     };
     return messages[code] || pick('この組み合わせでは分析できませんでした。', 'This combination could not be analyzed.');
@@ -325,7 +334,8 @@ export function getSelectionGuide(purpose, design) {
     }
     if (purpose === 'relation') {
         return {
-            check: pick(`2つの列それぞれに${normalityCheck}を行います`, `${normalityCheck} for both columns`),
+            check: pick(`選んだ列それぞれに${normalityCheck}を行います（3列以上なら、すべての組み合わせの相関表になります）`,
+                `${normalityCheck} for each selected column (3+ columns give a correlation matrix)`),
             headers: normalHeaders,
             rows: [[pick('数値 × 数値', 'Number × number'), name('pearson'), name('spearman')]]
         };
@@ -341,7 +351,10 @@ export function getSelectionGuide(purpose, design) {
         return {
             check: pick('予測のずれ（残差）の正規性も確認します', 'Normality of residuals is also checked'),
             headers: ['', pick('使う手法', 'Method')],
-            rows: [[pick('数値 → 数値', 'Number → number'), name('regression')]]
+            rows: [
+                [pick('予測に使う列が1つ', 'One predictor'), name('regression')],
+                [pick('予測に使う列が2つ以上', 'Two or more predictors'), name('regression_multiple')]
+            ]
         };
     }
     return null;

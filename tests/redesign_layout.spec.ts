@@ -3,7 +3,7 @@ import { navigateToFeature, uploadFile, selectStandardOption, selectVariables } 
 
 /**
  * デザイン刷新（docs/redesign/DESIGN.md）のレイアウト上の約束を確認する。
- * - アプリバーは小さく、ヒーロー画像のような大きな帯にしない
+ * - ヒーローの青い面は PC で 180〜240px、スマホではコンパクトに
  * - 375px 幅でページ全体が横スクロールしない
  * - キーボード操作時にフォーカス輪郭が見える
  */
@@ -14,11 +14,17 @@ async function boot(page) {
 }
 
 test.describe('Redesign layout', () => {
-    test('app bar stays compact on desktop', async ({ page }) => {
+    // 2026-10 v3: 青いヒーロー面は PC で 180〜240px 程度、スマホでは操作より上を占めすぎないこと
+    test('hero band is confident on desktop and compact on mobile', async ({ page }) => {
         await page.setViewportSize({ width: 1280, height: 900 });
         await boot(page);
-        const height = await page.locator('.hero-section').evaluate(el => el.getBoundingClientRect().height);
-        expect(height).toBeLessThan(140);
+        const desktop = await page.locator('.app-bar').evaluate(el => el.getBoundingClientRect().height);
+        expect(desktop).toBeGreaterThanOrEqual(180);
+        expect(desktop).toBeLessThanOrEqual(240);
+
+        await page.setViewportSize({ width: 375, height: 812 });
+        const mobile = await page.locator('.app-bar').evaluate(el => el.getBoundingClientRect().height);
+        expect(mobile).toBeLessThanOrEqual(220);
     });
 
     test('no horizontal page scroll at 375px (home and t-test result)', async ({ page }) => {

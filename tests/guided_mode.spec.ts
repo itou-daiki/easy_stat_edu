@@ -7,6 +7,10 @@ async function loadDemo(page: Page) {
     await page.waitForSelector('#dataframe-container', { state: 'visible', timeout: 5000 });
 }
 
+async function pickColumn(page: Page, key: string, value: string) {
+    await page.locator(`#guided-panel [data-guided-multi="${key}"][value="${value}"]`).check();
+}
+
 async function choose(page: Page, name: string, value: string) {
     await page.locator(`#guided-panel input[name="${name}"][value="${value}"]`).check();
 }
@@ -49,7 +53,7 @@ test.describe('Beginner mode (guided analysis)', () => {
         await choose(page, 'guided-design', 'independent');
         await expect(page.locator('.guided-guide')).toContainText('マン・ホイットニーのU検定');
         await page.selectOption('#guided-groupVar', 'クラス');
-        await page.selectOption('#guided-valueVar', '数学');
+        await pickColumn(page, 'valueVars', '数学');
         await page.click('#guided-run-btn');
 
         const decision = page.locator('.guided-decision');
@@ -65,7 +69,7 @@ test.describe('Beginner mode (guided analysis)', () => {
         await choose(page, 'guided-purpose', 'compare');
         await choose(page, 'guided-design', 'independent');
         await page.selectOption('#guided-groupVar', '性別');
-        await page.selectOption('#guided-valueVar', '英語');
+        await pickColumn(page, 'valueVars', '英語');
         await page.click('#guided-run-btn');
 
         const decision = page.locator('.guided-decision');
@@ -95,8 +99,8 @@ test.describe('Beginner mode (guided analysis)', () => {
             {
                 setup: async () => {
                     await choose(page, 'guided-purpose', 'relation');
-                    await page.selectOption('#guided-x', '数学');
-                    await page.selectOption('#guided-y', '学習時間');
+                    await pickColumn(page, 'relationVars', '数学');
+                    await pickColumn(page, 'relationVars', '学習時間');
                 },
                 methods: ['pearson', 'spearman']
             },
@@ -111,8 +115,8 @@ test.describe('Beginner mode (guided analysis)', () => {
             {
                 setup: async () => {
                     await choose(page, 'guided-purpose', 'predict');
-                    await page.selectOption('#guided-x', '学習時間');
                     await page.selectOption('#guided-y', '数学');
+                    await pickColumn(page, 'predictors', '学習時間');
                 },
                 methods: ['regression']
             }
@@ -136,7 +140,7 @@ test.describe('Beginner mode (guided analysis)', () => {
         await choose(page, 'guided-purpose', 'relation');
         // 足りない入力があるうちはボタンを押せず、次にすることを表示する
         await expect(page.locator('#guided-run-btn')).toBeDisabled();
-        await expect(page.locator('#guided-run-status')).toContainText('数値の列を2つ選んでください');
+        await expect(page.locator('#guided-run-status')).toContainText('数値の列をあと2つ選んでください');
         await expect(page.locator('#analysis-area')).toBeHidden();
     });
 
@@ -151,7 +155,7 @@ test.describe('Beginner mode (guided analysis)', () => {
         await choose(page, 'guided-purpose', 'compare');
         await choose(page, 'guided-design', 'independent');
         await page.selectOption('#guided-groupVar', '性別');
-        await page.selectOption('#guided-valueVar', '英語');
+        await pickColumn(page, 'valueVars', '英語');
         await page.click('#guided-run-btn');
         await expect(page.locator('.guided-decision')).toBeVisible();
 
@@ -181,8 +185,8 @@ test.describe('Beginner mode (guided analysis)', () => {
     test('decision panel follows the language switch', async ({ page }) => {
         await loadDemo(page);
         await choose(page, 'guided-purpose', 'relation');
-        await page.selectOption('#guided-x', '数学');
-        await page.selectOption('#guided-y', '英語');
+        await pickColumn(page, 'relationVars', '数学');
+        await pickColumn(page, 'relationVars', '英語');
         await page.click('#guided-run-btn');
         await expect(page.locator('.guided-decision h3')).toContainText('この分析では');
         await page.click('[data-locale="en"]');
@@ -193,13 +197,12 @@ test.describe('Beginner mode (guided analysis)', () => {
         await loadDemo(page);
         await choose(page, 'guided-purpose', 'relation');
         await expect(page.locator('#guided-run-btn')).toBeDisabled();
-        await expect(page.locator('#guided-run-status')).toContainText('数値の列を2つ選んでください');
-        await expect(page.locator('#guided-x option[value="ID"]')).toHaveCount(0);
+        await expect(page.locator('#guided-run-status')).toContainText('数値の列をあと2つ選んでください');
+        await expect(page.locator('[data-guided-multi="relationVars"][value="ID"]')).toHaveCount(0);
         await expect(page.locator('.guided-excluded-note')).toContainText('ID');
-        await page.selectOption('#guided-x', '数学');
-        await page.selectOption('#guided-y', '数学');
-        await expect(page.locator('#guided-run-status')).toContainText('同じ列が2回選ばれています');
-        await page.selectOption('#guided-y', '英語');
+        await pickColumn(page, 'relationVars', '数学');
+        await expect(page.locator('#guided-run-status')).toContainText('あと1つ');
+        await pickColumn(page, 'relationVars', '英語');
         await expect(page.locator('#guided-run-btn')).toBeEnabled();
 
         await choose(page, 'guided-purpose', 'compare');
@@ -226,5 +229,56 @@ test.describe('Beginner mode (guided analysis)', () => {
         await expect(page.locator('.guided-decision')).toBeVisible();
         await expect(page.locator('.guided-decision-warning')).toHaveCount(0);
         expect(errors).toEqual([]);
+    });
+
+    test('several numeric columns: columns are split by the method that fits, and the others can be analyzed next', async ({ page }) => {
+        // 数学・英語は正規分布に近く（正規分布の分位点から作成）、スマホ時間は右に大きくかたよる
+        const math = [[70, 65, 75, 60, 54, 66, 69, 63, 58, 49, 52, 64, 72, 44, 67, 61, 55, 59, 57, 80],
+            [56, 84, 69, 63, 62, 76, 58, 70, 68, 61, 59, 64, 48, 65, 79, 71, 67, 53, 73, 74]];
+        const english = [[62, 74, 49, 65, 42, 61, 56, 59, 46, 64, 54, 52, 60, 51, 63, 67, 57, 55, 70, 53],
+            [45, 67, 68, 56, 60, 73, 52, 66, 65, 57, 55, 58, 54, 77, 70, 59, 64, 63, 62, 49]];
+        const rows = Array.from({ length: 40 }, (_, i) => {
+            const g = i % 2;
+            const k = Math.floor(i / 2);
+            const phone = i % 7 === 0 ? 300 + i : 20 + (i % 5) * 3;
+            return `${i + 1},${g ? '男子' : '女子'},${math[g][k]},${english[g][k]},${phone}`;
+        });
+        const csv = ['番号,性別,数学,英語,スマホ時間', ...rows].join('\n');
+        await page.setInputFiles('#main-data-file', { name: 'multi.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+        await page.waitForSelector('#dataframe-container', { state: 'visible' });
+        await choose(page, 'guided-purpose', 'compare');
+        await choose(page, 'guided-design', 'independent');
+        await page.selectOption('#guided-groupVar', '性別');
+        for (const column of ['数学', '英語', 'スマホ時間']) await pickColumn(page, 'valueVars', column);
+        await page.click('#guided-run-btn');
+
+        const decision = page.locator('.guided-decision');
+        await expect(decision).toHaveAttribute('data-guided-method', 'welch_t');
+        await expect(page.locator('.guided-other-groups')).toContainText('スマホ時間');
+        await expect(page.locator('#dep-var-multiselect-hidden option:checked')).toHaveText(['数学', '英語']);
+
+        await page.click('[data-guided-other="0"]');
+        await expect(page.locator('.guided-decision')).toHaveAttribute('data-guided-method', 'mann_whitney');
+        await expect(page.locator('.guided-other-groups')).toContainText('数学');
+        await expect(page.locator('#results-section')).toBeVisible();
+    });
+
+    test('three or more columns give a correlation matrix, and two or more predictors give multiple regression', async ({ page }) => {
+        await loadDemo(page);
+        await choose(page, 'guided-purpose', 'relation');
+        for (const column of ['数学', '英語', '理科']) await pickColumn(page, 'relationVars', column);
+        await page.click('#guided-run-btn');
+        await expect(page.locator('.guided-decision')).toHaveAttribute('data-guided-method', /^(pearson|spearman)$/);
+        await expect(page.locator('#correlation-vars option:checked')).toHaveCount(3);
+
+        await page.evaluate(() => (window as any).backToHome());
+        await choose(page, 'guided-purpose', 'predict');
+        await page.selectOption('#guided-y', '数学');
+        await pickColumn(page, 'predictors', '学習時間');
+        await pickColumn(page, 'predictors', '英語');
+        await page.click('#guided-run-btn');
+        await expect(page.locator('.guided-decision')).toHaveAttribute('data-guided-method', 'regression_multiple');
+        await expect(page.locator('.guided-decision-warning')).toHaveCount(0);
+        await expect(page.locator('#analysis-results')).not.toBeEmpty();
     });
 });

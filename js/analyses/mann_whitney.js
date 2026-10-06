@@ -274,7 +274,7 @@ function generateReportingTable(testResults, groups, n1Total, n2Total, NTotal) {
 
     // APA style table with multi-level headers (rendered as custom HTML)
     let html = `
-        <div id="mw-apa-table" style="font-family: 'Times New Roman', serif; margin: 1rem 0;">
+        <div id="mw-apa-table" style="font-family: var(--font-serif); margin: 1rem 0;">
             <p style="font-style: italic; margin-bottom: 0.5rem;">Table 1. Results of Mann-Whitney U Test</p>
             <table style="border-collapse: collapse; width: 100%; font-size: 0.9rem;">
                 <thead>

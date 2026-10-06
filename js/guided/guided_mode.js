@@ -4,7 +4,8 @@
  * 前提チェックの結果から適切な手法を選んで既存の分析画面で自動実行する。
  */
 import {
-    selectCategoricalAssociation, selectCorrelation, selectGroupComparison, selectPairedComparison, selectPrediction
+    selectCategoricalAssociation, selectCorrelationMulti, selectGroupComparisonMulti, selectPairedComparison,
+    selectPredictionMulti
 } from '../utils/method_selector.js';
 import {
     escapeHtml, getDesignExplanation, getDesigns, getErrorMessage, getPurposes, getSelectionGuide, getTermExplanations, pick
@@ -19,8 +20,10 @@ const state = {
     purpose: null,
     design: null,
     groupVar: '',
-    valueVar: '',
+    valueVars: [],
     pairedVars: [],
+    relationVars: [],
+    predictors: [],
     x: '',
     y: '',
     rowVar: '',
@@ -135,29 +138,39 @@ function groupOptions() {
     }));
 }
 
+/** グループの人数が足りない列（値が入っている人で数える）。{ 列名: [人数が足りないグループ] } */
+function smallGroupsByColumn() {
+    const result = {};
+    for (const valueVar of state.valueVars) {
+        const { tooSmall } = groupWarnings(groupLevels(deps.getData(), state.groupVar, valueVar));
+        if (tooSmall.length) result[valueVar] = tooSmall;
+    }
+    return result;
+}
+
 function groupPreview() {
     if (!state.groupVar || !hasData()) return '';
-    const levels = groupLevels(deps.getData(), state.groupVar, state.valueVar || null);
+    const levels = groupLevels(deps.getData(), state.groupVar);
     const { tooSmall, tooMany } = groupWarnings(levels);
-    const empty = tooSmall.filter(level => level.n === 0);
-    const single = tooSmall.filter(level => level.n === 1);
+    const smallByColumn = smallGroupsByColumn();
     const items = levels
         .map(level => `<li class="${level.n < 2 ? 'is-warning' : ''}">${escapeHtml(level.name)} <small>${pick(`${level.n}人`, `n = ${level.n}`)}</small></li>`)
         .join('');
     const warnings = [];
     const names = list => list.map(level => escapeHtml(level.name));
-    if (empty.length) {
+    if (tooSmall.length) {
         warnings.push(pick(
-            `「${names(empty).join('」「')}」のグループには、「${escapeHtml(state.valueVar)}」の値が入っている人がいません。データを確認するか、別の列を選んでください。`,
-            `Nobody in ${names(empty).join(', ')} has a value for ${escapeHtml(state.valueVar)}. Check the data or choose another column.`
+            `「${names(tooSmall).join('」「')}」は1人しかいないため比べられません。データを確認するか、別の列を選んでください。`,
+            `${names(tooSmall).join(', ')} has only one person, so it cannot be compared. Check the data or choose another column.`
         ));
     }
-    if (single.length) {
+    Object.entries(smallByColumn).forEach(([column, small]) => {
+        if (tooSmall.length && small.every(level => tooSmall.some(t => t.name === level.name))) return;
         warnings.push(pick(
-            `「${names(single).join('」「')}」は1人しかいないため比べられません。データを確認するか、別の列を選んでください。`,
-            `${names(single).join(', ')} has only one person, so it cannot be compared. Check the data or choose another column.`
+            `「${escapeHtml(column)}」は、「${names(small).join('」「')}」のグループに値が入っている人が1人以下のため比べられません。この列を外すか、データを確認してください。`,
+            `${escapeHtml(column)}: ${names(small).join(', ')} has fewer than two people with values. Remove this column or check the data.`
         ));
-    }
+    });
     if (tooMany) {
         warnings.push(pick(
             `グループが${levels.length}個あります。「クラス」「性別」のようにグループを表す列か確認しましょう。点数などの数値の列を選んでいないか注意してください。`,
@@ -169,6 +182,27 @@ function groupPreview() {
             <p>${pick(`${levels.length}グループ`, `${levels.length} groups`)}${levels.length === 2 ? pick('（2群の比較）', ' (two-group comparison)') : levels.length >= 3 ? pick('（3群以上の比較）', ' (three or more groups)') : ''}</p>
             <ul>${items}</ul>
             ${warnings.map(text => `<p class="guided-inline-warning">${text}</p>`).join('')}
+        </div>`;
+}
+
+/** 列をチェックボックスで複数選ぶ欄（選んだ順を覚える） */
+function multiField(key, label, help, names, { minimum = 1 } = {}) {
+    const labelId = `guided-${key}-label`;
+    const selected = state[key];
+    const items = names.map(name => {
+        const checked = selected.includes(name);
+        return `
+            <label class="guided-check-item ${checked ? 'is-checked' : ''}">
+                <input type="checkbox" data-guided-multi="${key}" value="${escapeHtml(name)}" ${checked ? 'checked' : ''}>
+                ${escapeHtml(name)}
+            </label>`;
+    }).join('');
+    return `
+        <div class="guided-field">
+            <span class="guided-field-label" id="${labelId}">${label}</span>
+            ${help ? `<p class="guided-field-help">${help}</p>` : ''}
+            <div class="guided-check-grid" role="group" aria-labelledby="${labelId}">${items || `<p>${pick('使える列がありません', 'No suitable columns')}</p>`}</div>
+            ${selected.length >= minimum ? `<p class="guided-field-help">${pick('選んだ列', 'Selected')}: ${selected.map(escapeHtml).join('、')}（${selected.length}${pick('列', '')}）</p>` : ''}
         </div>`;
 }
 
@@ -228,20 +262,24 @@ function variableFields() {
                 if (!categorical.length) return noGroupColumnNotice();
                 return selectField('groupVar', pick('グループを表す列', 'Group column'), groupOptions(),
                     pick('例：性別、クラス', 'e.g. gender, class')) + groupPreview()
-                    + selectField('valueVar', pick('比べたい数値の列', 'Numeric column to compare'), numeric.filter(name => name !== state.groupVar),
-                        pick('例：テストの点数', 'e.g. test score'));
+                    + multiField('valueVars', pick('比べたい数値の列（いくつでも選べます）', 'Numeric columns to compare (choose any number)'),
+                        pick('例：数学・英語・理科。列ごとに正規性を確かめて、手法を選びます', 'e.g. math, English, science. Each column is checked separately'),
+                        numeric.filter(name => name !== state.groupVar));
             }
             if (state.design === 'paired') return pairedField(numeric);
             return '';
         case 'relation':
-            return selectField('x', pick('1つ目の数値の列', 'First numeric column'), numeric)
-                + selectField('y', pick('2つ目の数値の列', 'Second numeric column'), numeric);
+            return multiField('relationVars', pick('関係を調べたい数値の列（2つ以上）', 'Numeric columns (choose 2 or more)'),
+                pick('3つ以上選ぶと、すべての組み合わせの相関を1つの表（相関行列）で見られます', 'With 3 or more columns you get a table of all pairwise correlations'),
+                numeric, { minimum: 2 });
         case 'proportion':
             return selectField('rowVar', pick('1つ目のカテゴリの列', 'First category column'), groupOptions(), pick('例：性別', 'e.g. gender'))
                 + selectField('colVar', pick('2つ目のカテゴリの列', 'Second category column'), groupOptions(), pick('例：部活動', 'e.g. club'));
         case 'predict':
-            return selectField('x', pick('予測に使う列（原因・手がかり）', 'Predictor column (cause / clue)'), numeric, pick('例：学習時間', 'e.g. study time'))
-                + selectField('y', pick('予測したい列（結果）', 'Column to predict (outcome)'), numeric, pick('例：テストの点数', 'e.g. test score'));
+            return selectField('y', pick('予測したい列（結果）', 'Column to predict (outcome)'), numeric, pick('例：テストの点数', 'e.g. test score'))
+                + multiField('predictors', pick('予測に使う列（原因・手がかり。いくつでも選べます）', 'Predictor columns (cause / clue; choose any number)'),
+                    pick('1つなら単回帰分析、2つ以上なら重回帰分析になります', 'One column gives simple regression; two or more give multiple regression'),
+                    numeric.filter(name => name !== state.y));
         default:
             return '';
     }
@@ -255,10 +293,11 @@ function pendingStep() {
             if (state.design === 'independent') {
                 if (!columns().categorical.length) return pick('グループを表す列がないため、この方法では分析できません。', 'There is no group column, so this comparison is not possible.');
                 if (!state.groupVar) return pick('「グループを表す列」を選んでください。', 'Choose the group column.');
-                if (groupWarnings(groupLevels(deps.getData(), state.groupVar, state.valueVar || null)).tooSmall.length) {
+                if (groupWarnings(groupLevels(deps.getData(), state.groupVar)).tooSmall.length
+                    || Object.keys(smallGroupsByColumn()).length) {
                     return pick('人数が足りないグループがあるため分析できません（上の注意を確認してください）。', 'A group has too few people, so it cannot be analyzed (see the note above).');
                 }
-                if (!state.valueVar) return pick('「比べたい数値の列」を選んでください。', 'Choose the numeric column to compare.');
+                if (!state.valueVars.length) return pick('「比べたい数値の列」を1つ以上選んでください。', 'Choose at least one numeric column to compare.');
                 return null;
             }
             if (state.pairedVars.length < 2) {
@@ -266,9 +305,13 @@ function pendingStep() {
             }
             return null;
         case 'relation':
+            if (state.relationVars.length < 2) {
+                return pick(`数値の列をあと${2 - state.relationVars.length}つ選んでください。`, `Choose ${2 - state.relationVars.length} more numeric column(s).`);
+            }
+            return null;
         case 'predict':
-            if (!state.x || !state.y) return pick('数値の列を2つ選んでください。', 'Choose two numeric columns.');
-            if (state.x === state.y) return sameColumn;
+            if (!state.y) return pick('「予測したい列」を選んでください。', 'Choose the column to predict.');
+            if (!state.predictors.length) return pick('「予測に使う列」を1つ以上選んでください。', 'Choose at least one predictor column.');
             return null;
         case 'proportion':
             if (!state.rowVar || !state.colVar) return pick('カテゴリの列を2つ選んでください。', 'Choose two category columns.');
@@ -433,20 +476,26 @@ function decide() {
     switch (state.purpose) {
         case 'compare':
             if (state.design === 'independent') {
-                if (!state.groupVar || !state.valueVar) return { error: 'need_vars' };
-                return { ...selectGroupComparison(data, state.groupVar, state.valueVar), context: { groupVar: state.groupVar, valueVar: state.valueVar } };
+                if (!state.groupVar || !state.valueVars.length) return { error: 'need_vars' };
+                const multi = selectGroupComparisonMulti(data, state.groupVar, state.valueVars);
+                if (multi.error) return multi;
+                const groups = multi.groups.map(group => ({
+                    ...group,
+                    context: { groupVar: state.groupVar, valueVars: group.vars }
+                }));
+                return { ...groups[0], groups, groupIndex: 0 };
             }
             if (state.pairedVars.length < 2) return { error: 'too_few_vars' };
             return { ...selectPairedComparison(data, state.pairedVars), context: { vars: [...state.pairedVars] } };
         case 'relation':
-            if (!state.x || !state.y) return { error: 'need_vars' };
-            return { ...selectCorrelation(data, state.x, state.y), context: { x: state.x, y: state.y } };
+            if (state.relationVars.length < 2) return { error: 'need_vars' };
+            return { ...selectCorrelationMulti(data, state.relationVars), context: { vars: [...state.relationVars] } };
         case 'proportion':
             if (!state.rowVar || !state.colVar) return { error: 'need_vars' };
             return { ...selectCategoricalAssociation(data, state.rowVar, state.colVar), context: { rowVar: state.rowVar, colVar: state.colVar } };
         case 'predict':
-            if (!state.x || !state.y) return { error: 'need_vars' };
-            return { ...selectPrediction(data, state.x, state.y), context: { x: state.x, y: state.y } };
+            if (!state.y || !state.predictors.length) return { error: 'need_vars' };
+            return { ...selectPredictionMulti(data, state.predictors, state.y), context: { predictors: [...state.predictors], y: state.y } };
         default:
             return { error: 'need_vars' };
     }
@@ -465,12 +514,13 @@ function runGuidedAnalysis() {
     const decision = decide();
     if (decision.error) {
         const smallGroups = (decision.groups || []).filter(group => group.n < 2);
+        const column = decision.column ? pick(`「${decision.column}」：`, `${decision.column}: `) : '';
         state.error = decision.error === 'group_too_small' && smallGroups.length
-            ? pick(
+            ? column + pick(
                 `「${smallGroups.map(group => group.name).join('」「')}」のグループは、数値がそろっている人が${smallGroups.map(group => group.n).join('・')}人しかいないため比べられません。`,
                 `${smallGroups.map(group => group.name).join(', ')} has too few people with values (${smallGroups.map(group => group.n).join(', ')}), so it cannot be compared.`
             )
-            : getErrorMessage(decision.error);
+            : column + getErrorMessage(decision.error);
         render();
         return;
     }
@@ -481,7 +531,9 @@ function runGuidedAnalysis() {
         checks: decision.checks,
         context: decision.context,
         purposeLabel: purposeLabel(),
-        preset: buildPreset(decision.methodKey, decision.context)
+        preset: buildPreset(decision.methodKey, decision.context),
+        groups: decision.groups || null,
+        groupIndex: decision.groupIndex ?? null
     };
     deps.openAnalysis(decision.analysisType, { guided });
 }
@@ -490,7 +542,7 @@ function resetSelectionsFor(purpose) {
     Object.assign(state, {
         purpose,
         design: purpose === state.purpose ? state.design : null,
-        groupVar: '', valueVar: '', pairedVars: [], x: '', y: '', rowVar: '', colVar: '', error: ''
+        groupVar: '', valueVars: [], pairedVars: [], relationVars: [], predictors: [], y: '', rowVar: '', colVar: '', error: ''
     });
 }
 
@@ -520,9 +572,22 @@ function handleChange(event) {
     const field = target.dataset.guidedField;
     if (field) {
         state[field] = target.value;
+        if (field === 'y') state.predictors = state.predictors.filter(name => name !== target.value);
+        if (field === 'groupVar') state.valueVars = state.valueVars.filter(name => name !== target.value);
         state.error = '';
         render();
         refocus(`#guided-${field}`);
+        return;
+    }
+    const multiKey = target.dataset.guidedMulti;
+    if (multiKey) {
+        const value = target.value;
+        state[multiKey] = target.checked
+            ? [...state[multiKey].filter(name => name !== value), value]
+            : state[multiKey].filter(name => name !== value);
+        state.error = '';
+        render();
+        refocus(`[data-guided-multi="${multiKey}"][value="${CSS.escape(value)}"]`);
         return;
     }
     const paired = target.dataset.guidedPaired;
@@ -543,9 +608,10 @@ export function refreshGuidedMode() {
     const keepIf = (value, list) => (list.includes(value) ? value : '');
     Object.assign(state, {
         groupVar: keepIf(state.groupVar, categorical),
-        valueVar: keepIf(state.valueVar, numeric),
+        valueVars: state.valueVars.filter(name => numeric.includes(name)),
         pairedVars: state.pairedVars.filter(name => numeric.includes(name)),
-        x: keepIf(state.x, numeric),
+        relationVars: state.relationVars.filter(name => numeric.includes(name)),
+        predictors: state.predictors.filter(name => numeric.includes(name)),
         y: keepIf(state.y, numeric),
         rowVar: keepIf(state.rowVar, categorical),
         colVar: keepIf(state.colVar, categorical),
@@ -561,7 +627,29 @@ let decisionLocaleHandler = null;
 
 export async function applyGuidedAnalysis(container, guided) {
     const { ok, messages } = await runGuidedPreset(guided.methodKey, guided.preset);
-    const panelState = { ...guided, autoRunFailed: !ok, runMessages: messages };
+    // 複数の列で合う手法が分かれたときは、ほかの列のまとまりを判断パネルで案内する
+    const otherIndexes = (guided.groups || []).map((_, index) => index).filter(index => index !== guided.groupIndex);
+    const panelState = {
+        ...guided,
+        autoRunFailed: !ok,
+        runMessages: messages,
+        otherGroups: guided.isAlternative ? [] : otherIndexes.map(index => guided.groups[index])
+    };
+    const openOtherGroup = position => {
+        const index = otherIndexes[position];
+        const group = guided.groups[index];
+        deps.openAnalysis(group.analysisType, {
+            guided: {
+                ...guided,
+                methodKey: group.methodKey,
+                normal: group.normal,
+                checks: group.checks,
+                context: group.context,
+                preset: buildPreset(group.methodKey, group.context),
+                groupIndex: index
+            }
+        });
+    };
     const openAlternative = alternativeKey => {
         deps.openAnalysis(analysisTypeFor(alternativeKey), {
             guided: {
@@ -573,7 +661,7 @@ export async function applyGuidedAnalysis(container, guided) {
             }
         });
     };
-    const panelElement = renderDecisionPanel(container, panelState, openAlternative);
+    const panelElement = renderDecisionPanel(container, panelState, openAlternative, openOtherGroup);
     panelElement.scrollIntoView({ block: 'start' });
 
     // 言語を切り替えたら、表示中の判断理由パネルも描き直す
@@ -584,7 +672,7 @@ export async function applyGuidedAnalysis(container, guided) {
             decisionLocaleHandler = null;
             return;
         }
-        renderDecisionPanel(container, panelState, openAlternative);
+        renderDecisionPanel(container, panelState, openAlternative, openOtherGroup);
     };
     document.addEventListener('easystat:localechange', decisionLocaleHandler);
     return ok;

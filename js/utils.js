@@ -1124,6 +1124,13 @@ export function createAnalysisButton(container, text, onClick, options = {}) {
 }
 
 /**
+ * 図表（グラフ・結果の表）に使う、研究論文向けのフォント。
+ * 欧文は Times New Roman、和文は各端末の明朝体（Mac：ヒラギノ明朝、Windows：游明朝、
+ * Chromebook など：Google Fonts から読み込む Noto Serif JP）。
+ */
+export const CHART_FONT_FAMILY = "'Times New Roman', 'Hiragino Mincho ProN', 'Yu Mincho', 'YuMincho', '游明朝', 'Noto Serif JP', 'Noto Serif CJK JP', serif";
+
+/**
  * 学術論文スタイルのPlotlyレイアウト設定を返す。
  * 森山(2023)の図表スタイルに準拠: セリフフォント、白背景、控えめなグリッド線。
  * 返り値はPlotly.newPlot()のlayout引数にスプレッド構文でマージして使用する。
@@ -1132,7 +1139,7 @@ export function createAnalysisButton(container, text, onClick, options = {}) {
  */
 export function getAcademicLayout(overrides = {}) {
     const baseFont = {
-        family: "'Times New Roman', 'Noto Serif JP', 'Yu Mincho', '游明朝', serif",
+        family: CHART_FONT_FAMILY,
         size: 13,
         color: '#1a1a1a'
     };
@@ -1170,9 +1177,14 @@ export function getAcademicLayout(overrides = {}) {
         : layout.title?.text;
     if (titleText) {
         const titleOptions = typeof layout.title === 'object' ? layout.title : {};
+        // タイトルはグラフ領域の枠のすぐ上（下端を枠の上端にそろえ、少しすき間をあける）に置く。
+        // automargin で上の余白が自動で広がるので、枠線や有意差の記号と重ならない。
         layout.title = {
             automargin: true,
             yref: 'paper',
+            y: 1,
+            yanchor: 'bottom',
+            pad: { b: 14 },
             ...titleOptions,
             text: titleText
         };
@@ -2598,7 +2610,9 @@ function rangeValueToDisplay(value, type) {
     if (type === 'date') return String(value ?? '');
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return '';
-    return formatPlotlyRangeNumber(type === 'log' ? 10 ** numeric : numeric);
+    const shown = type === 'log' ? 10 ** numeric : numeric;
+    // 自動で決まった範囲は「114.9292091」のような長い数字になりやすいので、有効数字4桁で見せる
+    return formatPlotlyRangeNumber(Number.isFinite(shown) && shown !== 0 ? Number(shown.toPrecision(4)) : shown);
 }
 
 function resolvePlotlyAxisRangeDescriptor(plot, capturedLayout, orientation) {
@@ -4020,7 +4034,8 @@ export function addSignificanceBrackets(layout, pairs, xMap, yMax, yRange, optio
     // Update layout yaxis range to accommodate brackets and annotation text.
     // Plotly auto-range includes shapes (data coords) but NOT annotations.
     // We must explicitly set the range to ensure bracket text is visible.
-    const recommendedMaxY = maxOccupiedY + (scaleRange * 0.12);
+    // 有意差の記号（**・†）が枠の上端に近づきすぎないよう、少し余裕を持たせる
+    const recommendedMaxY = maxOccupiedY + (scaleRange * 0.18);
     const paddedMinimum = options.baselineZero !== false
         ? (
             lowerDataBound < 0
@@ -4096,7 +4111,7 @@ export function getBottomTitleAnnotation(text) {
  * @returns {string} The complete HTML string for the table container.
  */
 export function generateAPATableHtml(tableId, title, headerRow, dataRows, note) {
-    const tableStyle = "border-collapse: collapse; width: 100%; font-family: 'Times New Roman', 'Noto Serif JP', 'Yu Mincho', '游明朝', serif; color: #000; margin-bottom: 0.5rem; font-size: 0.95rem; line-height: 1.5;";
+    const tableStyle = `border-collapse: collapse; width: 100%; font-family: ${CHART_FONT_FAMILY}; color: #000; margin-bottom: 0.5rem; font-size: 0.95rem; line-height: 1.5;`;
     const captionStyle = "text-align: center; font-weight: normal; margin-bottom: 0.6em; font-size: 1.05em; font-style: normal;";
     const theadStyle = "border-top: 2px solid #000; border-bottom: 1px solid #000;";
     const thStyle = "padding: 0.4em 0.6em; text-align: center; font-weight: normal; white-space: nowrap;";
@@ -4130,7 +4145,7 @@ export function generateAPATableHtml(tableId, title, headerRow, dataRows, note) 
         </table>`;
 
     if (note) {
-        html += `<div style="font-size: 0.85em; margin-top: 0.4em; font-family: 'Times New Roman', 'Noto Serif JP', serif; color: #333;">${note}</div>`;
+        html += `<div style="font-size: 0.85em; margin-top: 0.4em; font-family: ${CHART_FONT_FAMILY}; color: #333;">${note}</div>`;
     }
 
     html += `

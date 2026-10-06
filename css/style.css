@@ -10,10 +10,10 @@
     --ink-2: #374151;          /* 補足本文（10.3:1） */
     --muted: #556070;          /* 注記・キャプション（6.4:1） */
     --paper: #ffffff;          /* 紙面 */
-    --canvas: #f4f5f7;         /* ページ地 */
-    --tint: #f7f8fa;           /* 控えめな面（表の見出し行など） */
-    --rule: #d9dde3;           /* 細い罫線 */
-    --rule-strong: #8b94a1;    /* 入力欄の枠など強めの罫線（3:1 以上） */
+    --canvas: #f4f8fd;         /* ページ地（ごく淡い青灰） */
+    --tint: #f5f9fe;           /* 控えめな面（表の見出し行など） */
+    --rule: #d8e2ee;           /* 細い罫線（青みの灰） */
+    --rule-strong: #8492a6;    /* 入力欄の枠など強めの罫線（白地 3.2:1） */
 
     /* 基調色：ドジャーブルー（Dodger Blue #1e90ff）
        明るい色のため、白地の小さな文字や白文字の背景には同系色の濃いめ（--accent）を使い、
@@ -23,6 +23,8 @@
     --accent-strong: #0f5fa8;  /* hover・強調（6.5:1） */
     --accent-weak: #eaf4ff;    /* 選択中の面 */
     --accent-line: #a8d1ff;    /* 選択中の枠線（淡） */
+    --accent-hover: #f3f9ff;   /* 選択肢・行の hover 面 */
+    --brand-deep: #0f5fa8;     /* 青い帯の上の部品（白文字 6.5:1） */
     --focus: #1e90ff;          /* :focus-visible の輪郭線 */
 
     /* 意味色（意味があるときだけ） */
@@ -35,8 +37,10 @@
     --danger-weak: #fdf2f2;
 
     /* 文字 */
-    --font-sans: 'Inter', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', 'Yu Gothic', 'Meiryo', system-ui, sans-serif;
-    --font-serif: 'Times New Roman', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+    /* 画面全体：教育用に作られた読みやすいユニバーサルデザインフォント（BIZ UDPゴシック） */
+    --font-sans: 'BIZ UDPGothic', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', 'Yu Gothic', 'Meiryo', system-ui, sans-serif;
+    /* 図表（グラフ・結果の表）：研究論文向け。欧文 Times New Roman＋和文 明朝体 */
+    --font-serif: 'Times New Roman', 'Hiragino Mincho ProN', 'Yu Mincho', 'YuMincho', '游明朝', 'Noto Serif JP', 'Noto Serif CJK JP', serif;
     --text-xs: 0.8125rem;      /* 13px 注記 */
     --text-sm: 0.875rem;       /* 14px 補足 */
     --text-base: 1rem;         /* 16px 本文 */
@@ -46,7 +50,13 @@
 
     /* 形・余白 */
     --radius-sm: 4px;
-    --radius: 6px;
+    --radius: 8px;             /* ボタン・入力欄・選択肢 */
+    --radius-lg: 16px;         /* 紙面（カード） */
+    --radius-btn: 12px;        /* 主要ボタン */
+    --shadow-card: 0 1px 2px rgba(15, 95, 168, 0.06), 0 8px 24px rgba(15, 95, 168, 0.08);  /* 紙面の淡い影 */
+    --shadow-card-hover: 0 2px 4px rgba(15, 95, 168, 0.08), 0 14px 32px rgba(15, 95, 168, 0.14);  /* 押せるカードの hover */
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+    --dur: 150ms;
     --space-1: 0.25rem;
     --space-2: 0.5rem;
     --space-3: 0.75rem;
@@ -165,55 +175,92 @@ a:hover {
     padding: 0 var(--space-6) var(--space-6);
 }
 
-/* アプリバー（旧ヒーロー）：アプリ名・説明・言語切替・マニュアル */
-/* ページ最上部の基調色の帯 */
-body {
-    border-top: 4px solid var(--brand);
-}
-
+/* ヒーロー：画面幅いっぱいのドジャーブルーの面。左下にアプリ名（44px）とキャッチコピー（20px 太字）、
+   右上に言語切替とマニュアル。帯の上の文字はすべて「大きな文字」（18.7px 以上の太字）なので 3:1 で可。
+   右側に散布図と回帰直線をかたどった白い細線（不透明度 8%）を敷く。文字の下には重ねない。
+   作者表記のような小さな文字は帯の下（.app-tagline）に置く。 */
 .hero-section {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3) var(--space-5);
-    flex-wrap: wrap;
-    padding: var(--space-4) 0;
     margin-bottom: var(--space-5);
-    border-bottom: 1px solid var(--rule);
     color: var(--ink);
 }
 
+/* 帯は #main-app の幅を超えて左右いっぱいに伸ばす（横スクロールを生まない box-shadow 方式） */
+.app-bar {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "brand actions";
+    align-items: end;
+    gap: var(--space-4) var(--space-5);
+    min-height: 13.5rem;
+    padding: 1.25rem 0 2.25rem;
+    background: var(--brand);
+    box-shadow: 0 0 0 100vmax var(--brand);
+    clip-path: inset(0 -100vmax);
+    color: #fff;
+}
+
+.app-bar::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: min(480px, 46%);
+    height: 220px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='220' viewBox='0 0 480 220' fill='none' stroke='white' stroke-opacity='0.08' stroke-width='1'%3E%3Cpath d='M20 30H470M20 80H470M20 130H470M20 180H470'/%3E%3Cpath d='M20 20V200H470' stroke-opacity='0.08' stroke-width='1.5'/%3E%3Cpath d='M20 30h-6M20 80h-6M20 130h-6M20 180h-6M110 200v6M200 200v6M290 200v6M380 200v6'/%3E%3Cg stroke-width='1.5'%3E%3Ccircle cx='37' cy='155' r='4'/%3E%3Ccircle cx='68' cy='144' r='4'/%3E%3Ccircle cx='93' cy='150' r='4'/%3E%3Ccircle cx='111' cy='151' r='4'/%3E%3Ccircle cx='137' cy='141' r='4'/%3E%3Ccircle cx='163' cy='119' r='4'/%3E%3Ccircle cx='195' cy='143' r='4'/%3E%3Ccircle cx='216' cy='110' r='4'/%3E%3Ccircle cx='250' cy='133' r='4'/%3E%3Ccircle cx='275' cy='102' r='4'/%3E%3Ccircle cx='308' cy='78' r='4'/%3E%3Ccircle cx='332' cy='82' r='4'/%3E%3Ccircle cx='346' cy='70' r='4'/%3E%3Ccircle cx='375' cy='93' r='4'/%3E%3Ccircle cx='399' cy='77' r='4'/%3E%3Ccircle cx='432' cy='58' r='4'/%3E%3C/g%3E%3Cpath d='M30 176L460 66' stroke-width='2' stroke-dasharray='1 0'/%3E%3C/svg%3E") no-repeat right bottom / contain;
+    pointer-events: none;
+}
+
+/* 文字（キャッチコピー 約 600px）と重なりうる幅では線の飾りを出さない */
+@media (max-width: 1199px) {
+    .app-bar::before {
+        display: none;
+    }
+}
+
 .app-brand {
-    flex: 1 1 0;
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 0.15rem var(--space-4);
-    min-width: min(100%, 18rem);
+    grid-area: brand;
+    position: relative;
+    min-width: 0;
 }
 
 .hero-title {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 3.25rem;    /* 52px 太字の白（大きな文字：帯の上で 3.24:1） */
+    font-weight: 800;
+    -webkit-text-stroke: 0.035em currentColor;   /* BIZ UDPゴシックは 700 までのため、ロゴだけ線で太らせる */
     letter-spacing: -0.01em;
-    line-height: 1.2;
-    color: var(--brand);   /* 24px 太字＝大きな文字（3:1 以上で可） */
+    line-height: 1.1;
+    color: #fff;
 }
 
 .hero-subtitle {
-    font-size: var(--text-sm);
-    color: var(--ink-2);
+    margin-top: 0.6rem;
+    font-size: 1.25rem;    /* 20px 太字の白（大きな文字：3.24:1） */
+    font-weight: 700;
     line-height: 1.5;
+    letter-spacing: 0.02em;
+    color: #fff;
+    word-break: auto-phrase;
+    text-wrap: balance;
+    max-width: 38rem;      /* 右側の線の飾りと重ならない幅（英語表示では 2 行に折り返す） */
+}
+
+.app-tagline {
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--space-2) 0 0;
 }
 
 .hero-caption {
-    flex-basis: 100%;
     font-size: var(--text-xs);
     color: var(--muted);
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
 .hero-actions {
+    grid-area: actions;
+    align-self: start;
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -221,71 +268,82 @@ body {
     flex-wrap: wrap;
 }
 
+/* マニュアルへのリンク：帯の上の白いボタン（濃い青の文字 6.5:1） */
 .app-bar-link {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    min-height: 36px;
-    padding: 0.35rem 0.75rem;
-    border: 1px solid var(--rule);
+    gap: 0.45rem;
+    min-height: 38px;
+    padding: 0.35rem 0.9rem;
+    border: 1px solid #fff;
     border-radius: var(--radius);
-    background: var(--paper);
-    color: var(--ink);
+    background: #fff;
+    color: var(--brand-deep);
     font-size: var(--text-sm);
-    font-weight: 600;
+    font-weight: 700;
     text-decoration: none;
+    transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
 .app-bar-link i {
-    color: var(--muted);
+    color: inherit;
 }
 
 .app-bar-link:hover {
-    border-color: var(--rule-strong);
-    color: var(--accent-strong);
+    background: var(--accent-weak);
+    color: var(--brand-deep);
 }
 
+/* 言語切替：濃い青の台に白文字。選択中は白地に濃い青の文字 */
 .language-switcher {
     display: inline-flex;
     align-items: center;
     gap: 2px;
-    min-height: 36px;
-    padding: 2px;
-    border: 1px solid var(--rule);
+    min-height: 38px;
+    padding: 3px;
+    border: 0;
     border-radius: var(--radius);
-    background: var(--paper);
-    color: var(--muted);
+    background: var(--brand-deep);
+    color: #fff;
 }
 
 .language-switcher > i {
-    padding: 0 0.35rem 0 0.4rem;
+    padding: 0 0.35rem 0 0.45rem;
     font-size: 0.95rem;
 }
 
 .language-switcher button {
-    min-height: 30px;
-    padding: 0.2rem 0.6rem;
+    min-height: 32px;
+    padding: 0.2rem 0.7rem;
     border: 0;
-    border-radius: var(--radius-sm);
+    border-radius: calc(var(--radius) - 3px);
     background: transparent;
-    color: var(--ink-2);
+    color: #fff;
     font: inherit;
     font-size: var(--text-xs);
-    font-weight: 600;
-    letter-spacing: 0;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     cursor: pointer;
+    transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
 .language-switcher button:hover {
-    background: var(--tint);
-    color: var(--ink);
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
     transform: none;
     box-shadow: none;
 }
 
-.language-switcher button.active {
-    background: var(--ink);
-    color: #fff;
+.language-switcher button.active,
+.language-switcher button.active:hover {
+    background: #fff;
+    color: var(--brand-deep);
+}
+
+/* 帯の上のフォーカス輪郭は白（青地に対して 3.2:1） */
+.app-bar :focus-visible,
+.top-nav :focus-visible {
+    outline-color: #fff !important;
 }
 
 html[lang="en"] [data-asset-locale="ja"] {
@@ -296,17 +354,34 @@ html[lang="en"] [data-asset-locale="ja"] {
 .navigation-section {
     background: var(--paper);
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
     padding: var(--space-6);
     margin-bottom: var(--space-6);
 }
 
+/* 節見出し：左に短いドジャーブルーの印（4px） */
 .navigation-section h2 {
-    font-size: var(--text-xl);
+    position: relative;
+    padding-left: 1rem;
+    font-size: 2rem;       /* 32px：ページの大見出し */
     font-weight: 700;
     line-height: 1.35;
+    letter-spacing: 0.02em;
     margin-bottom: var(--space-4);
     color: var(--ink);
+}
+
+.navigation-section h2::before,
+.file-info-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.16em;
+    bottom: 0.16em;
+    width: 5px;
+    border-radius: 3px;
+    background: var(--brand);
 }
 
 /* 機能一覧：教科書の目次のように、分類見出し＋手法の一覧 */
@@ -331,8 +406,8 @@ html[lang="en"] [data-asset-locale="ja"] {
     align-items: baseline;
     gap: var(--space-3);
     padding-bottom: var(--space-2);
-    margin-bottom: var(--space-3);
-    border-bottom: 2px solid var(--ink);
+    margin-bottom: var(--space-2);
+    border-bottom: 2px solid var(--brand);
 }
 
 /* 分類ごとの色付きアイコンタイルは使わない（見出しの文字で区別する） */
@@ -348,8 +423,9 @@ html[lang="en"] [data-asset-locale="ja"] {
 }
 
 .category-info h3 {
-    font-size: var(--text-md);
+    font-size: 1.25rem;    /* 20px */
     font-weight: 700;
+    letter-spacing: 0.02em;
     color: var(--ink);
     margin: 0;
     line-height: 1.4;
@@ -376,27 +452,39 @@ html[lang="en"] [data-asset-locale="ja"] {
     border-bottom: 1px solid var(--rule);
     background: transparent;
     cursor: pointer;
+    transition: background-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 
 .feature-card::after {
-    content: '\2192';
+    content: '\2192' / '';
     position: absolute;
     right: var(--space-2);
     top: var(--space-3);
     color: var(--muted);
     font-size: var(--text-base);
     line-height: 1.6;
+    transition: transform var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+/* hover の面は罫線の位置を変えずに左へ少しはみ出させる */
+.feature-card:hover,
+.feature-card:focus-visible {
+    background: var(--accent-hover);
+    box-shadow: calc(-1 * var(--space-3)) 0 0 var(--accent-hover);
 }
 
 .feature-card:hover .feature-card-title,
 .feature-card:focus-visible .feature-card-title {
     color: var(--accent);
     text-decoration: underline;
+    text-decoration-thickness: 1px;
     text-underline-offset: 0.2em;
 }
 
-.feature-card:hover::after {
-    color: var(--accent);
+.feature-card:hover::after,
+.feature-card:focus-visible::after {
+    color: var(--brand);
+    transform: translateX(3px);
 }
 
 /* グレーアウトされた機能カード（データ条件を満たさない） */
@@ -459,7 +547,7 @@ html[lang="en"] .feature-card-requirement::before {
     margin: 0 0 var(--space-5);
     background: var(--paper);
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     overflow: hidden;
 }
 
@@ -481,7 +569,8 @@ html[lang="en"] .feature-card-requirement::before {
 .ai-config-section {
     background: var(--paper);
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
     margin-bottom: var(--space-5);
     overflow: hidden;
 }
@@ -501,14 +590,14 @@ html[lang="en"] .feature-card-requirement::before {
 }
 
 .ai-config-header:hover {
-    background: var(--tint);
+    background: var(--accent-hover);
     transform: none;
     box-shadow: none;
 }
 
 .ai-config-chevron {
-    color: #64748b;
-    transition: transform 0.2s ease;
+    color: var(--accent);
+    transition: transform 0.18s var(--ease);
 }
 
 .ai-config-section:not(.collapsed) .ai-config-chevron {
@@ -594,10 +683,10 @@ html[lang="en"] .feature-card-requirement::before {
 
 .ai-config-note {
     margin: 0.75rem 0 0;
-    padding: 0.75rem;
-    border-radius: 8px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius);
+    background: var(--tint);
+    border: 1px solid var(--rule);
 }
 
 .ai-config-warning {
@@ -1296,7 +1385,8 @@ html[lang="en"] .feature-card-requirement::before {
 .analysis-area {
     background: var(--paper);
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
     padding: var(--space-6) var(--space-6) var(--space-7);
     margin-bottom: var(--space-6);
     max-width: 100%;
@@ -1812,53 +1902,79 @@ html[lang="en"] .feature-card-requirement::before {
     font-size: 0.84rem;
 }
 
-/* フッター */
+/* フッター：濃い青（#0f5fa8）の帯に白文字（6.52:1）。帯は左右と下へ画面の端まで伸ばす */
 .footer {
-    padding: var(--space-5) 0 var(--space-4);
-    margin-top: var(--space-6);
-    border-top: 1px solid var(--rule);
+    padding: var(--space-6) 0 var(--space-5);
+    margin-top: var(--space-7);
+    background: var(--brand-deep);
+    box-shadow: 0 0 0 100vmax var(--brand-deep);
+    clip-path: inset(0 -100vmax -100vmax);
+    color: #fff;
     font-size: var(--text-sm);
 }
 
 .footer-content p {
-    color: var(--muted);
+    color: #fff;
     margin-bottom: 0.15rem;
 }
 
+.footer-content p:first-child {
+    font-weight: 700;
+}
+
 .footer-links {
-    margin-top: var(--space-3);
+    margin-top: var(--space-4);
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2) var(--space-5);
 }
 
 .footer-links a {
-    color: var(--accent);
-    font-weight: 600;
-    text-decoration: none;
+    color: #fff;
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 0.5);
+    text-underline-offset: 0.25em;
+    transition: text-decoration-color var(--dur) var(--ease);
 }
 
 .footer-links a:hover {
-    text-decoration: underline;
+    color: #fff;
+    text-decoration-color: #fff;
+}
+
+.footer :focus-visible {
+    outline-color: #fff !important;
 }
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
     .hero-section {
-        padding: var(--space-3) 0;
         margin-bottom: var(--space-4);
     }
 
+    /* 狭い画面：1 行目に操作、その下にアプリ名とキャッチコピー（コンパクトに） */
+    .app-bar {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "actions" "brand";
+        min-height: 0;
+        padding: 0.875rem 0 1.25rem;
+        gap: var(--space-3);
+    }
+
+
     .hero-title {
-        font-size: 1.3rem;
+        font-size: 2.125rem;  /* 34px 太字 */
     }
 
     .hero-subtitle {
-        flex-basis: 100%;
+        margin-top: 0.4rem;
+        font-size: 1.1875rem; /* 19px 太字＝大きな文字の下限（18.7px）以上 */
     }
 
     .hero-actions {
-        justify-content: flex-start;
+        justify-content: space-between;
+        gap: var(--space-2);
     }
 
     #main-app {
@@ -2054,7 +2170,7 @@ button {
     border-radius: var(--radius);
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
     font-family: inherit;
     font-size: inherit;
     line-height: 1.4;
@@ -2062,6 +2178,60 @@ button {
 
 button:hover {
     background: var(--accent-strong);
+}
+
+/* 主要ボタン（ファイルを選択・分析する・各分析の実行）：ドジャーブルーの塗りに 19px 太字の白
+   （大きな文字のため 3.24:1 で可）。hover は #1670c9（5.0:1）、押すとわずかに沈む */
+.btn-upload,
+.guided-run-btn,
+.btn-analysis {
+    background: var(--brand);
+    color: #fff;
+    border: 0;
+    border-radius: var(--radius-btn);
+    padding: 0.85rem 2rem;
+    font-size: 1.1875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+    box-shadow: 0 1px 2px rgba(15, 95, 168, 0.2), 0 4px 12px rgba(30, 144, 255, 0.22);
+    transition: background-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform 80ms var(--ease);
+}
+
+.btn-upload:hover:not(:disabled),
+.guided-run-btn:hover:not(:disabled),
+.btn-analysis:hover:not(:disabled) {
+    background: var(--accent);
+    box-shadow: 0 1px 2px rgba(15, 95, 168, 0.22), 0 6px 16px rgba(15, 95, 168, 0.26);
+}
+
+.btn-upload:active:not(:disabled),
+.btn-analysis:active:not(:disabled),
+.guided-run-btn:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(15, 95, 168, 0.2);
+}
+
+.btn-upload:disabled,
+.guided-run-btn:disabled,
+.btn-analysis:disabled {
+    box-shadow: none;
+}
+
+/* 副ボタン：白地に #1670c9 の文字、2px のドジャーブルー枠 */
+.btn-demo,
+.guided-btn:not(.guided-btn-primary) {
+    background: var(--paper);
+    color: var(--accent);
+    border: 2px solid var(--brand);
+    font-weight: 700;
+    transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.btn-demo:hover,
+.guided-btn:not(.guided-btn-primary):hover {
+    background: var(--accent-weak);
+    color: var(--accent-strong);
 }
 
 button:disabled {
@@ -2075,7 +2245,8 @@ button:disabled {
 .upload-section-main {
     background: var(--paper);
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
     padding: var(--space-5) var(--space-6);
     margin-bottom: var(--space-5);
 }
@@ -2086,17 +2257,18 @@ button:disabled {
 }
 
 .upload-area {
-    border: 1px dashed var(--rule-strong);
-    border-radius: var(--radius);
+    border: 1.5px dashed #9cc7f2;
+    border-radius: var(--radius-lg);
     padding: var(--space-5) var(--space-6);
-    background: var(--tint);
-    transition: border-color 0.15s ease, background-color 0.15s ease;
+    background: #f7fbff;
+    transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
     cursor: default;
     position: relative;
 }
 
 .upload-area:hover {
     border-color: var(--brand);
+    background: var(--accent-hover);
 }
 
 .upload-area.drag-over {
@@ -2139,7 +2311,7 @@ button:disabled {
 .data-input-tab.active {
     background: transparent;
     border-bottom-color: var(--brand);
-    color: var(--ink);
+    color: var(--accent-strong);
 }
 
 .data-input-panel {
@@ -2457,22 +2629,11 @@ button:disabled {
 }
 
 .btn-upload {
-    background: var(--accent);
-    color: white;
-    border: 1px solid var(--brand);
-    padding: 0.65rem 1.25rem;
-    border-radius: var(--radius);
-    font-weight: 700;
-    font-size: var(--text-base);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-}
-
-.btn-upload:hover {
-    background: var(--accent-strong);
-    border-color: var(--accent-strong);
+    justify-content: center;
+    gap: 0.55rem;
 }
 
 .upload-hint {
@@ -2484,18 +2645,11 @@ button:disabled {
 
 /* 副次操作（枠線のみ） */
 .btn-demo {
-    background: var(--paper);
-    color: var(--accent);
-    border: 1px solid var(--brand);
-    padding: 0.65rem 1.25rem;
-    border-radius: var(--radius);
-    font-weight: 700;
+    min-height: 3.375rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-btn);
     font-size: var(--text-base);
-}
-
-.btn-demo:hover {
-    background: var(--accent-weak);
-    color: var(--accent-strong);
+    letter-spacing: 0.02em;
 }
 
 /* ファイル情報 */
@@ -2506,8 +2660,11 @@ button:disabled {
 }
 
 .file-info-title {
-    font-size: var(--text-md);
+    position: relative;
+    padding-left: 0.875rem;
+    font-size: 1.25rem;    /* 20px */
     font-weight: 700;
+    letter-spacing: 0.02em;
     color: var(--ink);
     margin: 0 0 var(--space-2);
 }
@@ -2696,7 +2853,7 @@ table tbody tr:hover {
 }
 
 .collapsible-header:hover {
-    background: var(--tint);
+    background: var(--accent-hover);
 }
 
 .collapsible-header:not(.collapsed) {
@@ -2715,7 +2872,7 @@ table tbody tr:hover {
 }
 
 .collapsible-header h3 > i {
-    color: var(--muted);
+    color: var(--accent);
     font-size: 0.9em;
     width: 1.1em;
     text-align: center;
@@ -2723,8 +2880,8 @@ table tbody tr:hover {
 
 .collapsible-header i.toggle-icon {
     font-size: 0.85rem;
-    color: var(--muted);
-    transition: transform 0.2s ease;
+    color: var(--accent);
+    transition: transform 0.18s var(--ease);
 }
 
 .collapsible-header.collapsed i.toggle-icon {
@@ -2742,6 +2899,12 @@ table tbody tr:hover {
 .collapsible-content.collapsed {
     max-height: 0;
     padding: 0 var(--space-5);
+}
+
+/* ページ下部の「このアプリケーションについて」などは紙面（カード）として */
+#main-app > .info-sections > .collapsible-section {
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
 }
 
 /* データ概要表示 */
@@ -3156,21 +3319,11 @@ table tbody tr:hover {
     margin-top: var(--space-5);
     width: auto;
     min-width: min(100%, 16rem);
-    padding: 0.75rem 1.75rem;
-    font-size: var(--text-base);
-    font-weight: 700;
-    color: white;
-    border: 1px solid transparent;
-    border-radius: var(--radius);
     cursor: pointer;
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    gap: 0.5rem;
-}
-
-.btn-analysis:hover {
-    filter: brightness(88%);
+    gap: 0.55rem;
 }
 
 /* t-test Radio-like Labels */
@@ -3178,7 +3331,7 @@ table tbody tr:hover {
     flex: 1;
     min-width: 200px;
     padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius);
+    border-radius: var(--radius-btn);
     cursor: pointer;
     transition: border-color 0.15s;
     border: 1px solid var(--rule);
@@ -3190,26 +3343,29 @@ table tbody tr:hover {
 }
 
 .ttest-radio-label.selected {
-    background: var(--paper);
+    background: var(--accent-weak);
     border-color: var(--brand);
-    box-shadow: inset 3px 0 0 var(--brand);
+    box-shadow: inset 0 0 0 1px var(--brand), inset 4px 0 0 var(--brand);
 }
 
 /* --- Text Mining Tab & KWIC Extensions --- */
 
 /* 分析画面のページ見出し（見出し＋1行説明＋太罫） */
 .analysis-title-banner {
-    padding: 0 0 var(--space-4);
-    margin-bottom: var(--space-6);
-    border-bottom: 2px solid var(--ink);
+    padding: 1.75rem 2rem;
+    margin-bottom: var(--space-5);
+    border-radius: var(--radius-lg);
+    background: var(--accent-weak);
     color: var(--ink);
 }
 
 .analysis-title-banner h3 {
     margin: 0;
-    font-size: var(--text-xl);
+    font-size: 2rem;
     font-weight: 700;
-    line-height: 1.4;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+    color: var(--brand-deep);
 }
 
 .analysis-title-banner h3 > i {
@@ -3222,8 +3378,12 @@ table tbody tr:hover {
 }
 
 @media (max-width: 768px) {
+    .analysis-title-banner {
+        padding: 1.25rem;
+    }
+
     .analysis-title-banner h3 {
-        font-size: var(--text-lg);
+        font-size: 1.5rem;
     }
 }
 
@@ -4663,10 +4823,10 @@ table tbody tr:hover {
     text-align: left;
     background: var(--paper);
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-btn);
     padding: var(--space-3) var(--space-4);
     cursor: pointer;
-    transition: border-color 0.15s ease;
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
     width: 100%;
     color: var(--ink);
     font-weight: 400;
@@ -4675,6 +4835,8 @@ table tbody tr:hover {
 .demo-option-btn:hover {
     border-color: var(--brand);
     background: var(--paper);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
 }
 
 .demo-option-btn .icon {
@@ -4700,7 +4862,11 @@ table tbody tr:hover {
 /* おすすめのデータ（左の罫線で示す） */
 .demo-option-btn.primary {
     border-color: var(--brand);
-    box-shadow: inset 3px 0 0 var(--brand);
+    box-shadow: inset 4px 0 0 var(--brand);
+}
+
+.demo-option-btn.primary:hover {
+    box-shadow: inset 4px 0 0 var(--brand), var(--shadow-card-hover);
 }
 
 .demo-option-btn.primary:hover {
@@ -4886,15 +5052,41 @@ table tbody tr:hover {
 }
 
 /* 分析画面の先頭にある見出しは「ページ見出し」として大きく、下を太罫に */
+/* ページ見出し：淡い青（#eaf4ff）の見出し面に、濃い青（#0f5fa8・5.86:1）の大きな分析名 */
 #analysis-content > * > div[style*="background: #1e90ff"]:first-child {
-    border-bottom: 3px solid var(--brand);
-    padding-bottom: var(--space-4) !important;
-    margin-bottom: var(--space-6) !important;
+    background: var(--accent-weak) !important;
+    border: 0;
+    border-radius: var(--radius-lg) !important;
+    padding: 1.75rem 2rem !important;
+    margin-bottom: var(--space-5) !important;
 }
 
 #analysis-content > * > div[style*="background: #1e90ff"]:first-child > h3 {
-    font-size: var(--text-xl) !important;
-    letter-spacing: 0.01em;
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+    color: var(--brand-deep) !important;
+}
+
+#analysis-content > * > div[style*="background: #1e90ff"]:first-child > h3 {
+    margin: 0 !important;
+}
+
+#analysis-content > * > div[style*="background: #1e90ff"]:first-child > p {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0 !important;
+    color: var(--ink-2) !important;
+}
+
+@media (max-width: 768px) {
+    #analysis-content > * > div[style*="background: #1e90ff"]:first-child {
+        padding: 1.25rem 1.25rem !important;
+    }
+
+    #analysis-content > * > div[style*="background: #1e90ff"]:first-child > h3 {
+        font-size: 1.5rem !important;
+    }
 }
 
 /* ---- 白いカード（影付き） → 罫線で囲んだ節 ---- */
@@ -4934,11 +5126,17 @@ table tbody tr:hover {
     line-height: 1.4;
 }
 
+#analysis-content h4[style*="color: #1e90ff"],
+#analysis-content h3[style*="color: #1e90ff"] {
+    letter-spacing: 0.02em;
+}
+
+/* 節見出しのアイコンは基調色（文字ではない飾りのため 3:1 で可） */
 #analysis-content h4[style*="color: #1e90ff"] > i,
 #analysis-content h3[style*="color: #1e90ff"] > i {
-    color: var(--muted);
+    color: var(--brand);
     font-size: 0.85em;
-    margin-right: 0.15em;
+    margin-right: 0.2em;
 }
 
 #analysis-content [style*="color: #1e90ff"]:not(h3):not(h4):not(h5) {
@@ -5035,12 +5233,17 @@ table tbody tr:hover {
     color: var(--muted);
 }
 
-/* createAnalysisButton() の既定色 #1e90ff と、紫の実行ボタンを藍にそろえる */
+/* createAnalysisButton() の既定色 #1e90ff と、紫の実行ボタンをドジャーブルーにそろえる */
 .btn-analysis[style*="rgb(30, 144, 255)"],
 .btn-analysis[style*="#1e90ff"],
 .btn-analysis[style*="#805ad5"],
 .btn-analysis[style*="#7c3aed"],
 .btn-analysis[style*="#2563eb"] {
+    background: var(--brand) !important;
+    background-color: var(--brand) !important;
+}
+
+.btn-analysis[style]:hover:not(:disabled) {
     background: var(--accent) !important;
     background-color: var(--accent) !important;
 }
@@ -5197,13 +5400,14 @@ table tbody tr:hover {
 
 /* 実行ボタンはどの画面でも同じ藍（色で手法を区別しない） */
 #analysis-content .btn-analysis {
-    background: var(--accent) !important;
-    background-color: var(--accent) !important;
+    background: var(--brand) !important;
+    background-color: var(--brand) !important;
     color: #fff !important;
 }
 
-#analysis-content .btn-analysis:hover {
-    background: var(--accent-strong) !important;
+#analysis-content .btn-analysis:hover:not(:disabled) {
+    background: var(--accent) !important;
+    background-color: var(--accent) !important;
     filter: none;
 }
 
@@ -5227,7 +5431,7 @@ table tbody tr:hover {
 }
 
 .sample-size-block h4 > i {
-    color: var(--muted);
+    color: var(--brand);
     font-size: 0.85em;
 }
 
@@ -5284,6 +5488,17 @@ table tbody tr:hover {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
+    }
+
+    /* 動きを減らす設定では、hover で浮く・押して沈む・矢印が進む動きをなくす */
+    .guided-choice:hover,
+    .demo-option-btn:hover,
+    .btn-upload:active,
+    .btn-analysis:active,
+    .guided-run-btn:active,
+    .feature-card:hover::after,
+    .guided-run-btn:hover::after {
+        transform: none !important;
     }
 }
 
@@ -5371,6 +5586,12 @@ table tbody tr:hover {
         color: #000 !important;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
+    }
+
+    /* 紙面の影は印刷しない */
+    .analysis-area,
+    .guided-decision {
+        box-shadow: none !important;
     }
 
     .hero-section,
@@ -5506,7 +5727,7 @@ table tbody tr:hover {
 .ui-mode-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 0 1.5rem;
+    gap: 0 2rem;
 }
 
 .ui-mode-tab {
@@ -5521,23 +5742,35 @@ table tbody tr:hover {
     font: inherit;
     font-size: 1rem;
     font-weight: 700;
-    color: var(--text-secondary);
-    padding: 0.5rem 0.1rem 0.6rem;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    padding: 0.5rem 0.1rem 0.65rem;
+    border-radius: 0;
     cursor: pointer;
+    transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .ui-mode-tab span {
     font-size: 0.78rem;
-    font-weight: 400;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--muted);
 }
 
 .ui-mode-tab[aria-pressed="true"] {
-    color: var(--text-primary);
-    border-bottom-color: var(--primary-color);
+    color: var(--accent-strong);
+    border-bottom-color: var(--brand);
 }
 
 .ui-mode-tab:hover {
-    color: var(--text-primary);
+    background: none;
+    color: var(--ink);
+    border-bottom-color: var(--accent-line);
+}
+
+.ui-mode-tab[aria-pressed="true"]:hover {
+    color: var(--accent-strong);
+    border-bottom-color: var(--brand);
 }
 
 .ui-mode-tab:focus-visible,
@@ -5554,9 +5787,10 @@ table tbody tr:hover {
 }
 
 .guided-no-data {
-    border-left: 4px solid var(--primary-color);
-    background: var(--tint);
-    padding: 0.6rem 0.9rem;
+    border-left: 4px solid var(--brand);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    background: var(--accent-weak);
+    padding: 0.65rem 1rem;
     margin-bottom: 1.25rem;
     color: var(--ink);
 }
@@ -5564,31 +5798,45 @@ table tbody tr:hover {
 .guided-question {
     border: 0;
     border-top: 1px solid var(--border-color);
-    padding: 1.25rem 0 0.25rem;
+    padding: 1.5rem 0 0.25rem;
     margin: 0 0 1rem;
     min-width: 0;
 }
 
 .guided-question legend {
     display: flex;
-    align-items: baseline;
-    gap: 0.6rem;
+    align-items: center;
+    gap: 0.8rem;
     float: left;
     width: 100%;
-    font-size: 1.05rem;
+    font-size: 1.5rem;     /* 24px：設問は節見出しの大きさ */
     font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.45;
     color: var(--text-primary);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.9rem;
 }
 
 .guided-question legend + * {
     clear: both;
 }
 
+/* 設問番号：ドジャーブルーの丸に白い 19px 太字（大きな文字のため 3.24:1 で可） */
 .guided-q-num {
-    font-family: var(--font-serif);
-    font-size: 1.15rem;
-    color: var(--primary-dark);
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: 1.1875rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(30, 144, 255, 0.28);
 }
 
 .guided-choices {
@@ -5601,37 +5849,58 @@ table tbody tr:hover {
     grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
 }
 
+/* 選択肢カード：hover で枠と面がわずかに青み、選択中は淡い青の面＋2px のドジャーブルー枠 */
 .guided-choice {
     display: flex;
     gap: 0.75rem;
     align-items: flex-start;
-    padding: 0.75rem 0.9rem;
+    padding: 1rem 1.1rem;
     border: 1px solid var(--border-color);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     background: var(--surface);
+    box-shadow: 0 1px 2px rgba(15, 95, 168, 0.05);
     cursor: pointer;
+    transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 
+/* 押せるカードだけ hover で 2px 浮く */
 .guided-choice:hover {
-    border-color: var(--rule-strong);
+    border-color: #7fbcf8;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
 }
 
+/* 選択中：淡い青の面＋2px の枠＋左 4px の帯（ラジオの印・濃い青の手法名とあわせ、色だけに頼らない） */
 .guided-choice.is-selected {
-    border-color: var(--primary-color);
-    box-shadow: inset 3px 0 0 var(--primary-color);
+    border-color: var(--brand);
+    background: var(--accent-weak);
+    box-shadow: inset 0 0 0 1px var(--brand), inset 4px 0 0 var(--brand);
+}
+
+.guided-choice.is-selected:hover {
+    box-shadow: inset 0 0 0 1px var(--brand), inset 4px 0 0 var(--brand), var(--shadow-card-hover);
+}
+
+.guided-choice.is-selected .guided-choice-text strong {
+    color: var(--accent-strong);
 }
 
 .guided-choice input {
     margin-top: 0.3rem;
-    width: 1.05rem;
-    height: 1.05rem;
-    accent-color: var(--primary-color);
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--accent);
     flex-shrink: 0;
 }
 
 .guided-choice:has(input:focus-visible) {
     outline: 3px solid var(--focus);
     outline-offset: 2px;
+}
+
+/* 輪郭はカード側に出すので、ラジオボタン自身の輪郭は二重にしない */
+.guided-choice input:focus-visible {
+    outline: none;
 }
 
 .guided-choice-text {
@@ -5643,6 +5912,8 @@ table tbody tr:hover {
 
 .guided-choice-text strong {
     font-size: 1rem;
+    letter-spacing: 0.01em;
+    transition: color var(--dur) var(--ease);
 }
 
 .guided-choice-text span {
@@ -5677,11 +5948,16 @@ table tbody tr:hover {
 
 .guided-field select {
     width: 100%;
-    padding: 0.6rem 0.7rem;
+    padding: 0.65rem 0.75rem;
     border: 1px solid var(--rule-strong);
     border-radius: var(--radius);
     font-size: 1rem;
     background: var(--paper);
+    transition: border-color var(--dur) var(--ease);
+}
+
+.guided-field select:hover:not(:disabled) {
+    border-color: var(--accent);
 }
 
 .guided-field select:focus-visible {
@@ -5722,17 +5998,25 @@ table tbody tr:hover {
     gap: 0.4rem;
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
-    padding: 0.35rem 0.7rem;
+    padding: 0.4rem 0.75rem;
     cursor: pointer;
     background: var(--paper);
+    transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+
+.guided-check-item:hover {
+    border-color: #7fbcf8;
+    background: var(--accent-hover);
 }
 
 .guided-check-item.is-checked {
-    border-color: var(--primary-color);
+    border-color: var(--brand);
+    background: var(--accent-weak);
+    box-shadow: inset 0 0 0 1px var(--brand);
 }
 
 .guided-check-item input {
-    accent-color: var(--primary-color);
+    accent-color: var(--accent);
 }
 
 .guided-check-order {
@@ -5753,18 +6037,34 @@ table tbody tr:hover {
     overflow-wrap: anywhere;
 }
 
+/* 手法の選び方：設問の横に置く「参考」欄。淡い青の面＋左に短い印の見出し */
 .guided-guide {
     min-width: 0;
     overflow-x: auto;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    background: var(--tint);
-    padding: 0.9rem 1rem;
+    border: 1px solid #d3e5f8;
+    border-radius: var(--radius-lg);
+    background: #f7fbff;
+    padding: 1rem 1.1rem;
 }
 
 .guided-guide-title {
+    position: relative;
+    padding-left: 0.7rem;
+    font-size: 1.125rem;
     font-weight: 700;
+    letter-spacing: 0.02em;
     margin-bottom: 0.2rem;
+}
+
+.guided-guide-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.25em;
+    bottom: 0.25em;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--brand);
 }
 
 .guided-guide-check {
@@ -5775,22 +6075,35 @@ table tbody tr:hover {
 
 .guided-guide-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: 0.85rem;
     background: var(--paper);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
 }
 
 .guided-guide-table th,
 .guided-guide-table td {
-    border: 1px solid var(--border-color);
-    padding: 0.4rem 0.55rem;
+    border: 0;
+    border-top: 1px solid var(--border-color);
+    padding: 0.5rem 0.65rem;
     text-align: left;
     vertical-align: top;
 }
 
+.guided-guide-table th + th,
+.guided-guide-table th + td,
+.guided-guide-table td + td {
+    border-left: 1px solid var(--border-color);
+}
+
 .guided-guide-table thead th {
-    background: #eef2f7;
-    font-weight: 600;
+    border-top: 0;
+    background: var(--accent-weak);
+    color: var(--ink);
+    font-weight: 700;
 }
 
 .guided-guide-table tbody th {
@@ -5804,20 +6117,26 @@ table tbody tr:hover {
     border-top: 1px solid var(--border-color);
 }
 
+/* 分析する：画面でいちばん大事な操作（色・大きさは「主要ボタン」の共通定義）。右の矢印は hover でわずかに進む */
 .guided-run-btn {
-    font: inherit;
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #fff;
-    background: var(--accent);
-    border: 0;
-    border-radius: var(--radius);
-    padding: 0.75rem 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-width: 14rem;
+    font-family: inherit;
+    padding: 0.95rem 2.5rem;
     cursor: pointer;
 }
 
-.guided-run-btn:hover:not(:disabled) {
-    background: var(--accent-strong);
+.guided-run-btn::after {
+    content: '\2192' / '';
+    font-weight: 700;
+    transition: transform var(--dur) var(--ease);
+}
+
+.guided-run-btn:hover:not(:disabled)::after {
+    transform: translateX(3px);
 }
 
 .guided-run-btn:disabled {
@@ -5837,23 +6156,25 @@ table tbody tr:hover {
 /* 分析画面の先頭：手法の選び方 */
 .guided-decision {
     background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-left: 4px solid var(--primary-color);
-    border-radius: var(--radius);
-    padding: 1.1rem 1.4rem;
-    margin-bottom: 1.5rem;
+    border: 1px solid #cfe3f8;
+    border-left: 4px solid var(--brand);
+    border-radius: var(--radius-lg);
+    padding: 1.15rem 1.5rem 1.25rem;
+    margin-bottom: 1.75rem;
 }
 
 .guided-decision-eyebrow {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    letter-spacing: 0.02em;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--accent-strong);
+    letter-spacing: 0.04em;
 }
 
 .guided-decision h3 {
-    font-size: 1.2rem;
-    margin: 0.15rem 0 0.75rem;
+    font-size: 1.25rem;
+    letter-spacing: 0.02em;
+    line-height: 1.45;
+    margin: 0.2rem 0 0.8rem;
 }
 
 .guided-path {
@@ -5868,8 +6189,8 @@ table tbody tr:hover {
     display: grid;
     grid-template-columns: 7.5rem minmax(0, 1fr);
     gap: 0.75rem;
-    padding: 0.55rem 0;
-    border-top: 1px solid #edf2f7;
+    padding: 0.6rem 0;
+    border-top: 1px solid var(--rule);
     font-size: 0.93rem;
 }
 
@@ -5880,7 +6201,7 @@ table tbody tr:hover {
 
 .guided-path-label::before {
     content: counter(guided-path) ". ";
-    color: var(--primary-dark);
+    color: var(--accent-strong);
 }
 
 .guided-decision-warning {
@@ -5893,6 +6214,7 @@ table tbody tr:hover {
 .guided-notes {
     margin: 0.5rem 0 0;
     padding: 0.6rem 0.9rem 0.6rem 2rem;
+    border-radius: var(--radius);
     background: var(--tint);
     font-size: 0.88rem;
     color: var(--ink-2);
@@ -5977,26 +6299,23 @@ table tbody tr:hover {
     margin-top: 1rem;
 }
 
+/* 判断パネルのボタン（小さな文字なので、塗りは 4.5:1 を満たす #1670c9） */
 .guided-btn {
     font: inherit;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--primary-dark);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--accent);
     background: var(--paper);
-    border: 1px solid var(--primary-color);
-    border-radius: var(--radius);
-    padding: 0.45rem 1rem;
+    border: 2px solid var(--brand);
+    border-radius: 10px;
+    padding: 0.5rem 1.15rem;
     cursor: pointer;
-}
-
-.guided-btn:hover {
-    background: var(--accent-weak);
 }
 
 .guided-btn-primary {
     color: #fff;
     background: var(--accent);
-    border-color: var(--brand);
+    border-color: var(--accent);
 }
 
 .guided-btn-primary:hover {
@@ -6048,14 +6367,14 @@ table tbody tr:hover {
 
 .guided-sample-table th,
 .guided-sample-table td {
-    border: 1px solid #cbd5e0;
+    border: 1px solid var(--rule);
     padding: 0.15rem 0.6rem;
     text-align: center;
     font-weight: 400;
 }
 
 .guided-sample-table th {
-    background: #eef2f7;
+    background: var(--accent-weak);
     font-weight: 600;
 }
 
@@ -6071,16 +6390,23 @@ table tbody tr:hover {
 .guided-explain > summary,
 .guided-terms > summary {
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 0.92rem;
-    color: var(--primary-dark);
+    color: var(--accent-strong);
     padding: 0.25rem 0;
+}
+
+.guided-explain > summary:hover,
+.guided-terms > summary:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
 }
 
 .guided-explain-body {
     margin-top: 0.4rem;
-    padding: 0.8rem 1rem;
-    border-left: 4px solid #cbd5e0;
+    padding: 0.85rem 1.1rem;
+    border-left: 4px solid var(--accent-line);
+    border-radius: 0 var(--radius) var(--radius) 0;
     background: var(--tint);
     font-size: 0.9rem;
     color: var(--ink);
@@ -6155,16 +6481,18 @@ table tbody tr:hover {
 
 /* 初学者モード：迷わないためのヒント・注意（データに応じて表示） */
 .guided-design-hint {
-    border-left: 4px solid var(--primary-color);
-    background: #f1f5f9;
-    padding: 0.55rem 0.85rem;
-    margin-bottom: 0.75rem;
+    border-left: 4px solid var(--brand);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    background: var(--accent-weak);
+    padding: 0.6rem 0.95rem;
+    margin-bottom: 0.9rem;
     font-size: 0.9rem;
-    color: #1e293b;
+    color: var(--ink);
 }
 
 .guided-inline-warning {
     border-left: 4px solid #d97706;
+    border-radius: 0 var(--radius) var(--radius) 0;
     background: #fffbeb;
     color: #78350f;
     padding: 0.5rem 0.8rem;
@@ -6199,4 +6527,34 @@ table tbody tr:hover {
 .guided-excluded-note {
     border-top: 1px dashed var(--border-color);
     padding-top: 0.5rem;
+}
+
+/* 初学者モード：複数の列で合う手法が分かれたときの案内 */
+.guided-other-groups {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-left: 4px solid var(--brand);
+    background: var(--accent-weak);
+    border-radius: 0 var(--radius, 8px) var(--radius, 8px) 0;
+}
+
+.guided-other-groups ul {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+}
+
+.guided-other-groups li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    padding: 0.35rem 0;
+}
+
+/* 分析結果の表は、グラフと同じ研究論文向けのフォント（Times New Roman＋明朝体）にする。
+   初学者モードの説明パネルや、図の設定などの操作部品の中の表は画面と同じフォントのまま */
+#analysis-content table:not(.guided-check-table):not(.guided-guide-table) {
+    font-family: var(--font-serif);
+    font-variant-numeric: tabular-nums;
 }
