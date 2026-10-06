@@ -4,7 +4,7 @@
  * @description 3群以上のノンパラメトリック検定（一元配置分散分析の順位版）
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets, bilingualHtml } from '../utils.js';
+import { toNumericCell, renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets, bilingualHtml } from '../utils.js';
 
 // `displaySummaryStatistics` is no longer needed as we use an integrated table.
 
@@ -121,7 +121,7 @@ function runKruskalWallisTest(currentData) {
         let allValidValuesForVar = [];
 
         groups.forEach(g => {
-            const vals = groupDataMap[g].map(row => Number(row[varName])).filter(v => !isNaN(v));
+            const vals = groupDataMap[g].map(row => toNumericCell(row[varName])).filter(v => !isNaN(v));
             groupValues[g] = vals;
             allValidValuesForVar = allValidValuesForVar.concat(vals);
             if (vals.length >= 2) validGroups++;

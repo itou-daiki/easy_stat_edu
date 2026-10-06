@@ -11,6 +11,8 @@ module.exports = defineConfig({
     use: {
         baseURL: 'http://127.0.0.1:8081',
         trace: 'on-first-retry',
+        // 既存テストは「すべての手法から選ぶ」表示を前提にする（初学者モードは tests/guided_mode.spec.ts で検証）
+        storageState: 'tests/fixtures/all-methods-mode.json',
     },
     projects: [
         {

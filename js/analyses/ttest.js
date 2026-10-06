@@ -917,11 +917,11 @@ export function render(container, currentData, characteristics) {
 
         // Disable selected option in the other select
         if (selectedPre) {
-            const postOption = postSelect.querySelector(`option[value="${selectedPre}"]`);
+            const postOption = postSelect.querySelector(`option[value="${CSS.escape(selectedPre)}"]`);
             if (postOption) postOption.disabled = true;
         }
         if (selectedPost) {
-            const preOption = preSelect.querySelector(`option[value="${selectedPost}"]`);
+            const preOption = preSelect.querySelector(`option[value="${CSS.escape(selectedPost)}"]`);
             if (preOption) preOption.disabled = true;
         }
     };
@@ -943,10 +943,15 @@ export function render(container, currentData, characteristics) {
             selectedPairs.forEach((pair, index) => {
                 const pairEl = document.createElement('div');
                 pairEl.className = 'selected-pair-item';
-                pairEl.innerHTML = `
-                    <span>${pair.pre} → ${pair.post}</span>
-                    <button class="remove-pair-btn" data-index="${index}" aria-label="${pair.pre}から${pair.post}のペアを削除" title="ペアを削除"><i class="fas fa-times"></i></button>
-                `;
+                const label = document.createElement('span');
+                label.textContent = `${pair.pre} → ${pair.post}`;
+                const removeButton = document.createElement('button');
+                removeButton.className = 'remove-pair-btn';
+                removeButton.dataset.index = String(index);
+                removeButton.setAttribute('aria-label', `${pair.pre}から${pair.post}のペアを削除`);
+                removeButton.title = 'ペアを削除';
+                removeButton.innerHTML = '<i class="fas fa-times"></i>';
+                pairEl.append(label, removeButton);
                 listContainer.appendChild(pairEl);
             });
         }

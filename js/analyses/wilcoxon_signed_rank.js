@@ -5,7 +5,7 @@
  *              3群以上の場合はペアワイズWilcoxon検定（Holm補正）による事後検定を実施
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { toNumericCell, renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getAcademicLayout, academicColors, InterpretationHelper, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 import { performHolmCorrection } from '../utils/stat_distributions.js';
 
 // ==========================================
@@ -234,7 +234,7 @@ function runTwoSampleTest(selectedVars, currentData, resultsContainer) {
     const var2 = selectedVars[1];
 
     const pairs = currentData
-        .map(row => ({ v1: Number(row[var1]), v2: Number(row[var2]) }))
+        .map(row => ({ v1: toNumericCell(row[var1]), v2: toNumericCell(row[var2]) }))
         .filter(p => !isNaN(p.v1) && !isNaN(p.v2));
 
     const values1 = pairs.map(p => p.v1);
@@ -362,7 +362,7 @@ function runMultipleSampleTest(selectedVars, currentData, resultsContainer) {
             const var2 = selectedVars[j];
 
             const pairs = currentData
-                .map(row => ({ v1: Number(row[var1]), v2: Number(row[var2]) }))
+                .map(row => ({ v1: toNumericCell(row[var1]), v2: toNumericCell(row[var2]) }))
                 .filter(p => !isNaN(p.v1) && !isNaN(p.v2));
 
             const values1 = pairs.map(p => p.v1);
@@ -466,7 +466,7 @@ function runMultipleSampleTest(selectedVars, currentData, resultsContainer) {
     const groupColors = ['#11b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#f97316'];
     renderSampleSizeInfo(resultsContainer, currentData.length,
         selectedVars.map((v, i) => {
-            const count = currentData.map(row => Number(row[v])).filter(val => !isNaN(val)).length;
+            const count = currentData.map(row => toNumericCell(row[v])).filter(val => !isNaN(val)).length;
             return { label: v, count, color: groupColors[i % groupColors.length] };
         })
     );

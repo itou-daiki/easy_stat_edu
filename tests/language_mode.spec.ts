@@ -340,8 +340,19 @@ test.describe('JP / English 表示モード', () => {
         expect(values.copied).toContain('Required output');
         expect(values.copied).toContain('Preserve user-provided variable and category names');
         expect(values.copied).not.toContain('結果から言えること');
-        expect(values.copied.replaceAll('数学', '').replaceAll('英語', ''))
-            .not.toMatch(/[ぁ-んァ-ン一-龯]/u);
+        // 列名・カテゴリ値（利用者のデータ）は日本語のまま渡す。それ以外のシステム文言に日本語が残っていないことを確認する
+        const csvLines = fs.readFileSync(path.join(__dirname, '../datasets/demo_all_analysis.csv'), 'utf8').trim().split(/\r?\n/);
+        const header = csvLines[0].split(',');
+        const textColumnIndex = header.indexOf('感想');
+        const userTerms = new Set(header);
+        csvLines.slice(1).forEach(line => line.split(',').forEach((cell, index) => {
+            if (index !== textColumnIndex) userTerms.add(cell);
+        }));
+        const withoutUserData = [...userTerms]
+            .filter(term => term)
+            .sort((a, b) => b.length - a.length)
+            .reduce((text, term) => text.replaceAll(term, ''), values.copied);
+        expect(withoutUserData.match(/[ぁ-んァ-ン一-龯][^"\n]{0,40}/gu) || []).toEqual([]);
         expect(values.instruction).toContain('clear English');
         expect(values.instruction).not.toContain('日本語で');
     });

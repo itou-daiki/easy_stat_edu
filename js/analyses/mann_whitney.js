@@ -4,7 +4,7 @@
  * @description 2群間のノンパラメトリック検定（順序尺度・非正規分布用）
  */
 
-import { renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getAcademicLayout, academicColors, InterpretationHelper, showError, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
+import { toNumericCell, renderDataOverview, createVariableSelector, createAnalysisButton, renderSampleSizeInfo, createPlotlyConfig, createVisualizationControls, getTategakiAnnotation, getAcademicLayout, academicColors, InterpretationHelper, showError, generateAPATableHtml, addSignificanceBrackets } from '../utils.js';
 
 /**
  * 要約統計量の計算と表示
@@ -119,8 +119,8 @@ function runMannWhitneyTest(currentData) {
 
     selectedVars.forEach(varName => {
         // データ抽出
-        const group0Values = group0Data.map(row => Number(row[varName])).filter(v => !isNaN(v));
-        const group1Values = group1Data.map(row => Number(row[varName])).filter(v => !isNaN(v));
+        const group0Values = group0Data.map(row => toNumericCell(row[varName])).filter(v => !isNaN(v));
+        const group1Values = group1Data.map(row => toNumericCell(row[varName])).filter(v => !isNaN(v));
 
         if (group0Values.length < 2 || group1Values.length < 2) {
             skippedVars.push(varName);

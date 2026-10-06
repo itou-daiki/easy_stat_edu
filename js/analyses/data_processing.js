@@ -1,4 +1,4 @@
-import { renderDataOverview, createVariableSelector } from '../utils.js';
+import { renderDataOverview, createVariableSelector, toNumericCell } from '../utils.js';
 
 // 元のデータのコピーを保持
 let originalData = null;
@@ -1087,7 +1087,7 @@ function applyCompute() {
     }
 
     originalData.forEach(row => {
-        const values = selectedCols.map(c => Number(row[c])).filter(v => !isNaN(v));
+        const values = selectedCols.map(c => toNumericCell(row[c])).filter(v => !isNaN(v));
         let result = null;
         if (values.length > 0) {
             if (method === 'sum') {
