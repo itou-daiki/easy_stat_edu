@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>クロス集計：学年によって部活の入り方はちがうか</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">学年によって、部活の入り方はちがう？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">100人の例　学年と部活の2つの項目を組み合わせて、人数を数えます</text>
+<rect x="40.0" y="170.0" width="740.0" height="470.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="66.0" y="218.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">① 人数の表（クロス集計表）</text>
+<text x="250.0" y="290.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="middle">運動部</text>
+<text x="385.0" y="290.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="middle">文化部</text>
+<text x="520.0" y="290.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="middle">入っていない</text>
+<text x="655.0" y="290.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="middle">合計</text>
+<text x="100.0" y="370.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">1年</text>
+<rect x="190.0" y="320.0" width="120.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="250.0" y="368.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">22人</text>
+<rect x="325.0" y="320.0" width="120.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="385.0" y="368.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">10人</text>
+<rect x="460.0" y="320.0" width="120.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="520.0" y="368.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">8人</text>
+<rect x="595.0" y="320.0" width="120.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="655.0" y="368.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">40人</text>
+<text x="100.0" y="450.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">2年</text>
+<rect x="190.0" y="400.0" width="120.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="250.0" y="448.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">16人</text>
+<rect x="325.0" y="400.0" width="120.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="385.0" y="448.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">12人</text>
+<rect x="460.0" y="400.0" width="120.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="520.0" y="448.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">7人</text>
+<rect x="595.0" y="400.0" width="120.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="655.0" y="448.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">35人</text>
+<text x="100.0" y="530.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">3年</text>
+<rect x="190.0" y="480.0" width="120.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="250.0" y="528.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">8人</text>
+<rect x="325.0" y="480.0" width="120.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="385.0" y="528.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">9人</text>
+<rect x="460.0" y="480.0" width="120.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="520.0" y="528.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">8人</text>
+<rect x="595.0" y="480.0" width="120.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="655.0" y="528.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">25人</text>
+<text x="410.0" y="610.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">学年ごとに人数がちがうので、このままでは比べにくい</text>
+<rect x="820.0" y="170.0" width="740.0" height="470.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="846.0" y="218.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">② 割合（％）にした帯グラフ</text>
+<text x="880.0" y="324.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">1年</text>
+<rect x="930.0" y="280.0" width="324.5" height="66.0" rx="0" fill="#1e90ff" stroke="#ffffff" stroke-width="2"/>
+<text x="1092.2" y="311.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">22人</text>
+<text x="1092.2" y="339.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">55%</text>
+<rect x="1254.5" y="280.0" width="147.5" height="66.0" rx="0" fill="#e8710a" stroke="#ffffff" stroke-width="2"/>
+<text x="1328.2" y="311.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">10人</text>
+<text x="1328.2" y="339.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">25%</text>
+<rect x="1402.0" y="280.0" width="118.0" height="66.0" rx="0" fill="#8b94a1" stroke="#ffffff" stroke-width="2"/>
+<text x="1461.0" y="311.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">8人</text>
+<text x="1461.0" y="339.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">20%</text>
+<text x="880.0" y="419.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">2年</text>
+<rect x="930.0" y="375.0" width="269.7" height="66.0" rx="0" fill="#1e90ff" stroke="#ffffff" stroke-width="2"/>
+<text x="1064.9" y="406.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">16人</text>
+<text x="1064.9" y="434.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">46%</text>
+<rect x="1199.7" y="375.0" width="202.3" height="66.0" rx="0" fill="#e8710a" stroke="#ffffff" stroke-width="2"/>
+<text x="1300.9" y="406.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">12人</text>
+<text x="1300.9" y="434.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">34%</text>
+<rect x="1402.0" y="375.0" width="118.0" height="66.0" rx="0" fill="#8b94a1" stroke="#ffffff" stroke-width="2"/>
+<text x="1461.0" y="406.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">7人</text>
+<text x="1461.0" y="434.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">20%</text>
+<text x="880.0" y="514.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">3年</text>
+<rect x="930.0" y="470.0" width="188.8" height="66.0" rx="0" fill="#1e90ff" stroke="#ffffff" stroke-width="2"/>
+<text x="1024.4" y="501.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">8人</text>
+<text x="1024.4" y="529.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">32%</text>
+<rect x="1118.8" y="470.0" width="212.4" height="66.0" rx="0" fill="#e8710a" stroke="#ffffff" stroke-width="2"/>
+<text x="1225.0" y="501.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">9人</text>
+<text x="1225.0" y="529.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">36%</text>
+<rect x="1331.2" y="470.0" width="188.8" height="66.0" rx="0" fill="#8b94a1" stroke="#ffffff" stroke-width="2"/>
+<text x="1425.6" y="501.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">8人</text>
+<text x="1425.6" y="529.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">32%</text>
+<rect x="930.0" y="552.0" width="22.0" height="22.0" rx="0" fill="#1e90ff"/>
+<text x="960.0" y="570.0" font-size="22" font-weight="400" fill="#17202c" text-anchor="start">運動部</text>
+<rect x="1042.0" y="552.0" width="22.0" height="22.0" rx="0" fill="#e8710a"/>
+<text x="1072.0" y="570.0" font-size="22" font-weight="400" fill="#17202c" text-anchor="start">文化部</text>
+<rect x="1154.0" y="552.0" width="22.0" height="22.0" rx="0" fill="#8b94a1"/>
+<text x="1184.0" y="570.0" font-size="22" font-weight="400" fill="#17202c" text-anchor="start">入っていない</text>
+<text x="1190.0" y="618.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">全体を100%にそろえると、学年どうしを比べやすい</text>
+<text x="410.0" y="700.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="middle">3年生は「入っていない」の割合が大きい</text>
+<text x="1190.0" y="700.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="middle">1年生は運動部の割合が大きい</text>
+<text x="800.0" y="850.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">クロス集計は、2つの項目の組み合わせごとに人数を数えて表にまとめ、割合で比べやすくする方法です</text>
+</svg>

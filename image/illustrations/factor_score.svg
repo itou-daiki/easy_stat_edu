@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>因子得点算出：似た質問の答えをまとめて1人1つの得点にする</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">似た質問の答えをまとめて、1人1つの得点にしたい</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">「学ぶ意欲」をたずねる3つの質問（5段階：1 まったくちがう 〜 5 とてもそう思う）</text>
+<rect x="40.0" y="170.0" width="1520.0" height="590.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="360.0" y="280.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">① 答えの表</text>
+<rect x="70.0" y="310.0" width="100.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="120.0" y="354.0" font-size="21" font-weight="700" fill="#17202c" text-anchor="middle"></text>
+<rect x="170.0" y="310.0" width="150.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="245.0" y="354.0" font-size="21" font-weight="700" fill="#17202c" text-anchor="middle">Q1 楽しい</text>
+<rect x="320.0" y="310.0" width="150.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="395.0" y="354.0" font-size="21" font-weight="700" fill="#17202c" text-anchor="middle">Q2 知りたい</text>
+<rect x="470.0" y="310.0" width="180.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="560.0" y="354.0" font-size="21" font-weight="700" fill="#17202c" text-anchor="middle">Q3 興味がない</text>
+<rect x="70.0" y="380.0" width="100.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="120.0" y="424.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">Aさん</text>
+<rect x="170.0" y="380.0" width="150.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="245.0" y="424.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">5</text>
+<rect x="320.0" y="380.0" width="150.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="395.0" y="424.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">4</text>
+<rect x="470.0" y="380.0" width="180.0" height="70.0" rx="0" fill="#fdf0e4" stroke="#d9dde3" stroke-width="2"/>
+<text x="560.0" y="424.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">1</text>
+<rect x="70.0" y="450.0" width="100.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="120.0" y="494.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">Bさん</text>
+<rect x="170.0" y="450.0" width="150.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="245.0" y="494.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">3</text>
+<rect x="320.0" y="450.0" width="150.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="395.0" y="494.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">3</text>
+<rect x="470.0" y="450.0" width="180.0" height="70.0" rx="0" fill="#fdf0e4" stroke="#d9dde3" stroke-width="2"/>
+<text x="560.0" y="494.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">3</text>
+<rect x="70.0" y="520.0" width="100.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="120.0" y="564.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">Cさん</text>
+<rect x="170.0" y="520.0" width="150.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="245.0" y="564.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">2</text>
+<rect x="320.0" y="520.0" width="150.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="395.0" y="564.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">1</text>
+<rect x="470.0" y="520.0" width="180.0" height="70.0" rx="0" fill="#fdf0e4" stroke="#d9dde3" stroke-width="2"/>
+<text x="560.0" y="564.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">4</text>
+<text x="360.0" y="640.0" font-size="22" font-weight="700" fill="#c25e05" text-anchor="middle">Q3 は反対向きの質問（そう思うほど意欲が低い）</text>
+<line x1="660.0" y1="470.0" x2="720.0" y2="470.0" stroke="#17202c" stroke-width="4" stroke-linecap="round"/>
+<path d="M720.0,470.0 L707.4,476.1 L707.4,463.9 Z" fill="#17202c"/>
+<text x="895.0" y="280.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">② 向きをそろえる</text>
+<rect x="730.0" y="310.0" width="100.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="780.0" y="354.0" font-size="21" font-weight="700" fill="#17202c" text-anchor="middle"></text>
+<rect x="830.0" y="310.0" width="70.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="865.0" y="354.0" font-size="21" font-weight="700" fill="#17202c" text-anchor="middle">Q1</text>
+<rect x="900.0" y="310.0" width="70.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="935.0" y="354.0" font-size="21" font-weight="700" fill="#17202c" text-anchor="middle">Q2</text>
+<rect x="970.0" y="310.0" width="140.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="1040.0" y="354.0" font-size="21" font-weight="700" fill="#17202c" text-anchor="middle">Q3（逆転）</text>
+<rect x="730.0" y="380.0" width="100.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="780.0" y="424.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">Aさん</text>
+<rect x="830.0" y="380.0" width="70.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="865.0" y="424.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">5</text>
+<rect x="900.0" y="380.0" width="70.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="935.0" y="424.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">4</text>
+<rect x="970.0" y="380.0" width="140.0" height="70.0" rx="0" fill="#eaf4ff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1040.0" y="424.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">5</text>
+<rect x="730.0" y="450.0" width="100.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="780.0" y="494.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">Bさん</text>
+<rect x="830.0" y="450.0" width="70.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="865.0" y="494.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">3</text>
+<rect x="900.0" y="450.0" width="70.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="935.0" y="494.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">3</text>
+<rect x="970.0" y="450.0" width="140.0" height="70.0" rx="0" fill="#eaf4ff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1040.0" y="494.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">3</text>
+<rect x="730.0" y="520.0" width="100.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="780.0" y="564.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">Cさん</text>
+<rect x="830.0" y="520.0" width="70.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="865.0" y="564.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">2</text>
+<rect x="900.0" y="520.0" width="70.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="935.0" y="564.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">1</text>
+<rect x="970.0" y="520.0" width="140.0" height="70.0" rx="0" fill="#eaf4ff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1040.0" y="564.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">2</text>
+<text x="910.0" y="640.0" font-size="22" font-weight="700" fill="#1670c9" text-anchor="middle">Q3 は「6 − 答え」に直す</text>
+<line x1="1120.0" y1="470.0" x2="1170.0" y2="470.0" stroke="#17202c" stroke-width="4" stroke-linecap="round"/>
+<path d="M1170.0,470.0 L1157.4,476.1 L1157.4,463.9 Z" fill="#17202c"/>
+<text x="1340.0" y="280.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">③ 平均して1つの得点に</text>
+<rect x="1180.0" y="310.0" width="100.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="1230.0" y="354.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="middle"></text>
+<rect x="1280.0" y="310.0" width="220.0" height="70.0" rx="0" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="1390.0" y="354.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="middle">学ぶ意欲の得点</text>
+<rect x="1180.0" y="380.0" width="100.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1230.0" y="424.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">Aさん</text>
+<rect x="1280.0" y="380.0" width="220.0" height="70.0" rx="0" fill="#eaf4ff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1390.0" y="424.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">4.67</text>
+<rect x="1180.0" y="450.0" width="100.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1230.0" y="494.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">Bさん</text>
+<rect x="1280.0" y="450.0" width="220.0" height="70.0" rx="0" fill="#eaf4ff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1390.0" y="494.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">3.00</text>
+<rect x="1180.0" y="520.0" width="100.0" height="70.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1230.0" y="564.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">Cさん</text>
+<rect x="1280.0" y="520.0" width="220.0" height="70.0" rx="0" fill="#eaf4ff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1390.0" y="564.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">1.67</text>
+<text x="1340.0" y="640.0" font-size="22" font-weight="700" fill="#556070" text-anchor="middle">t検定などの分析に使える</text>
+<text x="800.0" y="850.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">因子得点算出は、同じことをたずねる質問の向きをそろえてから平均し、1人1つの得点をつくる機能です</text>
+</svg>

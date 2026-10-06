@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>因子分析：アンケートの質問の裏に共通するテーマはあるか</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">6つの質問の裏に、共通する「テーマ」はある？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">線の太さ＝つながりの強さ（因子負荷量）。数値は説明のための例です</text>
+<rect x="40.0" y="170.0" width="1520.0" height="570.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<line x1="470.0" y1="240.0" x2="1030.0" y2="330.0" stroke="#1e90ff" stroke-width="11.84" stroke-linecap="round"/>
+<text x="543.2" y="236.8" font-size="22" font-weight="700" fill="#1670c9" text-anchor="start">0.82</text>
+<line x1="470.0" y1="312.0" x2="1030.0" y2="330.0" stroke="#1e90ff" stroke-width="11.120000000000001" stroke-linecap="round"/>
+<text x="543.2" y="300.2" font-size="22" font-weight="700" fill="#1670c9" text-anchor="start">0.76</text>
+<line x1="470.0" y1="384.0" x2="1030.0" y2="330.0" stroke="#1e90ff" stroke-width="10.52" stroke-linecap="round"/>
+<text x="543.2" y="363.5" font-size="22" font-weight="700" fill="#1670c9" text-anchor="start">0.71</text>
+<line x1="470.0" y1="456.0" x2="1030.0" y2="550.0" stroke="#e8710a" stroke-width="11.600000000000001" stroke-linecap="round"/>
+<text x="543.2" y="453.3" font-size="22" font-weight="700" fill="#c25e05" text-anchor="start">0.80</text>
+<line x1="470.0" y1="528.0" x2="1030.0" y2="550.0" stroke="#e8710a" stroke-width="10.879999999999999" stroke-linecap="round"/>
+<text x="543.2" y="516.6" font-size="22" font-weight="700" fill="#c25e05" text-anchor="start">0.74</text>
+<line x1="470.0" y1="600.0" x2="1030.0" y2="550.0" stroke="#e8710a" stroke-width="9.92" stroke-linecap="round"/>
+<text x="543.2" y="580.0" font-size="22" font-weight="700" fill="#c25e05" text-anchor="start">0.66</text>
+<rect x="210.0" y="210.0" width="260.0" height="60.0" rx="4" fill="#ffffff" stroke="#17202c" stroke-width="2"/>
+<text x="340.0" y="249.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="middle">Q1 授業が楽しい</text>
+<rect x="210.0" y="282.0" width="260.0" height="60.0" rx="4" fill="#ffffff" stroke="#17202c" stroke-width="2"/>
+<text x="340.0" y="321.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="middle">Q2 もっと知りたい</text>
+<rect x="210.0" y="354.0" width="260.0" height="60.0" rx="4" fill="#ffffff" stroke="#17202c" stroke-width="2"/>
+<text x="340.0" y="393.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="middle">Q3 自分で調べる</text>
+<rect x="210.0" y="426.0" width="260.0" height="60.0" rx="4" fill="#ffffff" stroke="#17202c" stroke-width="2"/>
+<text x="340.0" y="465.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="middle">Q4 テストが不安</text>
+<rect x="210.0" y="498.0" width="260.0" height="60.0" rx="4" fill="#ffffff" stroke="#17202c" stroke-width="2"/>
+<text x="340.0" y="537.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="middle">Q5 失敗がこわい</text>
+<rect x="210.0" y="570.0" width="260.0" height="60.0" rx="4" fill="#ffffff" stroke="#17202c" stroke-width="2"/>
+<text x="340.0" y="609.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="middle">Q6 発表が苦手</text>
+<ellipse cx="1170" cy="330" rx="140" ry="62" fill="#eaf4ff" stroke="#1e90ff" stroke-width="4"/>
+<text x="1170.0" y="342.0" font-size="34" font-weight="700" fill="#1670c9" text-anchor="middle">学ぶ意欲</text>
+<ellipse cx="1170" cy="550" rx="140" ry="62" fill="#fdf0e4" stroke="#e8710a" stroke-width="4"/>
+<text x="1170.0" y="562.0" font-size="34" font-weight="700" fill="#c25e05" text-anchor="middle">不安</text>
+<text x="1170.0" y="710.0" font-size="24" font-weight="700" fill="#556070" text-anchor="middle">因子（共通するテーマ）</text>
+<text x="340.0" y="710.0" font-size="24" font-weight="700" fill="#556070" text-anchor="middle">質問（アンケート項目）</text>
+<text x="800.0" y="820.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">因子分析は、答え方が似ている質問をまとめて、その裏にある共通のテーマ（因子）を見つける方法です</text>
+</svg>

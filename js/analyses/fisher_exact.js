@@ -696,7 +696,6 @@ export function render(container, currentData, characteristics) {
                         <strong><i class="fas fa-lightbulb"></i> フィッシャーの正確確率検定とは？</strong>
                         <p>カイ二乗検定と同様に、2つのカテゴリカル変数に関連があるかを調べる方法です。
                         2×2表では超幾何分布による正確計算を行います。R×C表では表の規模に応じて全列挙または条件付きモンテカルロ推定を使用するため、結果欄の計算方法も確認してください。</p>
-                        <img src="image/fisher_exact.png" alt="フィッシャーの正確確率検定の説明" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>相関分析：勉強時間が長い人ほどテストの点数も高いか</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">勉強時間が長い人ほど、テストの点数も高い？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">●＝1人　30人の例　r は相関係数（−1 から 1）</text>
+<rect x="40.0" y="160.0" width="480.0" height="470.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="66.0" y="208.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">r = 0.80</text>
+<line x1="135.0" y1="555.0" x2="135.0" y2="250.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="126.0" y1="555.0" x2="135.0" y2="555.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="119.0" y="563.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">0</text>
+<line x1="126.0" y1="402.5" x2="135.0" y2="402.5" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="119.0" y="410.5" font-size="22" font-weight="400" fill="#556070" text-anchor="end">50</text>
+<line x1="126.0" y1="250.0" x2="135.0" y2="250.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="119.0" y="258.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">100</text>
+<text x="147.0" y="258.0" font-size="22" font-weight="700" fill="#556070" text-anchor="start">点数</text>
+<line x1="135.0" y1="555.0" x2="490.0" y2="555.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="135.0" y1="555.0" x2="135.0" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="135.0" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">0</text>
+<line x1="223.8" y1="555.0" x2="223.8" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="223.8" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">4</text>
+<line x1="312.5" y1="555.0" x2="312.5" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="312.5" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">8</text>
+<line x1="401.2" y1="555.0" x2="401.2" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="401.2" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">12</text>
+<line x1="490.0" y1="555.0" x2="490.0" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="490.0" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">16</text>
+<text x="490.0" y="627.0" font-size="22" font-weight="700" fill="#556070" text-anchor="end">勉強時間（時間/週）</text>
+<circle cx="170.3" cy="419.4" r="7.0" fill="#1e90ff"/>
+<circle cx="202.6" cy="379.2" r="7.0" fill="#1e90ff"/>
+<circle cx="220.1" cy="409.0" r="7.0" fill="#1e90ff"/>
+<circle cx="232.8" cy="414.2" r="7.0" fill="#1e90ff"/>
+<circle cx="243.2" cy="459.5" r="7.0" fill="#1e90ff"/>
+<circle cx="252.2" cy="421.7" r="7.0" fill="#1e90ff"/>
+<circle cx="260.1" cy="436.7" r="7.0" fill="#1e90ff"/>
+<circle cx="267.4" cy="366.1" r="7.0" fill="#1e90ff"/>
+<circle cx="274.2" cy="398.6" r="7.0" fill="#1e90ff"/>
+<circle cx="280.6" cy="380.5" r="7.0" fill="#1e90ff"/>
+<circle cx="286.7" cy="395.8" r="7.0" fill="#1e90ff"/>
+<circle cx="292.7" cy="443.1" r="7.0" fill="#1e90ff"/>
+<circle cx="298.4" cy="379.3" r="7.0" fill="#1e90ff"/>
+<circle cx="304.1" cy="348.3" r="7.0" fill="#1e90ff"/>
+<circle cx="309.7" cy="395.5" r="7.0" fill="#1e90ff"/>
+<circle cx="315.3" cy="348.5" r="7.0" fill="#1e90ff"/>
+<circle cx="320.9" cy="385.7" r="7.0" fill="#1e90ff"/>
+<circle cx="326.6" cy="374.2" r="7.0" fill="#1e90ff"/>
+<circle cx="332.3" cy="344.1" r="7.0" fill="#1e90ff"/>
+<circle cx="338.3" cy="372.4" r="7.0" fill="#1e90ff"/>
+<circle cx="344.4" cy="377.8" r="7.0" fill="#1e90ff"/>
+<circle cx="350.8" cy="340.6" r="7.0" fill="#1e90ff"/>
+<circle cx="357.6" cy="341.3" r="7.0" fill="#1e90ff"/>
+<circle cx="364.9" cy="346.2" r="7.0" fill="#1e90ff"/>
+<circle cx="372.8" cy="364.4" r="7.0" fill="#1e90ff"/>
+<circle cx="381.8" cy="368.6" r="7.0" fill="#1e90ff"/>
+<circle cx="392.2" cy="278.2" r="7.0" fill="#1e90ff"/>
+<circle cx="404.9" cy="302.9" r="7.0" fill="#1e90ff"/>
+<circle cx="422.4" cy="280.6" r="7.0" fill="#1e90ff"/>
+<circle cx="454.7" cy="287.3" r="7.0" fill="#1e90ff"/>
+<text x="280.0" y="684.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">右上がり</text>
+<text x="280.0" y="724.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">→ 正の相関（r はプラス）</text>
+<rect x="560.0" y="160.0" width="480.0" height="470.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="586.0" y="208.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">r = 0.00</text>
+<line x1="655.0" y1="555.0" x2="655.0" y2="250.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="646.0" y1="555.0" x2="655.0" y2="555.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="639.0" y="563.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">0</text>
+<line x1="646.0" y1="402.5" x2="655.0" y2="402.5" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="639.0" y="410.5" font-size="22" font-weight="400" fill="#556070" text-anchor="end">50</text>
+<line x1="646.0" y1="250.0" x2="655.0" y2="250.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="639.0" y="258.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">100</text>
+<text x="667.0" y="258.0" font-size="22" font-weight="700" fill="#556070" text-anchor="start">点数</text>
+<line x1="655.0" y1="555.0" x2="1010.0" y2="555.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="655.0" y1="555.0" x2="655.0" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="655.0" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">0</text>
+<line x1="743.8" y1="555.0" x2="743.8" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="743.8" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">4</text>
+<line x1="832.5" y1="555.0" x2="832.5" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="832.5" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">8</text>
+<line x1="921.2" y1="555.0" x2="921.2" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="921.2" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">12</text>
+<line x1="1010.0" y1="555.0" x2="1010.0" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1010.0" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">16</text>
+<text x="1010.0" y="627.0" font-size="22" font-weight="700" fill="#556070" text-anchor="end">勉強時間（時間/週）</text>
+<circle cx="690.3" cy="353.9" r="7.0" fill="#556070"/>
+<circle cx="722.6" cy="342.0" r="7.0" fill="#556070"/>
+<circle cx="740.1" cy="406.3" r="7.0" fill="#556070"/>
+<circle cx="752.8" cy="363.2" r="7.0" fill="#556070"/>
+<circle cx="763.2" cy="426.8" r="7.0" fill="#556070"/>
+<circle cx="772.2" cy="414.4" r="7.0" fill="#556070"/>
+<circle cx="780.1" cy="391.1" r="7.0" fill="#556070"/>
+<circle cx="787.4" cy="369.9" r="7.0" fill="#556070"/>
+<circle cx="794.2" cy="415.8" r="7.0" fill="#556070"/>
+<circle cx="800.6" cy="359.3" r="7.0" fill="#556070"/>
+<circle cx="806.7" cy="403.6" r="7.0" fill="#556070"/>
+<circle cx="812.7" cy="319.0" r="7.0" fill="#556070"/>
+<circle cx="818.4" cy="296.5" r="7.0" fill="#556070"/>
+<circle cx="824.1" cy="387.5" r="7.0" fill="#556070"/>
+<circle cx="829.7" cy="374.5" r="7.0" fill="#556070"/>
+<circle cx="835.3" cy="357.5" r="7.0" fill="#556070"/>
+<circle cx="840.9" cy="364.6" r="7.0" fill="#556070"/>
+<circle cx="846.6" cy="304.0" r="7.0" fill="#556070"/>
+<circle cx="852.3" cy="267.7" r="7.0" fill="#556070"/>
+<circle cx="858.3" cy="330.4" r="7.0" fill="#556070"/>
+<circle cx="864.4" cy="334.5" r="7.0" fill="#556070"/>
+<circle cx="870.8" cy="443.3" r="7.0" fill="#556070"/>
+<circle cx="877.6" cy="413.3" r="7.0" fill="#556070"/>
+<circle cx="884.9" cy="385.5" r="7.0" fill="#556070"/>
+<circle cx="892.8" cy="462.4" r="7.0" fill="#556070"/>
+<circle cx="901.8" cy="416.4" r="7.0" fill="#556070"/>
+<circle cx="912.2" cy="356.2" r="7.0" fill="#556070"/>
+<circle cx="924.9" cy="361.9" r="7.0" fill="#556070"/>
+<circle cx="942.4" cy="418.4" r="7.0" fill="#556070"/>
+<circle cx="974.7" cy="320.1" r="7.0" fill="#556070"/>
+<text x="800.0" y="684.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">決まった形がない</text>
+<text x="800.0" y="724.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">→ 相関はほとんどない</text>
+<rect x="1080.0" y="160.0" width="480.0" height="470.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="1106.0" y="208.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">r = -0.70</text>
+<line x1="1175.0" y1="555.0" x2="1175.0" y2="250.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="1166.0" y1="555.0" x2="1175.0" y2="555.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1159.0" y="563.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">0</text>
+<line x1="1166.0" y1="402.5" x2="1175.0" y2="402.5" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1159.0" y="410.5" font-size="22" font-weight="400" fill="#556070" text-anchor="end">50</text>
+<line x1="1166.0" y1="250.0" x2="1175.0" y2="250.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1159.0" y="258.0" font-size="22" font-weight="400" fill="#556070" text-anchor="end">100</text>
+<text x="1187.0" y="258.0" font-size="22" font-weight="700" fill="#556070" text-anchor="start">点数</text>
+<line x1="1175.0" y1="555.0" x2="1530.0" y2="555.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="1175.0" y1="555.0" x2="1175.0" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1175.0" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">0</text>
+<line x1="1263.8" y1="555.0" x2="1263.8" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1263.8" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">4</text>
+<line x1="1352.5" y1="555.0" x2="1352.5" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1352.5" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">8</text>
+<line x1="1441.2" y1="555.0" x2="1441.2" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1441.2" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">12</text>
+<line x1="1530.0" y1="555.0" x2="1530.0" y2="564.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1530.0" y="593.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">16</text>
+<text x="1530.0" y="627.0" font-size="22" font-weight="700" fill="#556070" text-anchor="end">勉強時間（時間/週）</text>
+<circle cx="1210.3" cy="323.7" r="7.0" fill="#e8710a"/>
+<circle cx="1242.6" cy="379.1" r="7.0" fill="#e8710a"/>
+<circle cx="1260.1" cy="310.9" r="7.0" fill="#e8710a"/>
+<circle cx="1272.8" cy="355.7" r="7.0" fill="#e8710a"/>
+<circle cx="1283.2" cy="338.6" r="7.0" fill="#e8710a"/>
+<circle cx="1292.2" cy="352.7" r="7.0" fill="#e8710a"/>
+<circle cx="1300.1" cy="351.4" r="7.0" fill="#e8710a"/>
+<circle cx="1307.4" cy="349.9" r="7.0" fill="#e8710a"/>
+<circle cx="1314.2" cy="294.5" r="7.0" fill="#e8710a"/>
+<circle cx="1320.6" cy="318.6" r="7.0" fill="#e8710a"/>
+<circle cx="1326.7" cy="341.0" r="7.0" fill="#e8710a"/>
+<circle cx="1332.7" cy="347.5" r="7.0" fill="#e8710a"/>
+<circle cx="1338.4" cy="365.2" r="7.0" fill="#e8710a"/>
+<circle cx="1344.1" cy="365.7" r="7.0" fill="#e8710a"/>
+<circle cx="1349.7" cy="393.0" r="7.0" fill="#e8710a"/>
+<circle cx="1355.3" cy="363.7" r="7.0" fill="#e8710a"/>
+<circle cx="1360.9" cy="354.3" r="7.0" fill="#e8710a"/>
+<circle cx="1366.6" cy="376.0" r="7.0" fill="#e8710a"/>
+<circle cx="1372.3" cy="357.3" r="7.0" fill="#e8710a"/>
+<circle cx="1378.3" cy="400.0" r="7.0" fill="#e8710a"/>
+<circle cx="1384.4" cy="430.6" r="7.0" fill="#e8710a"/>
+<circle cx="1390.8" cy="413.6" r="7.0" fill="#e8710a"/>
+<circle cx="1397.6" cy="368.1" r="7.0" fill="#e8710a"/>
+<circle cx="1404.9" cy="362.6" r="7.0" fill="#e8710a"/>
+<circle cx="1412.8" cy="388.0" r="7.0" fill="#e8710a"/>
+<circle cx="1421.8" cy="458.8" r="7.0" fill="#e8710a"/>
+<circle cx="1432.2" cy="372.2" r="7.0" fill="#e8710a"/>
+<circle cx="1444.9" cy="354.7" r="7.0" fill="#e8710a"/>
+<circle cx="1462.4" cy="491.4" r="7.0" fill="#e8710a"/>
+<circle cx="1494.7" cy="481.4" r="7.0" fill="#e8710a"/>
+<text x="1320.0" y="684.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">右下がり</text>
+<text x="1320.0" y="724.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">→ 負の相関（r はマイナス）</text>
+<text x="800.0" y="860.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">相関は、2つの数値が一緒に増えたり減ったりする強さを表します。相関があっても、一方が原因とは限りません</text>
+</svg>

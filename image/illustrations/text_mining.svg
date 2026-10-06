@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>テキストマイニング：アンケートの感想にはどんな言葉が多いか</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">アンケートの感想には、どんな言葉が多い？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">30人の自由記述の例</text>
+<rect x="40.0" y="170.0" width="740.0" height="470.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="66.0" y="218.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">① 文章を単語に分ける</text>
+<rect x="80.0" y="280.0" width="660.0" height="80.0" rx="6" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="110.0" y="330.0" font-size="28" font-weight="400" fill="#17202c" text-anchor="start">「タブレットで調べるのが楽しい」</text>
+<rect x="80.0" y="390.0" width="660.0" height="80.0" rx="6" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="110.0" y="440.0" font-size="28" font-weight="400" fill="#17202c" text-anchor="start">「説明がわかりやすい」</text>
+<rect x="80.0" y="500.0" width="660.0" height="80.0" rx="6" fill="#f4f6f9" stroke="#d9dde3" stroke-width="2"/>
+<text x="110.0" y="550.0" font-size="28" font-weight="400" fill="#17202c" text-anchor="start">「タブレットの操作がむずかしい」</text>
+<text x="410.0" y="610.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">「タブレット」「調べる」「楽しい」…のように単語を取り出して数える</text>
+<rect x="820.0" y="170.0" width="740.0" height="470.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="846.0" y="218.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">② よく出る言葉のランキング</text>
+<text x="1030.0" y="297.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="end">楽しい</text>
+<rect x="1050.0" y="265.0" width="377.1" height="44.0" rx="0" fill="#1e90ff"/>
+<text x="1437.1" y="297.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="start">12回</text>
+<text x="1030.0" y="363.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="end">わかりやすい</text>
+<rect x="1050.0" y="331.0" width="282.9" height="44.0" rx="0" fill="#1e90ff"/>
+<text x="1342.9" y="363.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="start">9回</text>
+<text x="1030.0" y="429.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="end">タブレット</text>
+<rect x="1050.0" y="397.0" width="251.4" height="44.0" rx="0" fill="#1e90ff"/>
+<text x="1311.4" y="429.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="start">8回</text>
+<text x="1030.0" y="495.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="end">調べる</text>
+<rect x="1050.0" y="463.0" width="188.6" height="44.0" rx="0" fill="#9fc9f3"/>
+<text x="1248.6" y="495.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="start">6回</text>
+<text x="1030.0" y="561.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="end">むずかしい</text>
+<rect x="1050.0" y="529.0" width="157.1" height="44.0" rx="0" fill="#9fc9f3"/>
+<text x="1217.1" y="561.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="start">5回</text>
+<line x1="784.0" y1="400.0" x2="816.0" y2="400.0" stroke="#17202c" stroke-width="4" stroke-linecap="round"/>
+<path d="M816.0,400.0 L803.4,406.1 L803.4,393.9 Z" fill="#17202c"/>
+<text x="410.0" y="694.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="middle">1つずつ読むだけでは全体がつかみにくい</text>
+<text x="1190.0" y="694.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="middle">多くの人が感じていることが見えてくる</text>
+<text x="800.0" y="850.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">テキストマイニングは、文章を単語に分けて数え、よく出る言葉や一緒に出る言葉から傾向を読み取る方法です</text>
+</svg>

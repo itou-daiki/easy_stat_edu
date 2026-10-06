@@ -89,29 +89,29 @@ const AI_RETRY_BASE_DELAY_MS = 700;
 const AI_DATASET_OVERVIEW_MAX_COLUMNS = 60;
 
 const ANALYSIS_VISUALS = {
-    analysis_support: 'image/analysis_support.png',
-    data_processing: 'image/data_processing.png',
-    data_merge: 'image/data_merge.png',
-    factor_score: 'image/factor_score.png',
-    eda: 'image/eda.png',
-    cross_tabulation: 'image/cross_tabulation.png',
-    correlation: 'image/correlation.png',
-    ttest: 'image/ttest.png',
-    anova_one_way: 'image/anova_one_way.png',
-    anova_two_way: 'image/anova_two_way.png',
-    mann_whitney: 'image/mann_whitney.png',
-    kruskal_wallis: 'image/kruskal_wallis.png',
-    wilcoxon_signed_rank: 'image/wilcoxon_signed_rank.png',
-    mcnemar: 'image/mcnemar.png',
-    chi_square: 'image/chi_square.png',
-    fisher_exact: 'image/fisher_exact.png',
-    regression_simple: 'image/regression_simple.png',
-    regression_multiple: 'image/regression_multiple.png',
-    logistic_regression: 'image/logistic_regression.png',
-    factor_analysis: 'image/factor_analysis.png',
-    pca: 'image/pca.png',
-    time_series: 'image/time_series.png',
-    text_mining: 'image/text_mining.png'
+    analysis_support: 'image/illustrations/analysis_support.png',
+    data_processing: 'image/illustrations/data_processing.png',
+    data_merge: 'image/illustrations/data_merge.png',
+    factor_score: 'image/illustrations/factor_score.png',
+    eda: 'image/illustrations/eda.png',
+    cross_tabulation: 'image/illustrations/cross_tabulation.png',
+    correlation: 'image/illustrations/correlation.png',
+    ttest: 'image/illustrations/ttest.png',
+    anova_one_way: 'image/illustrations/anova_one_way.png',
+    anova_two_way: 'image/illustrations/anova_two_way.png',
+    mann_whitney: 'image/illustrations/mann_whitney.png',
+    kruskal_wallis: 'image/illustrations/kruskal_wallis.png',
+    wilcoxon_signed_rank: 'image/illustrations/wilcoxon_signed_rank.png',
+    mcnemar: 'image/illustrations/mcnemar.png',
+    chi_square: 'image/illustrations/chi_square.png',
+    fisher_exact: 'image/illustrations/fisher_exact.png',
+    regression_simple: 'image/illustrations/regression_simple.png',
+    regression_multiple: 'image/illustrations/regression_multiple.png',
+    logistic_regression: 'image/illustrations/logistic_regression.png',
+    factor_analysis: 'image/illustrations/factor_analysis.png',
+    pca: 'image/illustrations/pca.png',
+    time_series: 'image/illustrations/time_series.png',
+    text_mining: 'image/illustrations/text_mining.png'
 };
 
 const ANALYSIS_GUIDANCE = {
@@ -2080,18 +2080,23 @@ function injectAnalysisVisualIfMissing(container, analysisType) {
     const visualSrc = ANALYSIS_VISUALS[analysisType];
     if (getLocale() === 'en') return;
     if (!visualSrc || !container || container.querySelector('.analysis-visual-hero')) return;
-    if (container.querySelector('img[src^="image/"]')) return;
 
     const title = currentAnalysisTitle || getAnalysisTitle(analysisType) || '分析';
     const isEnglish = getLocale() === 'en';
     const figure = document.createElement('figure');
     figure.className = 'analysis-visual-hero';
     figure.dataset.assetLocale = 'ja';
+    // 図の中の文字が小さくなるスマートフォンでも読めるよう、タップで原寸の画像を開けるようにする
     figure.innerHTML = `
-        <img src="${visualSrc}" alt="${isEnglish ? `Overview of ${title}` : `${title}の概要図`}" loading="eager" decoding="async">
-        <figcaption>${isEnglish ? `Visual overview of ${title}` : `${title}の考え方を図で確認できます`}</figcaption>
+        <a href="${visualSrc}" target="_blank" rel="noopener">
+            <img src="${visualSrc}" alt="${isEnglish ? `Overview of ${title}` : `${title}の説明図`}" loading="eager" decoding="async">
+        </a>
+        <figcaption>${isEnglish ? `Visual overview of ${title}` : `${title}の考え方を図で確認できます（図を押すと大きく表示します）`}</figcaption>
     `;
-    container.prepend(figure);
+    // 「問い → データ → 手法」の順を崩さないよう、分析名の見出しのすぐ下に置く
+    const titleBanner = container.querySelector('div[style*="background: #1e90ff"]');
+    if (titleBanner) titleBanner.insertAdjacentElement('afterend', figure);
+    else container.prepend(figure);
 }
 
 function getBeginnerExplanation(analysisType) {

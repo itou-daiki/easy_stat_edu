@@ -1,0 +1,213 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>t検定：1組と2組の平均点の6点の差は、たしかな差といえるか</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">平均点の6点の差は、「たしかな差」といえる？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">左右は別の例です。どちらも各組30人・平均は47点と53点（差は6点）で、点数の散らばり方だけがちがいます</text>
+<text x="800.0" y="156.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">点1つが1人。横の位置が点数。同じくらいの点数の人は上に積む（上下とも、下の目盛りで読む）</text>
+<rect x="40.0" y="180.0" width="740.0" height="450.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="66.0" y="228.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">点数がまとまっている（ばらつきが小さい）</text>
+<line x1="150.0" y1="380.0" x2="740.0" y2="380.0" stroke="#d9dde3" stroke-width="2" stroke-linecap="round"/>
+<text x="64.0" y="376.0" font-size="32" font-weight="700" fill="#1670c9" text-anchor="start">1組</text>
+<circle cx="391.9" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="403.7" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="403.7" cy="361.5" r="5.5" fill="#1e90ff"/>
+<circle cx="403.7" cy="348.5" r="5.5" fill="#1e90ff"/>
+<circle cx="415.5" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="415.5" cy="361.5" r="5.5" fill="#1e90ff"/>
+<circle cx="415.5" cy="348.5" r="5.5" fill="#1e90ff"/>
+<circle cx="415.5" cy="335.5" r="5.5" fill="#1e90ff"/>
+<circle cx="415.5" cy="322.5" r="5.5" fill="#1e90ff"/>
+<circle cx="427.3" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="427.3" cy="361.5" r="5.5" fill="#1e90ff"/>
+<circle cx="427.3" cy="348.5" r="5.5" fill="#1e90ff"/>
+<circle cx="427.3" cy="335.5" r="5.5" fill="#1e90ff"/>
+<circle cx="427.3" cy="322.5" r="5.5" fill="#1e90ff"/>
+<circle cx="427.3" cy="309.5" r="5.5" fill="#1e90ff"/>
+<circle cx="427.3" cy="296.5" r="5.5" fill="#1e90ff"/>
+<circle cx="427.3" cy="283.5" r="5.5" fill="#1e90ff"/>
+<circle cx="439.1" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="439.1" cy="361.5" r="5.5" fill="#1e90ff"/>
+<circle cx="439.1" cy="348.5" r="5.5" fill="#1e90ff"/>
+<circle cx="439.1" cy="335.5" r="5.5" fill="#1e90ff"/>
+<circle cx="439.1" cy="322.5" r="5.5" fill="#1e90ff"/>
+<circle cx="439.1" cy="309.5" r="5.5" fill="#1e90ff"/>
+<circle cx="439.1" cy="296.5" r="5.5" fill="#1e90ff"/>
+<circle cx="450.9" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="450.9" cy="361.5" r="5.5" fill="#1e90ff"/>
+<circle cx="450.9" cy="348.5" r="5.5" fill="#1e90ff"/>
+<circle cx="450.9" cy="335.5" r="5.5" fill="#1e90ff"/>
+<circle cx="462.7" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="462.7" cy="361.5" r="5.5" fill="#1e90ff"/>
+<line x1="427.3" y1="272.0" x2="427.3" y2="386.0" stroke="#17202c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6"/>
+<text x="437.3" y="292.0" font-size="24" font-weight="700" fill="#1670c9" text-anchor="start">平均47点</text>
+<line x1="150.0" y1="524.0" x2="740.0" y2="524.0" stroke="#d9dde3" stroke-width="2" stroke-linecap="round"/>
+<text x="64.0" y="520.0" font-size="32" font-weight="700" fill="#c25e05" text-anchor="start">2組</text>
+<circle cx="427.3" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="439.1" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="439.1" cy="505.5" r="5.5" fill="#e8710a"/>
+<circle cx="439.1" cy="492.5" r="5.5" fill="#e8710a"/>
+<circle cx="450.9" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="450.9" cy="505.5" r="5.5" fill="#e8710a"/>
+<circle cx="450.9" cy="492.5" r="5.5" fill="#e8710a"/>
+<circle cx="450.9" cy="479.5" r="5.5" fill="#e8710a"/>
+<circle cx="450.9" cy="466.5" r="5.5" fill="#e8710a"/>
+<circle cx="462.7" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="462.7" cy="505.5" r="5.5" fill="#e8710a"/>
+<circle cx="462.7" cy="492.5" r="5.5" fill="#e8710a"/>
+<circle cx="462.7" cy="479.5" r="5.5" fill="#e8710a"/>
+<circle cx="462.7" cy="466.5" r="5.5" fill="#e8710a"/>
+<circle cx="462.7" cy="453.5" r="5.5" fill="#e8710a"/>
+<circle cx="462.7" cy="440.5" r="5.5" fill="#e8710a"/>
+<circle cx="462.7" cy="427.5" r="5.5" fill="#e8710a"/>
+<circle cx="474.5" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="474.5" cy="505.5" r="5.5" fill="#e8710a"/>
+<circle cx="474.5" cy="492.5" r="5.5" fill="#e8710a"/>
+<circle cx="474.5" cy="479.5" r="5.5" fill="#e8710a"/>
+<circle cx="474.5" cy="466.5" r="5.5" fill="#e8710a"/>
+<circle cx="474.5" cy="453.5" r="5.5" fill="#e8710a"/>
+<circle cx="474.5" cy="440.5" r="5.5" fill="#e8710a"/>
+<circle cx="486.3" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="486.3" cy="505.5" r="5.5" fill="#e8710a"/>
+<circle cx="486.3" cy="492.5" r="5.5" fill="#e8710a"/>
+<circle cx="486.3" cy="479.5" r="5.5" fill="#e8710a"/>
+<circle cx="498.1" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="498.1" cy="505.5" r="5.5" fill="#e8710a"/>
+<line x1="462.7" y1="416.0" x2="462.7" y2="530.0" stroke="#17202c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6"/>
+<text x="472.7" y="436.0" font-size="24" font-weight="700" fill="#c25e05" text-anchor="start">平均53点</text>
+<line x1="427.3" y1="380.0" x2="427.3" y2="400.0" stroke="#17202c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6"/>
+<line x1="462.7" y1="400.0" x2="462.7" y2="416.0" stroke="#17202c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6"/>
+<line x1="427.3" y1="400.0" x2="462.7" y2="400.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<path d="M462.7,400.0 L454.6,403.9 L454.6,396.1 Z" fill="#17202c"/>
+<path d="M427.3,400.0 L435.4,396.1 L435.4,403.9 Z" fill="#17202c"/>
+<text x="415.3" y="409.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="end">平均の差6点</text>
+<line x1="150.0" y1="542.0" x2="740.0" y2="542.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="150.0" y1="542.0" x2="150.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="150.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">0</text>
+<line x1="209.0" y1="542.0" x2="209.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="209.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">10</text>
+<line x1="268.0" y1="542.0" x2="268.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="268.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">20</text>
+<line x1="327.0" y1="542.0" x2="327.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="327.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">30</text>
+<line x1="386.0" y1="542.0" x2="386.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="386.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">40</text>
+<line x1="445.0" y1="542.0" x2="445.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="445.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">50</text>
+<line x1="504.0" y1="542.0" x2="504.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="504.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">60</text>
+<line x1="563.0" y1="542.0" x2="563.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="563.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">70</text>
+<line x1="622.0" y1="542.0" x2="622.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="622.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">80</text>
+<line x1="681.0" y1="542.0" x2="681.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="681.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">90</text>
+<line x1="740.0" y1="542.0" x2="740.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="740.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">100</text>
+<text x="740.0" y="614.0" font-size="24" font-weight="700" fill="#556070" text-anchor="end">点数（点）</text>
+<text x="410.0" y="670.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">t検定で計算すると…</text>
+<text x="410.0" y="712.0" font-size="32" font-weight="700" fill="#17202c" text-anchor="middle">平均にちがいがあるといえる</text>
+<rect x="820.0" y="180.0" width="740.0" height="450.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="846.0" y="228.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">点数が広く散らばっている（ばらつきが大きい）</text>
+<line x1="930.0" y1="380.0" x2="1520.0" y2="380.0" stroke="#d9dde3" stroke-width="2" stroke-linecap="round"/>
+<text x="844.0" y="376.0" font-size="32" font-weight="700" fill="#1670c9" text-anchor="start">1組</text>
+<circle cx="1030.3" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1077.5" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1101.1" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1112.9" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1124.7" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1136.5" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1148.3" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1160.1" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1160.1" cy="361.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1171.9" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1183.7" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1183.7" cy="361.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1195.5" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1195.5" cy="361.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1207.3" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1219.1" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1219.1" cy="361.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1230.9" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1230.9" cy="361.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1242.7" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1254.5" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1254.5" cy="361.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1266.3" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1278.1" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1289.9" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1301.7" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1313.5" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1325.3" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1348.9" cy="374.5" r="5.5" fill="#1e90ff"/>
+<circle cx="1384.3" cy="374.5" r="5.5" fill="#1e90ff"/>
+<line x1="1207.3" y1="272.0" x2="1207.3" y2="386.0" stroke="#17202c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6"/>
+<text x="1217.3" y="292.0" font-size="24" font-weight="700" fill="#1670c9" text-anchor="start">平均47点</text>
+<line x1="930.0" y1="524.0" x2="1520.0" y2="524.0" stroke="#d9dde3" stroke-width="2" stroke-linecap="round"/>
+<text x="844.0" y="520.0" font-size="32" font-weight="700" fill="#c25e05" text-anchor="start">2組</text>
+<circle cx="1065.7" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1112.9" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1136.5" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1148.3" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1160.1" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1171.9" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1183.7" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1195.5" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1195.5" cy="505.5" r="5.5" fill="#e8710a"/>
+<circle cx="1207.3" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1219.1" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1219.1" cy="505.5" r="5.5" fill="#e8710a"/>
+<circle cx="1230.9" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1230.9" cy="505.5" r="5.5" fill="#e8710a"/>
+<circle cx="1242.7" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1254.5" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1254.5" cy="505.5" r="5.5" fill="#e8710a"/>
+<circle cx="1266.3" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1266.3" cy="505.5" r="5.5" fill="#e8710a"/>
+<circle cx="1278.1" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1289.9" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1289.9" cy="505.5" r="5.5" fill="#e8710a"/>
+<circle cx="1301.7" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1313.5" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1325.3" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1337.1" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1348.9" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1360.7" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1384.3" cy="518.5" r="5.5" fill="#e8710a"/>
+<circle cx="1419.7" cy="518.5" r="5.5" fill="#e8710a"/>
+<line x1="1242.7" y1="416.0" x2="1242.7" y2="530.0" stroke="#17202c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6"/>
+<text x="1252.7" y="436.0" font-size="24" font-weight="700" fill="#c25e05" text-anchor="start">平均53点</text>
+<line x1="1207.3" y1="380.0" x2="1207.3" y2="400.0" stroke="#17202c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6"/>
+<line x1="1242.7" y1="400.0" x2="1242.7" y2="416.0" stroke="#17202c" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6"/>
+<line x1="1207.3" y1="400.0" x2="1242.7" y2="400.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<path d="M1242.7,400.0 L1234.6,403.9 L1234.6,396.1 Z" fill="#17202c"/>
+<path d="M1207.3,400.0 L1215.4,396.1 L1215.4,403.9 Z" fill="#17202c"/>
+<text x="1195.3" y="409.0" font-size="24" font-weight="700" fill="#17202c" text-anchor="end">平均の差6点</text>
+<line x1="930.0" y1="542.0" x2="1520.0" y2="542.0" stroke="#17202c" stroke-width="3" stroke-linecap="round"/>
+<line x1="930.0" y1="542.0" x2="930.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="930.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">0</text>
+<line x1="989.0" y1="542.0" x2="989.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="989.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">10</text>
+<line x1="1048.0" y1="542.0" x2="1048.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1048.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">20</text>
+<line x1="1107.0" y1="542.0" x2="1107.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1107.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">30</text>
+<line x1="1166.0" y1="542.0" x2="1166.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1166.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">40</text>
+<line x1="1225.0" y1="542.0" x2="1225.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1225.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">50</text>
+<line x1="1284.0" y1="542.0" x2="1284.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1284.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">60</text>
+<line x1="1343.0" y1="542.0" x2="1343.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1343.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">70</text>
+<line x1="1402.0" y1="542.0" x2="1402.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1402.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">80</text>
+<line x1="1461.0" y1="542.0" x2="1461.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1461.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">90</text>
+<line x1="1520.0" y1="542.0" x2="1520.0" y2="551.0" stroke="#17202c" stroke-width="2" stroke-linecap="round"/>
+<text x="1520.0" y="580.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">100</text>
+<text x="1520.0" y="614.0" font-size="24" font-weight="700" fill="#556070" text-anchor="end">点数（点）</text>
+<text x="1190.0" y="670.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">t検定で計算すると…</text>
+<text x="1190.0" y="712.0" font-size="32" font-weight="700" fill="#17202c" text-anchor="middle">今回のデータでは、ちがいがあるとまではいえない</text>
+<text x="1190.0" y="748.0" font-size="24" font-weight="400" fill="#17202c" text-anchor="middle">（「同じ」とわかったわけではありません）</text>
+<text x="800.0" y="850.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">t検定は「平均の差」「点数の散らばり」「人数」を使って計算し、平均にちがいがあるといえるかを判断します</text>
+</svg>

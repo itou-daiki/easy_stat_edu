@@ -5149,10 +5149,18 @@ table tbody tr:hover {
     border-radius: var(--radius) !important;
 }
 
-/* 分析画面の先頭に差し込まれる概要イラストは、ページ見出しより前に出て
-   「問い → データ → 手法」の流れを崩すため画面では出さない（各分析の「概要」に説明がある） */
-#analysis-content > .analysis-visual-hero {
-    display: none;
+/* 概要イラストは分析名の見出しの下に、本文の幅いっぱいで置く（図の中の文字を読めるように） */
+#analysis-content .analysis-visual-hero {
+    margin: 0 0 var(--space-5);
+}
+
+#analysis-content .analysis-visual-hero a {
+    display: block;
+}
+
+#analysis-content .analysis-visual-hero a:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
 }
 
 /* データ加工の紫の見出し・タブ */

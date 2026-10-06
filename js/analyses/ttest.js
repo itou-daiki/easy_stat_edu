@@ -748,7 +748,6 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> t検定 (t-Test) とは？</strong>
                         <p>「A組とB組のテストの平均点に違いがあるか？」のように、平均の違いがデータのばらつきに比べてどのくらい大きいかを調べる方法です。</p>
-                        <img src="image/ttest.png" alt="t検定のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

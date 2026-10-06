@@ -314,7 +314,6 @@ export function render(container, currentData, characteristics) {
                     <div class="note">
                         <strong><i class="fas fa-lightbulb"></i> 単回帰分析 (Simple Linear Regression) とは？</strong>
                         <p>「あるデータ（説明変数）」と「別のデータ（目的変数）」の直線的な関連を表し、予測式を作る分析です。</p>
-                        <img src="image/regression_simple.png" alt="単回帰分析のイメージ" style="max-width: 100%; height: auto; margin-top: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; display: block; margin-left: auto; margin-right: auto;">
                     </div>
                     <h4>どういう時に使うの？</h4>
                     <ul>

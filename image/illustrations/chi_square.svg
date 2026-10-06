@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>カイ二乗検定：男子と女子で部活の選び方のちがいは、たしかなちがいといえるか</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="46" font-weight="700" fill="#17202c" text-anchor="middle">男子と女子で、部活の選び方のちがいは「たしかなちがい」といえる？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">左右は別の例です。どちらも男子30人・女子30人</text>
+<text x="800.0" y="156.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">帯は全体を100%にした割合。中の数字は人数</text>
+<rect x="40.0" y="180.0" width="740.0" height="450.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="66.0" y="228.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">男子と女子で割合が大きくちがう</text>
+<text x="104.0" y="330.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="middle">男子</text>
+<rect x="160.0" y="280.0" width="386.7" height="80.0" rx="0" fill="#1e90ff" stroke="#ffffff" stroke-width="2"/>
+<text x="353.3" y="318.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">20人</text>
+<text x="353.3" y="346.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">67%</text>
+<rect x="546.7" y="280.0" width="116.0" height="80.0" rx="0" fill="#e8710a" stroke="#ffffff" stroke-width="2"/>
+<text x="604.7" y="318.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">6人</text>
+<text x="604.7" y="346.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">20%</text>
+<rect x="662.7" y="280.0" width="77.3" height="80.0" rx="0" fill="#8b94a1" stroke="#ffffff" stroke-width="2"/>
+<text x="701.3" y="318.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">4人</text>
+<text x="701.3" y="346.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">13%</text>
+<text x="104.0" y="450.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="middle">女子</text>
+<rect x="160.0" y="400.0" width="154.7" height="80.0" rx="0" fill="#1e90ff" stroke="#ffffff" stroke-width="2"/>
+<text x="237.3" y="438.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">8人</text>
+<text x="237.3" y="466.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">27%</text>
+<rect x="314.7" y="400.0" width="309.3" height="80.0" rx="0" fill="#e8710a" stroke="#ffffff" stroke-width="2"/>
+<text x="469.3" y="438.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">16人</text>
+<text x="469.3" y="466.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">53%</text>
+<rect x="624.0" y="400.0" width="116.0" height="80.0" rx="0" fill="#8b94a1" stroke="#ffffff" stroke-width="2"/>
+<text x="682.0" y="438.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">6人</text>
+<text x="682.0" y="466.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">20%</text>
+<rect x="160.0" y="522.0" width="22.0" height="22.0" rx="0" fill="#1e90ff"/>
+<text x="190.0" y="540.0" font-size="22" font-weight="400" fill="#17202c" text-anchor="start">運動部</text>
+<rect x="272.0" y="522.0" width="22.0" height="22.0" rx="0" fill="#e8710a"/>
+<text x="302.0" y="540.0" font-size="22" font-weight="400" fill="#17202c" text-anchor="start">文化部</text>
+<rect x="384.0" y="522.0" width="22.0" height="22.0" rx="0" fill="#8b94a1"/>
+<text x="414.0" y="540.0" font-size="22" font-weight="400" fill="#17202c" text-anchor="start">入っていない</text>
+<text x="410.0" y="606.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">関係がない場合に予想される人数とのずれを計算します</text>
+<text x="410.0" y="670.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">カイ二乗検定で計算すると…</text>
+<text x="410.0" y="712.0" font-size="32" font-weight="700" fill="#17202c" text-anchor="middle">性別と部活の選び方に関係があるといえる</text>
+<rect x="820.0" y="180.0" width="740.0" height="450.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="846.0" y="228.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">男子と女子で割合がほぼ同じ</text>
+<text x="884.0" y="330.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="middle">男子</text>
+<rect x="940.0" y="280.0" width="270.7" height="80.0" rx="0" fill="#1e90ff" stroke="#ffffff" stroke-width="2"/>
+<text x="1075.3" y="318.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">14人</text>
+<text x="1075.3" y="346.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">47%</text>
+<rect x="1210.7" y="280.0" width="212.7" height="80.0" rx="0" fill="#e8710a" stroke="#ffffff" stroke-width="2"/>
+<text x="1317.0" y="318.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">11人</text>
+<text x="1317.0" y="346.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">37%</text>
+<rect x="1423.3" y="280.0" width="96.7" height="80.0" rx="0" fill="#8b94a1" stroke="#ffffff" stroke-width="2"/>
+<text x="1471.7" y="318.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">5人</text>
+<text x="1471.7" y="346.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">17%</text>
+<text x="884.0" y="450.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="middle">女子</text>
+<rect x="940.0" y="400.0" width="251.3" height="80.0" rx="0" fill="#1e90ff" stroke="#ffffff" stroke-width="2"/>
+<text x="1065.7" y="438.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">13人</text>
+<text x="1065.7" y="466.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">43%</text>
+<rect x="1191.3" y="400.0" width="212.7" height="80.0" rx="0" fill="#e8710a" stroke="#ffffff" stroke-width="2"/>
+<text x="1297.7" y="438.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">11人</text>
+<text x="1297.7" y="466.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">37%</text>
+<rect x="1404.0" y="400.0" width="116.0" height="80.0" rx="0" fill="#8b94a1" stroke="#ffffff" stroke-width="2"/>
+<text x="1462.0" y="438.0" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">6人</text>
+<text x="1462.0" y="466.0" font-size="20" font-weight="400" fill="#ffffff" text-anchor="middle">20%</text>
+<rect x="940.0" y="522.0" width="22.0" height="22.0" rx="0" fill="#1e90ff"/>
+<text x="970.0" y="540.0" font-size="22" font-weight="400" fill="#17202c" text-anchor="start">運動部</text>
+<rect x="1052.0" y="522.0" width="22.0" height="22.0" rx="0" fill="#e8710a"/>
+<text x="1082.0" y="540.0" font-size="22" font-weight="400" fill="#17202c" text-anchor="start">文化部</text>
+<rect x="1164.0" y="522.0" width="22.0" height="22.0" rx="0" fill="#8b94a1"/>
+<text x="1194.0" y="540.0" font-size="22" font-weight="400" fill="#17202c" text-anchor="start">入っていない</text>
+<text x="1190.0" y="606.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">関係がない場合に予想される人数とのずれを計算します</text>
+<text x="1190.0" y="670.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">カイ二乗検定で計算すると…</text>
+<text x="1190.0" y="712.0" font-size="32" font-weight="700" fill="#17202c" text-anchor="middle">今回のデータでは、関係があるとまではいえない</text>
+<text x="1190.0" y="748.0" font-size="24" font-weight="400" fill="#17202c" text-anchor="middle">（「同じ」とわかったわけではありません）</text>
+<text x="800.0" y="850.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">カイ二乗検定は、実際の人数が「関係がない場合に予想される人数」からどれだけずれているかで判断します</text>
+</svg>

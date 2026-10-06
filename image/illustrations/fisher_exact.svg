@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Noto Sans CJK JP','Yu Gothic',Meiryo,sans-serif">
+<title>フィッシャーの正確確率検定：人数が少ないとき、部活の有無と合格のちがいはたしかなちがいといえるか</title>
+<rect width="1600" height="900" fill="#ffffff"/>
+<text x="800.0" y="80.0" font-size="50" font-weight="700" fill="#17202c" text-anchor="middle">部活の有無と合格・不合格に、「たしかな関係」はある？</text>
+<text x="800.0" y="124.0" font-size="26" font-weight="400" fill="#17202c" text-anchor="middle">左右は別の例です。どちらも16人（部活あり8人・部活なし8人）。点1つが1人</text>
+<text x="800.0" y="156.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">人数が少ない（5人未満のマスがある）ときは、カイ二乗検定より正確なこの方法を使います</text>
+<rect x="40.0" y="180.0" width="740.0" height="450.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="66.0" y="228.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">合格の割合が大きくちがう</text>
+<text x="470.0" y="263.0" font-size="24" font-weight="700" fill="#556070" text-anchor="middle">補習テストの結果</text>
+<text x="355.0" y="301.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="middle">合格</text>
+<text x="585.0" y="301.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="middle">不合格</text>
+<text x="122.0" y="301.0" font-size="22" font-weight="700" fill="#556070" text-anchor="middle"></text>
+<text x="224.0" y="385.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="end">部活あり</text>
+<rect x="240.0" y="315.0" width="230.0" height="120.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="256.0" y="353.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">7人</text>
+<circle cx="448.0" cy="345.0" r="7.0" fill="#1e90ff"/>
+<circle cx="428.0" cy="345.0" r="7.0" fill="#1e90ff"/>
+<circle cx="408.0" cy="345.0" r="7.0" fill="#1e90ff"/>
+<circle cx="388.0" cy="345.0" r="7.0" fill="#1e90ff"/>
+<circle cx="368.0" cy="345.0" r="7.0" fill="#1e90ff"/>
+<circle cx="348.0" cy="345.0" r="7.0" fill="#1e90ff"/>
+<circle cx="448.0" cy="365.0" r="7.0" fill="#1e90ff"/>
+<rect x="470.0" y="315.0" width="230.0" height="120.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="486.0" y="353.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">1人</text>
+<circle cx="678.0" cy="345.0" r="7.0" fill="#e8710a"/>
+<text x="224.0" y="505.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="end">部活なし</text>
+<rect x="240.0" y="435.0" width="230.0" height="120.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="256.0" y="473.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">1人</text>
+<circle cx="448.0" cy="465.0" r="7.0" fill="#1e90ff"/>
+<rect x="470.0" y="435.0" width="230.0" height="120.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="486.0" y="473.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">7人</text>
+<circle cx="678.0" cy="465.0" r="7.0" fill="#e8710a"/>
+<circle cx="658.0" cy="465.0" r="7.0" fill="#e8710a"/>
+<circle cx="638.0" cy="465.0" r="7.0" fill="#e8710a"/>
+<circle cx="618.0" cy="465.0" r="7.0" fill="#e8710a"/>
+<circle cx="598.0" cy="465.0" r="7.0" fill="#e8710a"/>
+<circle cx="578.0" cy="465.0" r="7.0" fill="#e8710a"/>
+<circle cx="678.0" cy="485.0" r="7.0" fill="#e8710a"/>
+<text x="410.0" y="604.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">ありうる人数の分かれ方をすべて数えて、正確に計算します</text>
+<text x="410.0" y="670.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">フィッシャーの正確確率検定で計算すると…</text>
+<text x="410.0" y="712.0" font-size="32" font-weight="700" fill="#17202c" text-anchor="middle">部活の有無と合否に関係があるといえる</text>
+<rect x="820.0" y="180.0" width="740.0" height="450.0" rx="0" fill="none" stroke="#d9dde3" stroke-width="3"/>
+<text x="846.0" y="228.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">合格の割合があまりちがわない</text>
+<text x="1250.0" y="263.0" font-size="24" font-weight="700" fill="#556070" text-anchor="middle">補習テストの結果</text>
+<text x="1135.0" y="301.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="middle">合格</text>
+<text x="1365.0" y="301.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="middle">不合格</text>
+<text x="902.0" y="301.0" font-size="22" font-weight="700" fill="#556070" text-anchor="middle"></text>
+<text x="1004.0" y="385.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="end">部活あり</text>
+<rect x="1020.0" y="315.0" width="230.0" height="120.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1036.0" y="353.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">5人</text>
+<circle cx="1228.0" cy="345.0" r="7.0" fill="#1e90ff"/>
+<circle cx="1208.0" cy="345.0" r="7.0" fill="#1e90ff"/>
+<circle cx="1188.0" cy="345.0" r="7.0" fill="#1e90ff"/>
+<circle cx="1168.0" cy="345.0" r="7.0" fill="#1e90ff"/>
+<circle cx="1148.0" cy="345.0" r="7.0" fill="#1e90ff"/>
+<rect x="1250.0" y="315.0" width="230.0" height="120.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1266.0" y="353.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">3人</text>
+<circle cx="1458.0" cy="345.0" r="7.0" fill="#e8710a"/>
+<circle cx="1438.0" cy="345.0" r="7.0" fill="#e8710a"/>
+<circle cx="1418.0" cy="345.0" r="7.0" fill="#e8710a"/>
+<text x="1004.0" y="505.0" font-size="26" font-weight="700" fill="#17202c" text-anchor="end">部活なし</text>
+<rect x="1020.0" y="435.0" width="230.0" height="120.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1036.0" y="473.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">4人</text>
+<circle cx="1228.0" cy="465.0" r="7.0" fill="#1e90ff"/>
+<circle cx="1208.0" cy="465.0" r="7.0" fill="#1e90ff"/>
+<circle cx="1188.0" cy="465.0" r="7.0" fill="#1e90ff"/>
+<circle cx="1168.0" cy="465.0" r="7.0" fill="#1e90ff"/>
+<rect x="1250.0" y="435.0" width="230.0" height="120.0" rx="0" fill="#ffffff" stroke="#d9dde3" stroke-width="2"/>
+<text x="1266.0" y="473.0" font-size="30" font-weight="700" fill="#17202c" text-anchor="start">4人</text>
+<circle cx="1458.0" cy="465.0" r="7.0" fill="#e8710a"/>
+<circle cx="1438.0" cy="465.0" r="7.0" fill="#e8710a"/>
+<circle cx="1418.0" cy="465.0" r="7.0" fill="#e8710a"/>
+<circle cx="1398.0" cy="465.0" r="7.0" fill="#e8710a"/>
+<text x="1190.0" y="604.0" font-size="22" font-weight="400" fill="#556070" text-anchor="middle">ありうる人数の分かれ方をすべて数えて、正確に計算します</text>
+<text x="1190.0" y="670.0" font-size="24" font-weight="400" fill="#556070" text-anchor="middle">フィッシャーの正確確率検定で計算すると…</text>
+<text x="1190.0" y="712.0" font-size="32" font-weight="700" fill="#17202c" text-anchor="middle">今回のデータでは、関係があるとまではいえない</text>
+<text x="1190.0" y="748.0" font-size="24" font-weight="400" fill="#17202c" text-anchor="middle">（「同じ」とわかったわけではありません）</text>
+<text x="800.0" y="850.0" font-size="28" font-weight="700" fill="#17202c" text-anchor="middle">フィッシャーの正確確率検定は、人数が少ない表でも正確に、2つの項目に関係があるかを調べる方法です</text>
+</svg>
