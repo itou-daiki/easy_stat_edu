@@ -236,4 +236,15 @@ test.describe('Manual data input', () => {
         await expect(page.locator('#run-text-btn')).toBeEnabled();
         expect(dialogs).toEqual([]);
     });
+
+    test('pressing ArrowRight in the last column adds a new column', async ({ page }) => {
+        await page.locator('#data-source-paste-tab').click();
+        const headers = page.locator('#tabular-grid-column-headers th');
+        const before = await headers.count();
+        const lastCell = page.locator(`[data-grid-row="0"][data-grid-column="${before - 2}"]`);
+        await lastCell.click();
+        await page.keyboard.press('ArrowRight');
+        await expect(headers).toHaveCount(before + 1);
+        await expect(page.locator(`[data-grid-row="0"][data-grid-column="${before - 1}"]`)).toBeFocused();
+    });
 });

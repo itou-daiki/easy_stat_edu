@@ -15,7 +15,7 @@ export function buildPreset(methodKey, context) {
         case 'mann_whitney':
         case 'anova':
         case 'kruskal':
-            return { groupVar: context.groupVar, valueVars: [context.valueVar] };
+            return { groupVar: context.groupVar, valueVars: context.valueVars || [context.valueVar] };
         case 'paired_t':
             return { pairs: [[context.vars[0], context.vars[1]]] };
         case 'wilcoxon':
@@ -24,12 +24,14 @@ export function buildPreset(methodKey, context) {
             return { vars: context.vars };
         case 'pearson':
         case 'spearman':
-            return { vars: [context.x, context.y], method: methodKey };
+            return { vars: context.vars || [context.x, context.y], method: methodKey };
         case 'chi_square':
         case 'fisher':
             return { rowVar: context.rowVar, colVar: context.colVar };
         case 'regression':
-            return { x: context.x, y: context.y };
+            return { x: context.predictors ? context.predictors[0] : context.x, y: context.y };
+        case 'regression_multiple':
+            return { predictors: context.predictors, y: context.y };
         default:
             return {};
     }
@@ -131,6 +133,11 @@ const RUNNERS = {
         setValue('row-var', rowVar);
         setValue('col-var', colVar);
         click('run-fisher-btn');
+    },
+    regression_multiple: ({ predictors, y }) => {
+        setValue('dependent-vars', [y]);
+        setValue('independent-vars', predictors);
+        click('run-multiple-regression-btn');
     },
     regression: ({ x, y }) => {
         setValue('independent-var', x);
@@ -239,9 +246,9 @@ function renderNormalitySection(checks) {
 }
 
 function renderLeveneSection(checks, methodKey) {
-    const levene = checks.find(check => check.kind === 'levene');
-    if (!levene || !['welch_t', 'anova'].includes(methodKey)) return '';
-    const unequal = levene.p < ALPHA;
+    const levenes = checks.filter(check => check.kind === 'levene');
+    if (!levenes.length || !['welch_t', 'anova'].includes(methodKey)) return '';
+    const anyUnequal = levenes.some(levene => levene.p < ALPHA);
     let note;
     if (methodKey === 'welch_t') {
         note = pick(
@@ -249,16 +256,21 @@ function renderLeveneSection(checks, methodKey) {
             "Welch's t-test does not assume equal spread, so this is for reference."
         );
     } else {
-        note = unequal
-            ? pick('散らばりが等しいとはいえません。結果の読み取りは慎重に行い、クラスカル・ウォリス検定でも確かめると安心です。',
-                'Spreads are not equal. Interpret with care and consider checking with the Kruskal-Wallis test.')
+        note = anyUnequal
+            ? pick('散らばりが等しいとはいえない列があります。結果の読み取りは慎重に行い、クラスカル・ウォリス検定でも確かめると安心です。',
+                'Some spreads are not equal. Interpret with care and consider checking with the Kruskal-Wallis test.')
             : pick('散らばりが大きく違うとはいえないので、分散分析を使って問題ありません。', 'Spreads are similar enough for ANOVA.');
     }
+    const lines = levenes.map(levene => {
+        const unequal = levene.p < ALPHA;
+        const label = levene.label ? `${escapeHtml(levene.label)}：` : '';
+        return `<p>${label}F(${levene.df1}, ${levene.df2}) = ${levene.f.toFixed(2)}, p = ${formatP(levene.p)} —
+                <strong>${unequal ? pick('散らばりが等しいとはいえない', 'Spreads differ') : pick('散らばりは等しいとみなせる', 'Spreads look equal')}</strong></p>`;
+    }).join('');
     return `
         <section class="guided-check">
             <h4>${pick('散らばりの等しさ（Levene検定・参考）', 'Equal spread (Levene test, reference)')}</h4>
-            <p>F(${levene.df1}, ${levene.df2}) = ${levene.f.toFixed(2)}, p = ${formatP(levene.p)} —
-                <strong>${unequal ? pick('散らばりが等しいとはいえない', 'Spreads differ') : pick('散らばりは等しいとみなせる', 'Spreads look equal')}</strong></p>
+            ${lines}
             <p class="guided-check-note">${note}</p>
         </section>`;
 }
@@ -359,7 +371,32 @@ function scrollToResults(container) {
  * @param {object} guided - { methodKey, normal, checks, purposeLabel, isAlternative, originalMethodKey, autoRunFailed }
  * @param {(methodKey: string) => void} onAlternative - 別の手法で確かめるボタンの処理
  */
-export function renderDecisionPanel(container, guided, onAlternative) {
+function renderOtherGroups(guided) {
+    const others = guided.otherGroups || [];
+    if (!others.length) return '';
+    const items = others.map((group, index) => `
+        <li>
+            ${pick(`「${group.vars.map(escapeHtml).join('」「')}」は「${getMethodCopy(group.methodKey).name}」が合っています`,
+                `${group.vars.map(escapeHtml).join(', ')}: ${getMethodCopy(group.methodKey).name} fits better`)}
+            <button type="button" class="guided-btn" data-guided-other="${index}">
+                ${pick('この列を分析する', 'Analyze these columns')}
+            </button>
+        </li>`).join('');
+    return `
+        <div class="guided-other-groups">
+            <p><strong>${pick('ほかの列について', 'Other columns')}</strong>：${pick(
+                '前提の確認の結果、合う手法がちがったため、別に分析します。',
+                'These columns need a different method, so they are analyzed separately.'
+            )}</p>
+            <ul>${items}</ul>
+        </div>`;
+}
+
+/**
+ * @param {(methodKey: string) => void} onAlternative - 別の手法で確かめるボタンの処理
+ * @param {(index: number) => void} [onOtherGroup] - ほかの列のまとまりを分析するボタンの処理
+ */
+export function renderDecisionPanel(container, guided, onAlternative, onOtherGroup) {
     container.querySelector('.guided-decision')?.remove();
     const method = getMethodCopy(guided.methodKey);
     const alternativeKey = ALTERNATIVE_METHOD[guided.methodKey];
@@ -402,6 +439,7 @@ export function renderDecisionPanel(container, guided, onAlternative) {
                 ${renderExpectedSection(guided.checks)}
             </div>
         </details>
+        ${renderOtherGroups(guided)}
         <div class="guided-decision-actions">
             ${guided.autoRunFailed ? '' : `<button type="button" class="guided-btn guided-btn-primary" data-guided-scroll>${pick('結果へ移動', 'Go to results')}</button>`}
             ${alternative ? `<button type="button" class="guided-btn" data-guided-alternative="${alternativeKey}">
@@ -413,6 +451,9 @@ export function renderDecisionPanel(container, guided, onAlternative) {
         onAlternative(event.currentTarget.dataset.guidedAlternative);
     });
     panel.querySelector('[data-guided-scroll]')?.addEventListener('click', () => scrollToResults(container));
+    panel.querySelectorAll('[data-guided-other]').forEach(button => {
+        button.addEventListener('click', () => onOtherGroup?.(Number(button.dataset.guidedOther)));
+    });
     container.prepend(panel);
     return panel;
 }

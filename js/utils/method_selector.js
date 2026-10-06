@@ -270,3 +270,129 @@ export function selectPrediction(data, xVar, yVar) {
         preset: { x: xVar, y: yVar }
     };
 }
+
+// ---------------------------------------------------------------------------
+// 複数の列を選んだとき（初学者モード）
+// ---------------------------------------------------------------------------
+
+/**
+ * 別々のグループの平均値を、複数の数値の列について比べる。
+ * 列ごとに手法を判断し、同じ手法になった列どうしをまとめる（最初に選んだ列のまとまりが先頭）。
+ * @returns {{error?: string, column?: string, groups?: Array<{methodKey, analysisType, normal, vars, checks}>}}
+ */
+export function selectGroupComparisonMulti(data, groupVar, valueVars) {
+    const results = [];
+    for (const valueVar of valueVars || []) {
+        const result = selectGroupComparison(data, groupVar, valueVar);
+        if (result.error) return { ...result, column: valueVar };
+        // 列が複数あるときは、どの列の確認結果かわかるように名前を付ける
+        const checks = result.checks.map(check => (
+            valueVars.length > 1 ? { ...check, label: check.kind === 'levene' ? valueVar : `${valueVar}：${check.label}` } : check
+        ));
+        results.push({ ...result, valueVar, checks });
+    }
+    if (!results.length) return { error: 'need_vars' };
+
+    const order = [];
+    const byMethod = new Map();
+    results.forEach(result => {
+        if (!byMethod.has(result.methodKey)) {
+            byMethod.set(result.methodKey, []);
+            order.push(result.methodKey);
+        }
+        byMethod.get(result.methodKey).push(result);
+    });
+    return {
+        groups: order.map(methodKey => {
+            const items = byMethod.get(methodKey);
+            return {
+                methodKey,
+                analysisType: items[0].analysisType,
+                normal: items[0].normal,
+                vars: items.map(item => item.valueVar),
+                checks: items.flatMap(item => item.checks),
+                groupCount: items[0].groups.length
+            };
+        })
+    };
+}
+
+/**
+ * 2つ以上の数値の列の関係（相関）。3列以上なら相関行列になる。
+ * 1列でも正規分布とはいえなければ、すべての組をスピアマンで調べる。
+ */
+export function selectCorrelationMulti(data, vars) {
+    const unique = Array.from(new Set(vars || []));
+    if (unique.length < 2) return { error: 'need_two_vars' };
+    const columns = unique.map(name => (data || []).map(row => toNumber(row[name])).filter(value => value !== null));
+    if (columns.some(values => values.length < 3)) return { error: 'too_few_rows' };
+    const constant = unique.filter((_, index) => new Set(columns[index]).size === 1);
+    if (constant.length) return { error: 'constant_var', columns: constant };
+
+    const checks = normalityChecks(unique.map((name, index) => ({ label: name, values: columns[index] })));
+    const normal = judgeNormality(checks);
+    const methodKey = normal ? 'pearson' : 'spearman';
+    return {
+        analysisType: 'correlation',
+        methodKey,
+        normal,
+        checks,
+        preset: { vars: unique, method: methodKey }
+    };
+}
+
+/** 最小二乗法の係数（切片を含む）。正規方程式をガウスの消去法で解く。解けなければ null */
+function leastSquares(xRows, y) {
+    const k = xRows[0].length + 1;
+    const design = xRows.map(row => [1, ...row]);
+    const a = Array.from({ length: k }, (_, i) => [
+        ...Array.from({ length: k }, (_, j) => design.reduce((sum, row) => sum + row[i] * row[j], 0)),
+        design.reduce((sum, row, index) => sum + row[i] * y[index], 0)
+    ]);
+    for (let col = 0; col < k; col++) {
+        let pivotRow = col;
+        for (let row = col + 1; row < k; row++) {
+            if (Math.abs(a[row][col]) > Math.abs(a[pivotRow][col])) pivotRow = row;
+        }
+        if (Math.abs(a[pivotRow][col]) < 1e-10) return null;
+        [a[col], a[pivotRow]] = [a[pivotRow], a[col]];
+        const pivot = a[col][col];
+        a[col] = a[col].map(value => value / pivot);
+        for (let row = 0; row < k; row++) {
+            if (row === col) continue;
+            const factor = a[row][col];
+            a[row] = a[row].map((value, index) => value - factor * a[col][index]);
+        }
+    }
+    return a.map(row => row[k]);
+}
+
+/**
+ * 数値から数値を予測する。予測に使う列が1つなら単回帰、2つ以上なら重回帰。
+ * 残差（予測とのずれ）の正規性は参考として示す。
+ */
+export function selectPredictionMulti(data, predictors, yVar) {
+    const xs = Array.from(new Set(predictors || [])).filter(name => name !== yVar);
+    if (!yVar || xs.length === 0) return { error: 'need_two_vars' };
+    if (xs.length === 1) {
+        const single = selectPrediction(data, xs[0], yVar);
+        return single.error ? single : { ...single, preset: { x: xs[0], y: yVar, predictors: xs } };
+    }
+    const rows = (data || [])
+        .map(row => [xs.map(name => toNumber(row[name])), toNumber(row[yVar])])
+        .filter(([xRow, y]) => y !== null && xRow.every(value => value !== null));
+    if (rows.length < xs.length + 3) return { error: 'too_few_rows', n: rows.length };
+    const coefficients = leastSquares(rows.map(([xRow]) => xRow), rows.map(([, y]) => y));
+    if (!coefficients) return { error: 'collinear' };
+    const residuals = rows.map(([xRow, y]) => y - coefficients[0] - xRow.reduce((sum, value, i) => sum + coefficients[i + 1] * value, 0));
+    const checks = normalityChecks([{ label: 'residual', values: residuals }])
+        .map(check => ({ ...check, isResidual: true }));
+    return {
+        analysisType: 'regression_multiple',
+        methodKey: 'regression_multiple',
+        normal: judgeNormality(checks),
+        n: rows.length,
+        checks,
+        preset: { predictors: xs, y: yVar }
+    };
+}

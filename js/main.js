@@ -1587,6 +1587,13 @@ function handleTabularGridKeydown(event) {
             ArrowDown: [1, 0]
         }[event.key];
 
+        // いちばん右の列で → を押したら、列を1つ増やしてそこへ移る（下端の Enter で行が増えるのと同じ考え方）
+        if (event.key === 'ArrowRight' && column === tabularGridColumnCount - 1) {
+            event.preventDefault();
+            addTabularGridColumn({ focusRow: row });
+            return;
+        }
+
         if (arrowMovement) {
             event.preventDefault();
             const nextRow = Math.min(
