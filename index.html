@@ -25,15 +25,15 @@
     <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20261006-dodgerblue-v3">
+    <link rel="stylesheet" href="css/style.css?v=20261007-icons-v1">
 
     <script type="importmap">
         {
             "imports": {
                 "./js/utils.js": "./js/utils.js?v=20260830-beginner-v5",
                 "./js/ai_support.js": "./js/ai_support.js?v=20260830-beginner-v5",
-                "./js/i18n.js": "./js/i18n.js?v=20260830-beginner-v5",
-                "./js/i18n_content_en.js": "./js/i18n_content_en.js?v=20260830-beginner-v5"
+                "./js/i18n.js": "./js/i18n.js?v=20261007-demo-v1",
+                "./js/i18n_content_en.js": "./js/i18n_content_en.js?v=20261007-demo-v1"
             }
         }
     </script>
@@ -68,12 +68,21 @@
             </p>
 
             <div class="demo-options-grid">
-                <!-- 総合データ -->
-                <button class="demo-option-btn primary" data-demo="demo_all_analysis.csv">
+                <!-- 総合データ（初学者モード向け） -->
+                <button class="demo-option-btn primary" data-demo="highschool_life_demo.csv">
                     <div class="icon"><i class="fas fa-star"></i></div>
                     <div class="info">
-                        <strong>総合デモデータ (推奨)</strong>
-                        <span>ICT教育調査データ・全機能対応</span>
+                        <strong>高校生の生活と学習 (推奨)</strong>
+                        <span>60人分・睡眠やスマホ時間、テスト、部活動、授業の前後など</span>
+                    </div>
+                </button>
+
+                <!-- 旧総合データ -->
+                <button class="demo-option-btn" data-demo="demo_all_analysis.csv">
+                    <div class="icon"><i class="fas fa-layer-group"></i></div>
+                    <div class="info">
+                        <strong>総合デモデータ (ICT教育調査)</strong>
+                        <span>30人分・3教科の点数、学習時間、感想</span>
                     </div>
                 </button>
 
@@ -396,7 +405,7 @@
                     <div class="category-cards">
                         <div class="feature-card" data-analysis="analysis_support">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-magic feature-card-icon"></i>
+                                <i class="fas fa-wand-magic-sparkles feature-card-icon" aria-hidden="true"></i>
                                 分析サポーター
                             </h3>
                             <p class="feature-card-description">どの分析を使えばいいか迷った時は、ここから始めてください</p>
@@ -404,7 +413,7 @@
 
                         <div class="feature-card" data-analysis="data_processing">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-filter feature-card-icon"></i>
+                                <i class="fas fa-filter feature-card-icon" aria-hidden="true"></i>
                                 データ加工・整形
                             </h3>
                             <p class="feature-card-description">新しいデータを作ったり、分析の前にデータを整えたりします</p>
@@ -412,7 +421,7 @@
 
                         <div class="feature-card" data-analysis="data_merge" data-requires="none">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-object-group feature-card-icon"></i>
+                                <i class="fas fa-object-group feature-card-icon" aria-hidden="true"></i>
                                 データ結合
                             </h3>
                             <p class="feature-card-description">2つのファイル（Excel/CSV）を、出席番号（ID）などを目印にして1つにまとめます</p>
@@ -420,7 +429,7 @@
 
                         <div class="feature-card" data-analysis="factor_score" data-requires="none">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-calculator feature-card-icon"></i>
+                                <i class="fas fa-calculator feature-card-icon" aria-hidden="true"></i>
                                 因子得点算出
                             </h3>
                             <p class="feature-card-description">複数の質問回答をまとめて、新しい合計点や平均点のデータを作ります</p>
@@ -440,7 +449,7 @@
                     <div class="category-cards">
                         <div class="feature-card" data-analysis="eda" data-requires="numeric:1">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-search feature-card-icon"></i>
+                                <i class="fas fa-magnifying-glass-chart feature-card-icon" aria-hidden="true"></i>
                                 探索的データ分析（EDA）
                             </h3>
                             <p class="feature-card-description">平均値やグラフを作成し、データの全体像や傾向を把握します</p>
@@ -449,7 +458,7 @@
 
                         <div class="feature-card" data-analysis="cross_tabulation" data-requires="categorical:2">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-border-all feature-card-icon"></i>
+                                <i class="fas fa-table-cells feature-card-icon" aria-hidden="true"></i>
                                 クロス集計
                             </h3>
                             <p class="feature-card-description">「男女別×回答別」のように、人数の偏りや内訳を表にまとめます</p>
@@ -458,7 +467,7 @@
 
                         <div class="feature-card" data-analysis="correlation" data-requires="numeric:2">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-project-diagram feature-card-icon"></i>
+                                <i class="fas fa-link feature-card-icon" aria-hidden="true"></i>
                                 相関分析
                             </h3>
                             <p class="feature-card-description">「身長と体重」のように、2つのデータが連動して変化するか調べます</p>
@@ -479,7 +488,7 @@
                     <div class="category-cards">
                         <div class="feature-card" data-analysis="ttest" data-requires="numeric:1">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-vial feature-card-icon"></i>
+                                <i class="fas fa-scale-balanced feature-card-icon" aria-hidden="true"></i>
                                 t検定
                             </h3>
                             <p class="feature-card-description">「クラスAとB」など、2つのグループの平均点に違いがあるか調べます</p>
@@ -488,7 +497,7 @@
 
                         <div class="feature-card" data-analysis="anova_one_way" data-requires="numeric:1,categorical:1">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-chart-bar feature-card-icon"></i>
+                                <i class="fas fa-chart-column feature-card-icon" aria-hidden="true"></i>
                                 一要因分散分析 (ANOVA)
                             </h3>
                             <p class="feature-card-description">「3つのクラス」など、3つ以上のグループの平均点に違いがあるか調べます</p>
@@ -497,7 +506,7 @@
 
                         <div class="feature-card" data-analysis="anova_two_way" data-requires="numeric:1">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-th-large feature-card-icon"></i>
+                                <i class="fas fa-table-cells-large feature-card-icon" aria-hidden="true"></i>
                                 二要因分散分析 (Two-way ANOVA)
                             </h3>
                             <p class="feature-card-description">「薬の有無」×「性別」のように、2つの要因が合わさった時の効果を調べます</p>
@@ -518,7 +527,7 @@
                     <div class="category-cards">
                         <div class="feature-card" data-analysis="mann_whitney" data-requires="numeric:1,categorical:1">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-balance-scale feature-card-icon"></i>
+                                <i class="fas fa-arrow-down-1-9 feature-card-icon" aria-hidden="true"></i>
                                 マン・ホイットニーのU検定
                             </h3>
                             <p class="feature-card-description">データの偏りが大きい時に、2つのグループに違いがあるか（順位で）調べます</p>
@@ -528,7 +537,7 @@
                         <div class="feature-card" data-analysis="kruskal_wallis"
                             data-requires="numeric:1,categorical:1">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-sort-amount-up feature-card-icon"></i>
+                                <i class="fas fa-arrow-down-wide-short feature-card-icon" aria-hidden="true"></i>
                                 クラスカル・ウォリス検定
                             </h3>
                             <p class="feature-card-description">データの偏りが大きい時に、3つ以上のグループに違いがあるか調べます</p>
@@ -537,7 +546,7 @@
 
                         <div class="feature-card" data-analysis="wilcoxon_signed_rank" data-requires="numeric:2">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-exchange-alt feature-card-icon"></i>
+                                <i class="fas fa-right-left feature-card-icon" aria-hidden="true"></i>
                                 ウィルコクソンの符号付順位検定
                             </h3>
                             <p class="feature-card-description">データの偏りが大きい時に、同じ人の「事前・事後」に変化があったか調べます</p>
@@ -558,7 +567,7 @@
                     <div class="category-cards">
                         <div class="feature-card" data-analysis="mcnemar" data-requires="categorical:2">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-sync-alt feature-card-icon"></i>
+                                <i class="fas fa-rotate feature-card-icon" aria-hidden="true"></i>
                                 マクネマー検定
                             </h3>
                             <p class="feature-card-description">同じ人の「事前・事後」で、賛成・反対などの割合がどう変化したか調べます</p>
@@ -567,7 +576,7 @@
 
                         <div class="feature-card" data-analysis="chi_square" data-requires="categorical:2">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-table feature-card-icon"></i>
+                                <i class="fas fa-table feature-card-icon" aria-hidden="true"></i>
                                 カイ二乗検定
                             </h3>
                             <p class="feature-card-description">「性別」と「きのこ/たけのこ派」のように、2つのアンケート項目に偏り（関連性）があるか調べます</p>
@@ -576,7 +585,7 @@
 
                         <div class="feature-card" data-analysis="fisher_exact" data-requires="categorical:2">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-bullseye feature-card-icon"></i>
+                                <i class="fas fa-crosshairs feature-card-icon" aria-hidden="true"></i>
                                 フィッシャーの正確確率検定
                             </h3>
                             <p class="feature-card-description">アンケートの回答数が少ない（数十人など）時に、項目間の偏りを調べます</p>
@@ -597,7 +606,7 @@
                     <div class="category-cards">
                         <div class="feature-card" data-analysis="regression_simple" data-requires="numeric:2">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-chart-line feature-card-icon"></i>
+                                <i class="fas fa-chart-line feature-card-icon" aria-hidden="true"></i>
                                 単回帰分析
                             </h3>
                             <p class="feature-card-description">「勉強時間」から「テストの点数」を予測する数式を作ります</p>
@@ -606,7 +615,7 @@
 
                         <div class="feature-card" data-analysis="regression_multiple" data-requires="numeric:3">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-layer-group feature-card-icon"></i>
+                                <i class="fas fa-layer-group feature-card-icon" aria-hidden="true"></i>
                                 重回帰分析
                             </h3>
                             <p class="feature-card-description">複数の説明変数から結果を予測し、他の変数を一定とした関連を調べます</p>
@@ -616,7 +625,7 @@
                         <div class="feature-card" data-analysis="logistic_regression"
                             data-requires="numeric:1,categorical:1">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-sign-in-alt feature-card-icon"></i>
+                                <i class="fas fa-toggle-on feature-card-icon" aria-hidden="true"></i>
                                 ロジスティック回帰分析
                             </h3>
                             <p class="feature-card-description">「合格・不合格」などの確率を、複数の要因から予測します</p>
@@ -637,7 +646,7 @@
                     <div class="category-cards">
                         <div class="feature-card" data-analysis="factor_analysis" data-requires="numeric:3">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-project-diagram feature-card-icon"></i>
+                                <i class="fas fa-sitemap feature-card-icon" aria-hidden="true"></i>
                                 因子分析
                             </h3>
                             <p class="feature-card-description">たくさんの質問項目から、背後に隠れた共通のテーマ（因子）を見つけ出します</p>
@@ -646,7 +655,7 @@
 
                         <div class="feature-card" data-analysis="pca" data-requires="numeric:3">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-compress-arrows-alt feature-card-icon"></i>
+                                <i class="fas fa-compress feature-card-icon" aria-hidden="true"></i>
                                 主成分分析 (PCA)
                             </h3>
                             <p class="feature-card-description">たくさんの変数を少数の総合指標にまとめ、データを分かりやすくします</p>
@@ -655,7 +664,7 @@
 
                         <div class="feature-card" data-analysis="time_series" data-requires="numeric:1">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-chart-area feature-card-icon"></i>
+                                <i class="fas fa-chart-area feature-card-icon" aria-hidden="true"></i>
                                 時系列データ分析
                             </h3>
                             <p class="feature-card-description">売上や気温など、時間とともに変化するデータの傾向や周期を調べます</p>
@@ -664,7 +673,7 @@
 
                         <div class="feature-card" data-analysis="text_mining" data-requires="none">
                             <h3 class="feature-card-title">
-                                <i class="fas fa-font feature-card-icon"></i>
+                                <i class="fas fa-comment-dots feature-card-icon" aria-hidden="true"></i>
                                 テキストマイニング
                             </h3>
                             <p class="feature-card-description">自由記述のアンケートなど、文章の中でよく使われる単語や傾向を調べます</p>
@@ -1006,6 +1015,45 @@
                 </div>
                 <div class="collapsible-content collapsed" data-home-content="releaseNotes">
                     <div class="changelog">
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v2.0.0</span>
+                                <span class="changelog-date">2026年10月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>初学者モードとデザインの刷新</h5>
+                                <ul>
+                                    <li><strong>初学者モード:</strong> 「やりたいこと → 対応の有無 → 列の選択」に答えるだけで、手法名を知らなくても分析できるようにし、ホームの初期表示に設定</li>
+                                    <li><strong>手法の自動選択:</strong> 正規性（Shapiro-Wilk検定）や期待度数を確かめ、t検定／U検定、ANOVA／Kruskal-Wallis、相関、カイ二乗／Fisher、回帰などを自動で選択。結果の先頭に選んだ理由を表示</li>
+                                    <li><strong>複数列の分析:</strong> 比べたい数値の列を複数選べるようにし、3列以上の関係は相関行列、予測に使う列が2つ以上なら重回帰分析を選択</li>
+                                    <li><strong>説明イラスト:</strong> 全23枚を計算どおりに描いた図に作り直し、各分析の見出しの下に表示</li>
+                                    <li><strong>デザイン:</strong> ドジャーブルーを基調にした画面へ刷新し、文字をBIZ UDPゴシック、図表を論文向けの書体（Times New Roman＋明朝体）に統一</li>
+                                    <li><strong>手法一覧:</strong> 「すべての手法から選ぶ」で、各分析の名前の横に内容を表すアイコンを表示</li>
+                                    <li><strong>図の見やすさ:</strong> グラフのタイトルを枠の上に置き、有意差の記号の上に余白を確保</li>
+                                    <li><strong>デモデータ:</strong> 高校生に身近な「高校生の生活と学習」（60人分）を追加し、初学者モードの全目的をこれ1つで試せるように</li>
+                                    <li><strong>表の入力:</strong> いちばん右の列で → キーを押すと列を追加</li>
+                                    <li><strong>不具合修正:</strong> 一部の分析で欠損値が0として計算されていた問題と、記号を含む列名で選択欄が崩れる問題を修正</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="changelog-entry">
+                            <div class="changelog-header">
+                                <span class="changelog-version">v1.9.0</span>
+                                <span class="changelog-date">2026年8月</span>
+                            </div>
+                            <div class="changelog-content">
+                                <h5>日英表示と使いやすさの向上</h5>
+                                <ul>
+                                    <li><strong>日本語・英語表示:</strong> 画面全体とマニュアルを日本語と英語で切り替えられるように対応</li>
+                                    <li><strong>印刷・PDF保存:</strong> 結果画面をブラウザの印刷機能でPDF保存できるよう、図表と解釈を印刷向けに配置</li>
+                                    <li><strong>アクセシビリティ:</strong> 列の複数選択をキーボードと読み上げに対応させ、グラフを色以外（線の形・記号）でも見分けられるように改善</li>
+                                    <li><strong>生成AI支援:</strong> 公開版はAI用テキストのコピー専用とし、AIに渡す内容の確認画面と初学者向けの使い方案内を追加</li>
+                                    <li><strong>品質と速度:</strong> t検定・テキストマイニングの結果表示を改善し、GitHub Pagesでの読み込みを安定化</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <div class="changelog-entry">
                             <div class="changelog-header">
                                 <span class="changelog-version">v1.8.0</span>
