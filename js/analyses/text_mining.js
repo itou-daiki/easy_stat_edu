@@ -13,14 +13,16 @@ import {
     splitTextIntoSentences,
     computeTermMetrics,
     computeCategorySpecificity,
-    buildGroupComparisonRows
-} from './text_mining/helpers.js?v=tm-fast-20260729a';
+    buildGroupComparisonRows,
+    suggestForceTerms
+} from './text_mining/helpers.js?v=tm-compound-20261008a';
 import {
     displayWordCloud,
     plotCooccurrenceNetwork,
     POS_STYLES
 } from './text_mining/visualization.js?v=tm-fast-20260729b';
 import { loadScriptOnce, loadStylesheetOnce } from '../resource_loader.js';
+import { getLocale } from '../i18n.js';
 
 const WORD_CLOUD_URL = 'https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js';
 const VIS_NETWORK_STYLE_URL = 'https://unpkg.com/vis-network@9.1.9/styles/vis-network.min.css';
@@ -108,7 +110,8 @@ function readAnalysisSettings() {
             ? 'document'
             : 'sentence',
         stopWords: new Set(parseTermList(document.getElementById('tm-stop-words')?.value)),
-        forceTerms: parseTermList(document.getElementById('tm-force-terms')?.value)
+        forceTerms: parseTermList(document.getElementById('tm-force-terms')?.value),
+        mergeCompounds: document.getElementById('tm-merge-compounds')?.checked !== false
     };
 }
 
@@ -761,6 +764,74 @@ function activateTab(tabId, renderCategorySections) {
     if (tabId === 'tm-category') renderCategorySections?.();
 }
 
+/** 今の入力（列または直接入力）から、分析する文書の配列を取り出す */
+function collectInputTexts(currentData) {
+    const inputMode = document.querySelector('[data-tm-input-mode].active')?.dataset.tmInputMode || 'column';
+    if (inputMode === 'direct') {
+        return String(document.getElementById('tm-direct-text')?.value || '')
+            .split(/\r\n|\r|\n/)
+            .map(text => text.trim())
+            .filter(Boolean);
+    }
+    const textVar = document.getElementById('text-var')?.value;
+    if (!textVar) return [];
+    return (currentData || [])
+        .map(row => (row[textVar] == null ? '' : String(row[textVar]).trim()))
+        .filter(Boolean);
+}
+
+/** 「おすすめの強制抽出語を取り込む」：候補を探して強制抽出語の欄へ追加する */
+async function importSuggestedForceTerms(currentData) {
+    const isEnglish = getLocale() === 'en';
+    const status = document.getElementById('tm-suggest-status');
+    const textarea = document.getElementById('tm-force-terms');
+    const button = document.getElementById('tm-suggest-force-terms');
+    const setStatus = message => { if (status) status.textContent = message; };
+
+    const texts = collectInputTexts(currentData);
+    if (texts.length === 0) {
+        setStatus(isEnglish
+            ? 'Choose a text column or enter text first.'
+            : '先に、分析するテキストの列を選ぶか、テキストを入力してください。');
+        return;
+    }
+
+    if (button) button.disabled = true;
+    try {
+        if (!getTokenizer()) {
+            if (typeof globalThis.Intl?.Segmenter !== 'function') {
+                await loadScriptOnce(TINY_SEGMENTER_SCRIPT_URL, {
+                    isReady: () => typeof window.TinySegmenter === 'function'
+                });
+            }
+            await initTokenizer();
+        }
+        const existing = parseTermList(textarea?.value);
+        const suggestions = suggestForceTerms(texts, getTokenizer(), { exclude: existing });
+        if (suggestions.length === 0) {
+            setStatus(isEnglish
+                ? 'No new candidates were found (terms must appear at least twice).'
+                : '新しい候補は見つかりませんでした（2回以上出てくる複合語が対象です）。');
+            return;
+        }
+        if (textarea) {
+            textarea.value = [...existing, ...suggestions.map(item => item.term)].join('\n');
+            textarea.rows = Math.min(8, Math.max(2, existing.length + suggestions.length));
+        }
+        const list = suggestions.map(item => isEnglish ? `${item.term} (${item.count})` : `${item.term}（${item.count}回）`);
+        setStatus(isEnglish
+            ? `Added ${suggestions.length} terms: ${list.join(', ')}`
+            : `${suggestions.length}語を追加しました：${list.join('、')}`);
+    } catch (error) {
+        console.error(error);
+        setStatus(isEnglish
+            ? 'Could not find candidates. Please try again.'
+            : '候補を探せませんでした。もう一度お試しください。');
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
 async function runTextMining(currentData) {
     const inputMode = document.querySelector('[data-tm-input-mode].active')?.dataset.tmInputMode || 'column';
     const useDirectInput = inputMode === 'direct';
@@ -847,7 +918,8 @@ async function runTextMining(currentData) {
         updateStatus('テキストを解析中... 0%');
         const extractionOptions = {
             forceTerms: settings.forceTerms,
-            stopWords: settings.stopWords
+            stopWords: settings.stopWords,
+            mergeCompounds: settings.mergeCompounds
         };
         const items = await analyzeItemsInChunks(
             rawItems,
@@ -1098,6 +1170,17 @@ export function render(container, currentData, characteristics) {
                             <span>強制抽出語（改行・読点区切り）</span>
                             <textarea id="tm-force-terms" rows="2" placeholder="例：データサイエンス、生成AI"></textarea>
                         </label>
+                        <div class="tm-wide-setting tm-suggest-setting">
+                            <button type="button" id="tm-suggest-force-terms" class="btn-demo tm-suggest-btn">
+                                <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> おすすめの強制抽出語を取り込む
+                            </button>
+                            <p class="tm-setting-note">テキストの中で何度も出てくる複合語（例：文化祭、デジタル教材）を探して、強制抽出語の欄に追加します。追加した語は自由に消せます。</p>
+                            <p id="tm-suggest-status" class="tm-suggest-status" role="status" aria-live="polite"></p>
+                        </div>
+                        <label class="tm-wide-setting tm-check-setting">
+                            <input type="checkbox" id="tm-merge-compounds" checked>
+                            <span>学校でよく使う複合語を1語として数える（文化祭・部活動・生徒会・卒業式など）</span>
+                        </label>
                     </div>
                 </details>
 
@@ -1166,6 +1249,8 @@ export function render(container, currentData, characteristics) {
         button.addEventListener('click', () => setInputMode(button.dataset.tmInputMode));
     });
     directInput?.addEventListener('input', updateDirectStatus);
+    document.getElementById('tm-suggest-force-terms')
+        ?.addEventListener('click', () => importSuggestedForceTerms(data));
     const networkFilterMode = document.getElementById('tm-network-filter-mode');
     const jaccardThresholdSetting = document.getElementById('tm-jaccard-threshold-setting');
     const updateNetworkFilterSettings = () => {

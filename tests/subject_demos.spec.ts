@@ -68,17 +68,34 @@ test.describe('Subject demos (high school themes)', () => {
         expect(errors).toEqual([]);
     });
 
-    test('text mining: school festival comments', async ({ page }) => {
+    test('text mining: school festival comments count 文化祭 as one word', async ({ page }) => {
         const errors = trackErrors(page);
         await loadDemo(page, 'hs_text_demo.csv');
         await openAnalysis(page, 'text_mining');
         await page.selectOption('#text-var', { label: '感想' });
+
+        // おすすめの強制抽出語を取り込むと、文化祭などの複合語が欄に入る
+        await page.locator('.tm-advanced-settings > summary').click();
+        await page.click('#tm-suggest-force-terms');
+        await expect(page.locator('#tm-suggest-status')).toContainText('語を追加しました');
+        await expect(page.locator('#tm-force-terms')).toHaveValue(/文化祭/);
+        await expect(page.locator('#tm-force-terms')).toHaveValue(/模擬店/);
+
         await page.click('#run-text-btn');
         await expect(page.locator('#analysis-results')).toBeVisible({ timeout: 60000 });
         await expect(page.locator('#tm-overall', { hasText: '品詞別ランキング' })).toBeVisible({ timeout: 60000 });
-        // 「文化祭」は分かち書きで「文化」「祭」に分かれるため、文中によく出る「準備」で確かめる
-        await expect(page.locator('#tm-overall')).toContainText('準備');
+        const firstTerm = page.locator('#tm-overall table tbody tr').first();
+        await expect(firstTerm).toContainText('文化祭');
         expect(errors).toEqual([]);
+    });
+
+    test('text mining: compound terms are joined even without forced terms', async ({ page }) => {
+        await loadDemo(page, 'hs_text_demo.csv');
+        await openAnalysis(page, 'text_mining');
+        await page.selectOption('#text-var', { label: '感想' });
+        await page.click('#run-text-btn');
+        await expect(page.locator('#tm-overall', { hasText: '品詞別ランキング' })).toBeVisible({ timeout: 60000 });
+        await expect(page.locator('#tm-overall table tbody tr').first()).toContainText('文化祭');
     });
 
     test('time series: monthly library loans', async ({ page }) => {

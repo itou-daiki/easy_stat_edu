@@ -6615,3 +6615,43 @@ table tbody tr:hover {
     font-family: var(--font-serif);
     font-variant-numeric: tabular-nums;
 }
+
+/* テキストマイニング：おすすめの強制抽出語・複合語の結合 */
+.tm-settings-grid .tm-suggest-setting {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+}
+
+.tm-settings-grid .tm-suggest-btn {
+    width: auto;
+    padding: 0.45rem 0.9rem;
+    border-radius: var(--radius-btn);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.tm-setting-note,
+.tm-suggest-status {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.tm-suggest-status:not(:empty) {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.tm-settings-grid .tm-check-setting {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tm-settings-grid .tm-check-setting input {
+    width: auto;
+    flex: 0 0 auto;
+}
