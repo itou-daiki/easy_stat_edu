@@ -882,11 +882,12 @@ html[lang="en"] .feature-card-requirement::before {
     width: min(560px, calc(100vw - 2rem));
 }
 
+/* AI機能だと一目で分かるよう、青から紫へのグラデーションと「きらめき」記号を使う */
 .ai-assist-toggle {
     width: auto;
     margin-left: auto;
-    border: 1px solid var(--accent-strong);
-    background: var(--accent);
+    border: 1px solid #4338ca;
+    background: linear-gradient(135deg, var(--brand-deep) 0%, #4f46e5 55%, #7c3aed 100%);
     color: white;
     border-radius: var(--radius);
     padding: 0.75rem 1rem;
@@ -923,6 +924,52 @@ html[lang="en"] .feature-card-requirement::before {
 
 .ai-assist-widget.collapsed .ai-assist-toggle span {
     display: none;
+}
+
+.ai-assist-widget.collapsed .ai-assist-toggle {
+    flex-direction: column;
+    gap: 1px;
+    border-radius: 14px;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+.ai-assist-widget.collapsed .ai-assist-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(79, 70, 229, 0.35);
+}
+
+.ai-sparkle-icon {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    flex: 0 0 auto;
+}
+
+.ai-toggle-mark {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.06em;
+}
+
+/* 開いているときは「AI解釈補助」の文字があるので、AIの小さな文字は出さない */
+.ai-assist-widget:not(.collapsed) .ai-toggle-mark {
+    display: none;
+}
+
+.ai-sparkle-inline {
+    width: 1.05em;
+    height: 1.05em;
+    margin-right: 0.35rem;
+    vertical-align: -0.12em;
+    fill: #6d28d9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-assist-widget.collapsed .ai-assist-toggle:hover {
+        transform: none;
+    }
 }
 
 .ai-assist-widget.collapsed .ai-assist-panel {

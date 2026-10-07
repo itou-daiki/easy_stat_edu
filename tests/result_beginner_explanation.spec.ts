@@ -62,6 +62,9 @@ test.describe('分析結果のかんたん説明', () => {
         await expect(details).not.toContainText('生成AI');
         await expect(page.locator('#ai-assist-toggle')).toHaveCSS('width', '48px');
         await expect(page.locator('#ai-assist-toggle span')).toBeHidden();
+        // 閉じた状態でもAI機能と分かるよう、きらめき記号と「AI」の文字を表示する
+        await expect(page.locator('#ai-assist-toggle .ai-sparkle-icon')).toBeVisible();
+        await expect(page.locator('#ai-assist-toggle .ai-toggle-mark')).toHaveText('AI');
         const [detailsBox, aiButtonBox] = await Promise.all([
             details.boundingBox(),
             page.locator('#ai-assist-toggle').boundingBox()
