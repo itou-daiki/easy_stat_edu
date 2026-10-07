@@ -32,22 +32,24 @@ const ENGLISH_TEXT = new Map([
     ['デモデータを選択', 'Choose a demo dataset'],
     ['分析目的に合わせたデータセットを選択してください。', 'Choose a dataset that matches your analysis goal.'],
     ['クリックするとデータが読み込まれます。', 'Select a dataset to load it.'],
-    ['総合デモデータ (推奨)', 'Comprehensive demo (recommended)'],
-    ['ICT教育調査データ・全機能対応', 'ICT education survey data for all analysis features'],
+    ['高校生の生活と学習 (推奨)', 'High school life and learning (recommended)'],
+    ['60人分・睡眠やスマホ時間、テスト、部活動、授業の前後など', '60 students: sleep, phone time, test scores, clubs, before/after a lesson'],
+    ['総合デモデータ (ICT教育調査)', 'Comprehensive demo (ICT education survey)'],
+    ['30人分・3教科の点数、学習時間、感想', '30 students: three subject scores, study time, comments'],
     ['t検定用データ', 't-test demo'],
-    ['DigComp群別の学習成果比較', 'Compare learning outcomes across DigComp groups'],
+    ['朝の10分間読書と読解テスト（40人）', 'Morning reading time and reading test scores (40 students)'],
     ['分散分析用データ (ANOVA)', 'ANOVA demo'],
-    ['ICT指導法×学校種の比較実験', 'Compare ICT teaching methods across school types'],
+    ['英単語の勉強法×学年、単語テスト3回（48人）', 'Vocabulary study method × grade, three word tests (48 students)'],
     ['重回帰分析用データ', 'Multiple-regression demo'],
-    ['オンライン学習成果の予測モデル', 'Predict online-learning outcomes'],
+    ['生活習慣から模試の得点を予測（60人）', 'Predict mock exam scores from daily habits (60 students)'],
     ['因子分析・PCA用データ', 'Factor-analysis and PCA demo'],
-    ['ICT教育態度尺度（3因子15項目）', 'ICT education attitude scale (3 factors, 15 items)'],
+    ['学校生活アンケート15項目（150人）', 'School life survey, 15 items (150 students)'],
     ['テキストマイニング用', 'Text-mining demo'],
-    ['ICT教育の自由記述アンケート', 'Open-ended responses about ICT education'],
+    ['文化祭の感想（45人）', 'Comments on the school festival (45 students)'],
     ['時系列分析用データ', 'Time-series demo'],
-    ['ICT教育導入の3年間経時変化', 'Three-year change after introducing ICT education'],
+    ['学校図書館の月別貸出冊数（3年間）', 'Monthly school library loans (3 years)'],
     ['ロジスティック回帰用データ', 'Logistic-regression demo'],
-    ['ICT活用能力認定の合否予測', 'Predict pass/fail outcomes for ICT competency certification'],
+    ['英検2級の合否を予測（80人）', 'Predict pass/fail on an English proficiency test (80 students)'],
     ['分析機能を選択', 'Choose an analysis'],
     ['分析サポーター', 'Analysis guide'],
     ['データ加工', 'Data preparation'],
@@ -784,6 +786,10 @@ const ENGLISH_TEXT = new Map([
     ,['共起ネットワークは、同じ文または文書に現れた語のJaccard係数を表示します。「強い順」か「係数の下限」で線を絞れます。線があるだけで意味的・因果的な関係があるとは限りません。', 'The co-occurrence network uses Jaccard coefficients for terms appearing in the same sentence or document. Filter edges by strongest coefficients or by a minimum coefficient. An edge alone does not establish a semantic or causal relationship.']
     ,['除外語（改行・読点区切り）', 'Excluded terms (separate with line breaks or commas)']
     ,['強制抽出語（改行・読点区切り）', 'Forced terms (separate with line breaks or commas)']
+    ,['おすすめの強制抽出語を取り込む', 'Import suggested forced terms']
+    ,['分析を実行するときに、おすすめの強制抽出語を自動で追加する', 'Add suggested forced terms automatically when running the analysis']
+    ,['テキストの中で何度も出てくる複合語（例：文化祭、デジタル教材）を探して、強制抽出語の欄に追加します。追加した語は自由に消せます。', 'Finds compound terms that appear repeatedly in the text (e.g. school festival, digital materials) and adds them to the forced terms. You can delete any of them.']
+    ,['学校でよく使う複合語を1語として数える（文化祭・部活動・生徒会・卒業式など）', 'Count common school compound terms as one word (e.g. school festival, club activities, student council)']
     ,[': 等分散性の検定（Levene検定）のp値です。p < .05 の場合、等分散ではない（分散が異なる）可能性が高いため、Welchのt検定（本分析のデフォルト）の結果がより信頼できます。', ': p value from Levene\'s test of equal variances. When p < .05, the variances may differ, so the Welch t-test result used by default here is more reliable.']
     ,['表タイトルを編集', 'Edit table title']
     ,['初期表示に戻す', 'Reset view']

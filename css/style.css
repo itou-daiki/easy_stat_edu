@@ -410,9 +410,19 @@ html[lang="en"] [data-asset-locale="ja"] {
     border-bottom: 2px solid var(--brand);
 }
 
-/* 分類ごとの色付きアイコンタイルは使わない（見出しの文字で区別する） */
+/* 分類見出しの左に置くアイコン（手法のアイコンタイルより一回り大きい） */
 .category-icon {
-    display: none;
+    flex: 0 0 auto;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 8px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 1rem;
 }
 
 .category-info {
@@ -529,12 +539,40 @@ html[lang="en"] .feature-card-requirement::before {
     line-height: 1.5;
     margin-bottom: 0.1rem;
     display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
+    align-items: center;
+    gap: var(--space-3);
 }
 
+/* 手法名の左に置く小さなアイコンタイル（淡い青の面＋青い記号） */
 .feature-card-icon {
-    display: none;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 8px;
+    background: #e8f3ff;
+    color: var(--brand-deep);
+    font-size: 0.95rem;
+    transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.feature-card:hover .feature-card-icon,
+.feature-card:focus-visible .feature-card-icon {
+    background: var(--brand);
+    color: #fff;
+}
+
+/* 説明文の左端をタイトルの文字にそろえる */
+.feature-card-description,
+.feature-card-requirement {
+    padding-left: calc(2rem + var(--space-3));
+}
+
+.feature-card.disabled .feature-card-icon {
+    background: #eef0f3;
+    color: #8a929d;
 }
 
 .feature-card-description {
@@ -4839,8 +4877,27 @@ table tbody tr:hover {
     box-shadow: var(--shadow-card-hover);
 }
 
+/* 手法一覧と同じアイコンタイル。推奨データだけ青い面で目立たせる */
+.demo-option-btn {
+    gap: var(--space-3);
+}
+
 .demo-option-btn .icon {
-    display: none;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 8px;
+    background: #e8f3ff;
+    color: var(--brand-deep);
+    font-size: 1rem;
+}
+
+.demo-option-btn.primary .icon {
+    background: var(--brand);
+    color: #fff;
 }
 
 .demo-option-btn .info {
@@ -6557,4 +6614,44 @@ table tbody tr:hover {
 #analysis-content table:not(.guided-check-table):not(.guided-guide-table) {
     font-family: var(--font-serif);
     font-variant-numeric: tabular-nums;
+}
+
+/* テキストマイニング：おすすめの強制抽出語・複合語の結合 */
+.tm-settings-grid .tm-suggest-setting {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+}
+
+.tm-settings-grid .tm-suggest-btn {
+    width: auto;
+    padding: 0.45rem 0.9rem;
+    border-radius: var(--radius-btn);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.tm-setting-note,
+.tm-suggest-status {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.tm-suggest-status:not(:empty) {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.tm-settings-grid .tm-check-setting {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tm-settings-grid .tm-check-setting input {
+    width: auto;
+    flex: 0 0 auto;
 }

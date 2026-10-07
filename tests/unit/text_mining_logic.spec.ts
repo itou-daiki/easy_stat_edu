@@ -10,7 +10,8 @@ import {
     computeCategorySpecificity,
     buildGroupComparisonRows,
     buildCooccurrenceEdges,
-    splitTextIntoSentences
+    splitTextIntoSentences,
+    suggestForceTerms
 } from '../../js/analyses/text_mining/helpers.js';
 import { detectCommunities } from '../../js/analyses/text_mining/visualization.js';
 
@@ -110,6 +111,45 @@ test.describe('Text mining logic', () => {
         ]));
         expect(terms).not.toContain('の');
         expect(terms).not.toContain('が');
+    });
+
+    test('counts common school compound terms as one word', () => {
+        const localTokenizer = createIntlSegmenterTokenizer(Intl.Segmenter);
+        const terms = analyzeDocument(
+            '文化祭でクラスのお化け屋敷を作った。実行委員会で部活動と家庭学習、吹奏楽部や保健室の話をした。',
+            localTokenizer
+        ).map(token => token.term);
+        expect(terms).toEqual(expect.arrayContaining([
+            '文化祭', 'お化け屋敷', '実行委員会', '部活動', '家庭学習', '吹奏楽部', '保健室'
+        ]));
+        expect(terms).not.toContain('祭');
+        expect(terms).not.toContain('文化');
+
+        // 「の」や読点をはさんだ語はつながない
+        const separated = analyzeDocument('家の中、準備が一部の人にかたよった。', localTokenizer).map(token => token.term);
+        expect(separated).toEqual(expect.arrayContaining(['家', '中', '準備', '一部']));
+
+        // 設定でオフにすると、従来どおり分かれる
+        const unmerged = analyzeDocument('文化祭が楽しみ', localTokenizer, { mergeCompounds: false }).map(token => token.term);
+        expect(unmerged).toEqual(expect.arrayContaining(['文化', '祭']));
+    });
+
+    test('suggests repeated compound terms as forced-term candidates', () => {
+        const localTokenizer = createIntlSegmenterTokenizer(Intl.Segmenter);
+        const suggestions = suggestForceTerms([
+            '文化祭の模擬店でデジタル教材を使った。',
+            '文化祭で模擬店を手伝った。',
+            'デジタル教材は便利だった。手伝ったら楽しかった。',
+            '一度だけ出る役割分担の話。'
+        ], localTokenizer, { exclude: ['模擬店'] });
+        const terms = suggestions.map(item => item.term);
+
+        expect(suggestions).toContainEqual({ term: '文化祭', count: 2 });
+        expect(terms).toContain('デジタル教材');
+        // すでに入力済みの語・1回しか出ない語・動詞の切れ端（手伝った）は候補にしない
+        expect(terms).not.toContain('模擬店');
+        expect(terms).not.toContain('役割分担');
+        expect(terms).not.toContain('手伝');
     });
 
     test('builds sentence-level Jaccard co-occurrence edges', () => {

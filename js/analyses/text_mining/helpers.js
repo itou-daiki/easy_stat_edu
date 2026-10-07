@@ -87,7 +87,8 @@ export function createIntlSegmenterTokenizer(
                         surface_form: part.segment,
                         basic_form: part.segment,
                         pos: '',
-                        pos_detail_1: ''
+                        pos_detail_1: '',
+                        start: part.index
                     }));
             }
         };
@@ -128,12 +129,18 @@ export async function initTokenizer(statusCallback) {
     tokenizer = {
         engine: 'tiny-segmenter',
         analyze(text) {
-            return tinySegmenter.segment(String(text || '')).map(surface => ({
-                surface_form: surface,
-                basic_form: surface,
-                pos: '',
-                pos_detail_1: ''
-            }));
+            let position = 0;
+            return tinySegmenter.segment(String(text || '')).map(surface => {
+                const start = position;
+                position += surface.length;
+                return {
+                    surface_form: surface,
+                    basic_form: surface,
+                    pos: '',
+                    pos_detail_1: '',
+                    start
+                };
+            }).filter(token => /\S/u.test(token.surface_form));
         }
     };
     tokenizerInfo = {
@@ -268,11 +275,152 @@ function splitByForcedTerms(text, forcedTerms) {
         }));
 }
 
+// ======================================================================
+// 複合語の結合（分かち書きで分かれてしまう語を1語に戻す）
+// ======================================================================
+
+/**
+ * 学校でよく使う複合語。分かち書きで2語以上に分かれるものだけを載せる。
+ * 1文字の接尾語で終わる語（文化祭・生徒会など）は COMPOUND_SUFFIXES で結合するため載せない。
+ * @type {Set<string>}
+ */
+export const SCHOOL_COMPOUND_TERMS = new Set([
+    '部活動', '部活', '実行委員', '学級委員', '家庭学習', '学校生活', '学校行事', '休み時間', '授業中',
+    '定期テスト', '小テスト', '中間テスト', '期末テスト', '共通テスト', '推薦入試', '英検',
+    '球技大会', '合唱コンクール', '職場体験', '探究学習', '校外学習', '課題研究', '学習意欲',
+    '読書週間', 'お化け屋敷', 'グループ活動', 'オープンキャンパス'
+]);
+
+/**
+ * 前の語に付いて1語になる1文字の漢字（例：文化＋祭、吹奏楽＋部、生徒＋会、卒業＋式、積極＋的）
+ * @type {Set<string>}
+ */
+export const COMPOUND_SUFFIXES = new Set(['祭', '部', '会', '式', '室', '店', '的', '館']);
+
+const ENDS_WITH_KANJI = /[㐀-鿿々]$/u;
+const COMPOUND_PART = /^[㐀-鿿々ァ-ヶー]+$/u;
+const MAX_COMPOUND_PARTS = 4;
+
+function isAdjacent(previous, next) {
+    return Number.isInteger(previous?.start) && Number.isInteger(next?.start)
+        && previous.start + String(previous.surface_form).length === next.start;
+}
+
+function joinTokens(tokens) {
+    const surface = tokens.map(token => token.surface_form).join('');
+    return { surface_form: surface, basic_form: surface, pos: '', pos_detail_1: '', start: tokens[0].start };
+}
+
+/** tokens[index] から隣り合う語をつなぎ、compoundTerms に載っている最も長い語を探す */
+function findCompoundRun(tokens, index, compoundTerms) {
+    for (let length = Math.min(MAX_COMPOUND_PARTS, tokens.length - index); length >= 2; length--) {
+        const run = tokens.slice(index, index + length);
+        if (!run.every((token, i) => i === 0 || isAdjacent(run[i - 1], token))) continue;
+        if (compoundTerms.has(normalizeToken(run.map(token => token.surface_form).join('')))) return run;
+    }
+    return null;
+}
+
+/**
+ * 分かち書きで分かれた複合語を1語に戻す。
+ * 1) compoundTerms に載っている語（部活動・家庭学習など）
+ * 2) 漢字で終わる語＋1文字の接尾語（文化＋祭、生徒＋会など）
+ * 位置情報（start）がないトークンは、隣り合っているか分からないため結合しない。
+ * @param {Array<{surface_form: string, start?: number}>} tokens
+ * @param {Set<string>} [compoundTerms]
+ * @returns {Array<Object>}
+ */
+export function mergeCompoundTokens(tokens, compoundTerms = SCHOOL_COMPOUND_TERMS) {
+    const merged = [];
+    let index = 0;
+    while (index < tokens.length) {
+        const run = findCompoundRun(tokens, index, compoundTerms);
+        let current = run ? joinTokens(run) : tokens[index];
+        index += run ? run.length : 1;
+
+        // 「実行委員＋会」のように、つないだ後にも接尾語が続く場合はさらにつなぐ
+        while (index < tokens.length
+            && COMPOUND_SUFFIXES.has(tokens[index].surface_form)
+            && ENDS_WITH_KANJI.test(current.surface_form)
+            && isAdjacent(current, tokens[index])) {
+            current = joinTokens([current, tokens[index]]);
+            index += 1;
+        }
+        merged.push(current);
+    }
+    return merged;
+}
+
+// 動詞の活用語尾として続きやすい文字（「手伝った」の「っ」など）
+const VERB_ENDING_START = /^[っうくぐすつぬぶむるいきぎしちにびみりえけげせてねべめれわ]/u;
+
+/** 最後の語が1文字の漢字で、そのあとに活用語尾が続く（＝動詞の一部らしい）か */
+function looksLikeVerbStem(lastToken, text) {
+    const surface = String(lastToken.surface_form);
+    if (surface.length !== 1 || COMPOUND_SUFFIXES.has(surface) || !Number.isInteger(lastToken.start)) return false;
+    return VERB_ENDING_START.test(text.slice(lastToken.start + 1));
+}
+
+/**
+ * 強制抽出語の候補（おすすめ）を探す。
+ * 分かち書きで分かれた、漢字・カタカナだけの語が隣り合って何度も現れる並び（例：文化＋祭、模擬＋店）を候補にする。
+ * @param {string[]} texts - 文書の配列
+ * @param {Object} tokenizerInstance - initTokenizerで生成したトークナイザー
+ * @param {{minCount?: number, limit?: number, exclude?: string[]}} [options]
+ * @returns {Array<{term: string, count: number}>} 出現回数の多い順
+ */
+export function suggestForceTerms(texts, tokenizerInstance, options = {}) {
+    const minCount = options.minCount ?? 2;
+    const limit = options.limit ?? 30;
+    const exclude = new Set((options.exclude || []).map(normalizeToken));
+    const counts = new Map();
+    const add = term => {
+        const normalized = normalizeToken(term);
+        if (!normalized || exclude.has(normalized) || STOP_WORDS.has(normalized)) return;
+        counts.set(normalized, (counts.get(normalized) || 0) + 1);
+    };
+
+    (texts || []).forEach(text => {
+        if (!text || !tokenizerInstance?.analyze) return;
+        const normalizedText = String(text).normalize('NFKC');
+        const tokens = tokenizerInstance.analyze(normalizedText);
+        let index = 0;
+        while (index < tokens.length) {
+            // 学校の複合語（ひらがなを含む「お化け屋敷」なども）
+            const known = findCompoundRun(tokens, index, SCHOOL_COMPOUND_TERMS);
+            if (known) {
+                add(known.map(token => token.surface_form).join(''));
+                index += known.length;
+                continue;
+            }
+            // 漢字・カタカナだけの語が隣り合って続く並び
+            let end = index;
+            while (end + 1 < tokens.length
+                && end - index + 1 < MAX_COMPOUND_PARTS
+                && COMPOUND_PART.test(tokens[end].surface_form)
+                && COMPOUND_PART.test(tokens[end + 1].surface_form)
+                && isAdjacent(tokens[end], tokens[end + 1])) {
+                end += 1;
+            }
+            if (end > index && !looksLikeVerbStem(tokens[end], normalizedText)) {
+                add(tokens.slice(index, end + 1).map(token => token.surface_form).join(''));
+            }
+            index = end + 1;
+        }
+    });
+
+    return [...counts.entries()]
+        .filter(([, count]) => count >= minCount)
+        .map(([term, count]) => ({ term, count }))
+        .sort((a, b) => b.count - a.count || a.term.localeCompare(b.term, 'ja'))
+        .slice(0, limit);
+}
+
 /**
  * 文書を基本形・品詞付きで解析する。
  * @param {string} text - 文書テキスト
  * @param {Object} tokenizerInstance - initTokenizerで生成したトークナイザー
- * @param {{forceTerms?: string[], stopWords?: Set<string>}} [options]
+ * @param {{forceTerms?: string[], stopWords?: Set<string>, mergeCompounds?: boolean}} [options]
  * @returns {Array<{term: string, surface: string, pos: string, rawPos: string, posDetail: string, forced: boolean}>}
  */
 export function analyzeDocument(text, tokenizerInstance, options = {}) {
@@ -299,7 +447,9 @@ export function analyzeDocument(text, tokenizerInstance, options = {}) {
             return;
         }
 
-        tokenizerInstance.analyze(part.text).forEach(rawToken => {
+        const rawTokens = tokenizerInstance.analyze(part.text);
+        const tokens = options.mergeCompounds === false ? rawTokens : mergeCompoundTokens(rawTokens);
+        tokens.forEach(rawToken => {
             const surface = String(rawToken.surface_form ?? rawToken.word ?? '');
             const basic = rawToken.basic_form && rawToken.basic_form !== '*'
                 ? rawToken.basic_form
