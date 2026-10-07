@@ -780,8 +780,32 @@ function collectInputTexts(currentData) {
         .filter(Boolean);
 }
 
-/** 「おすすめの強制抽出語を取り込む」：候補を探して強制抽出語の欄へ追加する */
-async function importSuggestedForceTerms(currentData) {
+// 自動で追加したおすすめ語の記録（利用者が消した語を、次の実行で戻さないため）
+const autoSuggestState = { source: null, added: new Set(), removed: new Set() };
+
+function currentInputSource() {
+    const inputMode = document.querySelector('[data-tm-input-mode].active')?.dataset.tmInputMode || 'column';
+    return inputMode === 'direct' ? 'direct' : `column:${document.getElementById('text-var')?.value || ''}`;
+}
+
+async function ensureLocalTokenizer() {
+    if (getTokenizer()) return;
+    if (typeof globalThis.Intl?.Segmenter !== 'function') {
+        await loadScriptOnce(TINY_SEGMENTER_SCRIPT_URL, {
+            isReady: () => typeof window.TinySegmenter === 'function'
+        });
+    }
+    await initTokenizer();
+}
+
+/**
+ * おすすめの強制抽出語を探して、強制抽出語の欄へ追加する。
+ * auto = true（分析の実行時）のときは、
+ *   - テキストの列を変えたら、前の列のために自動で入れた語を取り除く
+ *   - 自動で入れた後に利用者が消した語は、もう一度入れない
+ *   - 候補がなければ何も表示しない
+ */
+async function addSuggestedForceTerms(currentData, { auto = false } = {}) {
     const isEnglish = getLocale() === 'en';
     const status = document.getElementById('tm-suggest-status');
     const textarea = document.getElementById('tm-force-terms');
@@ -790,38 +814,51 @@ async function importSuggestedForceTerms(currentData) {
 
     const texts = collectInputTexts(currentData);
     if (texts.length === 0) {
-        setStatus(isEnglish
-            ? 'Choose a text column or enter text first.'
-            : '先に、分析するテキストの列を選ぶか、テキストを入力してください。');
+        if (!auto) {
+            setStatus(isEnglish
+                ? 'Choose a text column or enter text first.'
+                : '先に、分析するテキストの列を選ぶか、テキストを入力してください。');
+        }
         return;
     }
 
+    let existing = parseTermList(textarea?.value);
+    const source = currentInputSource();
+    if (autoSuggestState.source !== source) {
+        existing = existing.filter(term => !autoSuggestState.added.has(term));
+        autoSuggestState.source = source;
+        autoSuggestState.added = new Set();
+        autoSuggestState.removed = new Set();
+    }
+    autoSuggestState.added.forEach(term => {
+        if (!existing.includes(term)) autoSuggestState.removed.add(term);
+    });
+    if (!auto) autoSuggestState.removed.clear();
+
     if (button) button.disabled = true;
     try {
-        if (!getTokenizer()) {
-            if (typeof globalThis.Intl?.Segmenter !== 'function') {
-                await loadScriptOnce(TINY_SEGMENTER_SCRIPT_URL, {
-                    isReady: () => typeof window.TinySegmenter === 'function'
-                });
-            }
-            await initTokenizer();
-        }
-        const existing = parseTermList(textarea?.value);
-        const suggestions = suggestForceTerms(texts, getTokenizer(), { exclude: existing });
-        if (suggestions.length === 0) {
-            setStatus(isEnglish
-                ? 'No new candidates were found (terms must appear at least twice).'
-                : '新しい候補は見つかりませんでした（2回以上出てくる複合語が対象です）。');
-            return;
-        }
+        await ensureLocalTokenizer();
+        const suggestions = suggestForceTerms(texts, getTokenizer(), {
+            exclude: [...existing, ...autoSuggestState.removed]
+        });
+        const terms = suggestions.map(item => item.term);
         if (textarea) {
-            textarea.value = [...existing, ...suggestions.map(item => item.term)].join('\n');
-            textarea.rows = Math.min(8, Math.max(2, existing.length + suggestions.length));
+            textarea.value = [...existing, ...terms].join('\n');
+            textarea.rows = Math.min(8, Math.max(2, existing.length + terms.length));
+        }
+        terms.forEach(term => autoSuggestState.added.add(term));
+        if (suggestions.length === 0) {
+            if (!auto) {
+                setStatus(isEnglish
+                    ? 'No new candidates were found (terms must appear at least twice).'
+                    : '新しい候補は見つかりませんでした（2回以上出てくる複合語が対象です）。');
+            }
+            return;
         }
         const list = suggestions.map(item => isEnglish ? `${item.term} (${item.count})` : `${item.term}（${item.count}回）`);
         setStatus(isEnglish
-            ? `Added ${suggestions.length} terms: ${list.join(', ')}`
-            : `${suggestions.length}語を追加しました：${list.join('、')}`);
+            ? `Added ${suggestions.length} suggested terms: ${list.join(', ')}`
+            : `おすすめの${suggestions.length}語を追加しました：${list.join('、')}`);
     } catch (error) {
         console.error(error);
         setStatus(isEnglish
@@ -853,6 +890,9 @@ async function runTextMining(currentData) {
         return;
     }
 
+    if (document.getElementById('tm-auto-suggest')?.checked) {
+        await addSuggestedForceTerms(currentData, { auto: true });
+    }
     const settings = readAnalysisSettings();
     const button = document.getElementById('run-text-btn');
     const originalButtonHtml = button.innerHTML;
@@ -1175,6 +1215,10 @@ export function render(container, currentData, characteristics) {
                                 <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> おすすめの強制抽出語を取り込む
                             </button>
                             <p class="tm-setting-note">テキストの中で何度も出てくる複合語（例：文化祭、デジタル教材）を探して、強制抽出語の欄に追加します。追加した語は自由に消せます。</p>
+                            <label class="tm-check-setting">
+                                <input type="checkbox" id="tm-auto-suggest" checked>
+                                <span>分析を実行するときに、おすすめの強制抽出語を自動で追加する</span>
+                            </label>
                             <p id="tm-suggest-status" class="tm-suggest-status" role="status" aria-live="polite"></p>
                         </div>
                         <label class="tm-wide-setting tm-check-setting">
@@ -1250,7 +1294,7 @@ export function render(container, currentData, characteristics) {
     });
     directInput?.addEventListener('input', updateDirectStatus);
     document.getElementById('tm-suggest-force-terms')
-        ?.addEventListener('click', () => importSuggestedForceTerms(data));
+        ?.addEventListener('click', () => addSuggestedForceTerms(data));
     const networkFilterMode = document.getElementById('tm-network-filter-mode');
     const jaccardThresholdSetting = document.getElementById('tm-jaccard-threshold-setting');
     const updateNetworkFilterSettings = () => {

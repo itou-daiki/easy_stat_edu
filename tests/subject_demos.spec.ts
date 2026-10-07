@@ -89,12 +89,37 @@ test.describe('Subject demos (high school themes)', () => {
         expect(errors).toEqual([]);
     });
 
-    test('text mining: compound terms are joined even without forced terms', async ({ page }) => {
+    test('text mining: suggested forced terms are added by default when running', async ({ page }) => {
         await loadDemo(page, 'hs_text_demo.csv');
         await openAnalysis(page, 'text_mining');
         await page.selectOption('#text-var', { label: '感想' });
+        await expect(page.locator('#tm-auto-suggest')).toBeChecked();
+
         await page.click('#run-text-btn');
         await expect(page.locator('#tm-overall', { hasText: '品詞別ランキング' })).toBeVisible({ timeout: 60000 });
+        await expect(page.locator('#tm-overall table tbody tr').first()).toContainText('文化祭');
+        await expect(page.locator('#tm-force-terms')).toHaveValue(/模擬店/);
+
+        // 自動で入った語を消して再実行しても、消した語は戻さない
+        await page.locator('.tm-advanced-settings > summary').click();
+        const remaining = (await page.locator('#tm-force-terms').inputValue())
+            .split('\n').filter(term => term !== '模擬店').join('\n');
+        await page.fill('#tm-force-terms', remaining);
+        await page.click('#run-text-btn');
+        await expect(page.locator('#tm-overall', { hasText: '品詞別ランキング' })).toBeVisible({ timeout: 60000 });
+        await expect(page.locator('#tm-force-terms')).not.toHaveValue(/模擬店/);
+    });
+
+    test('text mining: automatic suggestions can be turned off', async ({ page }) => {
+        await loadDemo(page, 'hs_text_demo.csv');
+        await openAnalysis(page, 'text_mining');
+        await page.selectOption('#text-var', { label: '感想' });
+        await page.locator('.tm-advanced-settings > summary').click();
+        await page.locator('#tm-auto-suggest').uncheck();
+        await page.click('#run-text-btn');
+        await expect(page.locator('#tm-overall', { hasText: '品詞別ランキング' })).toBeVisible({ timeout: 60000 });
+        await expect(page.locator('#tm-force-terms')).toHaveValue('');
+        // 強制抽出語がなくても、複合語の結合で「文化祭」は1語になる
         await expect(page.locator('#tm-overall table tbody tr').first()).toContainText('文化祭');
     });
 

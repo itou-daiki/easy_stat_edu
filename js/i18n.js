@@ -787,6 +787,7 @@ const ENGLISH_TEXT = new Map([
     ,['除外語（改行・読点区切り）', 'Excluded terms (separate with line breaks or commas)']
     ,['強制抽出語（改行・読点区切り）', 'Forced terms (separate with line breaks or commas)']
     ,['おすすめの強制抽出語を取り込む', 'Import suggested forced terms']
+    ,['分析を実行するときに、おすすめの強制抽出語を自動で追加する', 'Add suggested forced terms automatically when running the analysis']
     ,['テキストの中で何度も出てくる複合語（例：文化祭、デジタル教材）を探して、強制抽出語の欄に追加します。追加した語は自由に消せます。', 'Finds compound terms that appear repeatedly in the text (e.g. school festival, digital materials) and adds them to the forced terms. You can delete any of them.']
     ,['学校でよく使う複合語を1語として数える（文化祭・部活動・生徒会・卒業式など）', 'Count common school compound terms as one word (e.g. school festival, club activities, student council)']
     ,[': 等分散性の検定（Levene検定）のp値です。p < .05 の場合、等分散ではない（分散が異なる）可能性が高いため、Welchのt検定（本分析のデフォルト）の結果がより信頼できます。', ': p value from Levene\'s test of equal variances. When p < .05, the variances may differ, so the Welch t-test result used by default here is more reliable.']
