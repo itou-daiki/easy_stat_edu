@@ -410,9 +410,19 @@ html[lang="en"] [data-asset-locale="ja"] {
     border-bottom: 2px solid var(--brand);
 }
 
-/* 分類ごとの色付きアイコンタイルは使わない（見出しの文字で区別する） */
+/* 分類見出しの左に置くアイコン（手法のアイコンタイルより一回り大きい） */
 .category-icon {
-    display: none;
+    flex: 0 0 auto;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 8px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 1rem;
 }
 
 .category-info {
@@ -4867,8 +4877,27 @@ table tbody tr:hover {
     box-shadow: var(--shadow-card-hover);
 }
 
+/* 手法一覧と同じアイコンタイル。推奨データだけ青い面で目立たせる */
+.demo-option-btn {
+    gap: var(--space-3);
+}
+
 .demo-option-btn .icon {
-    display: none;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 8px;
+    background: #e8f3ff;
+    color: var(--brand-deep);
+    font-size: 1rem;
+}
+
+.demo-option-btn.primary .icon {
+    background: var(--brand);
+    color: #fff;
 }
 
 .demo-option-btn .info {

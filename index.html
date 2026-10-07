@@ -25,15 +25,15 @@
     <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20261007-icons-v1">
+    <link rel="stylesheet" href="css/style.css?v=20261008-icons-v2">
 
     <script type="importmap">
         {
             "imports": {
                 "./js/utils.js": "./js/utils.js?v=20260830-beginner-v5",
                 "./js/ai_support.js": "./js/ai_support.js?v=20260830-beginner-v5",
-                "./js/i18n.js": "./js/i18n.js?v=20261007-demo-v1",
-                "./js/i18n_content_en.js": "./js/i18n_content_en.js?v=20261007-demo-v1"
+                "./js/i18n.js": "./js/i18n.js?v=20261008-demo-v2",
+                "./js/i18n_content_en.js": "./js/i18n_content_en.js?v=20261008-demo-v2"
             }
         }
     </script>
@@ -70,7 +70,7 @@
             <div class="demo-options-grid">
                 <!-- 総合データ（初学者モード向け） -->
                 <button class="demo-option-btn primary" data-demo="highschool_life_demo.csv">
-                    <div class="icon"><i class="fas fa-star"></i></div>
+                    <div class="icon" aria-hidden="true"><i class="fas fa-star"></i></div>
                     <div class="info">
                         <strong>高校生の生活と学習 (推奨)</strong>
                         <span>60人分・睡眠やスマホ時間、テスト、部活動、授業の前後など</span>
@@ -79,7 +79,7 @@
 
                 <!-- 旧総合データ -->
                 <button class="demo-option-btn" data-demo="demo_all_analysis.csv">
-                    <div class="icon"><i class="fas fa-layer-group"></i></div>
+                    <div class="icon" aria-hidden="true"><i class="fas fa-folder-open"></i></div>
                     <div class="info">
                         <strong>総合デモデータ (ICT教育調査)</strong>
                         <span>30人分・3教科の点数、学習時間、感想</span>
@@ -87,65 +87,65 @@
                 </button>
 
                 <!-- 平均値の差の検定 -->
-                <button class="demo-option-btn" data-demo="ttest_demo.csv">
-                    <div class="icon"><i class="fas fa-balance-scale"></i></div>
+                <button class="demo-option-btn" data-demo="hs_ttest_demo.csv">
+                    <div class="icon" aria-hidden="true"><i class="fas fa-scale-balanced"></i></div>
                     <div class="info">
                         <strong>t検定用データ</strong>
-                        <span>DigComp群別の学習成果比較</span>
+                        <span>朝の10分間読書と読解テスト（40人）</span>
                     </div>
                 </button>
 
                 <!-- 分散分析 -->
-                <button class="demo-option-btn" data-demo="anova_demo.csv">
-                    <div class="icon"><i class="fas fa-layer-group"></i></div>
+                <button class="demo-option-btn" data-demo="hs_anova_demo.csv">
+                    <div class="icon" aria-hidden="true"><i class="fas fa-chart-column"></i></div>
                     <div class="info">
                         <strong>分散分析用データ (ANOVA)</strong>
-                        <span>ICT指導法×学校種の比較実験</span>
+                        <span>英単語の勉強法×学年、単語テスト3回（48人）</span>
                     </div>
                 </button>
 
                 <!-- 多変量解析 -->
-                <button class="demo-option-btn" data-demo="multiple_regression_demo.csv">
-                    <div class="icon"><i class="fas fa-chart-line"></i></div>
+                <button class="demo-option-btn" data-demo="hs_regression_demo.csv">
+                    <div class="icon" aria-hidden="true"><i class="fas fa-layer-group"></i></div>
                     <div class="info">
                         <strong>重回帰分析用データ</strong>
-                        <span>オンライン学習成果の予測モデル</span>
+                        <span>生活習慣から模試の得点を予測（60人）</span>
                     </div>
                 </button>
 
                 <!-- 因子分析・主成分分析 -->
-                <button class="demo-option-btn" data-demo="factor_analysis_demo.csv">
-                    <div class="icon"><i class="fas fa-project-diagram"></i></div>
+                <button class="demo-option-btn" data-demo="hs_factor_demo.csv">
+                    <div class="icon" aria-hidden="true"><i class="fas fa-sitemap"></i></div>
                     <div class="info">
                         <strong>因子分析・PCA用データ</strong>
-                        <span>ICT教育態度尺度（3因子15項目）</span>
+                        <span>学校生活アンケート15項目（150人）</span>
                     </div>
                 </button>
 
                 <!-- テキストマイニング -->
-                <button class="demo-option-btn" data-demo="textmining_demo.csv">
-                    <div class="icon"><i class="fas fa-comments"></i></div>
+                <button class="demo-option-btn" data-demo="hs_text_demo.csv">
+                    <div class="icon" aria-hidden="true"><i class="fas fa-comment-dots"></i></div>
                     <div class="info">
                         <strong>テキストマイニング用</strong>
-                        <span>ICT教育の自由記述アンケート</span>
+                        <span>文化祭の感想（45人）</span>
                     </div>
                 </button>
 
                 <!-- 時系列分析 -->
-                <button class="demo-option-btn" data-demo="time_series_demo.csv">
-                    <div class="icon"><i class="fas fa-chart-area"></i></div>
+                <button class="demo-option-btn" data-demo="hs_timeseries_demo.csv">
+                    <div class="icon" aria-hidden="true"><i class="fas fa-chart-area"></i></div>
                     <div class="info">
                         <strong>時系列分析用データ</strong>
-                        <span>ICT教育導入の3年間経時変化</span>
+                        <span>学校図書館の月別貸出冊数（3年間）</span>
                     </div>
                 </button>
 
                 <!-- ロジスティック回帰 -->
-                <button class="demo-option-btn" data-demo="logistic_demo.csv">
-                    <div class="icon"><i class="fas fa-check-circle"></i></div>
+                <button class="demo-option-btn" data-demo="hs_logistic_demo.csv">
+                    <div class="icon" aria-hidden="true"><i class="fas fa-toggle-on"></i></div>
                     <div class="info">
                         <strong>ロジスティック回帰用データ</strong>
-                        <span>ICT活用能力認定の合否予測</span>
+                        <span>英検2級の合否を予測（80人）</span>
                     </div>
                 </button>
             </div>
@@ -396,7 +396,7 @@
                 <!-- ユーティリティ -->
                 <div class="category-section category-utility">
                     <div class="category-header">
-                        <div class="category-icon"><i class="fas fa-tools"></i></div>
+                        <div class="category-icon" aria-hidden="true"><i class="fas fa-screwdriver-wrench"></i></div>
                         <div class="category-info">
                             <h3>ユーティリティ</h3>
                             <p>分析前のデータ整形や特別な計算を行います</p>
@@ -440,7 +440,7 @@
                 <!-- データの探索・要約 -->
                 <div class="category-section category-eda">
                     <div class="category-header">
-                        <div class="category-icon"><i class="fas fa-search"></i></div>
+                        <div class="category-icon" aria-hidden="true"><i class="fas fa-binoculars"></i></div>
                         <div class="category-info">
                             <h3>データの探索・要約</h3>
                             <p>データの傾向を把握し、要約統計量を計算します</p>
@@ -479,7 +479,7 @@
                 <!-- 平均値の差の検定 -->
                 <div class="category-section category-param">
                     <div class="category-header">
-                        <div class="category-icon"><i class="fas fa-chart-bar"></i></div>
+                        <div class="category-icon" aria-hidden="true"><i class="fas fa-chart-simple"></i></div>
                         <div class="category-info">
                             <h3>平均値の比較（パラメトリック検定）</h3>
                             <p>グループ間の平均の違いが、統計上はっきりしているか調べます</p>
@@ -518,7 +518,7 @@
                 <!-- ノンパラメトリック検定 -->
                 <div class="category-section category-nonparam">
                     <div class="category-header">
-                        <div class="category-icon"><i class="fas fa-sort-amount-up"></i></div>
+                        <div class="category-icon" aria-hidden="true"><i class="fas fa-ranking-star"></i></div>
                         <div class="category-info">
                             <h3>順位の比較（ノンパラメトリック検定）</h3>
                             <p>データに偏りがある場合や、点数ではなく「順位」でグループを比べたい時に使います</p>
@@ -558,7 +558,7 @@
                 <!-- 比率・関連性の検定 -->
                 <div class="category-section category-proportion">
                     <div class="category-header">
-                        <div class="category-icon"><i class="fas fa-percentage"></i></div>
+                        <div class="category-icon" aria-hidden="true"><i class="fas fa-percent"></i></div>
                         <div class="category-info">
                             <h3>比率・関連性の検定</h3>
                             <p>「合格/不合格」のようなカテゴリ分けの割合に違いがあるか確かめます</p>
@@ -597,7 +597,7 @@
                 <!-- 回帰分析・予測モデル -->
                 <div class="category-section category-prediction">
                     <div class="category-header">
-                        <div class="category-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="category-icon" aria-hidden="true"><i class="fas fa-arrow-trend-up"></i></div>
                         <div class="category-info">
                             <h3>回帰分析・予測モデル</h3>
                             <p>結果と説明変数の関連を数式で表し、条件に応じた値や確率を予測します</p>
@@ -637,7 +637,7 @@
                 <!-- 多変量解析・その他 -->
                 <div class="category-section category-multivariate">
                     <div class="category-header">
-                        <div class="category-icon"><i class="fas fa-network-wired"></i></div>
+                        <div class="category-icon" aria-hidden="true"><i class="fas fa-cubes"></i></div>
                         <div class="category-info">
                             <h3>多変量解析・その他</h3>
                             <p>アンケートの質問項目をまとめたり、複雑なデータを整理する分析手法です</p>
@@ -1028,9 +1028,9 @@
                                     <li><strong>複数列の分析:</strong> 比べたい数値の列を複数選べるようにし、3列以上の関係は相関行列、予測に使う列が2つ以上なら重回帰分析を選択</li>
                                     <li><strong>説明イラスト:</strong> 全23枚を計算どおりに描いた図に作り直し、各分析の見出しの下に表示</li>
                                     <li><strong>デザイン:</strong> ドジャーブルーを基調にした画面へ刷新し、文字をBIZ UDPゴシック、図表を論文向けの書体（Times New Roman＋明朝体）に統一</li>
-                                    <li><strong>手法一覧:</strong> 「すべての手法から選ぶ」で、各分析の名前の横に内容を表すアイコンを表示</li>
+                                    <li><strong>アイコン:</strong> 手法一覧の各分析・分類見出し・デモデータ選択に、内容を表すアイコンを表示</li>
                                     <li><strong>図の見やすさ:</strong> グラフのタイトルを枠の上に置き、有意差の記号の上に余白を確保</li>
-                                    <li><strong>デモデータ:</strong> 高校生に身近な「高校生の生活と学習」（60人分）を追加し、初学者モードの全目的をこれ1つで試せるように</li>
+                                    <li><strong>デモデータ:</strong> 高校生に身近な題材に一新。推奨の「高校生の生活と学習」（60人分）で初学者モードの全目的を試せ、分析別のデータも朝読書・英単語の勉強法・文化祭の感想・図書館の貸出冊数・英検の合否などに変更</li>
                                     <li><strong>表の入力:</strong> いちばん右の列で → キーを押すと列を追加</li>
                                     <li><strong>不具合修正:</strong> 一部の分析で欠損値が0として計算されていた問題と、記号を含む列名で選択欄が崩れる問題を修正</li>
                                 </ul>

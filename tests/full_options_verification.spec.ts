@@ -55,7 +55,7 @@ async function selectFirstMultiSelectOptions(page, containerSelector: string, re
 test.describe('Correlation Analysis - Full Options', () => {
   test('Pearson and Spearman switching', async ({ page }) => {
     const errors = setupErrorTracking(page);
-    await loadDemo(page, 'multiple_regression_demo.csv');
+    await loadDemo(page, 'hs_regression_demo.csv');
     await goToAnalysis(page, 'correlation');
 
     await selectFirstMultiSelectOptions(page, '#correlation-vars-container', 4);
@@ -98,9 +98,9 @@ test.describe('Correlation Analysis - Full Options', () => {
 });
 
 test.describe('Logistic Regression - Full Options', () => {
-  test('Run with logistic_demo.csv', async ({ page }) => {
+  test('Run with hs_logistic_demo.csv', async ({ page }) => {
     const errors = setupErrorTracking(page);
-    await loadDemo(page, 'logistic_demo.csv');
+    await loadDemo(page, 'hs_logistic_demo.csv');
     await goToAnalysis(page, 'logistic_regression');
     await page.waitForTimeout(1000);
 
@@ -145,15 +145,15 @@ test.describe('Logistic Regression - Full Options', () => {
 test.describe('ANOVA Options - Tukey/Holm, Multiple DVs', () => {
   test('One-way ANOVA with Holm method and multiple DVs', async ({ page }) => {
     const errors = setupErrorTracking(page);
-    await loadDemo(page, 'anova_demo.csv');
+    await loadDemo(page, 'hs_anova_demo.csv');
     await goToAnalysis(page, 'anova_one_way');
     await page.waitForTimeout(1000);
 
     // Select factor
     const factorSelect = page.locator('#factor-var, #group-var, select').first();
     const options = await factorSelect.locator('option').allTextContents();
-    if (options.includes('指導法')) {
-      await factorSelect.selectOption({ label: '指導法' });
+    if (options.includes('勉強法')) {
+      await factorSelect.selectOption({ label: '勉強法' });
     }
     await page.waitForTimeout(300);
 
@@ -191,7 +191,7 @@ test.describe('ANOVA Options - Tukey/Holm, Multiple DVs', () => {
 
   test('Two-way ANOVA interaction', async ({ page }) => {
     const errors = setupErrorTracking(page);
-    await loadDemo(page, 'anova_demo.csv');
+    await loadDemo(page, 'hs_anova_demo.csv');
     await goToAnalysis(page, 'anova_two_way');
     await page.waitForTimeout(1000);
 
@@ -203,16 +203,16 @@ test.describe('ANOVA Options - Tukey/Holm, Multiple DVs', () => {
 
     for (let i = 0; i < selectCount; i++) {
       const opts = await selects.nth(i).locator('option').allTextContents();
-      if (opts.includes('指導法')) {
-        await selects.nth(i).selectOption({ label: '指導法' });
+      if (opts.includes('勉強法')) {
+        await selects.nth(i).selectOption({ label: '勉強法' });
         break;
       }
     }
 
     for (let i = 0; i < selectCount; i++) {
       const opts = await selects.nth(i).locator('option').allTextContents();
-      if (opts.includes('学校種')) {
-        await selects.nth(i).selectOption({ label: '学校種' });
+      if (opts.includes('学年')) {
+        await selects.nth(i).selectOption({ label: '学年' });
         break;
       }
     }
@@ -227,7 +227,7 @@ test.describe('ANOVA Options - Tukey/Holm, Multiple DVs', () => {
 test.describe('Factor Analysis - Rotation Methods', () => {
   test('All rotation methods: varimax, promax, oblimin, geomin, none', async ({ page }) => {
     const errors = setupErrorTracking(page);
-    await loadDemo(page, 'factor_analysis_demo.csv');
+    await loadDemo(page, 'hs_factor_demo.csv');
     await goToAnalysis(page, 'factor_analysis');
     await page.waitForTimeout(1000);
 
@@ -294,7 +294,7 @@ test.describe('Factor Analysis - Rotation Methods', () => {
 test.describe('PCA - Options', () => {
   test('PCA with different component counts', async ({ page }) => {
     const errors = setupErrorTracking(page);
-    await loadDemo(page, 'factor_analysis_demo.csv');
+    await loadDemo(page, 'hs_factor_demo.csv');
     await goToAnalysis(page, 'pca');
     await page.waitForTimeout(1000);
 
@@ -367,9 +367,9 @@ test.describe('Cross Tabulation - Display Modes', () => {
 });
 
 test.describe('Time Series - Full Options', () => {
-  test('Time series analysis with time_series_demo.csv', async ({ page }) => {
+  test('Time series analysis with hs_timeseries_demo.csv', async ({ page }) => {
     const errors = setupErrorTracking(page);
-    await loadDemo(page, 'time_series_demo.csv');
+    await loadDemo(page, 'hs_timeseries_demo.csv');
     await goToAnalysis(page, 'time_series');
     await page.waitForTimeout(1000);
 
@@ -384,8 +384,8 @@ test.describe('Time Series - Full Options', () => {
     const valueSelect = page.locator('#value-var');
     if (await valueSelect.isVisible()) {
       const vopts = await valueSelect.locator('option').allTextContents();
-      if (vopts.includes('ICT活用率')) {
-        await valueSelect.selectOption({ label: 'ICT活用率' });
+      if (vopts.includes('図書貸出冊数')) {
+        await valueSelect.selectOption({ label: '図書貸出冊数' });
       }
     }
 
@@ -399,25 +399,26 @@ test.describe('Time Series - Full Options', () => {
     await page.screenshot({ path: 'test-results/timeseries_results.png', fullPage: true });
 
     const content = await page.content();
-    const hasResults = content.includes('時系列') || content.includes('トレンド') || content.includes('自己相関') || content.includes('ICT');
+    const hasResults = content.includes('時系列') || content.includes('トレンド') || content.includes('自己相関') || content.includes('図書');
     expect(hasResults).toBeTruthy();
 
     expect(errors).toHaveLength(0);
   });
 });
 
-test.describe('Demo Modal - All 8 Buttons', () => {
+test.describe('Demo Modal - All 9 Buttons', () => {
   test('Each demo button loads correct data', async ({ page }) => {
     test.setTimeout(60000);
     const demos = [
+      { file: 'highschool_life_demo.csv', keyword: '部活動' },
       { file: 'demo_all_analysis.csv', keyword: '感想' },
-      { file: 'ttest_demo.csv', keyword: 'DigComp' },
-      { file: 'anova_demo.csv', keyword: '指導法' },
-      { file: 'multiple_regression_demo.csv', keyword: '学習達成度' },
-      { file: 'factor_analysis_demo.csv', keyword: 'Q1' },
-      { file: 'textmining_demo.csv', keyword: 'コメント' },
-      { file: 'time_series_demo.csv', keyword: '年月' },
-      { file: 'logistic_demo.csv', keyword: '合否' },
+      { file: 'hs_ttest_demo.csv', keyword: '朝読書' },
+      { file: 'hs_anova_demo.csv', keyword: '勉強法' },
+      { file: 'hs_regression_demo.csv', keyword: '模試の得点' },
+      { file: 'hs_factor_demo.csv', keyword: 'Q1_' },
+      { file: 'hs_text_demo.csv', keyword: '役割' },
+      { file: 'hs_timeseries_demo.csv', keyword: '図書貸出冊数' },
+      { file: 'hs_logistic_demo.csv', keyword: '英単語テスト' },
     ];
 
     for (const demo of demos) {
