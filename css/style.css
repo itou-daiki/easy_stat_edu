@@ -604,6 +604,10 @@ html[lang="en"] .feature-card-requirement::before {
 }
 
 /* 生成AI支援 */
+.ai-config-section[hidden] {
+    display: none;
+}
+
 .ai-config-section {
     background: var(--paper);
     border: 1px solid var(--rule);
@@ -2986,6 +2990,13 @@ table tbody tr:hover {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+}
+
+/* 枠の中にさらに表の枠がある場合（データプレビューなど）は、内側の枠だけをスクロールさせる。
+   外側もスクロールすると、内側の横スクロールバーが外側の枠に隠れて操作できなくなる */
+.table-container:has(.table-container) {
+    overflow: visible;
+    max-height: none;
 }
 
 /* 情報セクション */

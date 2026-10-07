@@ -897,7 +897,6 @@ const ENGLISH_TEXT = new Map([
     ,['結論・レポート例を含む全数値と、T1形式の結果表参照を画面の結果と自動照合', 'Automatically validates all generated numbers, including conclusions and report examples, plus T1-style result-table references']
     ,['公開版はコピー専用、ローカル直接接続はキーをメモリだけに保持し、一時障害は上限付きで再試行', 'Public deployments are copy-only; local direct access keeps the key only in memory and retries transient failures within a fixed limit']
     ,['APIキーは保存領域へ書き込まず、このページのメモリ内だけで使用します。再読み込みまたはページを閉じると削除されます。', 'The API key is not written to browser storage. It remains only in page memory and is removed when you reload or close the page.']
-    ,['この公開版からGeminiへ直接送信することはありません。分析後に「AI用テキストをコピー」を使い、学校や組織が承認したサービスで内容を確認してから利用してください。', 'This public version never sends results directly to Gemini. After running an analysis, use Copy text for AI, review the content, and paste it only into a service approved by your school or organization.']
     ,['「AI用テキストをコピー」はAPIキーなしで使えます。成人の教員・研究者がローカル実行している場合は、キーを設定すると「解釈を生成」と追加質問も利用できます。', 'Copy text for AI works without an API key. Adult educators and researchers running easyStat locally can set a key to generate an interpretation and ask follow-up questions.']
     ,['「AI用テキストをコピー」すると、結果表・見るべき数値・注意点をまとめた依頼文を作れます。内容を確認してから、学校や組織が承認したAIサービスへ貼り付けてください。', 'Copy text for AI creates a prompt containing the result tables, key values, and cautions. Review it before pasting it into a service approved by your school or organization.']
     ,['自己相関関数 (ACF)', 'Autocorrelation function (ACF)']
