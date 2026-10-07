@@ -388,7 +388,7 @@ export function renderDataPreview(containerId, data, title = 'データプレビ
         const columns = Object.keys(currentData[0]);
         let tableHtml = `
             <h5>${title} (${currentData.length}行 × ${columns.length}列)</h5>
-            <div class="table-container" style="overflow-x: auto; max-height: 600px; overflow-y: auto;">
+            <div class="table-container" style="overflow-x: auto; max-height: min(600px, 70vh); overflow-y: auto;">
             <table class="table">
                 <thead>
                     <tr style="position: sticky; top: 0; background: #f1f5f9; z-index: 10;">
@@ -470,7 +470,7 @@ export function renderSummaryStatistics(containerId, data, characteristics, titl
 
     let tableHtml = `
         <h5>${title}</h5>
-        <div class="table-container" style="overflow-x: auto; max-height: 600px; overflow-y: auto;">
+        <div class="table-container" style="overflow-x: auto; max-height: min(600px, 70vh); overflow-y: auto;">
         <table class="table">
             <thead>
                 <tr style="position: sticky; top: 0; background: #f1f5f9; z-index: 10;">

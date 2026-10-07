@@ -848,7 +848,6 @@ const aiConfigSection = document.getElementById('ai-config-section');
 const aiConfigToggle = document.getElementById('ai-config-toggle');
 const aiDirectHelp = document.getElementById('ai-direct-help');
 const aiDirectControls = document.getElementById('ai-direct-controls');
-const aiPublicCopyNote = document.getElementById('ai-public-copy-note');
 const geminiApiKeyInput = document.getElementById('gemini-api-key-input');
 const geminiEligibilityConfirm = document.getElementById('gemini-eligibility-confirm');
 const saveGeminiKeyBtn = document.getElementById('save-gemini-key-btn');
@@ -2945,9 +2944,11 @@ function localizeAIText(japanese, english) {
 function setupAISupport() {
     if (!aiConfigSection || !aiAssistWidget) return;
 
+    // 公開版ではAPIキーを入力できないため、トップページの設定欄ごと表示しない
+    // （分析後の「AI用テキストをコピー」は右下のAI支援パネルから使える）
+    aiConfigSection.hidden = !localGeminiDirectUseAllowed;
     if (aiDirectHelp) aiDirectHelp.hidden = !localGeminiDirectUseAllowed;
     if (aiDirectControls) aiDirectControls.hidden = !localGeminiDirectUseAllowed;
-    if (aiPublicCopyNote) aiPublicCopyNote.hidden = localGeminiDirectUseAllowed;
     if (!localGeminiDirectUseAllowed) {
         document.querySelector('.ai-quick-actions')?.setAttribute('hidden', '');
         aiChatInput?.closest('.ai-chat-input-area')?.setAttribute('hidden', '');

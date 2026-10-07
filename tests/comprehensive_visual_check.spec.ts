@@ -191,21 +191,11 @@ async function auditRenderedSurface(page: Page, label: string) {
             const rect = c.getBoundingClientRect();
             let nonBlank = true;
             try {
+                // 共起ネットワークのように背景が透明で描画がまばらな図もあるため、
+                // 何か所かを抜き取るのではなく、図全体のどこかに描画があるかで判定する
                 const ctx = c.getContext('2d');
-                const sampleSize = 16;
-                const points: Array<[number, number]> = [];
-                for (let y = 0; y <= 4; y++) {
-                    for (let x = 0; x <= 4; x++) {
-                        points.push([
-                            Math.min(Math.max(Math.floor((c.width * x) / 4), 0), Math.max(c.width - sampleSize, 0)),
-                            Math.min(Math.max(Math.floor((c.height * y) / 4), 0), Math.max(c.height - sampleSize, 0))
-                        ]);
-                    }
-                }
-                nonBlank = !!ctx && points.some(([x, y]) => {
-                    const data = ctx.getImageData(x, y, Math.min(sampleSize, c.width), Math.min(sampleSize, c.height)).data;
-                    return Array.from(data).some(value => value !== 0);
-                });
+                const data = ctx ? ctx.getImageData(0, 0, c.width, c.height).data : null;
+                nonBlank = !!data && data.some(value => value !== 0);
             } catch {
                 nonBlank = true;
             }
@@ -702,20 +692,7 @@ test.describe('Visual Check Group 5: 回帰・多変量', () => {
                 if (canvas.width <= 120 || canvas.height <= 80) return false;
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return false;
-                const sampleSize = 16;
-                const points: Array<[number, number]> = [];
-                for (let y = 0; y <= 4; y++) {
-                    for (let x = 0; x <= 4; x++) {
-                        points.push([
-                            Math.min(Math.max(Math.floor((canvas.width * x) / 4), 0), Math.max(canvas.width - sampleSize, 0)),
-                            Math.min(Math.max(Math.floor((canvas.height * y) / 4), 0), Math.max(canvas.height - sampleSize, 0))
-                        ]);
-                    }
-                }
-                return points.some(([x, y]) => {
-                    const data = ctx.getImageData(x, y, Math.min(sampleSize, canvas.width), Math.min(sampleSize, canvas.height)).data;
-                    return Array.from(data).some(value => value !== 0);
-                });
+                return ctx.getImageData(0, 0, canvas.width, canvas.height).data.some(value => value !== 0);
             });
         }, null, { timeout: 60000 });
         await page.screenshot({ path: `${SCREENSHOT_DIR}/24_text_mining.png`, fullPage: true });

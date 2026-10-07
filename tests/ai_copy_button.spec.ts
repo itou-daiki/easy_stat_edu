@@ -276,9 +276,8 @@ test.describe('AI support UI and context', () => {
     test('uses copy-only mode on a public-style host', async ({ page }) => {
         await page.goto('http://0.0.0.0:8081/');
         await expect(page.locator('#loading-screen')).toBeHidden({ timeout: 30000 });
-        await expect(page.locator('#ai-status-badge')).toHaveText('コピーのみ');
-        await page.locator('#ai-config-toggle').click();
-        await expect(page.locator('#ai-public-copy-note')).toBeVisible();
+        // 公開版ではトップページの設定欄を出さない
+        await expect(page.locator('#ai-config-section')).toBeHidden();
         await expect(page.locator('#ai-direct-controls')).toBeHidden();
     });
 
