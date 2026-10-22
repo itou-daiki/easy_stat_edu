@@ -1901,8 +1901,16 @@ function analyzeDataCharacteristics(data) {
             const stringValues = values.map(value => String(value).trim());
             const uniqueRatio = uniqueValues.size / values.length;
             const averageLength = stringValues.reduce((sum, value) => sum + value.length, 0) / stringValues.length;
-            const hasTextColumnName = /(自由.?記述|記述|コメント|感想|理由|意見|文章|テキスト|詳細|備考)/i.test(col);
-            const looksLikeFreeText = hasTextColumnName || (uniqueRatio >= 0.7 && averageLength >= 12);
+            const hasExplicitTextColumnName = /(自由.?記述|記述|コメント|感想|文章|テキスト|詳細|備考)/i.test(col);
+            const hasTextColumnHint = /(理由|意見)/i.test(col);
+            // 「性別理由による制約経験」などの選択式回答を、列名だけで自由記述にしない。
+            // 明示的な自由記述列と、少数の短文・繰り返し長文は従来どおり保持する。
+            const hasShortRepeatedChoices = uniqueValues.size <= 10
+                && uniqueRatio < 0.5
+                && stringValues.every(value => value.length <= 10 && !/[。！？!?\r\n]/.test(value));
+            const looksLikeFreeText = hasExplicitTextColumnName
+                || (hasTextColumnHint && !hasShortRepeatedChoices)
+                || (uniqueRatio >= 0.7 && averageLength >= 12);
 
             // Heuristic for string columns: if it has few unique values, or a low unique ratio, it's categorical.
             if (!looksLikeFreeText && (uniqueValues.size <= 10 || (uniqueRatio < 0.5 && values.length > 5))) {
