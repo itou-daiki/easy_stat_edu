@@ -1903,6 +1903,11 @@ function appendVisualizationAxisRangeFields(fields, descriptors) {
     return { group, rows };
 }
 
+// 図の大きさの範囲（横幅は親要素に対する%、縦幅はpx）
+const VISUALIZATION_MIN_WIDTH_PERCENT = 30;
+const VISUALIZATION_MIN_HEIGHT = 240;
+const VISUALIZATION_MAX_HEIGHT = 1000;
+
 function appendVisualizationSizeFields(fields, options) {
     const idPrefix = `visualization-editor-${++visualizationEditorSequence}-size`;
     const group = document.createElement('fieldset');
@@ -1916,15 +1921,15 @@ function appendVisualizationSizeFields(fields, options) {
     widthControl.className = 'visualization-size-control';
     const widthLabel = document.createElement('label');
     widthLabel.htmlFor = `${idPrefix}-width`;
-    widthLabel.textContent = '表示幅';
+    widthLabel.textContent = '横幅';
     const widthRow = document.createElement('div');
     widthRow.className = 'visualization-size-range';
     const widthInput = document.createElement('input');
     widthInput.type = 'range';
     widthInput.id = `${idPrefix}-width`;
-    widthInput.min = '50';
+    widthInput.min = String(VISUALIZATION_MIN_WIDTH_PERCENT);
     widthInput.max = '100';
-    widthInput.step = '5';
+    widthInput.step = '1';
     widthInput.value = String(options.widthPercent);
     widthInput.dataset.visualizationInput = 'width';
     const widthOutput = document.createElement('output');
@@ -2016,18 +2021,28 @@ function appendVisualizationSizeFields(fields, options) {
     heightControl.className = 'visualization-size-control';
     const heightLabel = document.createElement('label');
     heightLabel.htmlFor = `${idPrefix}-height`;
-    heightLabel.textContent = '高さ（px）';
+    heightLabel.textContent = '縦幅（px）';
+    const heightRow = document.createElement('div');
+    heightRow.className = 'visualization-size-range';
+    const heightRange = document.createElement('input');
+    heightRange.type = 'range';
+    heightRange.min = String(VISUALIZATION_MIN_HEIGHT);
+    heightRange.max = String(VISUALIZATION_MAX_HEIGHT);
+    heightRange.step = '10';
+    heightRange.value = String(options.height);
+    heightRange.dataset.visualizationInput = 'height-range';
+    heightRange.setAttribute('aria-label', '縦幅（スライダー）');
     const heightInput = document.createElement('input');
     heightInput.type = 'number';
     heightInput.id = `${idPrefix}-height`;
     heightInput.className = 'visualization-item-editor-input';
-    heightInput.min = '240';
-    heightInput.max = '1000';
+    heightInput.min = String(VISUALIZATION_MIN_HEIGHT);
+    heightInput.max = String(VISUALIZATION_MAX_HEIGHT);
     heightInput.step = '10';
     heightInput.value = String(options.height);
-    heightInput.disabled = ratioSelect.value !== 'custom';
     heightInput.dataset.visualizationInput = 'height';
-    heightControl.append(heightLabel, heightInput);
+    heightRow.append(heightRange, heightInput);
+    heightControl.append(heightLabel, heightRow);
 
     controls.append(widthControl, ratioControl, heightControl);
     group.append(legend, controls);
@@ -2039,6 +2054,7 @@ function appendVisualizationSizeFields(fields, options) {
         ratioInputs,
         ratioWidthInput,
         ratioHeightInput,
+        heightRange,
         heightInput
     };
 }
@@ -2081,7 +2097,7 @@ function getVisualizationSizeDefaults(target, fallbackHeight = 420) {
     );
     const widthPercent = clampVisualizationValue(
         Math.round((width / availableWidth) * 100 / 5) * 5,
-        50,
+        VISUALIZATION_MIN_WIDTH_PERCENT,
         100,
         100
     );
@@ -2094,12 +2110,12 @@ function getVisualizationSizeDefaults(target, fallbackHeight = 420) {
 
 function resolveVisualizationDimensions(target, controls, defaults) {
     const availableWidth = getVisualizationParentWidth(target);
-    const widthPercent = clampVisualizationValue(
+    const widthPercent = Math.round(clampVisualizationValue(
         controls.widthInput.value,
-        50,
+        VISUALIZATION_MIN_WIDTH_PERCENT,
         100,
         defaults.widthPercent
-    );
+    ));
     const minimumWidth = Math.min(280, availableWidth);
     const width = Math.round(Math.max(
         minimumWidth,
@@ -2122,7 +2138,12 @@ function resolveVisualizationDimensions(target, controls, defaults) {
             : VISUALIZATION_ASPECT_RATIOS[ratioKey]);
     let height;
     if (ratioKey === 'custom') {
-        height = clampVisualizationValue(controls.heightInput.value, 240, 1000, defaults.height);
+        height = clampVisualizationValue(
+            controls.heightInput.value,
+            VISUALIZATION_MIN_HEIGHT,
+            VISUALIZATION_MAX_HEIGHT,
+            defaults.height
+        );
     } else {
         const responsiveAutoMinimum = width < 360
             ? 320
@@ -2139,14 +2160,14 @@ function resolveVisualizationDimensions(target, controls, defaults) {
     }
 
     controls.widthInput.value = String(widthPercent);
-    controls.widthOutput.textContent = `${widthPercent}%`;
-    controls.heightInput.disabled = ratioKey !== 'custom';
+    controls.widthOutput.textContent = formatVisualizationWidth(widthPercent, width);
     controls.ratioInputs.hidden = !usesCustomRatio;
     controls.ratioWidthInput.disabled = !usesCustomRatio;
     controls.ratioHeightInput.disabled = !usesCustomRatio;
     controls.ratioWidthInput.value = formatVisualizationRatioPart(ratioWidth);
     controls.ratioHeightInput.value = formatVisualizationRatioPart(ratioHeight);
     if (ratioKey !== 'custom') controls.heightInput.value = String(Math.round(height));
+    if (controls.heightRange) controls.heightRange.value = String(Math.round(height));
 
     return {
         widthPercent,
@@ -2177,6 +2198,15 @@ function bindVisualizationSizeControls(controls, apply) {
         timer = window.setTimeout(apply, 80);
     };
 
+    // 縦幅を直接動かしたら、縦横比を「高さを直接指定」に切り替える
+    const useDirectHeight = () => {
+        if (controls.ratioSelect.value === 'custom') return;
+        controls.ratioSelect.value = 'custom';
+        controls.ratioInputs.hidden = true;
+        controls.ratioWidthInput.disabled = true;
+        controls.ratioHeightInput.disabled = true;
+    };
+
     controls.widthInput.addEventListener('input', () => {
         controls.widthOutput.textContent = `${controls.widthInput.value}%`;
         scheduleApply();
@@ -2187,8 +2217,111 @@ function bindVisualizationSizeControls(controls, apply) {
     controls.ratioWidthInput.addEventListener('change', apply);
     controls.ratioHeightInput.addEventListener('input', scheduleApply);
     controls.ratioHeightInput.addEventListener('change', apply);
-    controls.heightInput.addEventListener('input', scheduleApply);
+    controls.heightInput.addEventListener('input', () => {
+        useDirectHeight();
+        if (controls.heightRange) controls.heightRange.value = controls.heightInput.value;
+        scheduleApply();
+    });
     controls.heightInput.addEventListener('change', apply);
+    controls.heightRange?.addEventListener('input', () => {
+        useDirectHeight();
+        controls.heightInput.value = controls.heightRange.value;
+        scheduleApply();
+    });
+    controls.heightRange?.addEventListener('change', apply);
+}
+
+function formatVisualizationWidth(widthPercent, widthPixels) {
+    return `${widthPercent}%（${Math.round(widthPixels)}px）`;
+}
+
+/**
+ * 図の右下に、ドラッグで大きさを変えるつまみを付ける。
+ * 動かした大きさは「図の表示設定」の横幅・縦幅にも反映する（縦横比は「高さを直接指定」になる）。
+ * Canvas の図は子要素を持てないため対象外（表示設定の欄で変更できる）。
+ */
+function attachVisualizationResizeHandle(target, controls, apply) {
+    if (!target || target.tagName === 'CANVAS' || !target.isConnected) return;
+    const label = getLocale() === 'en'
+        ? 'Resize the figure (drag, or use the arrow keys)'
+        : '図の大きさを変える（ドラッグ、または矢印キー）';
+    const existing = target.querySelector(':scope > .visualization-resize-handle');
+    if (existing) {
+        // 表示言語を切り替えた後の再描画でも、説明を今の言語にそろえる
+        existing.title = label;
+        existing.setAttribute('aria-label', label);
+        return;
+    }
+    if (window.getComputedStyle(target).position === 'static') target.style.position = 'relative';
+
+    const handle = document.createElement('button');
+    handle.type = 'button';
+    handle.className = 'visualization-resize-handle';
+    handle.title = label;
+    handle.setAttribute('aria-label', label);
+    handle.innerHTML = '<svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M11 3 3 11M11 7 7 11"/></svg>';
+
+    const setSize = (widthPixels, heightPixels) => {
+        const available = getVisualizationParentWidth(target);
+        const widthPercent = Math.round(clampVisualizationValue(
+            (widthPixels / available) * 100,
+            VISUALIZATION_MIN_WIDTH_PERCENT,
+            100,
+            100
+        ));
+        const height = Math.round(clampVisualizationValue(
+            heightPixels,
+            VISUALIZATION_MIN_HEIGHT,
+            VISUALIZATION_MAX_HEIGHT,
+            VISUALIZATION_MIN_HEIGHT
+        ));
+        controls.ratioSelect.value = 'custom';
+        controls.widthInput.value = String(widthPercent);
+        controls.heightInput.value = String(height);
+        if (controls.heightRange) controls.heightRange.value = String(height);
+    };
+
+    let drag = null;
+    let frame = 0;
+    const scheduleApply = () => {
+        if (frame) return;
+        frame = window.requestAnimationFrame(() => {
+            frame = 0;
+            apply();
+        });
+    };
+    handle.addEventListener('pointerdown', event => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        const rect = target.getBoundingClientRect();
+        drag = { x: event.clientX, y: event.clientY, width: rect.width, height: rect.height };
+        handle.setPointerCapture?.(event.pointerId);
+        target.classList.add('is-resizing');
+    });
+    handle.addEventListener('pointermove', event => {
+        if (!drag) return;
+        // 図は中央寄せなので、右端をつまみに合わせるには横幅を移動量の2倍だけ変える
+        setSize(drag.width + (event.clientX - drag.x) * 2, drag.height + (event.clientY - drag.y));
+        scheduleApply();
+    });
+    const finish = () => {
+        if (!drag) return;
+        drag = null;
+        target.classList.remove('is-resizing');
+        apply();
+    };
+    handle.addEventListener('pointerup', finish);
+    handle.addEventListener('pointercancel', finish);
+    handle.addEventListener('keydown', event => {
+        const steps = { ArrowLeft: [-20, 0], ArrowRight: [20, 0], ArrowUp: [0, -20], ArrowDown: [0, 20] };
+        const step = steps[event.key];
+        if (!step) return;
+        event.preventDefault();
+        const rect = target.getBoundingClientRect();
+        setSize(rect.width + step[0], rect.height + step[1]);
+        apply();
+    });
+    target.appendChild(handle);
 }
 
 function appendBulkTextField(fields, key, labelText, placeholder) {
@@ -2450,7 +2583,7 @@ function createVisualizationBulkEditor(installation) {
         sizeControls.ratioInputs.hidden = !customRatio;
         sizeControls.ratioWidthInput.disabled = !customRatio;
         sizeControls.ratioHeightInput.disabled = !customRatio;
-        sizeControls.heightInput.disabled = sizeControls.ratioSelect.value !== 'custom';
+        sizeControls.heightRange.value = sizeControls.heightInput.value;
         sizeControls.widthOutput.textContent = `${sizeControls.widthInput.value}%`;
     };
     bindVisualizationSizeControls(sizeControls, updateBulkSizeFields);
@@ -2904,24 +3037,36 @@ function wrapVisualizationTitle(text, figureWidth) {
         .join('<br>');
 }
 
-function positionBottomTitleAnnotations(annotations, dimensions, layout) {
+// 図の下のタイトルは、グラフ部分の下端から最低この距離（px）だけ離す。
+// 目盛りの数字と横軸ラベル（下端から約60px）の下に来るようにするため。
+const BOTTOM_TITLE_MIN_OFFSET = 70;
+
+function positionBottomTitleAnnotations(annotations, dimensions, layout, bottomMargin) {
     const margins = layout?.margin || {};
     const left = Math.max(Number(margins.l) || 0, 0);
     const right = Math.max(Number(margins.r) || 0, 0);
+    const top = Math.max(Number(margins.t) || 0, 0);
+    const bottom = Math.max(Number(bottomMargin ?? margins.b) || 0, 0);
     const paperWidth = Math.max(dimensions.width - left - right, 1);
+    const paperHeight = Math.max(dimensions.height - top - bottom, 1);
     const figureCenterInPaper = (dimensions.width / 2 - left) / paperWidth;
     const titleWidth = Math.max(dimensions.width - 32, 80);
 
-    return annotations.map(annotation => (
-        annotation?._annotationType === 'bottomTitle'
-            ? {
-                ...annotation,
-                x: figureCenterInPaper,
-                width: titleWidth,
-                align: 'center'
-            }
-            : annotation
-    ));
+    return annotations.map(annotation => {
+        if (annotation?._annotationType !== 'bottomTitle') return annotation;
+        const positioned = { ...annotation, x: figureCenterInPaper, width: titleWidth, align: 'center' };
+        // 元の位置（グラフ部分の高さに対する割合）は、縦幅が小さいと横軸ラベルに重なるため、
+        // 割合で決まる距離と最低距離の大きいほうで置き直す
+        const baseY = Number(annotation._baseY ?? annotation.y);
+        if (annotation.yref === 'paper' && Number.isFinite(baseY) && baseY < 0) {
+            const offset = Math.max(BOTTOM_TITLE_MIN_OFFSET, Math.round(-baseY * paperHeight));
+            positioned._baseY = baseY;
+            positioned.y = 0;
+            positioned.yanchor = 'top';
+            positioned.yshift = -offset;
+        }
+        return positioned;
+    });
 }
 
 function formatAccessibleNumber(value) {
@@ -3053,12 +3198,6 @@ function applyPlotEditorState(state) {
             displayTitle,
             state.titleCheckbox.checked
         );
-        annotations = positionBottomTitleAnnotations(
-            annotations,
-            dimensions,
-            plot.layout || state.plotSpec?.layout
-        );
-        annotationsChanged = true;
         const titleLineCount = Math.max(displayTitle.split('<br>').length, 1);
         update['margin.b'] = state.titleCheckbox.checked
             ? Math.max(
@@ -3068,6 +3207,13 @@ function applyPlotEditorState(state) {
                 Math.round(dimensions.height * 0.22)
             )
             : state.defaultBottomMargin;
+        annotations = positionBottomTitleAnnotations(
+            annotations,
+            dimensions,
+            plot.layout || state.plotSpec?.layout,
+            update['margin.b']
+        );
+        annotationsChanged = true;
     } else {
         update['title.text'] = state.titleCheckbox.checked
             ? wrapVisualizationTitle(state.titleInput.value, dimensions.width)
@@ -3422,7 +3568,10 @@ function enhancePlotlyFigure(plot, root, installation) {
         }
     };
 
-    const apply = () => applyPlotEditorState(state);
+    const apply = () => {
+        applyPlotEditorState(state);
+        attachVisualizationResizeHandle(plot, sizeControls, apply);
+    };
     [
         state.titleCheckbox,
         state.xCheckbox,
@@ -3633,6 +3782,7 @@ function enhanceCanvasFigure(target, root, installation) {
         }
         target.dataset.visualLegendVisible = String(legendCheckbox?.checked ?? true);
         if (legend && legendCheckbox) legend.hidden = !legendCheckbox.checked;
+        attachVisualizationResizeHandle(target, sizeControls, apply);
     };
     titleField.checkbox.addEventListener('change', apply);
     titleField.input.addEventListener('input', apply);
