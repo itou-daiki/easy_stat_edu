@@ -678,4 +678,71 @@ test.describe('Editable visualization and table labels', () => {
         await expectEditorCoverage(page);
         await expect(page.locator('[data-editor-kind="canvas"]')).toHaveCount(3);
     });
+    test('resizes a figure by its width and height fields and by dragging the corner handle', async ({ page }) => {
+        await uploadFile(page, 'datasets/highschool_life_demo.csv');
+        await navigateToFeature(page, 'anova_one_way');
+        await selectStandardOption(page, '#factor-var', 'クラス', 'label');
+        await selectVariables(page, ['数学']);
+        await page.click('#run-ind-anova-btn');
+        const plot = page.locator('#anova-plot-0');
+        await expect(plot).toBeVisible({ timeout: 10000 });
+        const editor = plot.locator('xpath=preceding-sibling::details[@data-editor-kind="plotly"][1]');
+        await editor.locator('summary').click();
+
+        // 縦横比が「自動」のままでも、縦幅を直接入力できる（入力すると「高さを直接指定」に切り替わる）
+        const height = editor.locator('[data-visualization-input="height"]');
+        await expect(height).toBeEnabled();
+        await height.fill('300');
+        await expect(editor.locator('[data-visualization-input="aspect-ratio"]')).toHaveValue('custom');
+        await expect.poll(async () => Math.round((await plot.boundingBox())?.height || 0)).toBe(300);
+        await expect(editor.locator('[data-visualization-input="height-range"]')).toHaveValue('300');
+
+        // 横幅は30%まで狭められ、ピクセル数も表示する
+        await editor.locator('[data-visualization-input="width"]').evaluate(input => {
+            const range = input as HTMLInputElement;
+            range.value = '30';
+            range.dispatchEvent(new Event('input', { bubbles: true }));
+            range.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        await expect(editor.locator('.visualization-size-range output')).toHaveText(/^30%（\d+px）$/);
+
+        // 縦幅が小さくても、図の下のタイトルが横軸ラベルに重ならない
+        await expect.poll(async () => plot.evaluate(element => {
+            const xTitle = element.querySelector('.xtitle')?.getBoundingClientRect();
+            const bottomTitle = Array.from(element.querySelectorAll('.annotation-text'))
+                .find(node => node.textContent?.includes('平均値の比較'))
+                ?.getBoundingClientRect();
+            return xTitle && bottomTitle ? Math.round(bottomTitle.top - xTitle.bottom) : -999;
+        })).toBeGreaterThanOrEqual(4);
+
+        // 右下のつまみをドラッグすると、図と設定欄の両方が変わる
+        await editor.locator('[data-visualization-input="width"]').evaluate(input => {
+            const range = input as HTMLInputElement;
+            range.value = '60';
+            range.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        const handle = plot.locator('.visualization-resize-handle');
+        await expect(handle).toBeVisible();
+        await handle.scrollIntoViewIfNeeded();
+        const before = await plot.boundingBox();
+        const box = await handle.boundingBox();
+        expect(before && box).toBeTruthy();
+        await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(box!.x + box!.width / 2 + 40, box!.y + box!.height / 2 + 100, { steps: 5 });
+        await page.mouse.up();
+        await expect.poll(async () => {
+            const after = await plot.boundingBox();
+            return after ? {
+                wider: after.width > before!.width + 40,
+                taller: Math.round(after.height - before!.height)
+            } : null;
+        }).toEqual({ wider: true, taller: 100 });
+        await expect(height).toHaveValue('400');
+
+        // キーボードでも変えられる
+        await handle.focus();
+        await page.keyboard.press('ArrowDown');
+        await expect(height).toHaveValue('420');
+    });
 });
