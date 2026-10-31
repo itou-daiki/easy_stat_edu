@@ -95,4 +95,14 @@ tests/*.spec.ts             E2E・操作・表示・保存テスト
 
 不具合は[GitHub Issues](https://github.com/dai-ki-iro/easy_stat_edu/issues)へ報告してください。
 
+## ライセンス
+
+easyStatの独自コードは、GNU Affero General Public License version 3 only（`AGPL-3.0-only`）で提供します。正式な条件は[LICENSE](LICENSE)を参照してください。
+
+AGPL v3の条件に従って利用・改変・再配布できます。改変版をネットワーク経由で利用者に提供する場合は、その利用者が対応するソースコードを入手できるようにする必要があります。有料販売や有料ホスティング自体を禁止するものではありません。
+
+同梱または外部から読み込む第三者ライブラリ、素材などには、それぞれのライセンスと著作権表示が適用されます。`js/lib/tiny-segmenter.js`のBSDライセンス表示、`js/lib/vis-network.min.js`のMIT／Apache 2.0ライセンス表示、および依存パッケージの権利表示は維持します。
+
+この変更は、過去のバージョンについて有効に付与されたISCライセンスの許諾を遡及して取り消すものではありません。
+
 © 2022-2026 Dit-Lab. (Daiki Ito)
