@@ -8,7 +8,7 @@ test_output.txt
 debug_log.txt
 /dummy_support.csv
 
-# Local scratch notes (keep shared skill templates tracked)
+# Local scratch notes
 /task_plan.md
 /findings.md
 /progress.md
@@ -30,14 +30,16 @@ anova_log.txt
 !apple-touch-icon.png
 !image/illustrations/*.png
 
-# Cursor IDE (machine-specific MCP paths, local settings)
-.cursor/mcp.json
+# Personal AI assistant and editor configuration
+/AGENTS.md
+/CLAUDE.md
+/.agent/
+/.cursor/
+/.serena/
 
 # ECC temp files (everything-claude-code clone)
 .temp_ecc/
 
-# Agent config (machine-specific scripts/hooks)
-.agent/scripts/
-.agent/package-manager.json
+# Local backups and Python caches
 .git_backup/
 __pycache__/
