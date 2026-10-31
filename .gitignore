@@ -6,6 +6,13 @@ playwright-report/
 test-results/
 test_output.txt
 debug_log.txt
+/dummy_support.csv
+
+# Local scratch notes (keep shared skill templates tracked)
+/task_plan.md
+/findings.md
+/progress.md
+/.planning/
 
 # OS
 .DS_Store

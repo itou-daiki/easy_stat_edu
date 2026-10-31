@@ -93,6 +93,8 @@ tests/*.spec.ts             E2E・操作・表示・保存テスト
 
 `anova_one_way.js`と`anova_two_way.js`は直下のファイルが実行対象です。同名サブフォルダ内の旧分割版は実行されません。
 
+過去の統計実装レビューは[docs/reviews/](docs/reviews/)にまとめています。
+
 不具合は[GitHub Issues](https://github.com/dai-ki-iro/easy_stat_edu/issues)へ報告してください。
 
 ## ライセンス
